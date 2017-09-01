@@ -10,12 +10,29 @@ using Windows.UI;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
+using Windows.Foundation;
+using Windows.UI.Xaml.Shapes;
 
 namespace eScapeLLC.UWP.Charts {
+	public interface IChartAxis {
+		double For(double value);
+	}
 	public interface IChartRenderContext {
+		Size Dimensions { get; }
+		ChartComponent Find(String name);
+	}
+	public class DefaultRenderContext : IChartRenderContext {
+		ObservableCollection<ChartComponent> Components { get; set; }
+		public DefaultRenderContext(ObservableCollection<ChartComponent> components) { Components = components; }
+		public Size Dimensions { get; set; }
+		public ChartComponent Find(string name) {
+			return Components.SingleOrDefault((cx)=>cx.Name == name);
+		}
 	}
 	public delegate void RefreshRequestEventHandler(ChartComponent cc);
+	#region ChartComponent
 	public abstract class ChartComponent : FrameworkElement {
+		protected ChartComponent() { }
 		/// <summary>
 		/// Render the component.
 		/// </summary>
@@ -38,6 +55,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		protected void Refresh() { RefreshRequest?.Invoke(this); }
 	}
+	#endregion
+	#region DataSeries
 	/// <summary>
 	/// Base class of components that represent a data series.
 	/// </summary>
@@ -57,94 +76,173 @@ namespace eScapeLLC.UWP.Charts {
 			get { return (System.Collections.IEnumerable)GetValue(DataSourceProperty); }
 			set { SetValue(DataSourceProperty, value); }
 		}
-		private static void OnDataSourcePropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) {
-			DataSeries ds = d as DataSeries;
-			DetachOldDataSourceCollectionChangedListener(ds, e.OldValue);
-			AttachDataSourceCollectionChangedListener(ds, e.NewValue);
-			ds.ProcessData();
+		private static void OnDataSourcePropertyChanged(DependencyObject dobj, DependencyPropertyChangedEventArgs dpcea) {
+			DataSeries ds = dobj as DataSeries;
+			DetachOldDataSourceCollectionChangedListener(ds, dpcea.OldValue);
+			AttachDataSourceCollectionChangedListener(ds, dpcea.NewValue);
+			ds.ProcessData(dpcea.Property);
 		}
-		private static void DetachOldDataSourceCollectionChangedListener(DataSeries chart, object dataSource) {
+		private static void DetachOldDataSourceCollectionChangedListener(DataSeries ds, object dataSource) {
 			if (dataSource != null && dataSource is INotifyCollectionChanged) {
-				(dataSource as INotifyCollectionChanged).CollectionChanged -= chart.OnDataSourceCollectionChanged;
+				(dataSource as INotifyCollectionChanged).CollectionChanged -= ds.OnDataSourceCollectionChanged;
 			}
 		}
-		private static void AttachDataSourceCollectionChangedListener(DataSeries chart, object dataSource) {
+		private static void AttachDataSourceCollectionChangedListener(DataSeries ds, object dataSource) {
 			if (dataSource != null && dataSource is INotifyCollectionChanged) {
-				(dataSource as INotifyCollectionChanged).CollectionChanged += new NotifyCollectionChangedEventHandler(chart.OnDataSourceCollectionChanged);
+				(dataSource as INotifyCollectionChanged).CollectionChanged += new NotifyCollectionChangedEventHandler(ds.OnDataSourceCollectionChanged);
 			}
 		}
-		private void OnDataSourceCollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
+		private void OnDataSourceCollectionChanged(object sender, NotifyCollectionChangedEventArgs nccea) {
 			// TODO: implement intelligent mechanism to hanlde multiple changes in one batch
-			ProcessData();
+			ProcessData(null);
 		}
+		public String ValueMemberPath { get; set; }
+		#endregion
+		#region category axis
+		/// <summary>
+		/// Identifies <see cref="CategoryAxis"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty CategoryAxisProperty = DependencyProperty.Register(
+			"CategoryAxis", typeof(ChartComponent), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(OnCategoryAxisPropertyChanged))
+		);
+		private static void OnCategoryAxisPropertyChanged(DependencyObject dobj, DependencyPropertyChangedEventArgs dpcea) {
+			DataSeries ds = dobj as DataSeries;
+			ds.ProcessData(dpcea.Property);
+		}
+		public ChartComponent CategoryAxis { get { return (ChartComponent) GetValue(CategoryAxisProperty); } set { SetValue(CategoryAxisProperty, value); } }
+		#endregion
+		#region value axis
+		/// <summary>
+		/// Identifies <see cref="CategoryAxis"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty ValueAxisProperty = DependencyProperty.Register(
+			"ValueAxis", typeof(ChartComponent), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(OnValueAxisPropertyChanged))
+		);
+		private static void OnValueAxisPropertyChanged(DependencyObject dobj, DependencyPropertyChangedEventArgs dpcea) {
+			DataSeries ds = dobj as DataSeries;
+			ds.ProcessData(dpcea.Property);
+		}
+		public ChartComponent ValueAxis { get { return (ChartComponent)GetValue(ValueAxisProperty); } set { SetValue(ValueAxisProperty, value); } }
 		#endregion
 		#region extensions
-		protected abstract void ProcessData();
+		protected abstract void ProcessData(DependencyProperty dp);
 		#endregion
 	}
-	public class ValueAxis : ChartComponent {
+	#endregion
+	#region ValueAxis
+	public class ValueAxis : ChartComponent, IChartAxis {
 		public override void Enter() {
+		}
+		public double For(double value) {
+			throw new NotImplementedException();
 		}
 		public override void Leave() {
 		}
 		public override void Render(IChartRenderContext icrc) {
 		}
 	}
-	public class CategoryAxis: ChartComponent {
+	#endregion
+	#region CategoryAxis
+	public class CategoryAxis: ChartComponent, IChartAxis {
 		public override void Enter() {
+		}
+		public double For(double value) {
+			throw new NotImplementedException();
 		}
 		public override void Leave() {
 		}
 		public override void Render(IChartRenderContext icrc) {
 		}
 	}
+	#endregion
+	#region LineSeries
 	public class LineSeries : DataSeries {
+		static LogTools.Flag _trace = LogTools.Add("LineSeries", LogTools.Level.Verbose);
+		public Polyline Segments{ get; set; }
 		public override void Enter() {
+			_trace.Verbose($"enter v:{ValueAxis} c:{CategoryAxis}");
+			Segments = new Polyline();
 		}
 		public override void Leave() {
+			_trace.Verbose($"enter v:{ValueAxis} c:{CategoryAxis} d:{DataSource}");
 		}
 		public override void Render(IChartRenderContext icrc) {
+			_trace.Verbose($"render v:{ValueAxis} c:{CategoryAxis}");
 		}
-		protected override void ProcessData() {
+		protected override void ProcessData(DependencyProperty dp) {
+			_trace.Verbose($"process-data v:{ValueAxis} c:{CategoryAxis} {dp}");
 			Refresh();
 		}
 	}
+	#endregion
+	#region ColumnSeries
 	public class ColumnSeries : DataSeries {
+		public Path Segments { get; set; }
 		public override void Enter() {
 		}
 		public override void Leave() {
 		}
 		public override void Render(IChartRenderContext icrc) {
 		}
-		protected override void ProcessData() {
+		protected override void ProcessData(DependencyProperty dp) {
 			Refresh();
 		}
 	}
+	#endregion
+	#region TreeHelper
+	public static class TreeHelper {
+		/// <summary>
+		/// Finds object in control's template by it's name.
+		/// </summary>
+		/// <param name="name">Objects name.</param>
+		/// <param name="templatedParent">Templated parent.</param>
+		/// <returns>Object reference if found, null otherwise.</returns>
+		public static object TemplateFindName(string name, FrameworkElement templatedParent) {
+			for (int i = 0; i < VisualTreeHelper.GetChildrenCount(templatedParent); i++) {
+				DependencyObject child = VisualTreeHelper.GetChild(templatedParent, i);
+				if (child is FrameworkElement) {
+					if (((FrameworkElement)child).Name == name) {
+						return child;
+					} else {
+						object subChild = TreeHelper.TemplateFindName(name, (FrameworkElement)child);
+						if (subChild != null && subChild is FrameworkElement && ((FrameworkElement)subChild).Name == name) {
+							return subChild;
+						}
+					}
+				}
+			}
+			return null;
+		}
+	}
+	#endregion
+	#region Chart
 	/// <summary>
 	/// The chart.
 	/// </summary>
-	public class Chart : Control, IChartRenderContext {
+	public class Chart : Control {
 		static LogTools.Flag _trace = LogTools.Add("Chart", LogTools.Level.Verbose);
 		#region properties
 		public ObservableCollection<ChartComponent> Components { get; private set; }
+		protected Canvas Surface { get; set; }
 		#endregion
 		#region ctor
-		public Chart() {
+		public Chart() :base() {
 			DefaultStyleKey = typeof(Chart);
 			Components = new ObservableCollection<ChartComponent>();
 			Components.CollectionChanged += new NotifyCollectionChangedEventHandler(OnComponentsChanged);
 			LayoutUpdated += new EventHandler<object>(OnLayoutUpdated);
-			Loaded += Chart_Loaded;
-		}
-
-		private void Chart_Loaded(object sender, RoutedEventArgs e) {
-			_trace.Verbose($"OnLoaded {Width}x{Height}  {Components.Count}");
 		}
 		#endregion
 		#region evhs
+		protected override void OnApplyTemplate() {
+			Surface = (Canvas)TreeHelper.TemplateFindName("PART_Canvas", this);
+			_trace.Verbose($"OnApplyTemplate {Width}x{Height} {Surface}");
+		}
 		private void OnLayoutUpdated(object sender, object e) {
-			_trace.Verbose($"OnLayoutUpdated {Width}x{Height}");
-			RenderComponents();
+			_trace.Verbose($"OnLayoutUpdated {ActualWidth}x{ActualHeight}");
+			if (!double.IsNaN(ActualWidth) && !double.IsNaN(ActualHeight)) {
+				RenderComponents();
+			}
 		}
 		void OnComponentsChanged(object sender, NotifyCollectionChangedEventArgs e) {
 			if (e.OldItems != null) {
@@ -154,7 +252,6 @@ namespace eScapeLLC.UWP.Charts {
 					cc.Leave();
 				}
 			}
-
 			if (e.NewItems != null) {
 				foreach (ChartComponent cc in e.NewItems) {
 					_trace.Verbose($"enter {cc}");
@@ -162,6 +259,7 @@ namespace eScapeLLC.UWP.Charts {
 					cc.Enter();
 				}
 			}
+			InvalidateMeasure();
 		}
 		private void Cc_RefreshRequest(ChartComponent cc) {
 			_trace.Verbose($"refresh-request {cc}");
@@ -190,11 +288,13 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region helpers
 		private void RenderComponents() {
+			var ctx = new DefaultRenderContext(Components) { Dimensions = new Size(ActualWidth, ActualHeight) };
 			foreach (ChartComponent cc in Components) {
 				_trace.Verbose($"render {cc}");
-				cc.Render(this);
+				cc.Render(ctx);
 			}
 		}
 		#endregion
 	}
+	#endregion
 }

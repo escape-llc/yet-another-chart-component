@@ -14,10 +14,11 @@
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 		<TextBlock HorizontalAlignment="Stretch" TextAlignment="Center" Text="eScape LLC Chart Demo"/>
-		<charts:Chart Grid.Row="1" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" VerticalAlignment="Stretch" VerticalContentAlignment="Stretch">
+		<charts:Chart Grid.Row="1" Background="Beige" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
 			<charts:Chart.Components>
 				<charts:CategoryAxis x:Name="xaxis" />
-				<charts:ValueAxis x:Name="yaxis" />
+				<charts:ValueAxis Name="yaxis" />
+				<charts:LineSeries DataSource="{Binding Data}" ValueAxis="{Binding ElementName=yaxis}" />
 			</charts:Chart.Components>
 		</charts:Chart>
 	</Grid>
