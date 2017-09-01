@@ -26,7 +26,7 @@ namespace eScapeLLC.UWP.Charts {
 		public DefaultRenderContext(ObservableCollection<ChartComponent> components) { Components = components; }
 		public Size Dimensions { get; set; }
 		public ChartComponent Find(string name) {
-			return Components.SingleOrDefault((cx)=>cx.Name == name);
+			return Components.SingleOrDefault((cx) => cx.Name == name);
 		}
 	}
 	public delegate void RefreshRequestEventHandler(ChartComponent cc);
@@ -98,31 +98,11 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		public String ValueMemberPath { get; set; }
 		#endregion
-		#region category axis
-		/// <summary>
-		/// Identifies <see cref="CategoryAxis"/> dependency property.
-		/// </summary>
-		public static readonly DependencyProperty CategoryAxisProperty = DependencyProperty.Register(
-			"CategoryAxis", typeof(ChartComponent), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(OnCategoryAxisPropertyChanged))
-		);
-		private static void OnCategoryAxisPropertyChanged(DependencyObject dobj, DependencyPropertyChangedEventArgs dpcea) {
-			DataSeries ds = dobj as DataSeries;
-			ds.ProcessData(dpcea.Property);
-		}
-		public ChartComponent CategoryAxis { get { return (ChartComponent) GetValue(CategoryAxisProperty); } set { SetValue(CategoryAxisProperty, value); } }
-		#endregion
-		#region value axis
-		/// <summary>
-		/// Identifies <see cref="CategoryAxis"/> dependency property.
-		/// </summary>
-		public static readonly DependencyProperty ValueAxisProperty = DependencyProperty.Register(
-			"ValueAxis", typeof(ChartComponent), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(OnValueAxisPropertyChanged))
-		);
-		private static void OnValueAxisPropertyChanged(DependencyObject dobj, DependencyPropertyChangedEventArgs dpcea) {
-			DataSeries ds = dobj as DataSeries;
-			ds.ProcessData(dpcea.Property);
-		}
-		public ChartComponent ValueAxis { get { return (ChartComponent)GetValue(ValueAxisProperty); } set { SetValue(ValueAxisProperty, value); } }
+		#region properties
+		public String ValueAxisName { get; set; }
+		public String CategoryAxisName { get; set; }
+		protected IChartAxis ValueAxis { get; set; }
+		protected IChartAxis CategoryAxis { get; set; }
 		#endregion
 		#region extensions
 		protected abstract void ProcessData(DependencyProperty dp);
@@ -160,17 +140,24 @@ namespace eScapeLLC.UWP.Charts {
 		static LogTools.Flag _trace = LogTools.Add("LineSeries", LogTools.Level.Verbose);
 		public Polyline Segments{ get; set; }
 		public override void Enter() {
-			_trace.Verbose($"enter v:{ValueAxis} c:{CategoryAxis}");
+			_trace.Verbose($"enter v:{ValueAxisName} c:{ValueAxisName} d:{DataSource}");
 			Segments = new Polyline();
 		}
 		public override void Leave() {
-			_trace.Verbose($"enter v:{ValueAxis} c:{CategoryAxis} d:{DataSource}");
+			_trace.Verbose($"leave v:{ValueAxisName} c:{ValueAxisName} d:{DataSource}");
 		}
 		public override void Render(IChartRenderContext icrc) {
-			_trace.Verbose($"render v:{ValueAxis} c:{CategoryAxis}");
+			if(ValueAxis == null && !String.IsNullOrEmpty(ValueAxisName)){
+				ValueAxis = icrc.Find(ValueAxisName) as IChartAxis;
+			}
+			if (CategoryAxis == null && !String.IsNullOrEmpty(CategoryAxisName)) {
+				CategoryAxis = icrc.Find(CategoryAxisName) as IChartAxis;
+			}
+			if (ValueAxis == null || CategoryAxis == null || DataSource == null) return;
+			_trace.Verbose($"render v:{ValueAxis} c:{ValueAxis} d:{DataSource}");
 		}
 		protected override void ProcessData(DependencyProperty dp) {
-			_trace.Verbose($"process-data v:{ValueAxis} c:{CategoryAxis} {dp}");
+			_trace.Verbose($"process-data v:{ValueAxisName} c:{CategoryAxisName} {dp}");
 			Refresh();
 		}
 	}

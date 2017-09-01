@@ -8,17 +8,17 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+	<Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 		<Grid.RowDefinitions>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 		<TextBlock HorizontalAlignment="Stretch" TextAlignment="Center" Text="eScape LLC Chart Demo"/>
-		<charts:Chart Grid.Row="1" Background="Beige" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+		<charts:Chart x:Name="cx" Grid.Row="1" Background="Beige" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
 			<charts:Chart.Components>
 				<charts:CategoryAxis x:Name="xaxis" />
-				<charts:ValueAxis Name="yaxis" />
-				<charts:LineSeries DataSource="{Binding Data}" ValueAxis="{Binding ElementName=yaxis}" />
+				<charts:ValueAxis x:Name="yaxis" />
+				<charts:LineSeries DataContext="{Binding ElementName=cx,Path=DataContext}"  DataSource="{Binding Data}" ValueAxisName="yaxis" CategoryAxisName="xaxis" />
 			</charts:Chart.Components>
 		</charts:Chart>
 	</Grid>
