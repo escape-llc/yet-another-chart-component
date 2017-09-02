@@ -13,12 +13,12 @@
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
-		<TextBlock HorizontalAlignment="Stretch" TextAlignment="Center" Text="eScape LLC Chart Demo"/>
+		<TextBlock HorizontalAlignment="Stretch" TextAlignment="Center" Text="eScape LLC YACC Demo"/>
 		<charts:Chart x:Name="cx" Grid.Row="1" Background="Beige" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
 			<charts:Chart.Components>
 				<charts:CategoryAxis x:Name="xaxis" />
 				<charts:ValueAxis x:Name="yaxis" />
-				<charts:LineSeries DataContext="{Binding ElementName=cx,Path=DataContext}"  DataSource="{Binding Data}" ValueAxisName="yaxis" CategoryAxisName="xaxis" />
+				<charts:LineSeries DataSource="{Binding Data}" ValueMemberPath="Y" ValueAxisName="yaxis" CategoryAxisName="xaxis" />
 			</charts:Chart.Components>
 		</charts:Chart>
 	</Grid>

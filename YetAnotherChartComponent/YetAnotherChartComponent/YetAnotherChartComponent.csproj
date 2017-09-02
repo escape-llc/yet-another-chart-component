@@ -106,9 +106,12 @@
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Axis.cs" />
     <Compile Include="Chart.cs" />
+    <Compile Include="Core.cs" />
     <Compile Include="LogTools.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Series.cs" />
     <EmbeddedResource Include="Properties\YetAnotherChartComponent.rd.xml" />
   </ItemGroup>
   <ItemGroup>

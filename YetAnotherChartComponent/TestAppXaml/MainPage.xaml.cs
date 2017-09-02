@@ -28,8 +28,10 @@ namespace TestAppXaml {
 			base.OnNavigatedTo(e);
 			var vm = new ViewModel();
 			vm.Data.Add(new Observation(0, 0));
-			vm.Data.Add(new Observation(1, 1));
-			vm.Data.Add(new Observation(0, 0));
+			vm.Data.Add(new Observation(1, 10));
+			vm.Data.Add(new Observation(2, 5));
+			vm.Data.Add(new Observation(3, -10));
+			vm.Data.Add(new Observation(4, -5));
 			DataContext = vm;
 		}
 	}
