@@ -20,16 +20,16 @@ namespace eScapeLLC.UWP.Charts {
 		);
 		private static void DataSourcePropertyChanged(DependencyObject dobj, DependencyPropertyChangedEventArgs dpcea) {
 			DataSeries ds = dobj as DataSeries;
-			DetachDataSourceCollectionChangedListener(ds, dpcea.OldValue);
-			AttachDataSourceCollectionChangedListener(ds, dpcea.NewValue);
+			DetachDataSourceCollectionChanged(ds, dpcea.OldValue);
+			AttachDataSourceCollectionChanged(ds, dpcea.NewValue);
 			ds.ProcessData(dpcea.Property);
 		}
-		private static void DetachDataSourceCollectionChangedListener(DataSeries ds, object dataSource) {
+		private static void DetachDataSourceCollectionChanged(DataSeries ds, object dataSource) {
 			if (dataSource is INotifyCollectionChanged) {
 				(dataSource as INotifyCollectionChanged).CollectionChanged -= ds.DataSourceCollectionChanged;
 			}
 		}
-		private static void AttachDataSourceCollectionChangedListener(DataSeries ds, object dataSource) {
+		private static void AttachDataSourceCollectionChanged(DataSeries ds, object dataSource) {
 			if (dataSource is INotifyCollectionChanged) {
 				(dataSource as INotifyCollectionChanged).CollectionChanged += new NotifyCollectionChangedEventHandler(ds.DataSourceCollectionChanged);
 			}
@@ -40,7 +40,7 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region category member path
 		public static readonly DependencyProperty CategoryMemberPathProperty = DependencyProperty.Register(
-			"CategoryMemberPath", typeof(string), typeof(DataSeries), new PropertyMetadata(new PropertyChangedCallback(DataSeriesPropertyChanged))
+			"CategoryMemberPath", typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
 		);
 		/// <summary>
 		/// Generic DP property change handler.
@@ -65,6 +65,7 @@ namespace eScapeLLC.UWP.Charts {
 		public System.Collections.IEnumerable DataSource { get { return (System.Collections.IEnumerable)GetValue(DataSourceProperty); } set { SetValue(DataSourceProperty, value); } }
 		/// <summary>
 		/// Binding path to the category axis value.
+		/// MAY be NULL, in which case the data-index is used instead.
 		/// </summary>
 		public String CategoryMemberPath { get { return (String)GetValue(CategoryMemberPathProperty); } set { SetValue(CategoryMemberPathProperty, value); } }
 		/// <summary>
@@ -147,7 +148,7 @@ namespace eScapeLLC.UWP.Charts {
 				var valuex = bx != null ? (double)bx.Eval(vx) : ix;
 				var mappedy = ValueAxis.For(valuey);
 				var mappedx = CategoryAxis.For(valuex);
-				_trace.Verbose($"[{ix}:{mappedx}] {valuey}:{mappedy}");
+				_trace.Verbose($"[{ix}] {valuey} ({mappedx},{mappedy})");
 				Segments.Points.Add(new Point(mappedx, mappedy));
 				ix++;
 			}

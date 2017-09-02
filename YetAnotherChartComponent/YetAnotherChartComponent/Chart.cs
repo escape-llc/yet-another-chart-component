@@ -25,6 +25,16 @@ namespace eScapeLLC.UWP.Charts {
 			return Components.SingleOrDefault((cx) => cx.Name == name);
 		}
 	}
+	public class DefaultEnterLeaveContext : DefaultRenderContext, IChartEnterLeaveContext {
+		Canvas Surface { get; set; }
+		public DefaultEnterLeaveContext(Canvas surface, ObservableCollection<ChartComponent> components) :base(components){ Surface = surface; }
+		public void Add(FrameworkElement fe) {
+			Surface.Children.Add(fe);
+		}
+		public void Remove(FrameworkElement fe) {
+			Surface.Children.Remove(fe);
+		}
+	}
 	#endregion
 	#region Chart
 	/// <summary>
@@ -35,52 +45,88 @@ namespace eScapeLLC.UWP.Charts {
 		#region properties
 		public ObservableCollection<ChartComponent> Components { get; private set; }
 		protected Canvas Surface { get; set; }
+		protected List<IChartAxis> Axes { get; set; }
+		protected List<DataSeries> Series { get; set; }
 		#endregion
 		#region ctor
 		public Chart() :base() {
 			DefaultStyleKey = typeof(Chart);
 			Components = new ObservableCollection<ChartComponent>();
-			Components.CollectionChanged += new NotifyCollectionChangedEventHandler(OnComponentsChanged);
-			LayoutUpdated += new EventHandler<object>(OnLayoutUpdated);
+			Components.CollectionChanged += new NotifyCollectionChangedEventHandler(Components_CollectionChanged);
+			Axes = new List<IChartAxis>();
+			Series = new List<DataSeries>();
+			LayoutUpdated += new EventHandler<object>(Chart_LayoutUpdated);
 			DataContextChanged += Chart_DataContextChanged;
 		}
 		#endregion
 		#region evhs
+		/// <summary>
+		/// Propagate data context changes to components.
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="args"></param>
 		private void Chart_DataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args) {
-			foreach(var cc in Components) {
+			_trace.Verbose($"DataContextChanged {args.NewValue}");
+			foreach (var cc in Components) {
 				cc.DataContext = args.NewValue;
 			}
 		}
+		/// <summary>
+		/// Obtain UI elements from the control template.
+		/// Happens Before Chart_LayoutUpdated.
+		/// </summary>
 		protected override void OnApplyTemplate() {
 			Surface = (Canvas)TreeHelper.TemplateFindName("PART_Canvas", this);
-			_trace.Verbose($"OnApplyTemplate {Width}x{Height} {Surface}");
+			_trace.Verbose($"OnApplyTemplate ({Width}x{Height}) {Surface}");
 		}
-		private void OnLayoutUpdated(object sender, object e) {
-			_trace.Verbose($"OnLayoutUpdated {ActualWidth}x{ActualHeight}");
+		/// <summary>
+		/// Reconfigure components in response to layout change.
+		/// Happens After OnApplyTemplate.
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		private void Chart_LayoutUpdated(object sender, object e) {
+			_trace.Verbose($"LayoutUpdated ({ActualWidth}x{ActualHeight})");
 			if (!double.IsNaN(ActualWidth) && !double.IsNaN(ActualHeight)) {
 				RenderComponents();
 			}
 		}
-		void OnComponentsChanged(object sender, NotifyCollectionChangedEventArgs e) {
+		/// <summary>
+		/// Reconfigure components that enter and leave.
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		void Components_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
 			if (e.OldItems != null) {
 				foreach (ChartComponent cc in e.OldItems) {
-					_trace.Verbose($"leave {cc}");
+					_trace.Verbose($"leave '{cc.Name}' {cc}");
 					cc.RefreshRequest -= Cc_RefreshRequest;
 					cc.Leave();
+					if(cc is IChartAxis) {
+						Axes.Remove(cc as IChartAxis);
+					}
+					else if(cc is DataSeries) {
+						Series.Remove(cc as DataSeries);
+					}
 				}
 			}
 			if (e.NewItems != null) {
 				foreach (ChartComponent cc in e.NewItems) {
-					_trace.Verbose($"enter {cc}");
+					_trace.Verbose($"enter '{cc.Name}' {cc}");
 					cc.RefreshRequest += Cc_RefreshRequest;
 					cc.DataContext = DataContext;
 					cc.Enter();
+					if (cc is IChartAxis) {
+						Axes.Add(cc as IChartAxis);
+					} else if (cc is DataSeries) {
+						Series.Add(cc as DataSeries);
+					}
 				}
 			}
-			InvalidateMeasure();
+			InvalidateArrange();
 		}
 		private void Cc_RefreshRequest(ChartComponent cc) {
-			_trace.Verbose($"refresh-request {cc}");
+			_trace.Verbose($"refresh-request '{cc.Name}' {cc}");
 		}
 		#endregion
 		#region preset brushes
@@ -105,14 +151,24 @@ namespace eScapeLLC.UWP.Charts {
 		public List<Brush> PresetBrushes { get { return _presetBrushes; } }
 		#endregion
 		#region helpers
+		/// <summary>
+		/// Iterate the components for rendering.
+		/// </summary>
 		private void RenderComponents() {
 			var ctx = new DefaultRenderContext(Components) { Dimensions = new Size(ActualWidth, ActualHeight), DataContext = DataContext };
-			foreach (ChartComponent cc in Components) {
+			foreach(var axis in Axes) {
+				_trace.Verbose($"reset {(axis as ChartComponent).Name} {axis}");
+				axis.ResetLimits();
+			}
+			foreach (DataSeries cc in Series) {
 				_trace.Verbose($"render {cc}");
-				if(cc is IChartAxis) {
-					(cc as IChartAxis).ResetLimits();
-				}
 				cc.Render(ctx);
+			}
+			// TODO reconfigure series transforms now axes have limits built
+			foreach (var axis in Axes) {
+				var scale = (axis.Type == AxisType.Value ? ActualHeight : ActualWidth) / axis.Range;
+				_trace.Verbose($"limits {(axis as ChartComponent).Name} ({axis.Minimum},{axis.Maximum}) r:{axis.Range} s:{scale:F3}");
+				(axis as ChartComponent).Render(ctx);
 			}
 		}
 		#endregion

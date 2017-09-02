@@ -6,22 +6,81 @@ using Windows.UI.Xaml.Media;
 
 namespace eScapeLLC.UWP.Charts {
 	#region IChartAxis
+	public enum AxisType { Category, Value };
+	/// <summary>
+	/// Features for axes.
+	/// </summary>
 	public interface IChartAxis {
-		void ResetLimits();
-		double For(double value);
+		/// <summary>
+		/// The axis type.
+		/// </summary>
+		AxisType Type { get; }
+		/// <summary>
+		/// Minimum value or NaN.
+		/// </summary>
 		double Minimum { get; }
+		/// <summary>
+		/// Maximum value or NaN.
+		/// </summary>
 		double Maximum { get; }
+		/// <summary>
+		/// Range or NaN.
+		/// </summary>
+		double Range { get; }
+		/// <summary>
+		/// Reset the limits so axis can re-calculate.
+		/// </summary>
+		void ResetLimits();
+		/// <summary>
+		/// Map the value.
+		/// </summary>
+		/// <param name="value">Input (actual) value.</param>
+		/// <returns>Axis-mapped value.</returns>
+		double For(double value);
 	}
 	#endregion
 	#region IChartRenderContext
+	/// <summary>
+	/// Feaatures for rendering.
+	/// </summary>
 	public interface IChartRenderContext {
+		/// <summary>
+		/// Current dimensions.
+		/// </summary>
 		Size Dimensions { get; }
 		object DataContext { get; }
+		/// <summary>
+		/// Look up a component by name.
+		/// </summary>
+		/// <param name="name">Name.</param>
+		/// <returns>Matching component or NULL.</returns>
 		ChartComponent Find(String name);
+	}
+	/// <summary>
+	/// Additional features for enter/leave.
+	/// </summary>
+	public interface IChartEnterLeaveContext : IChartRenderContext {
+		/// <summary>
+		/// Add content.
+		/// </summary>
+		/// <param name="fe">Element to add.</param>
+		void Add(FrameworkElement fe);
+		/// <summary>
+		/// Remove content.
+		/// </summary>
+		/// <param name="fe">Element to remove.</param>
+		void Remove(FrameworkElement fe);
 	}
 	#endregion
 	#region ChartComponent
+	/// <summary>
+	/// Refresh delegate.
+	/// </summary>
+	/// <param name="cc">Originating component.</param>
 	public delegate void RefreshRequestEventHandler(ChartComponent cc);
+	/// <summary>
+	/// Base class of chart components.
+	/// </summary>
 	public abstract class ChartComponent : FrameworkElement {
 		protected ChartComponent() { }
 		/// <summary>
@@ -50,20 +109,20 @@ namespace eScapeLLC.UWP.Charts {
 	#region TreeHelper
 	public static class TreeHelper {
 		/// <summary>
-		/// Finds object in control's template by it's name.
+		/// Finds object in control's template by its name.
 		/// </summary>
 		/// <param name="name">Objects name.</param>
 		/// <param name="templatedParent">Templated parent.</param>
 		/// <returns>Object reference if found, null otherwise.</returns>
 		public static object TemplateFindName(string name, FrameworkElement templatedParent) {
-			for (int i = 0; i < VisualTreeHelper.GetChildrenCount(templatedParent); i++) {
-				DependencyObject child = VisualTreeHelper.GetChild(templatedParent, i);
+			for (int ix = 0; ix < VisualTreeHelper.GetChildrenCount(templatedParent); ix++) {
+				var child = VisualTreeHelper.GetChild(templatedParent, ix);
 				if (child is FrameworkElement) {
-					if (((FrameworkElement)child).Name == name) {
+					if ((child as FrameworkElement).Name == name) {
 						return child;
 					} else {
-						object subChild = TreeHelper.TemplateFindName(name, (FrameworkElement)child);
-						if (subChild != null && subChild is FrameworkElement && ((FrameworkElement)subChild).Name == name) {
+						var subChild = TemplateFindName(name, child as FrameworkElement);
+						if (subChild is FrameworkElement && (subChild as FrameworkElement).Name == name) {
 							return subChild;
 						}
 					}
@@ -75,13 +134,13 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region BindingEvaluator
 	/// <summary>
-	/// Utility class to facilitate temporary binding evaluation
+	/// Utility class to facilitate temporary binding evaluation.
 	/// </summary>
 	public class BindingEvaluator : FrameworkElement {
 		/// <summary>
 		/// Created binding evaluator and set path to the property which's value should be evaluated.
 		/// </summary>
-		/// <param name="propertyPath">Path to the property</param>
+		/// <param name="propertyPath">Path to the property.</param>
 		public BindingEvaluator(string propertyPath) {
 			_propertyPath = propertyPath;
 		}
@@ -97,10 +156,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// <returns>Value of the property.</returns>
 		public object Eval(object source) {
 			ClearValue(EvaluatorProperty);
-			var binding = new Binding();
-			binding.Path = new PropertyPath(_propertyPath);
-			binding.Mode = BindingMode.OneTime;
-			binding.Source = source;
+			var binding = new Binding {
+				Path = new PropertyPath(_propertyPath),
+				Mode = BindingMode.OneTime,
+				Source = source
+			};
 			SetBinding(EvaluatorProperty, binding);
 			return GetValue(EvaluatorProperty);
 		}
