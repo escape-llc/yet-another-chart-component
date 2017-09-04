@@ -92,6 +92,12 @@ namespace eScapeLLC.UWP.Charts {
 		protected IChartAxis CategoryAxis { get; set; }
 		#endregion
 		#region helpers
+		protected virtual String DPName(DependencyProperty dp) {
+			if (dp == DataSourceProperty) return "DataSource";
+			else if (dp == ValueMemberPathProperty) return "ValueMemberPath";
+			else if (dp == CategoryMemberPathProperty) return "CategoryMemberPath";
+			return dp.ToString();
+		}
 		/// <summary>
 		/// Resolve axis references.
 		/// </summary>
@@ -135,7 +141,7 @@ namespace eScapeLLC.UWP.Charts {
 			ProcessData(DataSourceProperty);
 		}
 		protected override void ProcessData(DependencyProperty dp) {
-			_trace.Verbose($"process-data v:{ValueAxis} c:{CategoryAxis} {dp}");
+			_trace.Verbose($"process-data dp:{DPName(dp)}");
 			if (ValueAxis == null || CategoryAxis == null || DataSource == null) return;
 			if (String.IsNullOrEmpty(ValueMemberPath)) return;
 			var by = new BindingEvaluator(ValueMemberPath);

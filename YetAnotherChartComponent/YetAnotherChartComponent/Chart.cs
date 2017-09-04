@@ -66,10 +66,21 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="sender"></param>
 		/// <param name="args"></param>
 		private void Chart_DataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args) {
-			_trace.Verbose($"DataContextChanged {args.NewValue}");
-			foreach (var cc in Components) {
-				cc.DataContext = args.NewValue;
+			if (args.NewValue != DataContext) {
+				_trace.Verbose($"DataContextChanged {args.NewValue}");
+				foreach (var cc in Components) {
+					cc.DataContext = args.NewValue;
+				}
 			}
+			else {
+				foreach (var cc in Components) {
+					if (cc.DataContext != args.NewValue) {
+						_trace.Verbose($"DataContextChanged {cc} {args.NewValue}");
+						cc.DataContext = args.NewValue;
+					}
+				}
+			}
+			args.Handled = true;
 		}
 		/// <summary>
 		/// Obtain UI elements from the control template.
