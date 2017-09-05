@@ -47,6 +47,7 @@ namespace eScapeLLC.UWP.Charts {
 		protected Canvas Surface { get; set; }
 		protected List<IChartAxis> Axes { get; set; }
 		protected List<DataSeries> Series { get; set; }
+		protected List<ChartComponent> DeferredEnter{ get; set; }
 		#endregion
 		#region ctor
 		public Chart() :base() {
@@ -55,6 +56,7 @@ namespace eScapeLLC.UWP.Charts {
 			Components.CollectionChanged += new NotifyCollectionChangedEventHandler(Components_CollectionChanged);
 			Axes = new List<IChartAxis>();
 			Series = new List<DataSeries>();
+			DeferredEnter = new List<ChartComponent>();
 			LayoutUpdated += new EventHandler<object>(Chart_LayoutUpdated);
 			DataContextChanged += Chart_DataContextChanged;
 		}
@@ -88,7 +90,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		protected override void OnApplyTemplate() {
 			Surface = (Canvas)TreeHelper.TemplateFindName("PART_Canvas", this);
-			_trace.Verbose($"OnApplyTemplate ({Width}x{Height}) {Surface}");
+			_trace.Verbose($"OnApplyTemplate ({Width}x{Height}) {Surface} d:{DeferredEnter.Count}");
+			var celc = new DefaultEnterLeaveContext(Surface, Components);
+			foreach(var cc in DeferredEnter) {
+				EnterComponent(celc, cc);
+			}
 		}
 		/// <summary>
 		/// Reconfigure components in response to layout change.
@@ -99,7 +105,18 @@ namespace eScapeLLC.UWP.Charts {
 		private void Chart_LayoutUpdated(object sender, object e) {
 			_trace.Verbose($"LayoutUpdated ({ActualWidth}x{ActualHeight})");
 			if (!double.IsNaN(ActualWidth) && !double.IsNaN(ActualHeight)) {
-				RenderComponents();
+				// TODO will need to recalculate axes if the dimensions have changed
+				if (Components.Any((cx) => cx.Dirty)) {
+					RenderComponents();
+				}
+			}
+		}
+		void EnterComponent(IChartEnterLeaveContext icelc, ChartComponent cc) {
+			cc.Enter(icelc);
+			if (cc is IChartAxis) {
+				Axes.Add(cc as IChartAxis);
+			} else if (cc is DataSeries) {
+				Series.Add(cc as DataSeries);
 			}
 		}
 		/// <summary>
@@ -108,11 +125,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="sender"></param>
 		/// <param name="e"></param>
 		void Components_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
+			var celc = new DefaultEnterLeaveContext(Surface, Components);
 			if (e.OldItems != null) {
 				foreach (ChartComponent cc in e.OldItems) {
 					_trace.Verbose($"leave '{cc.Name}' {cc}");
 					cc.RefreshRequest -= Cc_RefreshRequest;
-					cc.Leave();
+					cc.Leave(celc);
 					if(cc is IChartAxis) {
 						Axes.Remove(cc as IChartAxis);
 					}
@@ -126,15 +144,17 @@ namespace eScapeLLC.UWP.Charts {
 					_trace.Verbose($"enter '{cc.Name}' {cc}");
 					cc.RefreshRequest += Cc_RefreshRequest;
 					cc.DataContext = DataContext;
-					cc.Enter();
-					if (cc is IChartAxis) {
-						Axes.Add(cc as IChartAxis);
-					} else if (cc is DataSeries) {
-						Series.Add(cc as DataSeries);
+					if(Surface != null)  {
+						EnterComponent(celc, cc);
+					}
+					else {
+						DeferredEnter.Add(cc);
 					}
 				}
 			}
-			InvalidateArrange();
+			if (Surface != null) {
+				InvalidateArrange();
+			}
 		}
 		private void Cc_RefreshRequest(ChartComponent cc) {
 			_trace.Verbose($"refresh-request '{cc.Name}' {cc}");

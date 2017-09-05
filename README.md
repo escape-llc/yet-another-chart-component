@@ -1,15 +1,14 @@
-# yet-another-chart-component
-Yet another chart component.  Also a play on the venerable "yacc" compiler tool
+# eScapeLLC.UWP.Chart
+Yet another chart component.  Also a play on the venerable "yacc" parser-generator tool.  Yes, I've used it, and know all about LR(1) parsers!
 
 # Before you build
-If you are rebuilding the application project, you must re-generate the PFX file, because it is excluded from repository by *.gitignore*.
+If you are rebuilding the application project (e.g. because you forked it), you must re-generate the PFX file, because it is excluded from repository by *.gitignore*.
 
 * In *Solution Explorer*, double-click the app manifest file.
 * In the *Manifest Designer*, go to the *Packaging* tab.
 * Click on *Choose Certificate*.
 * Follow the instructions to make a new test certificate.
 * Build away!
-* Important: deploy to an *Emulator* or *Real Device* for results.
 
 # Packaging
 Soon there will be binary assemblies for direct consumption via *nuget.org*.  The rest of this section is general information on publishing packages, and not specific to this project.

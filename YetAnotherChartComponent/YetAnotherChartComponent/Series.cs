@@ -3,6 +3,8 @@ using System;
 using System.Collections.Specialized;
 using Windows.Foundation;
 using Windows.UI.Xaml;
+using Windows.UI.Xaml.Data;
+using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
 
 namespace eScapeLLC.UWP.Charts {
@@ -20,9 +22,12 @@ namespace eScapeLLC.UWP.Charts {
 		);
 		private static void DataSourcePropertyChanged(DependencyObject dobj, DependencyPropertyChangedEventArgs dpcea) {
 			DataSeries ds = dobj as DataSeries;
-			DetachDataSourceCollectionChanged(ds, dpcea.OldValue);
-			AttachDataSourceCollectionChanged(ds, dpcea.NewValue);
-			ds.ProcessData(dpcea.Property);
+			if (dpcea.OldValue != dpcea.NewValue) {
+				DetachDataSourceCollectionChanged(ds, dpcea.OldValue);
+				AttachDataSourceCollectionChanged(ds, dpcea.NewValue);
+				ds.Dirty = true;
+				ds.ProcessData(dpcea.Property);
+			}
 		}
 		private static void DetachDataSourceCollectionChanged(DataSeries ds, object dataSource) {
 			if (dataSource is INotifyCollectionChanged) {
@@ -35,6 +40,7 @@ namespace eScapeLLC.UWP.Charts {
 			}
 		}
 		private void DataSourceCollectionChanged(object sender, NotifyCollectionChangedEventArgs nccea) {
+			Dirty = true;
 			ProcessData(DataSourceProperty);
 		}
 		#endregion
@@ -58,7 +64,17 @@ namespace eScapeLLC.UWP.Charts {
 			"ValueMemberPath", typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
 		);
 		#endregion
+		#region brush
+		/// <summary>
+		/// Identifies <see cref="Brush"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty BrushProperty = DependencyProperty.Register("Brush", typeof(Brush), typeof(DataSeries), new PropertyMetadata(null));
+		#endregion
 		#region properties
+		/// <summary>
+		/// The brush for the series.
+		/// </summary>
+		public Brush Brush { get { return (Brush)GetValue(BrushProperty); } set { SetValue(BrushProperty, value); } }
 		/// <summary>
 		/// Data source for the series.
 		/// </summary>
@@ -127,19 +143,30 @@ namespace eScapeLLC.UWP.Charts {
 	public class LineSeries : DataSeries {
 		static LogTools.Flag _trace = LogTools.Add("LineSeries", LogTools.Level.Verbose);
 		public Polyline Segments { get; set; }
-		public override void Enter() {
-			_trace.Verbose($"enter v:{ValueAxisName} c:{ValueAxisName} d:{DataSource}");
+		public LineSeries() {
 			Segments = new Polyline();
+			BindBrush(this, "Brush", Segments, Path.FillProperty);
 		}
-		public override void Leave() {
+		public override void Enter(IChartEnterLeaveContext icelc) {
+			_trace.Verbose($"enter v:{ValueAxisName} c:{ValueAxisName} d:{DataSource}");
+			icelc.Add(Segments);
+		}
+		public override void Leave(IChartEnterLeaveContext icelc) {
 			_trace.Verbose($"leave v:{ValueAxisName} c:{ValueAxisName} d:{DataSource}");
+			icelc.Remove(Segments);
 		}
 		public override void Render(IChartRenderContext icrc) {
 			EnsureAxes(icrc);
-			_trace.Verbose($"render v:{ValueAxis} c:{CategoryAxis} d:{DataSource}");
+			_trace.Verbose($"render v:{ValueAxis} c:{CategoryAxis} d:{DataSource} dirty:{Dirty}");
 			if (ValueAxis == null || CategoryAxis == null || DataSource == null) return;
-			ProcessData(DataSourceProperty);
+			if (Dirty) {
+				ProcessData(DataSourceProperty);
+			}
 		}
+		/// <summary>
+		/// Re-calculate visuals and clear Dirty flag.
+		/// </summary>
+		/// <param name="dp"></param>
 		protected override void ProcessData(DependencyProperty dp) {
 			_trace.Verbose($"process-data dp:{DPName(dp)}");
 			if (ValueAxis == null || CategoryAxis == null || DataSource == null) return;
@@ -158,16 +185,16 @@ namespace eScapeLLC.UWP.Charts {
 				Segments.Points.Add(new Point(mappedx, mappedy));
 				ix++;
 			}
-			Refresh();
+			Dirty = false;
 		}
 	}
 	#endregion
 	#region ColumnSeries
 	public class ColumnSeries : DataSeries {
 		public Path Segments { get; set; }
-		public override void Enter() {
+		public override void Enter(IChartEnterLeaveContext icelc) {
 		}
-		public override void Leave() {
+		public override void Leave(IChartEnterLeaveContext icelc) {
 		}
 		public override void Render(IChartRenderContext icrc) {
 		}

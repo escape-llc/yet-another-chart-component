@@ -3,6 +3,7 @@ using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Media;
+using Windows.UI.Xaml.Shapes;
 
 namespace eScapeLLC.UWP.Charts {
 	#region IChartAxis
@@ -82,7 +83,10 @@ namespace eScapeLLC.UWP.Charts {
 	/// Base class of chart components.
 	/// </summary>
 	public abstract class ChartComponent : FrameworkElement {
+		#region ctor
 		protected ChartComponent() { }
+		#endregion
+		#region extension points
 		/// <summary>
 		/// Render the component.
 		/// </summary>
@@ -91,19 +95,43 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Component is entering the chart.
 		/// </summary>
-		public virtual void Enter() { }
+		/// <param name="icelc"></param>
+		public virtual void Enter(IChartEnterLeaveContext icelc) { }
 		/// <summary>
 		/// Component is leaving the chart.
 		/// </summary>
-		public virtual void Leave() { }
+		/// <param name="icelc"></param>
+		public virtual void Leave(IChartEnterLeaveContext icelc) { }
+		#endregion
+		#region events
 		/// <summary>
 		/// Listen for requests to update this component.
 		/// </summary>
 		public event RefreshRequestEventHandler RefreshRequest;
+		#endregion
+		#region properties
+		/// <summary>
+		/// True: visuals require re-computing.
+		/// </summary>
+		public bool Dirty { get; protected set; }
+		#endregion
+		#region helpers
 		/// <summary>
 		/// Invoke the refresh request event.
 		/// </summary>
 		protected void Refresh() { RefreshRequest?.Invoke(this); }
+		/// <summary>
+		/// Bind the Brush DP to the given shape.
+		/// </summary>
+		/// <param name="sh"></param>
+		/// <param name="dp"></param>
+		protected static void BindBrush(ChartComponent cc, String path, Shape sh, DependencyProperty dp) {
+			Binding bx = new Binding(); // new Binding("Brush");
+			bx.Path = new PropertyPath(path);
+			bx.Source = cc;
+			sh.SetBinding(dp, bx);
+		}
+		#endregion
 	}
 	#endregion
 	#region TreeHelper
@@ -163,6 +191,32 @@ namespace eScapeLLC.UWP.Charts {
 			};
 			SetBinding(EvaluatorProperty, binding);
 			return GetValue(EvaluatorProperty);
+		}
+	}
+	#endregion
+	#region PathHelper
+	public static class PathHelper {
+		public static PathFigure Rectangle(double left, double top, double right, double bottom) {
+			var pf = new PathFigure {
+				StartPoint = new Windows.Foundation.Point(left, top)
+			};
+			var ls = new LineSegment() {
+				Point = new Windows.Foundation.Point(left, bottom)
+			};
+			pf.Segments.Add(ls);
+			ls = new LineSegment() {
+				Point = new Windows.Foundation.Point(right, bottom)
+			};
+			pf.Segments.Add(ls);
+			ls = new LineSegment() {
+				Point = new Windows.Foundation.Point(right, top)
+			};
+			pf.Segments.Add(ls);
+			ls = new LineSegment() {
+				Point = new Windows.Foundation.Point(left, top)
+			};
+			pf.Segments.Add(ls);
+			return pf;
 		}
 	}
 	#endregion
