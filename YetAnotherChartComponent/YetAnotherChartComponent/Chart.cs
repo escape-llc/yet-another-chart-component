@@ -18,16 +18,16 @@ namespace eScapeLLC.UWP.Charts {
 	#region DefaultRenderContext
 	public class DefaultRenderContext : IChartRenderContext {
 		ObservableCollection<ChartComponent> Components { get; set; }
-		public DefaultRenderContext(ObservableCollection<ChartComponent> components) { Components = components; }
 		public Size Dimensions { get; set; }
 		public object DataContext { get; set; }
+		public DefaultRenderContext(ObservableCollection<ChartComponent> components, Size sz, object dc) { Components = components; Dimensions = sz; DataContext = dc; }
 		public ChartComponent Find(string name) {
 			return Components.SingleOrDefault((cx) => cx.Name == name);
 		}
 	}
 	public class DefaultEnterLeaveContext : DefaultRenderContext, IChartEnterLeaveContext {
 		Canvas Surface { get; set; }
-		public DefaultEnterLeaveContext(Canvas surface, ObservableCollection<ChartComponent> components) :base(components){ Surface = surface; }
+		public DefaultEnterLeaveContext(Canvas surface, ObservableCollection<ChartComponent> components, Size sz, object dc) :base(components, sz, dc) { Surface = surface; }
 		public void Add(FrameworkElement fe) {
 			Surface.Children.Add(fe);
 		}
@@ -48,6 +48,11 @@ namespace eScapeLLC.UWP.Charts {
 		protected List<IChartAxis> Axes { get; set; }
 		protected List<DataSeries> Series { get; set; }
 		protected List<ChartComponent> DeferredEnter{ get; set; }
+		/// <summary>
+		/// Last-seen value during LayoutUpdated.
+		/// It gets called frequently so it gets debounced.
+		/// </summary>
+		protected Size LastLayout { get; set; }
 		#endregion
 		#region ctor
 		public Chart() :base() {
@@ -91,10 +96,11 @@ namespace eScapeLLC.UWP.Charts {
 		protected override void OnApplyTemplate() {
 			Surface = (Canvas)TreeHelper.TemplateFindName("PART_Canvas", this);
 			_trace.Verbose($"OnApplyTemplate ({Width}x{Height}) {Surface} d:{DeferredEnter.Count}");
-			var celc = new DefaultEnterLeaveContext(Surface, Components);
+			var celc = new DefaultEnterLeaveContext(Surface, Components, LastLayout, DataContext);
 			foreach(var cc in DeferredEnter) {
 				EnterComponent(celc, cc);
 			}
+			DeferredEnter.Clear();
 		}
 		/// <summary>
 		/// Reconfigure components in response to layout change.
@@ -103,20 +109,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="sender"></param>
 		/// <param name="e"></param>
 		private void Chart_LayoutUpdated(object sender, object e) {
-			_trace.Verbose($"LayoutUpdated ({ActualWidth}x{ActualHeight})");
-			if (!double.IsNaN(ActualWidth) && !double.IsNaN(ActualHeight)) {
-				// TODO will need to recalculate axes if the dimensions have changed
-				if (Components.Any((cx) => cx.Dirty)) {
-					RenderComponents();
-				}
-			}
-		}
-		void EnterComponent(IChartEnterLeaveContext icelc, ChartComponent cc) {
-			cc.Enter(icelc);
-			if (cc is IChartAxis) {
-				Axes.Add(cc as IChartAxis);
-			} else if (cc is DataSeries) {
-				Series.Add(cc as DataSeries);
+			var sz = new Size(ActualWidth, ActualHeight);
+			_trace.Verbose($"LayoutUpdated ({sz.Width}x{sz.Height})");
+			if (!double.IsNaN(sz.Width) && !double.IsNaN(sz.Height)) {
+				if (LastLayout.Width == sz.Width && LastLayout.Height == sz.Height) return;
+				RenderComponents(sz);
+				LastLayout = sz;
 			}
 		}
 		/// <summary>
@@ -125,7 +123,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="sender"></param>
 		/// <param name="e"></param>
 		void Components_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
-			var celc = new DefaultEnterLeaveContext(Surface, Components);
+			var celc = new DefaultEnterLeaveContext(Surface, Components, LastLayout, DataContext);
 			if (e.OldItems != null) {
 				foreach (ChartComponent cc in e.OldItems) {
 					_trace.Verbose($"leave '{cc.Name}' {cc}");
@@ -183,23 +181,70 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region helpers
 		/// <summary>
+		/// Common logic for component entering the chart.
+		/// </summary>
+		/// <param name="icelc"></param>
+		/// <param name="cc"></param>
+		protected void EnterComponent(IChartEnterLeaveContext icelc, ChartComponent cc) {
+			cc.Enter(icelc);
+			if (cc is IChartAxis) {
+				Axes.Add(cc as IChartAxis);
+			} else if (cc is DataSeries) {
+				Series.Add(cc as DataSeries);
+			}
+		}
+		private void TransformsOnly(Size sz) {
+			var inner = new Size(sz.Width - (Padding.Left + Padding.Right), sz.Height - (Padding.Top + Padding.Bottom));
+			var rmatrix = new TranslateTransform() { X = Padding.Left, Y = Padding.Top };
+			var ctx = new DefaultRenderContext(Components, inner, DataContext);
+			_trace.Verbose($"transforms-only inner:{inner.Width}x{inner.Height} trans:{rmatrix.X},{rmatrix.Y}");
+			foreach (var axis in Axes) {
+				var cc = axis as ChartComponent;
+				_trace.Verbose($"transforms-only {cc.Name} {axis}");
+				cc.Transforms(ctx);
+				cc.RenderTransform = rmatrix;
+			}
+			foreach (DataSeries cc in Series) {
+				_trace.Verbose($"transforms-only {cc}");
+				cc.Transforms(ctx);
+				cc.RenderTransform = rmatrix;
+			}
+		}
+		/// <summary>
 		/// Iterate the components for rendering.
 		/// </summary>
-		private void RenderComponents() {
-			var ctx = new DefaultRenderContext(Components) { Dimensions = new Size(ActualWidth, ActualHeight), DataContext = DataContext };
-			foreach(var axis in Axes) {
+		private void RenderComponents(Size sz) {
+			_trace.Verbose($"render-components {sz.Width}x{sz.Height}");
+			if (Components.All((cx) => !cx.Dirty)) {
+				// all components up-to-date; just adjust transforms
+				TransformsOnly(sz);
+				return;
+			}
+			foreach (var axis in Axes) {
 				_trace.Verbose($"reset {(axis as ChartComponent).Name} {axis}");
 				axis.ResetLimits();
 			}
+			var inner = new Size(sz.Width - (Padding.Left + Padding.Right), sz.Height - (Padding.Top + Padding.Bottom));
+			var ctx = new DefaultRenderContext(Components, inner, DataContext);
+			var rmatrix = new TranslateTransform() { X = Padding.Left, Y = Padding.Top };
+			_trace.Verbose($"render-components inner:{inner.Width}x{inner.Height} trans:{rmatrix.X},{rmatrix.Y}");
 			foreach (DataSeries cc in Series) {
 				_trace.Verbose($"render {cc}");
 				cc.Render(ctx);
 			}
-			// TODO reconfigure series transforms now axes have limits built
+			// reconfigure series transforms now axes have limits built
 			foreach (var axis in Axes) {
+				var acc = axis as ChartComponent;
 				var scale = (axis.Type == AxisType.Value ? ActualHeight : ActualWidth) / axis.Range;
 				_trace.Verbose($"limits {(axis as ChartComponent).Name} ({axis.Minimum},{axis.Maximum}) r:{axis.Range} s:{scale:F3}");
-				(axis as ChartComponent).Render(ctx);
+				acc.Render(ctx);
+				acc.Transforms(ctx);
+				//acc.RenderTransform = rmatrix;
+			}
+			foreach (DataSeries cc in Series) {
+				_trace.Verbose($"transforms {cc}");
+				cc.Transforms(ctx);
+				//cc.RenderTransform = rmatrix;
 			}
 		}
 		#endregion

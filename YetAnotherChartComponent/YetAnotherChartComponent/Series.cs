@@ -98,6 +98,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// Referenced component MUST implement IChartAxis.
 		/// </summary>
 		public String CategoryAxisName { get; set; }
+		public double Minimum { get; protected set; } = double.NaN;
+		public double Maximum { get; protected set; } = double.NaN;
+		public double Range { get { return double.IsNaN(Minimum) || double.IsNaN(Maximum) ? double.NaN : Maximum - Minimum + 1; } }
 		/// <summary>
 		/// Dereferenced value axis.
 		/// </summary>
@@ -126,6 +129,11 @@ namespace eScapeLLC.UWP.Charts {
 				CategoryAxis = icrc.Find(CategoryAxisName) as IChartAxis;
 			}
 		}
+		protected void UpdateLimits(double vx, double vy) {
+			if (double.IsNaN(Minimum) || vy < Minimum) { Minimum = vy; }
+			if (double.IsNaN(Maximum) || vy > Maximum) { Maximum = vy; }
+		}
+		protected void ResetLimits() { Minimum = double.NaN; Maximum = double.NaN; }
 		#endregion
 		#region extensions
 		/// <summary>
@@ -142,10 +150,14 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public class LineSeries : DataSeries {
 		static LogTools.Flag _trace = LogTools.Add("LineSeries", LogTools.Level.Verbose);
-		public Polyline Segments { get; set; }
+		public Path Segments { get; set; }
+		protected PathGeometry Geometry { get; set; }
 		public LineSeries() {
-			Segments = new Polyline();
-			BindBrush(this, "Brush", Segments, Path.FillProperty);
+			Segments = new Path();
+			Segments.StrokeThickness = 1;
+			BindBrush(this, "Brush", Segments, Path.StrokeProperty);
+			Geometry = new PathGeometry();
+			Segments.Data = Geometry;
 		}
 		public override void Enter(IChartEnterLeaveContext icelc) {
 			_trace.Verbose($"enter v:{ValueAxisName} c:{ValueAxisName} d:{DataSource}");
@@ -163,6 +175,15 @@ namespace eScapeLLC.UWP.Charts {
 				ProcessData(DataSourceProperty);
 			}
 		}
+		public override void Transforms(IChartRenderContext icrc) {
+			base.Transforms(icrc);
+			if (CategoryAxis == null || ValueAxis == null) return;
+			var scalex = icrc.Dimensions.Width / CategoryAxis.Range;
+			var scaley = icrc.Dimensions.Height / ValueAxis.Range;
+			_trace.Verbose($"scale {scalex:F3},{scaley:F3}");
+			var matx = new Matrix(scalex, 0, 0, -scaley, 0, icrc.Dimensions.Height/2);
+			Geometry.Transform = new MatrixTransform() { Matrix = matx };
+		}
 		/// <summary>
 		/// Re-calculate visuals and clear Dirty flag.
 		/// </summary>
@@ -174,17 +195,26 @@ namespace eScapeLLC.UWP.Charts {
 			var by = new BindingEvaluator(ValueMemberPath);
 			var bx = !String.IsNullOrEmpty(CategoryMemberPath) ? new BindingEvaluator(CategoryMemberPath) : null;
 			int ix = 0;
-			Segments.Points.Clear();
+			ResetLimits();
+			Geometry.Figures.Clear();
+			var pf = new PathFigure();
 			foreach (var vx in DataSource) {
 				// TODO handle datetime et al values that aren't double
 				var valuey = (double)by.Eval(vx);
 				var valuex = bx != null ? (double)bx.Eval(vx) : ix;
+				UpdateLimits(valuex, valuey);
 				var mappedy = ValueAxis.For(valuey);
 				var mappedx = CategoryAxis.For(valuex);
 				_trace.Verbose($"[{ix}] {valuey} ({mappedx},{mappedy})");
-				Segments.Points.Add(new Point(mappedx, mappedy));
+				if(ix == 0) {
+					pf.StartPoint = new Point(mappedx, mappedy);
+				}
+				else {
+					pf.Segments.Add(new LineSegment() { Point = new Point(mappedx, mappedy) });
+				}
 				ix++;
 			}
+			Geometry.Figures.Add(pf);
 			Dirty = false;
 		}
 	}

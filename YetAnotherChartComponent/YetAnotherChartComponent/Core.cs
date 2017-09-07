@@ -49,6 +49,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// Current dimensions.
 		/// </summary>
 		Size Dimensions { get; }
+		/// <summary>
+		/// The data context object.
+		/// </summary>
 		object DataContext { get; }
 		/// <summary>
 		/// Look up a component by name.
@@ -93,12 +96,20 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icrc"></param>
 		public abstract void Render(IChartRenderContext icrc);
 		/// <summary>
+		/// Adjust transforms after rendering and layout are completed.
+		/// Default impl.
+		/// </summary>
+		/// <param name="icrc"></param>
+		public virtual void Transforms(IChartRenderContext icrc) { }
+		/// <summary>
 		/// Component is entering the chart.
+		/// Default impl.
 		/// </summary>
 		/// <param name="icelc"></param>
 		public virtual void Enter(IChartEnterLeaveContext icelc) { }
 		/// <summary>
 		/// Component is leaving the chart.
+		/// Default impl.
 		/// </summary>
 		/// <param name="icelc"></param>
 		public virtual void Leave(IChartEnterLeaveContext icelc) { }
@@ -113,7 +124,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// True: visuals require re-computing.
 		/// </summary>
-		public bool Dirty { get; protected set; }
+		public bool Dirty { get; set; }
 		#endregion
 		#region helpers
 		/// <summary>

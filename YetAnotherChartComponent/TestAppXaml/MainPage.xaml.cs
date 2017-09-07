@@ -32,6 +32,7 @@ namespace TestAppXaml {
 			vm.Data.Add(new Observation(2, 5));
 			vm.Data.Add(new Observation(3, -10));
 			vm.Data.Add(new Observation(4, -5));
+			vm.Data.Add(new Observation(5, 0));
 			DataContext = vm;
 		}
 	}
