@@ -14,7 +14,7 @@
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 		<TextBlock HorizontalAlignment="Stretch" TextAlignment="Center" Text="eScape LLC YACC Demo"/>
-		<charts:Chart x:Name="cx" Grid.Row="1" Background="Beige" Padding="4" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+		<charts:Chart x:Name="cx" Grid.Row="1" Background="Beige" Padding="16" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
 			<charts:Chart.Components>
 				<charts:CategoryAxis x:Name="xaxis" Brush="Black" />
 				<charts:ValueAxis x:Name="yaxis" Brush="Red" />

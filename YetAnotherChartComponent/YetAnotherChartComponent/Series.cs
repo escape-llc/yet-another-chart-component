@@ -178,10 +178,10 @@ namespace eScapeLLC.UWP.Charts {
 		public override void Transforms(IChartRenderContext icrc) {
 			base.Transforms(icrc);
 			if (CategoryAxis == null || ValueAxis == null) return;
-			var scalex = icrc.Dimensions.Width / CategoryAxis.Range;
-			var scaley = icrc.Dimensions.Height / ValueAxis.Range;
+			var scalex = icrc.Area.Width / CategoryAxis.Range;
+			var scaley = icrc.Area.Height / ValueAxis.Range;
 			_trace.Verbose($"scale {scalex:F3},{scaley:F3}");
-			var matx = new Matrix(scalex, 0, 0, -scaley, 0, icrc.Dimensions.Height/2);
+			var matx = new Matrix(scalex, 0, 0, -scaley, icrc.Area.Left, icrc.Area.Top + icrc.Area.Height/2);
 			Geometry.Transform = new MatrixTransform() { Matrix = matx };
 		}
 		/// <summary>

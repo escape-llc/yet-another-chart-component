@@ -18,21 +18,95 @@ namespace eScapeLLC.UWP.Charts {
 	#region DefaultRenderContext
 	public class DefaultRenderContext : IChartRenderContext {
 		ObservableCollection<ChartComponent> Components { get; set; }
-		public Size Dimensions { get; set; }
-		public object DataContext { get; set; }
-		public DefaultRenderContext(ObservableCollection<ChartComponent> components, Size sz, object dc) { Components = components; Dimensions = sz; DataContext = dc; }
+		public Size Dimensions { get; protected set; }
+		public object DataContext { get; protected set; }
+		public Rect Area { get; protected set; }
+		public DefaultRenderContext(ObservableCollection<ChartComponent> components, Size sz, Rect rc, object dc) { Components = components; Dimensions = sz; Area = rc;  DataContext = dc; }
 		public ChartComponent Find(string name) {
 			return Components.SingleOrDefault((cx) => cx.Name == name);
 		}
 	}
+	#endregion
+	#region DefaultEnterLeaveContext
 	public class DefaultEnterLeaveContext : DefaultRenderContext, IChartEnterLeaveContext {
 		Canvas Surface { get; set; }
-		public DefaultEnterLeaveContext(Canvas surface, ObservableCollection<ChartComponent> components, Size sz, object dc) :base(components, sz, dc) { Surface = surface; }
+		public DefaultEnterLeaveContext(Canvas surface, ObservableCollection<ChartComponent> components, Size sz, Rect rc, object dc) :base(components, sz, rc, dc) { Surface = surface; }
 		public void Add(FrameworkElement fe) {
 			Surface.Children.Add(fe);
 		}
 		public void Remove(FrameworkElement fe) {
 			Surface.Children.Remove(fe);
+		}
+	}
+	#endregion
+	#region DefaultLayoutContext
+	public class DefaultLayoutContext : IChartLayoutContext {
+		public Size Dimensions { get; protected set; }
+		public Rect RemainingRect { get; protected set; }
+		public DefaultLayoutContext(Size sz, Rect rc) { Dimensions = sz; RemainingRect = rc; }
+		IDictionary<ChartComponent, Rect> ClaimedRects { get; set; } = new Dictionary<ChartComponent, Rect>();
+		public Rect For(ChartComponent cc) { return ClaimedRects.ContainsKey(cc) ? ClaimedRects[cc] : RemainingRect; }
+		/// <summary>
+		/// Trim axis rectangles to be "flush" with the RemainingRect.
+		/// </summary>
+		public void FinalizeRects() {
+			var tx = new Dictionary<ChartComponent, Rect>();
+			foreach(var kv in ClaimedRects) {
+				if(kv.Key is IChartAxis) {
+					var ica = kv.Key as IChartAxis;
+					switch(ica.Orientation) {
+					case AxisOrientation.Horizontal:
+						// Right
+						tx.Add(kv.Key, new Rect(kv.Value.Left, kv.Value.Top, RemainingRect.Width, kv.Value.Height));
+						break;
+					case AxisOrientation.Vertical:
+						// Bottom
+						tx.Add(kv.Key, new Rect(kv.Value.Left, kv.Value.Top, kv.Value.Width, RemainingRect.Height));
+						break;
+					}
+				}
+			}
+			// apply dictionary updates
+			foreach(var kv in tx) {
+				ClaimedRects[kv.Key] = kv.Value;
+			}
+		}
+		public Rect ClaimSpace(ChartComponent cc, Side sd, double amt) {
+			var ul = new Point();
+			var sz = new Size();
+			switch(sd) {
+			case Side.Top:
+				ul.X = RemainingRect.Left;
+				ul.Y = RemainingRect.Top;
+				sz.Width = Dimensions.Width;
+				sz.Height = amt;
+				RemainingRect = new Rect(RemainingRect.Left, RemainingRect.Top + amt, RemainingRect.Width, RemainingRect.Height - amt);
+				break;
+			case Side.Right:
+				ul.X = RemainingRect.Right - amt;
+				ul.Y = RemainingRect.Top;
+				sz.Width = amt;
+				sz.Height = Dimensions.Height;
+				RemainingRect = new Rect(RemainingRect.Left, RemainingRect.Top, RemainingRect.Width - amt, RemainingRect.Height);
+				break;
+			case Side.Bottom:
+				ul.X = RemainingRect.Left;
+				ul.Y = RemainingRect.Bottom - amt;
+				sz.Width = Dimensions.Width;
+				sz.Height = amt;
+				RemainingRect = new Rect(RemainingRect.Left, RemainingRect.Top, RemainingRect.Width, RemainingRect.Height - amt);
+				break;
+			case Side.Left:
+				ul.X = RemainingRect.Left;
+				ul.Y = RemainingRect.Top;
+				sz.Width = amt;
+				sz.Height = Dimensions.Height;
+				RemainingRect = new Rect(RemainingRect.Left + amt, RemainingRect.Top, RemainingRect.Width - amt, RemainingRect.Height);
+				break;
+			}
+			var rect = new Rect(ul, sz);
+			ClaimedRects.Add(cc, rect);
+			return rect;
 		}
 	}
 	#endregion
@@ -96,7 +170,7 @@ namespace eScapeLLC.UWP.Charts {
 		protected override void OnApplyTemplate() {
 			Surface = (Canvas)TreeHelper.TemplateFindName("PART_Canvas", this);
 			_trace.Verbose($"OnApplyTemplate ({Width}x{Height}) {Surface} d:{DeferredEnter.Count}");
-			var celc = new DefaultEnterLeaveContext(Surface, Components, LastLayout, DataContext);
+			var celc = new DefaultEnterLeaveContext(Surface, Components, LastLayout, Rect.Empty, DataContext);
 			foreach(var cc in DeferredEnter) {
 				EnterComponent(celc, cc);
 			}
@@ -123,7 +197,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="sender"></param>
 		/// <param name="e"></param>
 		void Components_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
-			var celc = new DefaultEnterLeaveContext(Surface, Components, LastLayout, DataContext);
+			var celc = new DefaultEnterLeaveContext(Surface, Components, LastLayout, Rect.Empty, DataContext);
 			if (e.OldItems != null) {
 				foreach (ChartComponent cc in e.OldItems) {
 					_trace.Verbose($"leave '{cc.Name}' {cc}");
@@ -193,21 +267,76 @@ namespace eScapeLLC.UWP.Charts {
 				Series.Add(cc as DataSeries);
 			}
 		}
-		private void TransformsOnly(Size sz) {
-			var inner = new Size(sz.Width - (Padding.Left + Padding.Right), sz.Height - (Padding.Top + Padding.Bottom));
-			var rmatrix = new TranslateTransform() { X = Padding.Left, Y = Padding.Top };
-			var ctx = new DefaultRenderContext(Components, inner, DataContext);
-			_trace.Verbose($"transforms-only inner:{inner.Width}x{inner.Height} trans:{rmatrix.X},{rmatrix.Y}");
+		/// <summary>
+		/// Adjust layout and transforms based on size change.
+		/// </summary>
+		/// <param name="sz"></param>
+		protected void TransformsOnly(Size sz) {
+			var initialRect = new Rect(Padding.Left, Padding.Top, sz.Width - Padding.Left - Padding.Right, sz.Height - Padding.Top - Padding.Bottom);
+			var inner = new Size(initialRect.Width, initialRect.Height);
+			var dlc = new DefaultLayoutContext(inner, initialRect);
+			_trace.Verbose($"transforms-only starting {initialRect}");
+			foreach (var cc in Components) {
+				_trace.Verbose($"layout {cc}");
+				cc.Layout(dlc);
+			}
+			_trace.Verbose($"transforms-only remaining:{dlc.RemainingRect}");
+			dlc.FinalizeRects();
 			foreach (var axis in Axes) {
 				var cc = axis as ChartComponent;
-				_trace.Verbose($"transforms-only {cc.Name} {axis}");
+				var rect = dlc.For(cc);
+				_trace.Verbose($"transforms-only {cc.Name} {axis} {rect}");
+				var ctx = new DefaultRenderContext(Components, inner, rect, DataContext);
 				cc.Transforms(ctx);
-				cc.RenderTransform = rmatrix;
 			}
 			foreach (DataSeries cc in Series) {
-				_trace.Verbose($"transforms-only {cc}");
+				var rect = dlc.For(cc);
+				_trace.Verbose($"transforms-only {cc} {rect}");
+				var ctx = new DefaultRenderContext(Components, inner, rect, DataContext);
 				cc.Transforms(ctx);
-				cc.RenderTransform = rmatrix;
+			}
+		}
+		/// <summary>
+		/// Perform a full layout and rendering pass.
+		/// </summary>
+		/// <param name="sz"></param>
+		protected void FullLayout(Size sz) {
+			foreach (var axis in Axes) {
+				_trace.Verbose($"reset {(axis as ChartComponent).Name} {axis}");
+				axis.ResetLimits();
+			}
+			var initialRect = new Rect(Padding.Left, Padding.Top, sz.Width - Padding.Left - Padding.Right, sz.Height - Padding.Top - Padding.Bottom);
+			var inner = new Size(initialRect.Width, initialRect.Height);
+			var dlc = new DefaultLayoutContext(inner, initialRect);
+			_trace.Verbose($"starting {initialRect}");
+			foreach (var cc in Components) {
+				_trace.Verbose($"layout {cc}");
+				cc.Layout(dlc);
+			}
+			// what's left is for the data series area
+			_trace.Verbose($"remaining {dlc.RemainingRect}");
+			dlc.FinalizeRects();
+			foreach (DataSeries cc in Series) {
+				var rect = dlc.For(cc);
+				_trace.Verbose($"render {cc} rect:{rect}");
+				var ctx = new DefaultRenderContext(Components, inner, rect, DataContext);
+				cc.Render(ctx);
+			}
+			// reconfigure series transforms now axes have limits built
+			foreach (var axis in Axes) {
+				var acc = axis as ChartComponent;
+				var scale = (axis.Type == AxisType.Value ? inner.Height : inner.Width) / axis.Range;
+				var rect = dlc.For(acc);
+				_trace.Verbose($"limits {(axis as ChartComponent).Name} ({axis.Minimum},{axis.Maximum}) r:{axis.Range} rect:{rect}");
+				var ctx = new DefaultRenderContext(Components, inner, rect, DataContext);
+				acc.Render(ctx);
+				acc.Transforms(ctx);
+			}
+			foreach (DataSeries cc in Series) {
+				var rect = dlc.For(cc);
+				_trace.Verbose($"transforms {cc} {rect}");
+				var ctx = new DefaultRenderContext(Components, inner, rect, DataContext);
+				cc.Transforms(ctx);
 			}
 		}
 		/// <summary>
@@ -218,33 +347,9 @@ namespace eScapeLLC.UWP.Charts {
 			if (Components.All((cx) => !cx.Dirty)) {
 				// all components up-to-date; just adjust transforms
 				TransformsOnly(sz);
-				return;
 			}
-			foreach (var axis in Axes) {
-				_trace.Verbose($"reset {(axis as ChartComponent).Name} {axis}");
-				axis.ResetLimits();
-			}
-			var inner = new Size(sz.Width - (Padding.Left + Padding.Right), sz.Height - (Padding.Top + Padding.Bottom));
-			var ctx = new DefaultRenderContext(Components, inner, DataContext);
-			var rmatrix = new TranslateTransform() { X = Padding.Left, Y = Padding.Top };
-			_trace.Verbose($"render-components inner:{inner.Width}x{inner.Height} trans:{rmatrix.X},{rmatrix.Y}");
-			foreach (DataSeries cc in Series) {
-				_trace.Verbose($"render {cc}");
-				cc.Render(ctx);
-			}
-			// reconfigure series transforms now axes have limits built
-			foreach (var axis in Axes) {
-				var acc = axis as ChartComponent;
-				var scale = (axis.Type == AxisType.Value ? ActualHeight : ActualWidth) / axis.Range;
-				_trace.Verbose($"limits {(axis as ChartComponent).Name} ({axis.Minimum},{axis.Maximum}) r:{axis.Range} s:{scale:F3}");
-				acc.Render(ctx);
-				acc.Transforms(ctx);
-				//acc.RenderTransform = rmatrix;
-			}
-			foreach (DataSeries cc in Series) {
-				_trace.Verbose($"transforms {cc}");
-				cc.Transforms(ctx);
-				//cc.RenderTransform = rmatrix;
+			else {
+				FullLayout(sz);
 			}
 		}
 		#endregion

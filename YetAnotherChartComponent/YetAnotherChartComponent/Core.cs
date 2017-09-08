@@ -8,6 +8,7 @@ using Windows.UI.Xaml.Shapes;
 namespace eScapeLLC.UWP.Charts {
 	#region IChartAxis
 	public enum AxisType { Category, Value };
+	public enum AxisOrientation { Horizontal, Vertical };
 	/// <summary>
 	/// Features for axes.
 	/// </summary>
@@ -16,6 +17,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// The axis type.
 		/// </summary>
 		AxisType Type { get; }
+		/// <summary>
+		/// The axis orientation.
+		/// </summary>
+		AxisOrientation Orientation { get; }
 		/// <summary>
 		/// Minimum value or NaN.
 		/// </summary>
@@ -42,13 +47,43 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region IChartRenderContext
 	/// <summary>
+	/// Side to claim space from.
+	/// </summary>
+	public enum Side { Top, Right, Bottom, Left, Float };
+	/// <summary>
+	/// Context interface for the layout process.
+	/// </summary>
+	public interface IChartLayoutContext {
+		/// <summary>
+		/// Overall dimensions.
+		/// </summary>
+		Size Dimensions { get; }
+		/// <summary>
+		/// Space remaining after claims.
+		/// </summary>
+		Rect RemainingRect { get; }
+		/// <summary>
+		/// Subtract space from RemainingRect and register that rectangle for given component.
+		/// Returns the allocated rectangle.
+		/// </summary>
+		/// <param name="cc">Component key.</param>
+		/// <param name="sd">Side to allocate from.</param>
+		/// <param name="amt">Amount.  Refers to Height:Top/Bottom and Width:Left/Right.  Alternate dimension comes from the Dimensions property.</param>
+		/// <returns>Allocated and registered rectangle.</returns>
+		Rect ClaimSpace(ChartComponent cc, Side sd, double amt);
+	}
+	/// <summary>
 	/// Feaatures for rendering.
 	/// </summary>
 	public interface IChartRenderContext {
 		/// <summary>
-		/// Current dimensions.
+		/// Current overall dimensions.
 		/// </summary>
 		Size Dimensions { get; }
+		/// <summary>
+		/// The area to render this component in.
+		/// </summary>
+		Rect Area { get; }
 		/// <summary>
 		/// The data context object.
 		/// </summary>
@@ -90,6 +125,11 @@ namespace eScapeLLC.UWP.Charts {
 		protected ChartComponent() { }
 		#endregion
 		#region extension points
+		/// <summary>
+		/// Claim layout space before rendering begins.
+		/// </summary>
+		/// <param name="iclc"></param>
+		public virtual void Layout(IChartLayoutContext iclc) { }
 		/// <summary>
 		/// Render the component.
 		/// </summary>

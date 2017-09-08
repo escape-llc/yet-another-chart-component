@@ -4,42 +4,66 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
 
 namespace eScapeLLC.UWP.Charts {
+	#region AxisCommon
+	/// <summary>
+	/// Consolidate common properties for axes.
+	/// </summary>
+	public abstract class AxisCommon : ChartComponent {
+		#region properties
+		public AxisType Type { get; private set; }
+		public AxisOrientation Orientation { get; private set; }
+		public double Minimum { get; protected set; } = double.NaN;
+		public double Maximum { get; protected set; } = double.NaN;
+		public double Range { get { return double.IsNaN(Minimum) || double.IsNaN(Maximum) ? double.NaN : Maximum - Minimum; } }
+		public double AxisLineThickness { get; set; } = 2;
+		public double AxisMargin { get; set; } = 2;
+		/// <summary>
+		/// The brush for the axis "line".
+		/// </summary>
+		public Brush Brush { get { return (Brush)GetValue(BrushProperty); } set { SetValue(BrushProperty, value); } }
+		#endregion
+		#region DPs
+		/// <summary>
+		/// Identifies <see cref="Brush"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty BrushProperty = DependencyProperty.Register("Brush", typeof(Brush), typeof(AxisCommon), new PropertyMetadata(null));
+		#endregion
+		#region ctor
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="at"></param>
+		/// <param name="ao"></param>
+		public AxisCommon(AxisType at, AxisOrientation ao) {
+			Type = at;
+			Orientation = ao;
+		}
+		#endregion
+	}
+	#endregion
 	#region ValueAxis
 	/// <summary>
 	/// Value axis is a vertical axis that represents the "Y" coordinate.
 	/// </summary>
-	public class ValueAxis : ChartComponent, IChartAxis {
+	public class ValueAxis : AxisCommon, IChartAxis {
 		static LogTools.Flag _trace = LogTools.Add("ValueAxis", LogTools.Level.Verbose);
 		#region properties
-		public AxisType Type { get; } = AxisType.Value;
-		public double Minimum { get; protected set; } = double.NaN;
-		public double Maximum { get; protected set; } = double.NaN;
-		public double Range { get { return double.IsNaN(Minimum) || double.IsNaN(Maximum) ? double.NaN : Maximum - Minimum; } }
-		public Path Segments { get; set; }
+		protected Path Segments { get; set; }
 		protected PathGeometry Geometry { get; set; }
-		/// <summary>
-		/// The brush for the series.
-		/// </summary>
-		public Brush Brush { get { return (Brush)GetValue(BrushProperty); } set { SetValue(BrushProperty, value); } }
 		#endregion
 		#region ctor
-		public ValueAxis() {
+		public ValueAxis() :base(AxisType.Value, AxisOrientation.Vertical) {
 			Segments = new Path();
 			this.Geometry = new PathGeometry();
 			Segments.Data = this.Geometry;
 			BindBrush(this, "Brush", Segments, Path.FillProperty);
 		}
-		#endregion
-		#region brush
-		/// <summary>
-		/// Identifies <see cref="Brush"/> dependency property.
-		/// </summary>
-		public static readonly DependencyProperty BrushProperty = DependencyProperty.Register("Brush", typeof(Brush), typeof(ValueAxis), new PropertyMetadata(null));
 		#endregion
 		#region IChartAxis
 		public void ResetLimits() { Minimum = double.NaN; Maximum = double.NaN; Dirty = true; }
@@ -56,45 +80,37 @@ namespace eScapeLLC.UWP.Charts {
 		public override void Leave(IChartEnterLeaveContext icelc) {
 			icelc.Remove(Segments);
 		}
+		public override void Layout(IChartLayoutContext iclc) {
+			iclc.ClaimSpace(this, Side.Right, 100);
+		}
 		public override void Render(IChartRenderContext icrc) {
 			if (!Dirty) return;
 			_trace.Verbose($"{Name} min:{Minimum} max:{Maximum} r:{Range}");
 			Geometry.Figures.Clear();
-			var pf = PathHelper.Rectangle(0, 0, 4, icrc.Dimensions.Height - 1);
+			var pf = PathHelper.Rectangle(0, Minimum, AxisLineThickness, Maximum);
 			Geometry.Figures.Add(pf);
 			Dirty = false;
 		}
 		public override void Transforms(IChartRenderContext icrc) {
-			// TODO replace "4" with max text width for ticks
-			var matx = new Matrix(1, 0, 0, 1, icrc.Dimensions.Width, 0);
+			var scaley = icrc.Area.Height / Range;
+			var matx = new Matrix(1, 0, 0, scaley, icrc.Area.Left + AxisMargin, icrc.Area.Top + icrc.Area.Height/2);
 			Geometry.Transform = new MatrixTransform() { Matrix = matx };
 		}
 		#endregion
 	}
 	#endregion
 	#region CategoryAxis
-	public class CategoryAxis : ChartComponent, IChartAxis {
+	/// <summary>
+	/// Horizontal Category axis.
+	/// </summary>
+	public class CategoryAxis : AxisCommon, IChartAxis {
 		static LogTools.Flag _trace = LogTools.Add("CategoryAxis", LogTools.Level.Verbose);
 		#region properties
-		public AxisType Type { get; } = AxisType.Category;
-		public double Minimum { get; protected set; } = double.NaN;
-		public double Maximum { get; protected set; } = double.NaN;
-		public double Range { get { return double.IsNaN(Minimum) || double.IsNaN(Maximum) ? double.NaN : Maximum - Minimum; } }
-		public Path Segments { get; set; }
+		protected Path Segments { get; set; }
 		protected PathGeometry Geometry { get; set; }
-		/// <summary>
-		/// The brush for the series.
-		/// </summary>
-		public Brush Brush { get { return (Brush)GetValue(BrushProperty); } set { SetValue(BrushProperty, value); } }
-		#endregion
-		#region brush
-		/// <summary>
-		/// Identifies <see cref="Brush"/> dependency property.
-		/// </summary>
-		public static readonly DependencyProperty BrushProperty = DependencyProperty.Register("Brush", typeof(Brush), typeof(CategoryAxis), new PropertyMetadata(null));
 		#endregion
 		#region ctor
-		public CategoryAxis() {
+		public CategoryAxis() : base(AxisType.Category, AxisOrientation.Horizontal) {
 			Segments = new Path();
 			this.Geometry = new PathGeometry();
 			Segments.Data = this.Geometry;
@@ -116,17 +132,20 @@ namespace eScapeLLC.UWP.Charts {
 		public override void Leave(IChartEnterLeaveContext icelc) {
 			icelc.Remove(Segments);
 		}
+		public override void Layout(IChartLayoutContext iclc) {
+			iclc.ClaimSpace(this, Side.Bottom, 32);
+		}
 		public override void Render(IChartRenderContext icrc) {
 			if (!Dirty) return;
 			_trace.Verbose($"{Name} min:{Minimum} max:{Maximum} r:{Range}");
 			Geometry.Figures.Clear();
-			var pf = PathHelper.Rectangle(0, 0, icrc.Dimensions.Width - 1, 4);
+			var pf = PathHelper.Rectangle(Minimum, 0, Maximum, AxisLineThickness);
 			Geometry.Figures.Add(pf);
 			Dirty = false;
 		}
 		public override void Transforms(IChartRenderContext icrc) {
-			// TODO replace "4" with max text width for ticks
-			var matx = new Matrix(1, 0, 0, 1, 0, icrc.Dimensions.Height);
+			var scalex = icrc.Area.Width / Range;
+			var matx = new Matrix(scalex, 0, 0, 1, icrc.Area.Left, icrc.Area.Top + AxisMargin);
 			Geometry.Transform = new MatrixTransform() { Matrix = matx };
 		}
 		#endregion
