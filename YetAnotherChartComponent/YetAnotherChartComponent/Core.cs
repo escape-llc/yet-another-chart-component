@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Data;
@@ -19,8 +20,14 @@ namespace eScapeLLC.UWP.Charts {
 		AxisType Type { get; }
 		/// <summary>
 		/// The axis orientation.
+		/// Typically Horizontal for Category and Vertical for Value.
 		/// </summary>
 		AxisOrientation Orientation { get; }
+		/// <summary>
+		/// The side of the data area this axis attaches to.
+		/// Typically Bottom for Category and Right for Value.
+		/// </summary>
+		Side Side { get; }
 		/// <summary>
 		/// Minimum value or NaN.
 		/// </summary>
@@ -85,6 +92,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		Rect Area { get; }
 		/// <summary>
+		/// The area where series are displayed.
+		/// </summary>
+		Rect SeriesArea { get; }
+		/// <summary>
 		/// The data context object.
 		/// </summary>
 		object DataContext { get; }
@@ -94,6 +105,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="name">Name.</param>
 		/// <returns>Matching component or NULL.</returns>
 		ChartComponent Find(String name);
+		void Add(IEnumerable<FrameworkElement> fes);
+		void Remove(IEnumerable<FrameworkElement> fes);
 	}
 	/// <summary>
 	/// Additional features for enter/leave.
@@ -119,6 +132,7 @@ namespace eScapeLLC.UWP.Charts {
 	public delegate void RefreshRequestEventHandler(ChartComponent cc);
 	/// <summary>
 	/// Base class of chart components.
+	/// It is FrameworkElement primarily to participate in DataContext.
 	/// </summary>
 	public abstract class ChartComponent : FrameworkElement {
 		#region ctor
@@ -247,25 +261,28 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region PathHelper
 	public static class PathHelper {
+		/// <summary>
+		/// Build a Closed PathFigure for given rectangle.
+		/// </summary>
+		/// <param name="left"></param>
+		/// <param name="top"></param>
+		/// <param name="right"></param>
+		/// <param name="bottom"></param>
+		/// <returns></returns>
 		public static PathFigure Rectangle(double left, double top, double right, double bottom) {
-			var pf = new PathFigure {
-				StartPoint = new Windows.Foundation.Point(left, top)
-			};
-			var ls = new LineSegment() {
-				Point = new Windows.Foundation.Point(left, bottom)
-			};
+			var pf = new PathFigure { StartPoint = new Windows.Foundation.Point(left, top) };
+			var ls = new LineSegment() { Point = new Windows.Foundation.Point(left, bottom) };
 			pf.Segments.Add(ls);
-			ls = new LineSegment() {
-				Point = new Windows.Foundation.Point(right, bottom)
-			};
+			ls = new LineSegment() { Point = new Windows.Foundation.Point(right, bottom) };
 			pf.Segments.Add(ls);
-			ls = new LineSegment() {
-				Point = new Windows.Foundation.Point(right, top)
-			};
+			ls = new LineSegment() { Point = new Windows.Foundation.Point(right, top) };
 			pf.Segments.Add(ls);
-			ls = new LineSegment() {
-				Point = new Windows.Foundation.Point(left, top)
-			};
+			pf.IsClosed = true;
+			return pf;
+		}
+		public static PathFigure Line(double startx, double starty, double endx, double endy) {
+			var pf = new PathFigure { StartPoint = new Windows.Foundation.Point(startx, starty) };
+			var ls = new LineSegment() { Point = new Windows.Foundation.Point(startx, endy) };
 			pf.Segments.Add(ls);
 			return pf;
 		}

@@ -17,20 +17,30 @@ using Windows.UI.Xaml.Data;
 namespace eScapeLLC.UWP.Charts {
 	#region DefaultRenderContext
 	public class DefaultRenderContext : IChartRenderContext {
+		protected Canvas Surface { get; set; }
 		ObservableCollection<ChartComponent> Components { get; set; }
 		public Size Dimensions { get; protected set; }
 		public object DataContext { get; protected set; }
 		public Rect Area { get; protected set; }
-		public DefaultRenderContext(ObservableCollection<ChartComponent> components, Size sz, Rect rc, object dc) { Components = components; Dimensions = sz; Area = rc;  DataContext = dc; }
+		public Rect SeriesArea { get; protected set; }
+		public DefaultRenderContext(Canvas surface, ObservableCollection<ChartComponent> components, Size sz, Rect rc, Rect sa, object dc) {
+			Surface = surface;
+			Components = components;
+			Dimensions = sz;
+			Area = rc;
+			SeriesArea = sa;
+			DataContext = dc;
+		}
 		public ChartComponent Find(string name) {
 			return Components.SingleOrDefault((cx) => cx.Name == name);
 		}
+		public void Add(IEnumerable<FrameworkElement> fes) { foreach (var fe in fes) Surface.Children.Add(fe); }
+		public void Remove(IEnumerable<FrameworkElement> fes) { foreach (var fe in fes) Surface.Children.Remove(fe); }
 	}
 	#endregion
 	#region DefaultEnterLeaveContext
 	public class DefaultEnterLeaveContext : DefaultRenderContext, IChartEnterLeaveContext {
-		Canvas Surface { get; set; }
-		public DefaultEnterLeaveContext(Canvas surface, ObservableCollection<ChartComponent> components, Size sz, Rect rc, object dc) :base(components, sz, rc, dc) { Surface = surface; }
+		public DefaultEnterLeaveContext(Canvas surface, ObservableCollection<ChartComponent> components, Size sz, Rect rc, Rect sa, object dc) :base(surface, components, sz, rc, sa, dc) { Surface = surface; }
 		public void Add(FrameworkElement fe) {
 			Surface.Children.Add(fe);
 		}
@@ -170,7 +180,7 @@ namespace eScapeLLC.UWP.Charts {
 		protected override void OnApplyTemplate() {
 			Surface = (Canvas)TreeHelper.TemplateFindName("PART_Canvas", this);
 			_trace.Verbose($"OnApplyTemplate ({Width}x{Height}) {Surface} d:{DeferredEnter.Count}");
-			var celc = new DefaultEnterLeaveContext(Surface, Components, LastLayout, Rect.Empty, DataContext);
+			var celc = new DefaultEnterLeaveContext(Surface, Components, LastLayout, Rect.Empty, Rect.Empty, DataContext);
 			foreach(var cc in DeferredEnter) {
 				EnterComponent(celc, cc);
 			}
@@ -197,7 +207,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="sender"></param>
 		/// <param name="e"></param>
 		void Components_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
-			var celc = new DefaultEnterLeaveContext(Surface, Components, LastLayout, Rect.Empty, DataContext);
+			var celc = new DefaultEnterLeaveContext(Surface, Components, LastLayout, Rect.Empty, Rect.Empty, DataContext);
 			if (e.OldItems != null) {
 				foreach (ChartComponent cc in e.OldItems) {
 					_trace.Verbose($"leave '{cc.Name}' {cc}");
@@ -286,13 +296,13 @@ namespace eScapeLLC.UWP.Charts {
 				var cc = axis as ChartComponent;
 				var rect = dlc.For(cc);
 				_trace.Verbose($"transforms-only {cc.Name} {axis} {rect}");
-				var ctx = new DefaultRenderContext(Components, inner, rect, DataContext);
+				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
 				cc.Transforms(ctx);
 			}
 			foreach (DataSeries cc in Series) {
 				var rect = dlc.For(cc);
 				_trace.Verbose($"transforms-only {cc} {rect}");
-				var ctx = new DefaultRenderContext(Components, inner, rect, DataContext);
+				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
 				cc.Transforms(ctx);
 			}
 		}
@@ -319,7 +329,7 @@ namespace eScapeLLC.UWP.Charts {
 			foreach (DataSeries cc in Series) {
 				var rect = dlc.For(cc);
 				_trace.Verbose($"render {cc} rect:{rect}");
-				var ctx = new DefaultRenderContext(Components, inner, rect, DataContext);
+				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
 				cc.Render(ctx);
 			}
 			// reconfigure series transforms now axes have limits built
@@ -327,15 +337,15 @@ namespace eScapeLLC.UWP.Charts {
 				var acc = axis as ChartComponent;
 				var scale = (axis.Type == AxisType.Value ? inner.Height : inner.Width) / axis.Range;
 				var rect = dlc.For(acc);
-				_trace.Verbose($"limits {(axis as ChartComponent).Name} ({axis.Minimum},{axis.Maximum}) r:{axis.Range} rect:{rect}");
-				var ctx = new DefaultRenderContext(Components, inner, rect, DataContext);
+				_trace.Verbose($"limits {acc.Name} ({axis.Minimum},{axis.Maximum}) r:{axis.Range} rect:{rect}");
+				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
 				acc.Render(ctx);
 				acc.Transforms(ctx);
 			}
 			foreach (DataSeries cc in Series) {
 				var rect = dlc.For(cc);
 				_trace.Verbose($"transforms {cc} {rect}");
-				var ctx = new DefaultRenderContext(Components, inner, rect, DataContext);
+				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
 				cc.Transforms(ctx);
 			}
 		}

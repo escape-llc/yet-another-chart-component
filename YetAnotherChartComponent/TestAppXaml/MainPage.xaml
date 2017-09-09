@@ -17,7 +17,7 @@
 		<charts:Chart x:Name="cx" Grid.Row="1" Background="Beige" Padding="16" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
 			<charts:Chart.Components>
 				<charts:CategoryAxis x:Name="xaxis" Brush="Black" />
-				<charts:ValueAxis x:Name="yaxis" Brush="Red" />
+				<charts:ValueAxis x:Name="yaxis" Brush="Red" GridBrush="Gray" />
 				<charts:LineSeries DataSource="{Binding Data}" ValueMemberPath="Y" ValueAxisName="yaxis" CategoryAxisName="xaxis" Brush="Green" />
 			</charts:Chart.Components>
 		</charts:Chart>
