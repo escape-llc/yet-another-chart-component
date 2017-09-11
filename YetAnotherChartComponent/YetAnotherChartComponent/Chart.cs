@@ -64,14 +64,28 @@ namespace eScapeLLC.UWP.Charts {
 			foreach(var kv in ClaimedRects) {
 				if(kv.Key is IChartAxis) {
 					var ica = kv.Key as IChartAxis;
-					switch(ica.Orientation) {
+					switch (ica.Orientation) {
 					case AxisOrientation.Horizontal:
-						// Right
-						tx.Add(kv.Key, new Rect(kv.Value.Left, kv.Value.Top, RemainingRect.Width, kv.Value.Height));
+						switch (ica.Side) {
+						case Side.Bottom:
+							tx.Add(kv.Key, new Rect(RemainingRect.Left, kv.Value.Top, RemainingRect.Width, kv.Value.Height));
+							break;
+						case Side.Top:
+							// TODO fix
+							tx.Add(kv.Key, new Rect(RemainingRect.Left, kv.Value.Top, RemainingRect.Width, kv.Value.Height));
+							break;
+						}
 						break;
 					case AxisOrientation.Vertical:
-						// Bottom
-						tx.Add(kv.Key, new Rect(kv.Value.Left, kv.Value.Top, kv.Value.Width, RemainingRect.Height));
+						switch (ica.Side) {
+						case Side.Right:
+							tx.Add(kv.Key, new Rect(kv.Value.Left, kv.Value.Top, kv.Value.Width, RemainingRect.Height));
+							break;
+						case Side.Left:
+							// TODO fix
+							tx.Add(kv.Key, new Rect(kv.Value.Left, kv.Value.Top, kv.Value.Width, RemainingRect.Height));
+							break;
+						}
 						break;
 					}
 				}

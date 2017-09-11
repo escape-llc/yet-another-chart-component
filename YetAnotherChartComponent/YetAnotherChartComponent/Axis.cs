@@ -25,7 +25,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// The axis side.
 		/// </summary>
-		public Side Side { get; private set; }
+		public Side Side { get; set; }
 		/// <summary>
 		/// The lower limit or NaN if not initialized.
 		/// </summary>
@@ -55,6 +55,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public Brush GridBrush { get { return (Brush)GetValue(GridBrushProperty); } set { SetValue(GridBrushProperty, value); } }
 		public double GridStrokeThickness { get; set; } = 0.5;
+		public String GridLabelFormatString { get; set; }
 		#endregion
 		#region DPs
 		/// <summary>
@@ -111,7 +112,7 @@ namespace eScapeLLC.UWP.Charts {
 		protected List<TextBlock> TickLabels { get; set; }
 		#endregion
 		#region ctor
-		public ValueAxis() :base(AxisType.Value, AxisOrientation.Vertical, Side.Right) {
+		public ValueAxis() :base(AxisType.Value, AxisOrientation.Vertical, Side.Left) {
 			CommonInit();
 		}
 		public ValueAxis(Side sd) :base(AxisType.Value, AxisOrientation.Vertical, sd) {
@@ -142,14 +143,14 @@ namespace eScapeLLC.UWP.Charts {
 		public override void Layout(IChartLayoutContext iclc) {
 			// TODO add space for "nominal" label width
 			var space = AxisMargin + AxisLineThickness + 48;
-			iclc.ClaimSpace(this, Side.Right, space);
+			iclc.ClaimSpace(this, Side, space);
 		}
 		public override void Render(IChartRenderContext icrc) {
 			if (!Dirty) return;
 			_trace.Verbose($"{Name} min:{Minimum} max:{Maximum} r:{Range}");
 			// axis and tick marks
 			Geometry.Figures.Clear();
-			var pf = PathHelper.Rectangle(0, Minimum, AxisLineThickness, Maximum);
+			var pf = PathHelper.Rectangle(Side == Side.Right ? 0 : icrc.Area.Width, Minimum, Side == Side.Right ? AxisLineThickness : icrc.Area.Width - AxisLineThickness, Maximum);
 			Geometry.Figures.Add(pf);
 			// grid lines
 			var start = Math.Round(Minimum);
@@ -162,8 +163,16 @@ namespace eScapeLLC.UWP.Charts {
 				//_trace.Verbose($"grid vx:{vx}");
 				var grid = new LineGeometry() { StartPoint = new Point(0, vx), EndPoint = new Point(1, vx) };
 				GridGeometry.Children.Add(grid);
-				var tb = new TextBlock() { FontSize = 10, Text = vx.ToString("F3"), VerticalAlignment =VerticalAlignment.Center, TextAlignment = TextAlignment.Left };
-				tb.SetValue(Canvas.LeftProperty, icrc.Area.Left + 2*AxisMargin);
+				var tb = new TextBlock() {
+					FontSize = 10,
+					Text = vx.ToString(String.IsNullOrEmpty(GridLabelFormatString) ? "G" : GridLabelFormatString),
+					VerticalAlignment = VerticalAlignment.Center,
+					HorizontalAlignment = Side == Side.Right ? HorizontalAlignment.Left : HorizontalAlignment.Right,
+					Width = icrc.Area.Width - AxisLineThickness - 2*AxisMargin,
+					TextAlignment = Side == Side.Right ? TextAlignment.Left : TextAlignment.Right,
+					Padding = Side == Side.Right ? new Thickness(AxisLineThickness + 2*AxisMargin, 0, 0, 0) : new Thickness(0, 0, AxisLineThickness + 2*AxisMargin, 0)
+				};
+				tb.SetValue(Canvas.LeftProperty, icrc.Area.Left);
 				tb.SetValue(Canvas.TopProperty, vx);
 				// cheat: save the grid value so we can rescale the Top
 				tb.Tag = vx;
@@ -179,7 +188,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icrc"></param>
 		public override void Transforms(IChartRenderContext icrc) {
 			var scaley = icrc.Area.Height / Range;
-			var matx = new Matrix(1, 0, 0, scaley, icrc.Area.Left + AxisMargin, icrc.Area.Top + icrc.Area.Height/2);
+			var matx = new Matrix(1, 0, 0, scaley, icrc.Area.Left + AxisMargin*(Side == Side.Right ? 1 : -1), icrc.Area.Top + icrc.Area.Height/2);
 			Geometry.Transform = new MatrixTransform() { Matrix = matx };
 			var gscaley = icrc.SeriesArea.Height / Range;
 			var gscalex = icrc.SeriesArea.Width;
@@ -188,7 +197,7 @@ namespace eScapeLLC.UWP.Charts {
 			GridGeometry.Transform = new MatrixTransform() { Matrix = gmatx };
 			foreach(var tb in TickLabels) {
 				var vx = (double)tb.Tag;
-				tb.SetValue(Canvas.LeftProperty, icrc.Area.Left + 2 * AxisMargin);
+				tb.SetValue(Canvas.LeftProperty, icrc.Area.Left);
 				tb.SetValue(Canvas.TopProperty, icrc.Area.Bottom - (vx - Minimum)*scaley - tb.FontSize/2);
 			}
 		}
@@ -229,7 +238,7 @@ namespace eScapeLLC.UWP.Charts {
 		public override void Layout(IChartLayoutContext iclc) {
 			// TODO add space for "nominal" text height
 			var space = AxisMargin + AxisLineThickness + 24;
-			iclc.ClaimSpace(this, Side.Bottom, space);
+			iclc.ClaimSpace(this, Side, space);
 		}
 		public override void Render(IChartRenderContext icrc) {
 			if (!Dirty) return;
