@@ -3,7 +3,6 @@ using System;
 using System.Collections.Specialized;
 using Windows.Foundation;
 using Windows.UI.Xaml;
-using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
 
@@ -44,7 +43,10 @@ namespace eScapeLLC.UWP.Charts {
 			ProcessData(DataSourceProperty);
 		}
 		#endregion
-		#region category member path
+		#region category/value member path
+		public static readonly DependencyProperty ValueMemberPathProperty = DependencyProperty.Register(
+			"ValueMemberPath", typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
+		);
 		public static readonly DependencyProperty CategoryMemberPathProperty = DependencyProperty.Register(
 			"CategoryMemberPath", typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
 		);
@@ -59,22 +61,7 @@ namespace eScapeLLC.UWP.Charts {
 			ds.ProcessData(dpcea.Property);
 		}
 		#endregion
-		#region value member path
-		public static readonly DependencyProperty ValueMemberPathProperty = DependencyProperty.Register(
-			"ValueMemberPath", typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
-		);
-		#endregion
-		#region brush
-		/// <summary>
-		/// Identifies <see cref="Brush"/> dependency property.
-		/// </summary>
-		public static readonly DependencyProperty BrushProperty = DependencyProperty.Register("Brush", typeof(Brush), typeof(DataSeries), new PropertyMetadata(null));
-		#endregion
 		#region properties
-		/// <summary>
-		/// The brush for the series.
-		/// </summary>
-		public Brush Brush { get { return (Brush)GetValue(BrushProperty); } set { SetValue(BrushProperty, value); } }
 		/// <summary>
 		/// Data source for the series.
 		/// </summary>
@@ -190,15 +177,28 @@ namespace eScapeLLC.UWP.Charts {
 	public class LineSeries : DataSeries {
 		static LogTools.Flag _trace = LogTools.Add("LineSeries", LogTools.Level.Verbose);
 		#region properties
+		public int StrokeThickness { get; set; } = 1;
+		public PenLineJoin StrokeLineJoin { get; set; } = PenLineJoin.Bevel;
+		public PenLineCap StrokeStartLineCap { get; set; } = PenLineCap.Flat;
+		public PenLineCap StrokeEndLineCap { get; set; } = PenLineCap.Flat;
+		/// <summary>
+		/// The brush for the series.
+		/// </summary>
+		public Brush Stroke { get { return (Brush)GetValue(StrokeProperty); } set { SetValue(StrokeProperty, value); } }
 		protected Path Segments { get; set; }
 		protected PathGeometry Geometry { get; set; }
 		protected int LastDataSourceCount { get; set; }
+		#endregion
+		#region DPs
+		/// <summary>
+		/// Identifies <see cref="Stroke"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty StrokeProperty = DependencyProperty.Register("Stroke", typeof(Brush), typeof(LineSeries), new PropertyMetadata(null));
 		#endregion
 		#region ctor
 		public LineSeries() {
 			Segments = new Path();
 			Segments.StrokeThickness = 1;
-			BindBrush(this, "Brush", Segments, Path.StrokeProperty);
 			Geometry = new PathGeometry();
 			Segments.Data = Geometry;
 		}
@@ -207,6 +207,11 @@ namespace eScapeLLC.UWP.Charts {
 		public override void Enter(IChartEnterLeaveContext icelc) {
 			_trace.Verbose($"enter v:{ValueAxisName} c:{ValueAxisName} d:{DataSource}");
 			icelc.Add(Segments);
+			BindTo(this, "Stroke", Segments, Path.StrokeProperty);
+			Segments.StrokeThickness = StrokeThickness;
+			Segments.StrokeEndLineCap = StrokeEndLineCap;
+			Segments.StrokeLineJoin = StrokeLineJoin;
+			Segments.StrokeStartLineCap = StrokeStartLineCap;
 		}
 		public override void Leave(IChartEnterLeaveContext icelc) {
 			_trace.Verbose($"leave v:{ValueAxisName} c:{ValueAxisName} d:{DataSource}");
@@ -256,8 +261,8 @@ namespace eScapeLLC.UWP.Charts {
 			var pf = new PathFigure();
 			foreach (var vx in DataSource) {
 				// TODO handle datetime et al values that aren't double
-				var valuey = (double)by.Eval(vx);
-				var valuex = bx != null ? (double)bx.Eval(vx) : ix;
+				var valuey = (double)by.For(vx);
+				var valuex = bx != null ? (double)bx.For(vx) : ix;
 				UpdateLimits(valuex, valuey);
 				var mappedy = ValueAxis.For(valuey);
 				var mappedx = CategoryAxis.For(valuex);
@@ -281,14 +286,41 @@ namespace eScapeLLC.UWP.Charts {
 	public class ColumnSeries : DataSeries {
 		static LogTools.Flag _trace = LogTools.Add("ColumnSeries", LogTools.Level.Verbose);
 		#region properties
+		/// <summary>
+		/// The fill brush for the series.
+		/// </summary>
+		public Brush Fill { get { return (Brush)GetValue(FillProperty); } set { SetValue(FillProperty, value); } }
+		/// <summary>
+		/// The stroke brush for the series.
+		/// </summary>
+		public Brush Stroke { get { return (Brush)GetValue(StrokeProperty); } set { SetValue(StrokeProperty, value); } }
+		/// <summary>
+		/// Fractional offset into the "cell" of the category axis.
+		/// BarOffset + BarWidth &lt;= 1.0
+		/// </summary>
+		public double BarOffset { get; set; } = 0.25;
+		/// <summary>
+		/// Fractional width in the "cell" of the category axis.
+		/// BarOffset + BarWidth &lt;= 1.0
+		/// </summary>
+		public double BarWidth { get; set; } = 0.5;
 		protected Path Segments { get; set; }
 		protected PathGeometry Geometry { get; set; }
+		#endregion
+		#region DPs
+		/// <summary>
+		/// Identifies <see cref="Fill"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty FillProperty = DependencyProperty.Register("Fill", typeof(Brush), typeof(ColumnSeries), new PropertyMetadata(null));
+		/// <summary>
+		/// Identifies <see cref="Stroke"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty StrokeProperty = DependencyProperty.Register("Stroke", typeof(Brush), typeof(ColumnSeries), new PropertyMetadata(null));
 		#endregion
 		#region ctor
 		public ColumnSeries() {
 			Segments = new Path();
 			Segments.StrokeThickness = 1;
-			BindBrush(this, "Brush", Segments, Path.StrokeProperty);
 			Geometry = new PathGeometry();
 			Segments.Data = Geometry;
 		}
@@ -297,6 +329,8 @@ namespace eScapeLLC.UWP.Charts {
 		public override void Enter(IChartEnterLeaveContext icelc) {
 			_trace.Verbose($"enter v:{ValueAxisName} c:{ValueAxisName} d:{DataSource}");
 			icelc.Add(Segments);
+			BindTo(this, "Stroke", Segments, Path.StrokeProperty);
+			BindTo(this, "Fill", Segments, Path.FillProperty);
 		}
 		public override void Leave(IChartEnterLeaveContext icelc) {
 			_trace.Verbose($"leave v:{ValueAxisName} c:{ValueAxisName} d:{DataSource}");
@@ -340,14 +374,14 @@ namespace eScapeLLC.UWP.Charts {
 			Geometry.Figures.Clear();
 			foreach (var vx in DataSource) {
 				// TODO handle datetime et al values that aren't double
-				var valuey = (double)by.Eval(vx);
-				var valuex = bx != null ? (double)bx.Eval(vx) : ix;
+				var valuey = (double)by.For(vx);
+				var valuex = bx != null ? (double)bx.For(vx) : ix;
 				UpdateLimits(valuex, valuey);
 				UpdateLimits(valuex, 0);
 				var topy = ValueAxis.For(valuey);
 				var bottomy = ValueAxis.For(0);
-				var leftx = CategoryAxis.For(valuex);
-				var rightx = leftx + .25;
+				var leftx = CategoryAxis.For(valuex) + BarOffset;
+				var rightx = leftx + BarWidth;
 				_trace.Verbose($"[{ix}] {valuey} ({leftx},{topy}) ({rightx},{bottomy})");
 				var pf = PathHelper.Rectangle(leftx, Math.Max(topy, bottomy), rightx, Math.Min(topy, bottomy));
 				Geometry.Figures.Add(pf);

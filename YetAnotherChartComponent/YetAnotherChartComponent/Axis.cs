@@ -1,6 +1,7 @@
 ﻿using eScape.Core;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -13,6 +14,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// Consolidate common properties for axes and implement IChartAxis.
 	/// </summary>
 	public abstract class AxisCommon : ChartComponent, IChartAxis {
+		static LogTools.Flag _trace = LogTools.Add("AxisCommon", LogTools.Level.Verbose);
 		#region properties
 		/// <summary>
 		/// The axis type.
@@ -40,32 +42,63 @@ namespace eScapeLLC.UWP.Charts {
 		public double Range { get { return double.IsNaN(Minimum) || double.IsNaN(Maximum) ? double.NaN : Maximum - Minimum; } }
 		/// <summary>
 		/// The PX width of the axis "line".
+		/// Default value is 2.
 		/// </summary>
 		public double AxisLineThickness { get; set; } = 2;
 		/// <summary>
 		/// The PX margin of the axis "line" from the edge of its bounds facing the data area.
+		/// Default value is 2.
 		/// </summary>
 		public double AxisMargin { get; set; } = 2;
 		/// <summary>
-		/// The brush for the axis "line".
+		/// Fill brush for the axis "line" which is actually a filled rectangle.
 		/// </summary>
-		public Brush Brush { get { return (Brush)GetValue(BrushProperty); } set { SetValue(BrushProperty, value); } }
+		public Brush AxisFill { get { return (Brush)GetValue(AxisFillProperty); } set { SetValue(AxisFillProperty, value); } }
 		/// <summary>
-		/// The brush for the axis grid lines.
+		/// Brush for the axis grid lines.
 		/// </summary>
-		public Brush GridBrush { get { return (Brush)GetValue(GridBrushProperty); } set { SetValue(GridBrushProperty, value); } }
+		public Brush GridStroke { get { return (Brush)GetValue(GridStrokeProperty); } set { SetValue(GridStrokeProperty, value); } }
+		/// <summary>
+		/// Visibility of the grid lines.
+		/// </summary>
+		public Visibility GridVisibility { get { return (Visibility)GetValue(GridVisibilityProperty); } set { SetValue(GridVisibilityProperty, value); } }
+		/// <summary>
+		/// Stroke thickness for axis grid lines.
+		/// Default value is 0.5
+		/// </summary>
 		public double GridStrokeThickness { get; set; } = 0.5;
-		public String GridLabelFormatString { get; set; }
+		/// <summary>
+		/// Brush for the label foreground.
+		/// If not set, the Brush property is used.
+		/// </summary>
+		public Brush LabelForeground { get { return (Brush)GetValue(LabelForegroundProperty); } set { SetValue(LabelForegroundProperty, value); } }
+		/// <summary>
+		/// FontSize for the label text.
+		/// Default value is 10.
+		/// </summary>
+		public double LabelFontSize { get; set; } = 10;
+		/// <summary>
+		/// Alternate format string for labels.
+		/// </summary>
+		public String LabelFormatString { get; set; }
 		#endregion
 		#region DPs
 		/// <summary>
-		/// Identifies <see cref="Brush"/> dependency property.
+		/// Identifies <see cref="AxisFill"/> dependency property.
 		/// </summary>
-		public static readonly DependencyProperty BrushProperty = DependencyProperty.Register("Brush", typeof(Brush), typeof(AxisCommon), new PropertyMetadata(null));
+		public static readonly DependencyProperty AxisFillProperty = DependencyProperty.Register("AxisFill", typeof(Brush), typeof(AxisCommon), new PropertyMetadata(null));
 		/// <summary>
-		/// Identifies <see cref="GridBrush"/> dependency property.
+		/// Identifies <see cref="GridStroke"/> dependency property.
 		/// </summary>
-		public static readonly DependencyProperty GridBrushProperty = DependencyProperty.Register("GridBrush", typeof(Brush), typeof(AxisCommon), new PropertyMetadata(null));
+		public static readonly DependencyProperty GridStrokeProperty = DependencyProperty.Register("GridStroke", typeof(Brush), typeof(AxisCommon), new PropertyMetadata(null));
+		/// <summary>
+		/// Identifies <see cref="GridVisibility"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty GridVisibilityProperty = DependencyProperty.Register("GridVisibility", typeof(Visibility), typeof(AxisCommon), new PropertyMetadata(null));
+		/// <summary>
+		/// Identifies <see cref="LabelForeground"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty LabelForegroundProperty = DependencyProperty.Register("LabelForeground", typeof(Brush), typeof(AxisCommon), new PropertyMetadata(null));
 		#endregion
 		#region ctor
 		/// <summary>
@@ -100,18 +133,22 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region ValueAxis
 	/// <summary>
-	/// Value axis is a vertical axis that represents the "Y" coordinate.
+	/// Value axis is a "vertical" axis that represents the "Y" coordinate.
 	/// </summary>
 	public class ValueAxis : AxisCommon {
 		static LogTools.Flag _trace = LogTools.Add("ValueAxis", LogTools.Level.Verbose);
 		#region properties
-		protected Path Segments { get; set; }
-		protected PathGeometry Geometry { get; set; }
-		protected Path GridLines { get; set; }
+		protected Path Axis { get; set; }
+		protected PathGeometry AxisGeometry { get; set; }
+		protected Path Grid { get; set; }
 		protected GeometryGroup GridGeometry { get; set; }
 		protected List<TextBlock> TickLabels { get; set; }
 		#endregion
 		#region ctor
+		/// <summary>
+		/// Default ctor.
+		/// Creates Value/Left/Vertical axis.
+		/// </summary>
 		public ValueAxis() :base(AxisType.Value, AxisOrientation.Vertical, Side.Left) {
 			CommonInit();
 		}
@@ -120,38 +157,62 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		private void CommonInit() {
 			TickLabels = new List<TextBlock>();
-			Segments = new Path();
-			Geometry = new PathGeometry();
-			Segments.Data = Geometry;
-			BindBrush(this, "Brush", Segments, Path.FillProperty);
-			GridLines = new Path();
+			Axis = new Path();
+			AxisGeometry = new PathGeometry();
+			Axis.Data = AxisGeometry;
+			Grid = new Path();
 			GridGeometry = new GeometryGroup();
-			GridLines.Data = GridGeometry;
-			BindBrush(this, "GridBrush", GridLines, Path.StrokeProperty);
-			GridLines.SetValue(Path.StrokeThicknessProperty, GridStrokeThickness);
+			Grid.Data = GridGeometry;
+			MinWidth = 32;
+		}
+		#endregion
+		#region helpers
+		void DoBindings(IChartEnterLeaveContext icelc) {
+			BindTo(this, "AxisFill", Axis, Path.FillProperty);
+			BindTo(this, "GridStroke", Grid, Path.StrokeProperty);
+			var bx = GetBindingExpression(GridVisibilityProperty);
+			if (bx != null) {
+				Grid.SetBinding(UIElement.VisibilityProperty, bx.ParentBinding);
+			} else {
+				BindTo(this, "GridVisibility", Grid, Path.VisibilityProperty);
+			}
 		}
 		#endregion
 		#region extensions
 		public override void Enter(IChartEnterLeaveContext icelc) {
-			icelc.Add(Segments);
-			icelc.Add(GridLines);
+			icelc.Add(Axis);
+			icelc.Add(Grid);
+			// visual tree is active; transfer bindings
+			DoBindings(icelc);
 		}
 		public override void Leave(IChartEnterLeaveContext icelc) {
-			icelc.Remove(GridLines);
-			icelc.Remove(Segments);
+			icelc.Remove(Grid);
+			icelc.Remove(Axis);
 		}
 		public override void Layout(IChartLayoutContext iclc) {
-			// TODO add space for "nominal" label width
-			var space = AxisMargin + AxisLineThickness + 48;
+			var space = AxisMargin + AxisLineThickness + MinWidth;
 			iclc.ClaimSpace(this, Side, space);
 		}
+		/// <summary>
+		/// Layout axis components (bar, grid, labels).
+		/// Each component has a corresponding transform (applied in Transforms()).  Right and Left are DUALs of each other wrt to horizontal axis.
+		/// Axis "bar" and Tick marks:
+		///		x: PX (scale 1)
+		///		y: "axis" scale
+		/// Grid coordinates:
+		///		x: "normalized" [0..1] and scaled to the area-width
+		///		y: "axis" scale
+		/// Tick labels:
+		///		x, y: PX
+		/// </summary>
+		/// <param name="icrc"></param>
 		public override void Render(IChartRenderContext icrc) {
 			if (!Dirty) return;
 			_trace.Verbose($"{Name} min:{Minimum} max:{Maximum} r:{Range}");
 			// axis and tick marks
-			Geometry.Figures.Clear();
+			AxisGeometry.Figures.Clear();
 			var pf = PathHelper.Rectangle(Side == Side.Right ? 0 : icrc.Area.Width, Minimum, Side == Side.Right ? AxisLineThickness : icrc.Area.Width - AxisLineThickness, Maximum);
-			Geometry.Figures.Add(pf);
+			AxisGeometry.Figures.Add(pf);
 			// grid lines
 			var start = Math.Round(Minimum);
 			var end = Math.Round(Maximum);
@@ -159,22 +220,27 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"grid start:{start} end:{end} inc:{incr}");
 			GridGeometry.Children.Clear();
 			icrc.Remove(TickLabels);
+			Grid.StrokeThickness = GridStrokeThickness;
+			// grid lines and tick labels
+			// TODO reuse existing labels in the loop
 			for (var vx = start; vx <= end; vx += incr) {
 				//_trace.Verbose($"grid vx:{vx}");
 				var grid = new LineGeometry() { StartPoint = new Point(0, vx), EndPoint = new Point(1, vx) };
 				GridGeometry.Children.Add(grid);
 				var tb = new TextBlock() {
-					FontSize = 10,
-					Text = vx.ToString(String.IsNullOrEmpty(GridLabelFormatString) ? "G" : GridLabelFormatString),
+					FontSize = LabelFontSize,
+					Foreground = LabelForeground == null ? AxisFill : LabelForeground,
+					Text = vx.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString),
 					VerticalAlignment = VerticalAlignment.Center,
 					HorizontalAlignment = Side == Side.Right ? HorizontalAlignment.Left : HorizontalAlignment.Right,
 					Width = icrc.Area.Width - AxisLineThickness - 2*AxisMargin,
 					TextAlignment = Side == Side.Right ? TextAlignment.Left : TextAlignment.Right,
 					Padding = Side == Side.Right ? new Thickness(AxisLineThickness + 2*AxisMargin, 0, 0, 0) : new Thickness(0, 0, AxisLineThickness + 2*AxisMargin, 0)
 				};
+				//BindTo(this, "GridVisibility", tb, UIElement.VisibilityProperty);
 				tb.SetValue(Canvas.LeftProperty, icrc.Area.Left);
 				tb.SetValue(Canvas.TopProperty, vx);
-				// cheat: save the grid value so we can rescale the Top
+				// cheat: save the grid value so we can rescale the Top in Transforms()
 				tb.Tag = vx;
 				TickLabels.Add(tb);
 			}
@@ -184,12 +250,13 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// X-coordinates	"px"
 		/// Y-coordinates	axis
+		/// Grid-coordinates (x:[0..1], y:axis)
 		/// </summary>
 		/// <param name="icrc"></param>
 		public override void Transforms(IChartRenderContext icrc) {
 			var scaley = icrc.Area.Height / Range;
 			var matx = new Matrix(1, 0, 0, scaley, icrc.Area.Left + AxisMargin*(Side == Side.Right ? 1 : -1), icrc.Area.Top + icrc.Area.Height/2);
-			Geometry.Transform = new MatrixTransform() { Matrix = matx };
+			AxisGeometry.Transform = new MatrixTransform() { Matrix = matx };
 			var gscaley = icrc.SeriesArea.Height / Range;
 			var gscalex = icrc.SeriesArea.Width;
 			var gmatx = new Matrix(gscalex, 0, 0, gscaley, icrc.SeriesArea.Left, icrc.SeriesArea.Top + icrc.SeriesArea.Height / 2);
@@ -211,8 +278,8 @@ namespace eScapeLLC.UWP.Charts {
 	public class CategoryAxis : AxisCommon {
 		static LogTools.Flag _trace = LogTools.Add("CategoryAxis", LogTools.Level.Verbose);
 		#region properties
-		protected Path Segments { get; set; }
-		protected PathGeometry Geometry { get; set; }
+		protected Path Axis { get; set; }
+		protected PathGeometry AxisGeometry { get; set; }
 		#endregion
 		#region ctor
 		public CategoryAxis() : base(AxisType.Category, AxisOrientation.Horizontal, Side.Bottom) {
@@ -222,36 +289,36 @@ namespace eScapeLLC.UWP.Charts {
 			CommonInit();
 		}
 		private void CommonInit() {
-			Segments = new Path();
-			this.Geometry = new PathGeometry();
-			Segments.Data = this.Geometry;
-			BindBrush(this, "Brush", Segments, Path.FillProperty);
+			Axis = new Path();
+			AxisGeometry = new PathGeometry();
+			Axis.Data = AxisGeometry;
+			MinHeight = 24;
 		}
 		#endregion
 		#region extensions
 		public override void Enter(IChartEnterLeaveContext icelc) {
-			icelc.Add(Segments);
+			icelc.Add(Axis);
+			BindTo(this, "AxisFill", Axis, Path.FillProperty);
 		}
 		public override void Leave(IChartEnterLeaveContext icelc) {
-			icelc.Remove(Segments);
+			icelc.Remove(Axis);
 		}
 		public override void Layout(IChartLayoutContext iclc) {
-			// TODO add space for "nominal" text height
-			var space = AxisMargin + AxisLineThickness + 24;
+			var space = AxisMargin + AxisLineThickness + MinHeight; 
 			iclc.ClaimSpace(this, Side, space);
 		}
 		public override void Render(IChartRenderContext icrc) {
 			if (!Dirty) return;
 			_trace.Verbose($"{Name} min:{Minimum} max:{Maximum} r:{Range}");
-			Geometry.Figures.Clear();
+			AxisGeometry.Figures.Clear();
 			var pf = PathHelper.Rectangle(Minimum, 0, Maximum, AxisLineThickness);
-			Geometry.Figures.Add(pf);
+			AxisGeometry.Figures.Add(pf);
 			Dirty = false;
 		}
 		public override void Transforms(IChartRenderContext icrc) {
 			var scalex = icrc.Area.Width / Range;
 			var matx = new Matrix(scalex, 0, 0, 1, icrc.Area.Left, icrc.Area.Top + AxisMargin);
-			Geometry.Transform = new MatrixTransform() { Matrix = matx };
+			AxisGeometry.Transform = new MatrixTransform() { Matrix = matx };
 			_trace.Verbose($"transforms sx:{scalex} matx:{matx} a:{icrc.Area}");
 		}
 		#endregion

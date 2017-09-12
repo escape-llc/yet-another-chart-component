@@ -4,15 +4,11 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Windows.Foundation;
 using Windows.UI;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
-using Windows.Foundation;
-using Windows.UI.Xaml.Shapes;
-using Windows.UI.Xaml.Data;
 
 namespace eScapeLLC.UWP.Charts {
 	#region DefaultRenderContext
@@ -134,6 +130,12 @@ namespace eScapeLLC.UWP.Charts {
 		}
 	}
 	#endregion
+	#region ChartComponentCollection
+	/// <summary>
+	/// This is to appease the XAML infrastruction which eschews generic classes as property type.
+	/// </summary>
+	public class ChartComponentCollection : ObservableCollection<ChartComponent>{ }
+	#endregion
 	#region Chart
 	/// <summary>
 	/// The chart.
@@ -141,21 +143,36 @@ namespace eScapeLLC.UWP.Charts {
 	public class Chart : Control {
 		static LogTools.Flag _trace = LogTools.Add("Chart", LogTools.Level.Verbose);
 		#region properties
-		public ObservableCollection<ChartComponent> Components { get; private set; }
+		/// <summary>
+		/// Obtained from the XAML and programmatic.
+		/// </summary>
+		public ChartComponentCollection Components { get; private set; }
+		/// <summary>
+		/// Obtained from the templated parent.
+		/// </summary>
 		protected Canvas Surface { get; set; }
+		/// <summary>
+		/// Components that are IChartAxis.
+		/// </summary>
 		protected List<IChartAxis> Axes { get; set; }
+		/// <summary>
+		/// Components that are DataSeries.
+		/// </summary>
 		protected List<DataSeries> Series { get; set; }
+		/// <summary>
+		/// Components that entered before the Surface was ready (via XAML).
+		/// </summary>
 		protected List<ChartComponent> DeferredEnter{ get; set; }
 		/// <summary>
 		/// Last-seen value during LayoutUpdated.
-		/// It gets called frequently so it gets debounced.
+		/// LayoutUpdated gets called frequently, so it gets debounced.
 		/// </summary>
 		protected Size LastLayout { get; set; }
 		#endregion
 		#region ctor
 		public Chart() :base() {
 			DefaultStyleKey = typeof(Chart);
-			Components = new ObservableCollection<ChartComponent>();
+			Components = new ChartComponentCollection();
 			Components.CollectionChanged += new NotifyCollectionChangedEventHandler(Components_CollectionChanged);
 			Axes = new List<IChartAxis>();
 			Series = new List<DataSeries>();
@@ -167,6 +184,7 @@ namespace eScapeLLC.UWP.Charts {
 		#region evhs
 		/// <summary>
 		/// Propagate data context changes to components.
+		/// The number of times this is called is non-deterministic.
 		/// </summary>
 		/// <param name="sender"></param>
 		/// <param name="args"></param>
@@ -207,9 +225,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="sender"></param>
 		/// <param name="e"></param>
 		private void Chart_LayoutUpdated(object sender, object e) {
+			// This is (NaN,NaN) if we haven't been sized yet
 			var sz = new Size(ActualWidth, ActualHeight);
 			_trace.Verbose($"LayoutUpdated ({sz.Width}x{sz.Height})");
 			if (!double.IsNaN(sz.Width) && !double.IsNaN(sz.Height)) {
+				// we are sized; see if dimensions actually changed
 				if (LastLayout.Width == sz.Width && LastLayout.Height == sz.Height) return;
 				RenderComponents(sz);
 				LastLayout = sz;
@@ -294,7 +314,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Adjust layout and transforms based on size change.
 		/// </summary>
-		/// <param name="sz"></param>
+		/// <param name="sz">Dimensions.</param>
 		protected void TransformsOnly(Size sz) {
 			var initialRect = new Rect(Padding.Left, Padding.Top, sz.Width - Padding.Left - Padding.Right, sz.Height - Padding.Top - Padding.Bottom);
 			var inner = new Size(initialRect.Width, initialRect.Height);
@@ -322,8 +342,9 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		/// <summary>
 		/// Perform a full layout and rendering pass.
+		/// At least ONE component reported as dirty.
 		/// </summary>
-		/// <param name="sz"></param>
+		/// <param name="sz">Dimensions.</param>
 		protected void FullLayout(Size sz) {
 			foreach (var axis in Axes) {
 				_trace.Verbose($"reset {(axis as ChartComponent).Name} {axis}");
@@ -340,13 +361,15 @@ namespace eScapeLLC.UWP.Charts {
 			// what's left is for the data series area
 			_trace.Verbose($"remaining {dlc.RemainingRect}");
 			dlc.FinalizeRects();
+			// render the series' visual elements
 			foreach (DataSeries cc in Series) {
 				var rect = dlc.For(cc);
 				_trace.Verbose($"render {cc} rect:{rect}");
 				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
+				// a "clean" series MUST still report its limits to ALL its axes
 				cc.Render(ctx);
 			}
-			// reconfigure series transforms now axes have limits built
+			// axes have seen all values; render+transform them now
 			foreach (var axis in Axes) {
 				var acc = axis as ChartComponent;
 				var scale = (axis.Type == AxisType.Value ? inner.Height : inner.Width) / axis.Range;
@@ -356,6 +379,7 @@ namespace eScapeLLC.UWP.Charts {
 				acc.Render(ctx);
 				acc.Transforms(ctx);
 			}
+			// configure series transforms now axes are configured
 			foreach (DataSeries cc in Series) {
 				var rect = dlc.For(cc);
 				_trace.Verbose($"transforms {cc} {rect}");
@@ -365,15 +389,16 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		/// <summary>
 		/// Iterate the components for rendering.
+		/// The full rendering sequence is: axis-reset, layout, render, transforms.
+		/// Once all components are "clean" only the visual transforms are changed; no data operations are done.
+		/// If nothing is dirty, adjust transforms, else full layout.
 		/// </summary>
 		private void RenderComponents(Size sz) {
 			_trace.Verbose($"render-components {sz.Width}x{sz.Height}");
-			if (Components.All((cx) => !cx.Dirty)) {
-				// all components up-to-date; just adjust transforms
-				TransformsOnly(sz);
-			}
-			else {
+			if (Components.Any((cx) => cx.Dirty)) {
 				FullLayout(sz);
+			} else {
+				TransformsOnly(sz);
 			}
 		}
 		#endregion

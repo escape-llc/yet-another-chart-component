@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Shapes;
 
 namespace eScapeLLC.UWP.Charts {
 	#region IChartAxis
@@ -52,7 +52,7 @@ namespace eScapeLLC.UWP.Charts {
 		double For(double value);
 	}
 	#endregion
-	#region IChartRenderContext
+	#region IChartLayoutContext
 	/// <summary>
 	/// Side to claim space from.
 	/// </summary>
@@ -67,11 +67,13 @@ namespace eScapeLLC.UWP.Charts {
 		Size Dimensions { get; }
 		/// <summary>
 		/// Space remaining after claims.
+		/// This rectangle is passed to all components via IChartRenderContext.SeriesArea.
 		/// </summary>
 		Rect RemainingRect { get; }
 		/// <summary>
 		/// Subtract space from RemainingRect and register that rectangle for given component.
 		/// Returns the allocated rectangle.
+		/// The claimed rectangle is passed back to this component via IChartRenderContext.Area.
 		/// </summary>
 		/// <param name="cc">Component key.</param>
 		/// <param name="sd">Side to allocate from.</param>
@@ -79,6 +81,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// <returns>Allocated and registered rectangle.</returns>
 		Rect ClaimSpace(ChartComponent cc, Side sd, double amt);
 	}
+	#endregion
+	#region IChartRenderContext
 	/// <summary>
 	/// Feaatures for rendering.
 	/// </summary>
@@ -105,9 +109,19 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="name">Name.</param>
 		/// <returns>Matching component or NULL.</returns>
 		ChartComponent Find(String name);
+		/// <summary>
+		/// Add group of components.
+		/// </summary>
+		/// <param name="fes"></param>
 		void Add(IEnumerable<FrameworkElement> fes);
+		/// <summary>
+		/// Remove group of components.
+		/// </summary>
+		/// <param name="fes"></param>
 		void Remove(IEnumerable<FrameworkElement> fes);
 	}
+	#endregion
+	#region IChartEnterLeaveContext
 	/// <summary>
 	/// Additional features for enter/leave.
 	/// </summary>
@@ -132,7 +146,7 @@ namespace eScapeLLC.UWP.Charts {
 	public delegate void RefreshRequestEventHandler(ChartComponent cc);
 	/// <summary>
 	/// Base class of chart components.
-	/// It is FrameworkElement primarily to participate in DataContext.
+	/// It is FrameworkElement primarily to participate in DataContext and Binding.
 	/// </summary>
 	public abstract class ChartComponent : FrameworkElement {
 		#region ctor
@@ -170,7 +184,7 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region events
 		/// <summary>
-		/// Listen for requests to update this component.
+		/// "External" interest in this component's updates.
 		/// </summary>
 		public event RefreshRequestEventHandler RefreshRequest;
 		#endregion
@@ -182,19 +196,23 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region helpers
 		/// <summary>
-		/// Invoke the refresh request event.
+		/// Invoke the RefreshRequest event.
 		/// </summary>
 		protected void Refresh() { RefreshRequest?.Invoke(this); }
 		/// <summary>
-		/// Bind the Brush DP to the given shape.
+		/// Bind cc.Path to the given fe.DP.
 		/// </summary>
-		/// <param name="sh"></param>
-		/// <param name="dp"></param>
-		protected static void BindBrush(ChartComponent cc, String path, Shape sh, DependencyProperty dp) {
-			Binding bx = new Binding(); // new Binding("Brush");
-			bx.Path = new PropertyPath(path);
-			bx.Source = cc;
-			sh.SetBinding(dp, bx);
+		/// <param name="cc">Source chart component.</param>
+		/// <param name="path">Component's (source) property path.</param>
+		/// <param name="fe">Target framework element.</param>
+		/// <param name="dp">FE's (target) DP.</param>
+		protected static void BindTo(ChartComponent cc, String path, FrameworkElement fe, DependencyProperty dp) {
+			Binding bx = new Binding() {
+				Path = new PropertyPath(path),
+				Source = cc,
+				Mode = BindingMode.OneWay
+			};
+			fe.SetBinding(dp, bx);
 		}
 		#endregion
 	}
@@ -204,9 +222,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Finds object in control's template by its name.
 		/// </summary>
-		/// <param name="name">Objects name.</param>
+		/// <param name="name">Object's name.</param>
 		/// <param name="templatedParent">Templated parent.</param>
-		/// <returns>Object reference if found, null otherwise.</returns>
+		/// <returns>!NULL: found object; NULL: otherwise.</returns>
 		public static object TemplateFindName(string name, FrameworkElement templatedParent) {
 			for (int ix = 0; ix < VisualTreeHelper.GetChildrenCount(templatedParent); ix++) {
 				var child = VisualTreeHelper.GetChild(templatedParent, ix);
@@ -227,30 +245,31 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region BindingEvaluator
 	/// <summary>
-	/// Utility class to facilitate temporary binding evaluation.
+	/// Utility class to facilitate runtime binding evaluation.
 	/// </summary>
 	public class BindingEvaluator : FrameworkElement {
+		private readonly PropertyPath _pp;
 		/// <summary>
 		/// Created binding evaluator and set path to the property which's value should be evaluated.
 		/// </summary>
 		/// <param name="propertyPath">Path to the property.</param>
 		public BindingEvaluator(string propertyPath) {
-			_propertyPath = propertyPath;
+			_pp = new PropertyPath(propertyPath);
 		}
-		private string _propertyPath;
 		/// <summary>
 		/// Dependency property used to evaluate values.
 		/// </summary>
 		public static readonly DependencyProperty EvaluatorProperty = DependencyProperty.Register("Evaluator", typeof(object), typeof(BindingEvaluator), null);
 		/// <summary>
-		/// Returns evaluated value of property on provided object source.
+		/// Returns value of property on provided object.
 		/// </summary>
-		/// <param name="source">Object for which property value should be evaluated.</param>
+		/// <param name="source">Object to evaluate property for.</param>
 		/// <returns>Value of the property.</returns>
-		public object Eval(object source) {
-			ClearValue(EvaluatorProperty);
+		public object For(object source) {
+			// ClearValue() is not needed
+			//ClearValue(EvaluatorProperty);
 			var binding = new Binding {
-				Path = new PropertyPath(_propertyPath),
+				Path = _pp,
 				Mode = BindingMode.OneTime,
 				Source = source
 			};
@@ -260,9 +279,13 @@ namespace eScapeLLC.UWP.Charts {
 	}
 	#endregion
 	#region PathHelper
+	/// <summary>
+	/// Static methods for creating PathFigures.
+	/// </summary>
 	public static class PathHelper {
 		/// <summary>
-		/// Build a Closed PathFigure for given rectangle.
+		/// Build Closed PathFigure for given rectangle.
+		/// Does not check for coordinates' min/max because the Geometry Transform is not known here.
 		/// </summary>
 		/// <param name="left"></param>
 		/// <param name="top"></param>
@@ -280,11 +303,31 @@ namespace eScapeLLC.UWP.Charts {
 			pf.IsClosed = true;
 			return pf;
 		}
+		/// <summary>
+		/// Build Open PathFigure for given line segment.
+		/// </summary>
+		/// <param name="startx"></param>
+		/// <param name="starty"></param>
+		/// <param name="endx"></param>
+		/// <param name="endy"></param>
+		/// <returns></returns>
 		public static PathFigure Line(double startx, double starty, double endx, double endy) {
 			var pf = new PathFigure { StartPoint = new Windows.Foundation.Point(startx, starty) };
 			var ls = new LineSegment() { Point = new Windows.Foundation.Point(startx, endy) };
 			pf.Segments.Add(ls);
 			return pf;
+		}
+	}
+	#endregion
+	#region converters
+	public class BoolToVisibilityConverter : IValueConverter {
+		public object Convert(object value, Type targetType, object parameter, string language) {
+			var isChecked = (bool)value;
+			return isChecked ? Visibility.Visible : Visibility.Collapsed;
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, string language) {
+			throw new NotImplementedException();
 		}
 	}
 	#endregion

@@ -7,19 +7,53 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
-
+	<Page.Resources>
+		<charts:BoolToVisibilityConverter x:Key="b2v"/>
+		<SolidColorBrush x:Key="blue" Color="Blue"/>
+		<LinearGradientBrush x:Key="blue-to-green" StartPoint="0,0" EndPoint="1,1">
+			<GradientStop Color="Blue" Offset="0"/>
+			<GradientStop Color="Orange" Offset=".25"/>
+			<GradientStop Color="Yellow" Offset=".75"/>
+			<GradientStop Color="Green" Offset="1"/>
+		</LinearGradientBrush>
+		<LinearGradientBrush x:Key="green-to-blue" StartPoint="0,0" EndPoint="1,1">
+			<GradientStop Color="Blue" Offset="1"/>
+			<GradientStop Color="Orange" Offset=".75"/>
+			<GradientStop Color="Yellow" Offset=".25"/>
+			<GradientStop Color="Green" Offset="0"/>
+		</LinearGradientBrush>
+		<SolidColorBrush x:Key="green" Color="Green"/>
+		<SolidColorBrush x:Key="limegreen" Color="LimeGreen"/>
+		<SolidColorBrush x:Key="red" Color="Red"/>
+		<SolidColorBrush x:Key="black" Color="Black"/>
+		<SolidColorBrush x:Key="gray" Color="Gray"/>
+	</Page.Resources>
 	<Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 		<TextBlock HorizontalAlignment="Stretch" TextAlignment="Center" Text="eScape LLC YACC Demo"/>
-		<charts:Chart x:Name="cx" Grid.Row="1" Background="Beige" Padding="16" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+		<StackPanel Grid.Row="1" Orientation="Horizontal" Padding="4">
+			<CheckBox x:Name="cb_yaxis_grid" Content="Value (Y) axis grid" IsChecked="True"/>
+		</StackPanel>
+		<charts:Chart x:Name="cx" Grid.Row="2" Background="Black" Padding="16" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
 			<charts:Chart.Components>
-				<charts:CategoryAxis x:Name="xaxis" Brush="Black" />
-				<charts:ValueAxis x:Name="yaxis" Side="Right"  Brush="Red" GridBrush="Gray" GridLabelFormatString="F1" />
-				<charts:ColumnSeries DataSource="{Binding Data}" ValueMemberPath="Y" ValueAxisName="yaxis" CategoryAxisName="xaxis" Brush="Blue" />
-				<charts:LineSeries DataSource="{Binding Data}" ValueMemberPath="Y" ValueAxisName="yaxis" CategoryAxisName="xaxis" Brush="Green" />
+				<charts:CategoryAxis x:Name="xaxis" Side="Bottom" AxisFill="{StaticResource red}" />
+				<charts:ValueAxis x:Name="yaxis" Side="Left" AxisFill="{StaticResource red}"
+					GridStroke="{StaticResource gray}" LabelForeground="{StaticResource limegreen}"
+					LabelFormatString="F1"
+					GridVisibility="{Binding ElementName=cb_yaxis_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
+				<charts:ColumnSeries DataSource="{Binding Data}" ValueMemberPath="X"
+					ValueAxisName="yaxis" CategoryAxisName="xaxis"
+					Stroke="DarkOrchid" Fill="{StaticResource blue-to-green}" BarOffset=".25" BarWidth=".25" />
+				<charts:ColumnSeries DataSource="{Binding Data}" ValueMemberPath="Y"
+					ValueAxisName="yaxis" CategoryAxisName="xaxis"
+					Stroke="DarkOrchid" Fill="{StaticResource green-to-blue}" BarOffset=".5" BarWidth=".25" />
+				<charts:LineSeries DataSource="{Binding Data}" ValueMemberPath="Y"
+					ValueAxisName="yaxis" CategoryAxisName="xaxis"
+					Stroke="{StaticResource green}" StrokeThickness="5" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
 			</charts:Chart.Components>
 		</charts:Chart>
 	</Grid>
