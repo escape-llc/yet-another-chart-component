@@ -1,5 +1,10 @@
-# eScapeLLC.UWP.Chart
+# eScapeLLC.UWP.Charts
 Yet another chart component.  Also a play on the venerable "yacc" parser-generator tool.  Yes, I've used it, and know all about LR(1) parsers!
+
+At some point you can do this:
+```
+   PM> Install-Package eScapeLLC.UWP.Charts
+```
 
 # Before you build
 If you are rebuilding the application project (e.g. because you forked it), you must re-generate the PFX file, because it is excluded from repository by *.gitignore*.

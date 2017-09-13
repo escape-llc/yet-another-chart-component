@@ -10,8 +10,11 @@ namespace eScapeLLC.UWP.Charts {
 	#region IChartAxis
 	public enum AxisType { Category, Value };
 	public enum AxisOrientation { Horizontal, Vertical };
+	public enum AxisVisibility { Visible, Hidden, Collapsed };
 	/// <summary>
 	/// Features for axes.
+	/// Axes must be present in the component list, to provide the infrastructure for scaling data series, even if they
+	/// will not display.
 	/// </summary>
 	public interface IChartAxis {
 		/// <summary>
@@ -160,23 +163,31 @@ namespace eScapeLLC.UWP.Charts {
 		public virtual void Layout(IChartLayoutContext iclc) { }
 		/// <summary>
 		/// Render the component.
+		/// This is where data SHOULD be processed and Geometry etc. built.
+		/// Non-geomerty drawing attributes MAY be configured here, but SHOULD have been arranged in ChartComponent.Enter.
+		/// Geometry coordinates MUST be represented in layout-invariant coordinates!
+		/// This means when the layout rectangle size changes, only the GeometryTransform is adjusted (in ChartComponent.Transforms); no data is re-calculated.
 		/// </summary>
 		/// <param name="icrc"></param>
 		public abstract void Render(IChartRenderContext icrc);
 		/// <summary>
-		/// Adjust transforms after rendering and layout are completed.
+		/// Adjust transforms after layout and rendering are completed.
 		/// Default impl.
 		/// </summary>
 		/// <param name="icrc"></param>
 		public virtual void Transforms(IChartRenderContext icrc) { }
 		/// <summary>
 		/// Component is entering the chart.
+		/// Opportunity to add objects to the Visual Tree, then obtain/transfer bindings to those objects from the component's DPs.
+		/// Framework makes an effort to defer this call until the VT is available.
+		/// Example: components included directly in XAML via Chart.Components.
 		/// Default impl.
 		/// </summary>
 		/// <param name="icelc"></param>
 		public virtual void Enter(IChartEnterLeaveContext icelc) { }
 		/// <summary>
 		/// Component is leaving the chart.
+		/// Opportunity to remove objects from Visual Tree etc. the dual of Enter().
 		/// Default impl.
 		/// </summary>
 		/// <param name="icelc"></param>

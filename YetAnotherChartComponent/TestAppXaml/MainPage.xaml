@@ -51,7 +51,7 @@
 					ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					Stroke="DarkOrchid" Fill="{StaticResource green-to-blue}" BarOffset=".5" BarWidth=".25" />
 				<yacc:LineSeries DataSource="{Binding Data}" ValueMemberPath="Y"
-					ValueAxisName="yaxis" CategoryAxisName="xaxis"
+					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".5"
 					Stroke="{StaticResource green}" StrokeThickness="5" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
 			</yacc:Chart.Components>
 		</yacc:Chart>

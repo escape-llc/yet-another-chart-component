@@ -185,9 +185,19 @@ namespace eScapeLLC.UWP.Charts {
 		/// The brush for the series.
 		/// </summary>
 		public Brush Stroke { get { return (Brush)GetValue(StrokeProperty); } set { SetValue(StrokeProperty, value); } }
+		/// <summary>
+		/// Offset in Category axis offset in [0..1].
+		/// Use with ColumnSeries to get the "points" to align with the column(s) layout in their cells.
+		/// </summary>
+		public double CategoryAxisOffset { get; set; }
+		/// <summary>
+		/// The series drawing attributes etc. on the Canvas.
+		/// </summary>
 		protected Path Segments { get; set; }
+		/// <summary>
+		/// The series geometry.
+		/// </summary>
 		protected PathGeometry Geometry { get; set; }
-		protected int LastDataSourceCount { get; set; }
 		#endregion
 		#region DPs
 		/// <summary>
@@ -241,7 +251,8 @@ namespace eScapeLLC.UWP.Charts {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			var scalex = icrc.Area.Width / CategoryAxis.Range;
 			var scaley = icrc.Area.Height / ValueAxis.Range;
-			var matx = new Matrix(scalex, 0, 0, -scaley, icrc.Area.Left, icrc.Area.Top + icrc.Area.Height/2);
+			var offsetx = scalex * CategoryAxisOffset;
+			var matx = new Matrix(scalex, 0, 0, -scaley, icrc.Area.Left + offsetx, icrc.Area.Top + icrc.Area.Height/2);
 			_trace.Verbose($"scale {scalex:F3},{scaley:F3} mat:{matx}");
 			Geometry.Transform = new MatrixTransform() { Matrix = matx };
 		}
@@ -276,13 +287,16 @@ namespace eScapeLLC.UWP.Charts {
 				ix++;
 			}
 			Geometry.Figures.Add(pf);
-			LastDataSourceCount = ix;
 			Dirty = false;
 		}
 		#endregion
 	}
 	#endregion
 	#region ColumnSeries
+	/// <summary>
+	/// If there's no CategoryMemberPath defined (i.e. using data index) this component reserves one "extra" cell on the Category Axis, to present the last column(s).
+	/// Category axis cells start on the left and extend rightward (in device X-units).
+	/// </summary>
 	public class ColumnSeries : DataSeries {
 		static LogTools.Flag _trace = LogTools.Add("ColumnSeries", LogTools.Level.Verbose);
 		#region properties

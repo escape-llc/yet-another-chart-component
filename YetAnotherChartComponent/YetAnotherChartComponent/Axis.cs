@@ -182,7 +182,6 @@ namespace eScapeLLC.UWP.Charts {
 		public override void Enter(IChartEnterLeaveContext icelc) {
 			icelc.Add(Axis);
 			icelc.Add(Grid);
-			// visual tree is active; transfer bindings
 			DoBindings(icelc);
 		}
 		public override void Leave(IChartEnterLeaveContext icelc) {
@@ -274,6 +273,7 @@ namespace eScapeLLC.UWP.Charts {
 	#region CategoryAxis
 	/// <summary>
 	/// Horizontal Category axis.
+	/// Category axis cells start on the left and extend rightward (in device X-units).
 	/// </summary>
 	public class CategoryAxis : AxisCommon {
 		static LogTools.Flag _trace = LogTools.Add("CategoryAxis", LogTools.Level.Verbose);
