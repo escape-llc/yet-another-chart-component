@@ -2,13 +2,12 @@
     x:Class="TestAppXaml.MainPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:TestAppXaml"
-		xmlns:charts="using:eScapeLLC.UWP.Charts"
+		xmlns:yacc="using:eScapeLLC.UWP.Charts"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 	<Page.Resources>
-		<charts:BoolToVisibilityConverter x:Key="b2v"/>
+		<yacc:BoolToVisibilityConverter x:Key="b2v"/>
 		<SolidColorBrush x:Key="blue" Color="Blue"/>
 		<LinearGradientBrush x:Key="blue-to-green" StartPoint="0,0" EndPoint="1,1">
 			<GradientStop Color="Blue" Offset="0"/>
@@ -38,23 +37,23 @@
 		<StackPanel Grid.Row="1" Orientation="Horizontal" Padding="4">
 			<CheckBox x:Name="cb_yaxis_grid" Content="Value (Y) axis grid" IsChecked="True"/>
 		</StackPanel>
-		<charts:Chart x:Name="cx" Grid.Row="2" Background="Black" Padding="16" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
-			<charts:Chart.Components>
-				<charts:CategoryAxis x:Name="xaxis" Side="Bottom" AxisFill="{StaticResource red}" />
-				<charts:ValueAxis x:Name="yaxis" Side="Left" AxisFill="{StaticResource red}"
+		<yacc:Chart x:Name="cx" Grid.Row="2" Background="Black" Padding="16" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+			<yacc:Chart.Components>
+				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" AxisFill="{StaticResource red}" />
+				<yacc:ValueAxis x:Name="yaxis" Side="Left" AxisFill="{StaticResource red}"
 					GridStroke="{StaticResource gray}" LabelForeground="{StaticResource limegreen}"
 					LabelFormatString="F1"
 					GridVisibility="{Binding ElementName=cb_yaxis_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
-				<charts:ColumnSeries DataSource="{Binding Data}" ValueMemberPath="X"
+				<yacc:ColumnSeries DataSource="{Binding Data}" ValueMemberPath="X"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					Stroke="DarkOrchid" Fill="{StaticResource blue-to-green}" BarOffset=".25" BarWidth=".25" />
-				<charts:ColumnSeries DataSource="{Binding Data}" ValueMemberPath="Y"
+				<yacc:ColumnSeries DataSource="{Binding Data}" ValueMemberPath="Y"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					Stroke="DarkOrchid" Fill="{StaticResource green-to-blue}" BarOffset=".5" BarWidth=".25" />
-				<charts:LineSeries DataSource="{Binding Data}" ValueMemberPath="Y"
+				<yacc:LineSeries DataSource="{Binding Data}" ValueMemberPath="Y"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					Stroke="{StaticResource green}" StrokeThickness="5" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
-			</charts:Chart.Components>
-		</charts:Chart>
+			</yacc:Chart.Components>
+		</yacc:Chart>
 	</Grid>
 </Page>
