@@ -44,9 +44,15 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region category/value member path
+		/// <summary>
+		/// ValueMemberPath DP.
+		/// </summary>
 		public static readonly DependencyProperty ValueMemberPathProperty = DependencyProperty.Register(
 			"ValueMemberPath", typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
 		);
+		/// <summary>
+		/// CategoryMemberPath DP.
+		/// </summary>
 		public static readonly DependencyProperty CategoryMemberPathProperty = DependencyProperty.Register(
 			"CategoryMemberPath", typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
 		);
@@ -177,9 +183,25 @@ namespace eScapeLLC.UWP.Charts {
 	public class LineSeries : DataSeries {
 		static LogTools.Flag _trace = LogTools.Add("LineSeries", LogTools.Level.Verbose);
 		#region properties
+		/// <summary>
+		/// Series path stroke thickness.
+		/// Default value is 1.
+		/// </summary>
 		public int StrokeThickness { get; set; } = 1;
+		/// <summary>
+		/// Series path line join.
+		/// Default value is Bevel.
+		/// </summary>
 		public PenLineJoin StrokeLineJoin { get; set; } = PenLineJoin.Bevel;
+		/// <summary>
+		/// Series Start line cap.
+		/// Default value is Flat.
+		/// </summary>
 		public PenLineCap StrokeStartLineCap { get; set; } = PenLineCap.Flat;
+		/// <summary>
+		/// Series End line cap.
+		/// Default value is Flat.
+		/// </summary>
 		public PenLineCap StrokeEndLineCap { get; set; } = PenLineCap.Flat;
 		/// <summary>
 		/// The brush for the series.
@@ -206,14 +228,20 @@ namespace eScapeLLC.UWP.Charts {
 		public static readonly DependencyProperty StrokeProperty = DependencyProperty.Register("Stroke", typeof(Brush), typeof(LineSeries), new PropertyMetadata(null));
 		#endregion
 		#region ctor
+		/// <summary>
+		/// Ctor.
+		/// </summary>
 		public LineSeries() {
 			Segments = new Path();
-			Segments.StrokeThickness = 1;
 			Geometry = new PathGeometry();
 			Segments.Data = Geometry;
 		}
 		#endregion
 		#region extensions
+		/// <summary>
+		/// Initialize after entering VT.
+		/// </summary>
+		/// <param name="icelc"></param>
 		public override void Enter(IChartEnterLeaveContext icelc) {
 			_trace.Verbose($"enter v:{ValueAxisName} c:{ValueAxisName} d:{DataSource}");
 			icelc.Add(Segments);
@@ -223,10 +251,18 @@ namespace eScapeLLC.UWP.Charts {
 			Segments.StrokeLineJoin = StrokeLineJoin;
 			Segments.StrokeStartLineCap = StrokeStartLineCap;
 		}
+		/// <summary>
+		/// Undo effects of Enter().
+		/// </summary>
+		/// <param name="icelc"></param>
 		public override void Leave(IChartEnterLeaveContext icelc) {
 			_trace.Verbose($"leave v:{ValueAxisName} c:{ValueAxisName} d:{DataSource}");
 			icelc.Remove(Segments);
 		}
+		/// <summary>
+		/// Traverse the data source and create geometry.
+		/// </summary>
+		/// <param name="icrc"></param>
 		public override void Render(IChartRenderContext icrc) {
 			EnsureAxes(icrc);
 			_trace.Verbose($"render v:{ValueAxis} c:{CategoryAxis} d:{DataSource} dirty:{Dirty}");
@@ -318,7 +354,13 @@ namespace eScapeLLC.UWP.Charts {
 		/// BarOffset + BarWidth &lt;= 1.0
 		/// </summary>
 		public double BarWidth { get; set; } = 0.5;
+		/// <summary>
+		/// Path for the column bars.
+		/// </summary>
 		protected Path Segments { get; set; }
+		/// <summary>
+		/// Geometry for the column bars.
+		/// </summary>
 		protected PathGeometry Geometry { get; set; }
 		#endregion
 		#region DPs
@@ -332,6 +374,9 @@ namespace eScapeLLC.UWP.Charts {
 		public static readonly DependencyProperty StrokeProperty = DependencyProperty.Register("Stroke", typeof(Brush), typeof(ColumnSeries), new PropertyMetadata(null));
 		#endregion
 		#region ctor
+		/// <summary>
+		/// Default ctor.
+		/// </summary>
 		public ColumnSeries() {
 			Segments = new Path();
 			Segments.StrokeThickness = 1;
@@ -340,16 +385,28 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region extensions
+		/// <summary>
+		/// Initialize after entering VT.
+		/// </summary>
+		/// <param name="icelc"></param>
 		public override void Enter(IChartEnterLeaveContext icelc) {
 			_trace.Verbose($"enter v:{ValueAxisName} c:{ValueAxisName} d:{DataSource}");
 			icelc.Add(Segments);
 			BindTo(this, "Stroke", Segments, Path.StrokeProperty);
 			BindTo(this, "Fill", Segments, Path.FillProperty);
 		}
+		/// <summary>
+		/// Undo effects of Enter().
+		/// </summary>
+		/// <param name="icelc"></param>
 		public override void Leave(IChartEnterLeaveContext icelc) {
 			_trace.Verbose($"leave v:{ValueAxisName} c:{ValueAxisName} d:{DataSource}");
 			icelc.Remove(Segments);
 		}
+		/// <summary>
+		/// Traverse the data source and create geometry.
+		/// </summary>
+		/// <param name="icrc"></param>
 		public override void Render(IChartRenderContext icrc) {
 			EnsureAxes(icrc);
 			_trace.Verbose($"render v:{ValueAxis} c:{CategoryAxis} d:{DataSource} dirty:{Dirty}");
@@ -377,6 +434,10 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"scale {scalex:F3},{scaley:F3} mat:{matx}");
 			Geometry.Transform = new MatrixTransform() { Matrix = matx };
 		}
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="dp"></param>
 		protected override void ProcessData(DependencyProperty dp) {
 			_trace.Verbose($"process-data dp:{DPName(dp)}");
 			if (ValueAxis == null || CategoryAxis == null || DataSource == null) return;

@@ -12,13 +12,44 @@ using Windows.UI.Xaml.Media;
 
 namespace eScapeLLC.UWP.Charts {
 	#region DefaultRenderContext
+	/// <summary>
+	/// Default impl for render context.
+	/// </summary>
 	public class DefaultRenderContext : IChartRenderContext {
+		/// <summary>
+		/// The surface.  SHOULD NOT be null.
+		/// </summary>
 		protected Canvas Surface { get; set; }
+		/// <summary>
+		/// The list of components to search for Find().
+		/// </summary>
 		ObservableCollection<ChartComponent> Components { get; set; }
+		/// <summary>
+		/// The overall size of the chart rectangle.
+		/// </summary>
 		public Size Dimensions { get; protected set; }
+		/// <summary>
+		/// The data context in effect.
+		/// </summary>
 		public object DataContext { get; protected set; }
+		/// <summary>
+		/// The area for this component.
+		/// </summary>
 		public Rect Area { get; protected set; }
+		/// <summary>
+		/// The remaining area for series.
+		/// </summary>
 		public Rect SeriesArea { get; protected set; }
+		/// <summary>
+		/// Ctor.
+		/// Initialize.
+		/// </summary>
+		/// <param name="surface"></param>
+		/// <param name="components"></param>
+		/// <param name="sz"></param>
+		/// <param name="rc"></param>
+		/// <param name="sa"></param>
+		/// <param name="dc"></param>
 		public DefaultRenderContext(Canvas surface, ObservableCollection<ChartComponent> components, Size sz, Rect rc, Rect sa, object dc) {
 			Surface = surface;
 			Components = components;
@@ -27,30 +58,84 @@ namespace eScapeLLC.UWP.Charts {
 			SeriesArea = sa;
 			DataContext = dc;
 		}
+		/// <summary>
+		/// Search the components list by name.
+		/// </summary>
+		/// <param name="name"></param>
+		/// <returns>!NULL: found; NULL: not found.</returns>
 		public ChartComponent Find(string name) {
 			return Components.SingleOrDefault((cx) => cx.Name == name);
 		}
+		/// <summary>
+		/// Add elements to the surface.
+		/// </summary>
+		/// <param name="fes"></param>
 		public void Add(IEnumerable<FrameworkElement> fes) { foreach (var fe in fes) Surface.Children.Add(fe); }
+		/// <summary>
+		/// Remove elements from the surface.
+		/// </summary>
+		/// <param name="fes"></param>
 		public void Remove(IEnumerable<FrameworkElement> fes) { foreach (var fe in fes) Surface.Children.Remove(fe); }
 	}
 	#endregion
 	#region DefaultEnterLeaveContext
+	/// <summary>
+	/// Default impl of the enter/leave context.
+	/// </summary>
 	public class DefaultEnterLeaveContext : DefaultRenderContext, IChartEnterLeaveContext {
+		/// <summary>
+		/// Ctor.
+		/// Initialize.
+		/// </summary>
+		/// <param name="surface"></param>
+		/// <param name="components"></param>
+		/// <param name="sz"></param>
+		/// <param name="rc"></param>
+		/// <param name="sa"></param>
+		/// <param name="dc"></param>
 		public DefaultEnterLeaveContext(Canvas surface, ObservableCollection<ChartComponent> components, Size sz, Rect rc, Rect sa, object dc) :base(surface, components, sz, rc, sa, dc) { Surface = surface; }
+		/// <summary>
+		/// Add given element to surface.
+		/// </summary>
+		/// <param name="fe"></param>
 		public void Add(FrameworkElement fe) {
 			Surface.Children.Add(fe);
 		}
+		/// <summary>
+		/// Remove given element from surface.
+		/// </summary>
+		/// <param name="fe"></param>
 		public void Remove(FrameworkElement fe) {
 			Surface.Children.Remove(fe);
 		}
 	}
 	#endregion
 	#region DefaultLayoutContext
+	/// <summary>
+	/// Default impl of layout context.
+	/// </summary>
 	public class DefaultLayoutContext : IChartLayoutContext {
+		/// <summary>
+		/// Overall size of chart rectangle.
+		/// </summary>
 		public Size Dimensions { get; protected set; }
+		/// <summary>
+		/// Amount of space remaining after claims.
+		/// Gets adjusted after each call to Claim().
+		/// </summary>
 		public Rect RemainingRect { get; protected set; }
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="sz"></param>
+		/// <param name="rc"></param>
 		public DefaultLayoutContext(Size sz, Rect rc) { Dimensions = sz; RemainingRect = rc; }
 		IDictionary<ChartComponent, Rect> ClaimedRects { get; set; } = new Dictionary<ChartComponent, Rect>();
+		/// <summary>
+		/// Return the rect mapped to this component, else RemainingRect.
+		/// </summary>
+		/// <param name="cc"></param>
+		/// <returns></returns>
 		public Rect For(ChartComponent cc) { return ClaimedRects.ContainsKey(cc) ? ClaimedRects[cc] : RemainingRect; }
 		/// <summary>
 		/// Trim axis rectangles to be "flush" with the RemainingRect.
@@ -91,6 +176,13 @@ namespace eScapeLLC.UWP.Charts {
 				ClaimedRects[kv.Key] = kv.Value;
 			}
 		}
+		/// <summary>
+		/// Claim the indicated space for given component.
+		/// </summary>
+		/// <param name="cc"></param>
+		/// <param name="sd"></param>
+		/// <param name="amt"></param>
+		/// <returns></returns>
 		public Rect ClaimSpace(ChartComponent cc, Side sd, double amt) {
 			var ul = new Point();
 			var sz = new Size();
@@ -170,6 +262,10 @@ namespace eScapeLLC.UWP.Charts {
 		protected Size LastLayout { get; set; }
 		#endregion
 		#region ctor
+		/// <summary>
+		/// Ctor.
+		/// Establish default values.
+		/// </summary>
 		public Chart() :base() {
 			DefaultStyleKey = typeof(Chart);
 			Components = new ChartComponentCollection();

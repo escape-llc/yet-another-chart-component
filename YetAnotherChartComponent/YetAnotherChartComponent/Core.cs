@@ -8,9 +8,49 @@ using Windows.UI.Xaml.Media;
 
 namespace eScapeLLC.UWP.Charts {
 	#region IChartAxis
-	public enum AxisType { Category, Value };
-	public enum AxisOrientation { Horizontal, Vertical };
-	public enum AxisVisibility { Visible, Hidden, Collapsed };
+	/// <summary>
+	/// Allowed axis types.
+	/// </summary>
+	public enum AxisType {
+		/// <summary>
+		/// X-axis value.
+		/// </summary>
+		Category,
+		/// <summary>
+		/// Y-axis value.
+		/// </summary>
+		Value
+	};
+	/// <summary>
+	/// Allowed axis orientations.
+	/// </summary>
+	public enum AxisOrientation {
+		/// <summary>
+		/// Horizontal orientation.
+		/// </summary>
+		Horizontal,
+		/// <summary>
+		/// Vertical orientation.
+		/// </summary>
+		Vertical
+	};
+	/// <summary>
+	/// Axis visibility.
+	/// </summary>
+	public enum AxisVisibility {
+		/// <summary>
+		/// Visible and taking up layout space.
+		/// </summary>
+		Visible,
+		/// <summary>
+		/// Not visible and taking up layout space.
+		/// </summary>
+		Hidden,
+		/// <summary>
+		/// Not visible not taking up layout space.
+		/// </summary>
+		Collapsed
+	};
 	/// <summary>
 	/// Features for axes.
 	/// Axes must be present in the component list, to provide the infrastructure for scaling data series, even if they
@@ -59,7 +99,28 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Side to claim space from.
 	/// </summary>
-	public enum Side { Top, Right, Bottom, Left, Float };
+	public enum Side {
+		/// <summary>
+		/// Top.
+		/// </summary>
+		Top,
+		/// <summary>
+		/// Right.
+		/// </summary>
+		Right,
+		/// <summary>
+		/// Bottom.
+		/// </summary>
+		Bottom,
+		/// <summary>
+		/// Left.
+		/// </summary>
+		Left,
+		/// <summary>
+		/// No fixed side, no space claimed.
+		/// </summary>
+		Float
+	};
 	/// <summary>
 	/// Context interface for the layout process.
 	/// </summary>
@@ -153,6 +214,9 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public abstract class ChartComponent : FrameworkElement {
 		#region ctor
+		/// <summary>
+		/// Default ctor.
+		/// </summary>
 		protected ChartComponent() { }
 		#endregion
 		#region extension points
@@ -229,6 +293,9 @@ namespace eScapeLLC.UWP.Charts {
 	}
 	#endregion
 	#region TreeHelper
+	/// <summary>
+	/// Static Helpers for visual tree.
+	/// </summary>
 	public static class TreeHelper {
 		/// <summary>
 		/// Finds object in control's template by its name.
@@ -331,12 +398,30 @@ namespace eScapeLLC.UWP.Charts {
 	}
 	#endregion
 	#region converters
+	/// <summary>
+	/// Converter for bool to Visibility.
+	/// </summary>
 	public class BoolToVisibilityConverter : IValueConverter {
+		/// <summary>
+		/// convert.
+		/// </summary>
+		/// <param name="value"></param>
+		/// <param name="targetType"></param>
+		/// <param name="parameter"></param>
+		/// <param name="language"></param>
+		/// <returns></returns>
 		public object Convert(object value, Type targetType, object parameter, string language) {
 			var isChecked = (bool)value;
 			return isChecked ? Visibility.Visible : Visibility.Collapsed;
 		}
-
+		/// <summary>
+		/// Unconvert.
+		/// </summary>
+		/// <param name="value"></param>
+		/// <param name="targetType"></param>
+		/// <param name="parameter"></param>
+		/// <param name="language"></param>
+		/// <returns></returns>
 		public object ConvertBack(object value, Type targetType, object parameter, string language) {
 			throw new NotImplementedException();
 		}
