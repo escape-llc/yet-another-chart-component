@@ -93,6 +93,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="value">Input (actual) value.</param>
 		/// <returns>Axis-mapped value.</returns>
 		double For(double value);
+		/// <summary>
+		/// Map the value with label.
+		/// </summary>
+		/// <param name="valueWithLabel">Value with its label.</param>
+		/// <returns>Axis-mapped value.</returns>
+		double For(Tuple<double, String> valueWithLabel);
 	}
 	#endregion
 	#region IChartLayoutContext

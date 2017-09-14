@@ -27,20 +27,21 @@ namespace TestAppXaml {
 		protected override void OnNavigatedTo(NavigationEventArgs e) {
 			base.OnNavigatedTo(e);
 			var vm = new ViewModel();
-			vm.Data.Add(new Observation(0, 0));
-			vm.Data.Add(new Observation(1, 10));
-			vm.Data.Add(new Observation(2, 5));
-			vm.Data.Add(new Observation(3, -10));
-			vm.Data.Add(new Observation(4, -5));
-			vm.Data.Add(new Observation(5, 0));
+			vm.Data.Add(new Observation("Group 1", -0.5, 0.02));
+			vm.Data.Add(new Observation("Group 2", 3, 10));
+			vm.Data.Add(new Observation("Group 3", 2, 5));
+			vm.Data.Add(new Observation("Group 4", 3, -10));
+			vm.Data.Add(new Observation("Group 5", 4, -5));
+			vm.Data.Add(new Observation("Group 6", -5.25, 0.04));
 			DataContext = vm;
 		}
 	}
 	public class Observation {
-		public double X { get; set; }
-		public double Y { get; set; }
+		public String Label { get; private set; }
+		public double Value1 { get; private set; }
+		public double Value2 { get; private set; }
 		public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.Now;
-		public Observation(double xx, double yy) { X = xx; Y = yy; }
+		public Observation(String label, double v1, double v2) { Label = label; Value1 = v1; Value2 = v2; }
 	}
 	public class ViewModel {
 		public ObservableCollection<Observation> Data { get; private set; } = new ObservableCollection<Observation>();

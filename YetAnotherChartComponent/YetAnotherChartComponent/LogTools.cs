@@ -9,21 +9,111 @@ namespace eScape.Core {
 	/// Allows for syntax like flag.Verbose($"the message")
 	/// </summary>
 	public static class LogToolsExtensions {
+		/// <summary>
+		/// Extension method.
+		/// </summary>
+		/// <param name="flag"></param>
+		/// <returns></returns>
 		public static bool IsVerbose(this LogTools.Flag flag) { return flag.Level <= LogTools.Level.Verbose; }
+		/// <summary>
+		/// Extension method.
+		/// </summary>
+		/// <param name="flag"></param>
+		/// <returns></returns>
 		public static bool IsInfo(this LogTools.Flag flag) { return flag.Level <= LogTools.Level.Info; }
+		/// <summary>
+		/// Extension method.
+		/// </summary>
+		/// <param name="flag"></param>
+		/// <returns></returns>
 		public static bool IsWarn(this LogTools.Flag flag) { return flag.Level <= LogTools.Level.Warn; }
+		/// <summary>
+		/// Extension method.
+		/// </summary>
+		/// <param name="flag"></param>
+		/// <returns></returns>
 		public static bool IsError(this LogTools.Flag flag) { return flag.Level <= LogTools.Level.Error; }
+		/// <summary>
+		/// Extension method.
+		/// </summary>
+		/// <param name="flag"></param>
+		/// <returns></returns>
 		public static bool IsFatal(this LogTools.Flag flag) { return flag.Level <= LogTools.Level.Fatal; }
+		/// <summary>
+		/// Extension method.
+		/// </summary>
+		/// <param name="flag"></param>
+		/// <returns></returns>
 		public static bool IsOff(this LogTools.Flag flag) { return flag.Level == LogTools.Level.Off; }
+		/// <summary>
+		/// Extension method.
+		/// </summary>
+		/// <param name="flag"></param>
+		/// <param name="msg"></param>
+		/// <returns></returns>
 		public static void Verbose(this LogTools.Flag flag, String msg) { LogTools.Log.Verbose(flag, msg); }
+		/// <summary>
+		/// Extension method.
+		/// </summary>
+		/// <param name="flag"></param>
+		/// <param name="msg"></param>
+		/// <returns></returns>
 		public static void Verbose(this LogTools.Flag flag, Func<String> msg) { LogTools.Log.Verbose(flag, msg); }
+		/// <summary>
+		/// Extension method.
+		/// </summary>
+		/// <param name="flag"></param>
+		/// <param name="msg"></param>
+		/// <returns></returns>
 		public static void Info(this LogTools.Flag flag, String msg) { LogTools.Log.Info(flag, msg); }
+		/// <summary>
+		/// Extension method.
+		/// </summary>
+		/// <param name="flag"></param>
+		/// <param name="msg"></param>
+		/// <returns></returns>
 		public static void Info(this LogTools.Flag flag, Func<String> msg) { LogTools.Log.Info(flag, msg); }
+		/// <summary>
+		/// Extension method.
+		/// </summary>
+		/// <param name="flag"></param>
+		/// <param name="msg"></param>
+		/// <returns></returns>
 		public static void Warn(this LogTools.Flag flag, String msg) { LogTools.Log.Warn(flag, msg); }
+		/// <summary>
+		/// Extension method.
+		/// </summary>
+		/// <param name="flag"></param>
+		/// <param name="msg"></param>
+		/// <returns></returns>
 		public static void Warn(this LogTools.Flag flag, Func<String> msg) { LogTools.Log.Warn(flag, msg); }
+		/// <summary>
+		/// Extension method.
+		/// </summary>
+		/// <param name="flag"></param>
+		/// <param name="msg"></param>
+		/// <returns></returns>
 		public static void Error(this LogTools.Flag flag, String msg) { LogTools.Log.Error(flag, msg); }
+		/// <summary>
+		/// Extension method.
+		/// </summary>
+		/// <param name="flag"></param>
+		/// <param name="msg"></param>
+		/// <returns></returns>
 		public static void Error(this LogTools.Flag flag, Func<String> msg) { LogTools.Log.Error(flag, msg); }
+		/// <summary>
+		/// Extension method.
+		/// </summary>
+		/// <param name="flag"></param>
+		/// <param name="msg"></param>
+		/// <returns></returns>
 		public static void Fatal(this LogTools.Flag flag, String msg) { LogTools.Log.Fatal(flag, msg); }
+		/// <summary>
+		/// Extension method.
+		/// </summary>
+		/// <param name="flag"></param>
+		/// <param name="msg"></param>
+		/// <returns></returns>
 		public static void Fatal(this LogTools.Flag flag, Func<String> msg) { LogTools.Log.Fatal(flag, msg); }
 	}
 	#endregion
@@ -36,7 +126,32 @@ namespace eScape.Core {
 		/// <summary>
 		/// Severity levels.
 		/// </summary>
-		public enum Level : uint { Verbose = 0, Info = 1, Warn = 2, Error = 3, Fatal = 4, Off = uint.MaxValue };
+		public enum Level : uint {
+			/// <summary>
+			/// Lowest level; all messages.
+			/// </summary>
+			Verbose = 0,
+			/// <summary>
+			/// Info and higher.
+			/// </summary>
+			Info = 1,
+			/// <summary>
+			/// Warn and higher.
+			/// </summary>
+			Warn = 2,
+			/// <summary>
+			/// Error and higher.
+			/// </summary>
+			Error = 3,
+			/// <summary>
+			/// Fatal and higher.
+			/// </summary>
+			Fatal = 4,
+			/// <summary>
+			/// Highese level; no messages.
+			/// </summary>
+			Off = uint.MaxValue
+		};
 		#endregion
 		#region Flag
 		/// <summary>

@@ -57,6 +57,12 @@ namespace eScapeLLC.UWP.Charts {
 			"CategoryMemberPath", typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
 		);
 		/// <summary>
+		/// CategoryLabelPath DP.
+		/// </summary>
+		public static readonly DependencyProperty CategoryLabelPathProperty = DependencyProperty.Register(
+			"CategoryLabelPath", typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
+		);
+		/// <summary>
 		/// Generic DP property change handler.
 		/// Calls DataSeries.ProcessData().
 		/// </summary>
@@ -77,6 +83,13 @@ namespace eScapeLLC.UWP.Charts {
 		/// MAY be NULL, in which case the data-index is used instead.
 		/// </summary>
 		public String CategoryMemberPath { get { return (String)GetValue(CategoryMemberPathProperty); } set { SetValue(CategoryMemberPathProperty, value); } }
+		/// <summary>
+		/// Binding path to the category axis label.
+		/// If multiple series are presenting the same data source, only one MUST HAVE this property set.
+		/// If CategoryMemberPath is NULL, the data-index is used.
+		/// MAY be NULL, in which case no labels are used on category axis.
+		/// </summary>
+		public String CategoryLabelPath { get { return (String)GetValue(CategoryLabelPathProperty); } set { SetValue(CategoryLabelPathProperty, value); } }
 		/// <summary>
 		/// Binding path to the value axis value.
 		/// </summary>
@@ -301,7 +314,10 @@ namespace eScapeLLC.UWP.Charts {
 			if (ValueAxis == null || CategoryAxis == null || DataSource == null) return;
 			if (String.IsNullOrEmpty(ValueMemberPath)) return;
 			var by = new BindingEvaluator(ValueMemberPath);
+			// TODO report the binding error
+			if (by == null) return;
 			var bx = !String.IsNullOrEmpty(CategoryMemberPath) ? new BindingEvaluator(CategoryMemberPath) : null;
+			var bl = !String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null;
 			int ix = 0;
 			ResetLimits();
 			Geometry.Figures.Clear();
@@ -312,7 +328,7 @@ namespace eScapeLLC.UWP.Charts {
 				var valuex = bx != null ? (double)bx.For(vx) : ix;
 				UpdateLimits(valuex, valuey);
 				var mappedy = ValueAxis.For(valuey);
-				var mappedx = CategoryAxis.For(valuex);
+				var mappedx = bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double,String>(valuex, bl.For(vx).ToString()));
 				_trace.Verbose($"[{ix}] {valuey} ({mappedx},{mappedy})");
 				if(ix == 0) {
 					pf.StartPoint = new Point(mappedx, mappedy);
@@ -378,10 +394,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// Default ctor.
 		/// </summary>
 		public ColumnSeries() {
-			Segments = new Path();
-			Segments.StrokeThickness = 1;
 			Geometry = new PathGeometry();
-			Segments.Data = Geometry;
+			Segments = new Path() {
+				StrokeThickness = 1,
+				Data = Geometry
+		};
 		}
 		#endregion
 		#region extensions
@@ -443,7 +460,10 @@ namespace eScapeLLC.UWP.Charts {
 			if (ValueAxis == null || CategoryAxis == null || DataSource == null) return;
 			if (String.IsNullOrEmpty(ValueMemberPath)) return;
 			var by = new BindingEvaluator(ValueMemberPath);
+			// TODO report the binding error
+			if (by == null) return;
 			var bx = !String.IsNullOrEmpty(CategoryMemberPath) ? new BindingEvaluator(CategoryMemberPath) : null;
+			var bl = !String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null;
 			int ix = 0;
 			ResetLimits();
 			Geometry.Figures.Clear();
@@ -455,7 +475,8 @@ namespace eScapeLLC.UWP.Charts {
 				UpdateLimits(valuex, 0);
 				var topy = ValueAxis.For(valuey);
 				var bottomy = ValueAxis.For(0);
-				var leftx = CategoryAxis.For(valuex) + BarOffset;
+				//var leftx = CategoryAxis.For(valuex) + BarOffset;
+				var leftx = (bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, bl.For(vx).ToString()))) + BarOffset;
 				var rightx = leftx + BarWidth;
 				_trace.Verbose($"[{ix}] {valuey} ({leftx},{topy}) ({rightx},{bottomy})");
 				var pf = PathHelper.Rectangle(leftx, Math.Max(topy, bottomy), rightx, Math.Min(topy, bottomy));

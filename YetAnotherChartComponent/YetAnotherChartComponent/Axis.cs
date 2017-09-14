@@ -117,7 +117,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Reset the limits to NaN.
 		/// </summary>
-		public void ResetLimits() { Minimum = double.NaN; Maximum = double.NaN; Dirty = true; }
+		public virtual void ResetLimits() { Minimum = double.NaN; Maximum = double.NaN; Dirty = true; }
 		/// <summary>
 		/// Update limits based on given value.
 		/// </summary>
@@ -128,6 +128,12 @@ namespace eScapeLLC.UWP.Charts {
 			if (double.IsNaN(Maximum) || value > Maximum) { Maximum = value; Dirty = true; }
 			return value;
 		}
+		/// <summary>
+		/// Update limites based on given value, and register label.
+		/// </summary>
+		/// <param name="valueWithLabel"></param>
+		/// <returns></returns>
+		public abstract double For(Tuple<double, String> valueWithLabel);
 		#endregion
 	}
 	#endregion
@@ -182,6 +188,7 @@ namespace eScapeLLC.UWP.Charts {
 		void DoBindings(IChartEnterLeaveContext icelc) {
 			BindTo(this, "AxisFill", Axis, Path.FillProperty);
 			BindTo(this, "GridStroke", Grid, Path.StrokeProperty);
+			BindTo(this, "GridStrokeThickness", Grid, Path.StrokeThicknessProperty);
 			var bx = GetBindingExpression(GridVisibilityProperty);
 			if (bx != null) {
 				Grid.SetBinding(UIElement.VisibilityProperty, bx.ParentBinding);
@@ -191,6 +198,14 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region extensions
+		/// <summary>
+		/// Label currently not processed; does the same as For(double).
+		/// </summary>
+		/// <param name="valueWithLabel"></param>
+		/// <returns></returns>
+		public override double For(Tuple<double, string> valueWithLabel) {
+			return base.For(valueWithLabel.Item1);
+		}
 		/// <summary>
 		/// Add elements and attach bindings.
 		/// </summary>
@@ -207,6 +222,7 @@ namespace eScapeLLC.UWP.Charts {
 		public override void Leave(IChartEnterLeaveContext icelc) {
 			icelc.Remove(Grid);
 			icelc.Remove(Axis);
+			icelc.Remove(TickLabels);
 		}
 		/// <summary>
 		/// Claim the space indicated by properties.
@@ -243,16 +259,16 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"grid start:{start} end:{end} inc:{incr}");
 			GridGeometry.Children.Clear();
 			icrc.Remove(TickLabels);
-			Grid.StrokeThickness = GridStrokeThickness;
 			// grid lines and tick labels
 			// TODO reuse existing labels in the loop
+			TickLabels.Clear();
 			for (var vx = start; vx <= end; vx += incr) {
 				//_trace.Verbose($"grid vx:{vx}");
 				var grid = new LineGeometry() { StartPoint = new Point(0, vx), EndPoint = new Point(1, vx) };
 				GridGeometry.Children.Add(grid);
 				var tb = new TextBlock() {
 					FontSize = LabelFontSize,
-					Foreground = LabelForeground == null ? AxisFill : LabelForeground,
+					Foreground = LabelForeground ?? AxisFill,
 					Text = vx.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString),
 					VerticalAlignment = VerticalAlignment.Center,
 					HorizontalAlignment = Side == Side.Right ? HorizontalAlignment.Left : HorizontalAlignment.Right,
@@ -312,6 +328,14 @@ namespace eScapeLLC.UWP.Charts {
 		/// Axis bar geometry.
 		/// </summary>
 		protected PathGeometry AxisGeometry { get; set; }
+		/// <summary>
+		/// Manage labels.
+		/// </summary>
+		protected Dictionary<int, Tuple<double, string>> LabelMap { get; set; } = new Dictionary<int, Tuple<double, string>>();
+		/// <summary>
+		/// List of active TextBlocks for labels.
+		/// </summary>
+		protected List<TextBlock> TickLabels { get; set; }
 		#endregion
 		#region ctor
 		/// <summary>
@@ -321,6 +345,7 @@ namespace eScapeLLC.UWP.Charts {
 			CommonInit();
 		}
 		private void CommonInit() {
+			TickLabels = new List<TextBlock>();
 			Axis = new Path();
 			AxisGeometry = new PathGeometry();
 			Axis.Data = AxisGeometry;
@@ -328,6 +353,30 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region extensions
+		/// <summary>
+		/// Clear the label map in addition to default impl.
+		/// </summary>
+		public override void ResetLimits() {
+			LabelMap.Clear();
+			base.ResetLimits();
+		}
+		/// <summary>
+		/// Labels are cached for presentation.
+		/// </summary>
+		/// <param name="valueWithLabel"></param>
+		/// <returns>base.For(double)</returns>
+		public override double For(Tuple<double, string> valueWithLabel) {
+			var mv = base.For(valueWithLabel.Item1);
+			int key = (int)Math.Truncate(mv);
+			if(LabelMap.ContainsKey(key)) {
+				// should be an error but just overwrite it
+				LabelMap[key] = valueWithLabel;
+			}
+			else {
+				LabelMap.Add(key, valueWithLabel);
+			}
+			return mv;
+		}
 		/// <summary>
 		/// Add elements and attach bindings.
 		/// </summary>
@@ -342,6 +391,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icelc"></param>
 		public override void Leave(IChartEnterLeaveContext icelc) {
 			icelc.Remove(Axis);
+			icelc.Remove(TickLabels);
 		}
 		/// <summary>
 		/// Claim the space indicated by properties.
@@ -359,8 +409,37 @@ namespace eScapeLLC.UWP.Charts {
 			if (!Dirty) return;
 			_trace.Verbose($"{Name} min:{Minimum} max:{Maximum} r:{Range}");
 			AxisGeometry.Figures.Clear();
+			icrc.Remove(TickLabels);
 			var pf = PathHelper.Rectangle(Minimum, 0, Maximum, AxisLineThickness);
 			AxisGeometry.Figures.Add(pf);
+			var i1 = (int)Math.Truncate(Minimum);
+			var i2 = (int)Math.Truncate(Maximum);
+			var scalex = icrc.Area.Width / Range;
+			// lay out labels
+			// TODO recycle these
+			TickLabels.Clear();
+			for (var ix = i1; ix <= i2; ix++) {
+				if(LabelMap.ContainsKey(ix)) {
+					// create a label
+					var tpx = LabelMap[ix];
+					_trace.Verbose($"key {ix} label {tpx.Item2}");
+					var tb = new TextBlock() {
+						FontSize = LabelFontSize,
+						Foreground = LabelForeground ?? AxisFill,
+						Text = tpx.Item2,
+						VerticalAlignment = VerticalAlignment.Center,
+						HorizontalAlignment = HorizontalAlignment.Center,
+						Width = scalex,
+						TextAlignment = TextAlignment.Center
+					};
+					tb.SetValue(Canvas.LeftProperty, icrc.Area.Left + ix*scalex);
+					tb.SetValue(Canvas.TopProperty, icrc.Area.Top + AxisLineThickness + 2*AxisMargin);
+					// cheat: save the grid value so we can rescale the Left in Transforms()
+					tb.Tag = tpx;
+					TickLabels.Add(tb);
+				}
+			}
+			icrc.Add(TickLabels);
 			Dirty = false;
 		}
 		/// <summary>
@@ -374,6 +453,12 @@ namespace eScapeLLC.UWP.Charts {
 			var matx = new Matrix(scalex, 0, 0, 1, icrc.Area.Left, icrc.Area.Top + AxisMargin);
 			AxisGeometry.Transform = new MatrixTransform() { Matrix = matx };
 			_trace.Verbose($"transforms sx:{scalex} matx:{matx} a:{icrc.Area}");
+			foreach (var tb in TickLabels) {
+				var vx = (Tuple<double,String>)tb.Tag;
+				tb.SetValue(Canvas.LeftProperty, icrc.Area.Left + vx.Item1 * scalex);
+				tb.SetValue(Canvas.TopProperty, icrc.Area.Top + AxisLineThickness + 2 * AxisMargin);
+				tb.Width = scalex;
+			}
 		}
 		#endregion
 	}

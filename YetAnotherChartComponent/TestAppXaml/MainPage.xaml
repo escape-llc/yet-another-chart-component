@@ -39,18 +39,19 @@
 		</StackPanel>
 		<yacc:Chart x:Name="cx" Grid.Row="2" Background="Black" Padding="16" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
 			<yacc:Chart.Components>
-				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" AxisFill="{StaticResource red}" />
+				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" AxisFill="{StaticResource red}"
+					LabelForeground="{StaticResource limegreen}" />
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" AxisFill="{StaticResource red}"
 					GridStroke="{StaticResource gray}" LabelForeground="{StaticResource limegreen}"
 					LabelFormatString="F1"
 					GridVisibility="{Binding ElementName=cb_yaxis_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
-				<yacc:ColumnSeries DataSource="{Binding Data}" ValueMemberPath="X"
+				<yacc:ColumnSeries DataSource="{Binding Data}" ValueMemberPath="Value1" CategoryLabelPath="Label"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					Stroke="DarkOrchid" Fill="{StaticResource blue-to-green}" BarOffset=".25" BarWidth=".25" />
-				<yacc:ColumnSeries DataSource="{Binding Data}" ValueMemberPath="Y"
+				<yacc:ColumnSeries DataSource="{Binding Data}" ValueMemberPath="Value2"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					Stroke="DarkOrchid" Fill="{StaticResource green-to-blue}" BarOffset=".5" BarWidth=".25" />
-				<yacc:LineSeries DataSource="{Binding Data}" ValueMemberPath="Y"
+				<yacc:LineSeries DataSource="{Binding Data}" ValueMemberPath="Value2"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".5"
 					Stroke="{StaticResource green}" StrokeThickness="5" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
 			</yacc:Chart.Components>
