@@ -139,10 +139,23 @@ namespace eScapeLLC.UWP.Charts {
 			}
 		}
 		/// <summary>
+		/// Register the series limits with the axes.
+		/// </summary>
+		protected void ApplyLimitsToAxes() {
+			if(ValueAxis != null) {
+				ValueAxis.UpdateLimits(Minimum);
+				ValueAxis.UpdateLimits(Maximum);
+			}
+			if(CategoryAxis != null) {
+				CategoryAxis.UpdateLimits(CategoryMinimum);
+				CategoryAxis.UpdateLimits(CategoryMaximum);
+			}
+		}
+		/// <summary>
 		/// Update value and category limits.
 		/// </summary>
-		/// <param name="vx"></param>
-		/// <param name="vy"></param>
+		/// <param name="vx">category</param>
+		/// <param name="vy">value</param>
 		protected void UpdateLimits(double vx, double vy) {
 			if (double.IsNaN(Minimum) || vy < Minimum) { Minimum = vy; }
 			if (double.IsNaN(Maximum) || vy > Maximum) { Maximum = vy; }
@@ -288,7 +301,7 @@ namespace eScapeLLC.UWP.Charts {
 			internal BindingEvaluator bl;
 			internal PathFigure pf;
 		}
-		object IDataSourceRenderer.Preamble() {
+		object IDataSourceRenderer.Preamble(IChartRenderContext icrc) {
 			if (ValueAxis == null || CategoryAxis == null) return null;
 			if (String.IsNullOrEmpty(ValuePath)) return null;
 			var by = new BindingEvaluator(ValuePath);
@@ -321,6 +334,172 @@ namespace eScapeLLC.UWP.Charts {
 			var st = state as State;
 			Geometry.Figures.Clear();
 			Geometry.Figures.Add(st.pf);
+			ApplyLimitsToAxes();
+			Dirty = false;
+		}
+		#endregion
+	}
+	#endregion
+	#region MarkerSeries
+	/// <summary>
+	/// Series that places the given marker at each point.
+	/// </summary>
+	public class MarkerSeries : DataSeries, IDataSourceRenderer {
+		static LogTools.Flag _trace = LogTools.Add("MarkerSeries", LogTools.Level.Verbose);
+		#region properties
+		/// <summary>
+		/// Geometry to use for the marker.
+		/// </summary>
+		public Geometry Marker { get; set; }
+		/// <summary>
+		/// The brush for the series.
+		/// </summary>
+		public Brush Stroke { get { return (Brush)GetValue(StrokeProperty); } set { SetValue(StrokeProperty, value); } }
+		/// <summary>
+		/// The fill brush for the series.
+		/// </summary>
+		public Brush Fill { get { return (Brush)GetValue(FillProperty); } set { SetValue(FillProperty, value); } }
+		/// <summary>
+		/// Offset in Category axis offset in [0..1].
+		/// Use with ColumnSeries to get the "points" to align with the column(s) layout in their cells.
+		/// </summary>
+		public double CategoryAxisOffset { get; set; }
+		/// <summary>
+		/// The series drawing attributes etc. on the Canvas.
+		/// </summary>
+		protected Path Segments { get; set; }
+		/// <summary>
+		/// The series geometry.
+		/// </summary>
+		protected GeometryGroup Geometry { get; set; }
+		#endregion
+		#region DPs
+		/// <summary>
+		/// Identifies <see cref="Stroke"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty StrokeProperty = DependencyProperty.Register("Stroke", typeof(Brush), typeof(MarkerSeries), new PropertyMetadata(null));
+		/// <summary>
+		/// Identifies <see cref="Fill"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty FillProperty = DependencyProperty.Register("Fill", typeof(Brush), typeof(MarkerSeries), new PropertyMetadata(null));
+		#endregion
+		#region ctor
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		public MarkerSeries() {
+			Geometry = new GeometryGroup();
+			Segments = new Path() {
+				Data = Geometry
+			};
+		}
+		#endregion
+		#region extensions
+		/// <summary>
+		/// Initialize after entering VT.
+		/// </summary>
+		/// <param name="icelc"></param>
+		public override void Enter(IChartEnterLeaveContext icelc) {
+			EnsureAxes(icelc);
+			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis} c:{ValueAxisName}:{ValueAxis} d:{DataSourceName}");
+			icelc.Add(Segments);
+			BindTo(this, "Stroke", Segments, Path.StrokeProperty);
+			BindTo(this, "Fill", Segments, Path.FillProperty);
+#if false
+			Segments.StrokeThickness = StrokeThickness;
+			Segments.StrokeEndLineCap = StrokeEndLineCap;
+			Segments.StrokeLineJoin = StrokeLineJoin;
+			Segments.StrokeStartLineCap = StrokeStartLineCap;
+#else
+			Segments.StrokeThickness = 1;
+#endif
+		}
+		/// <summary>
+		/// Undo effects of Enter().
+		/// </summary>
+		/// <param name="icelc"></param>
+		public override void Leave(IChartEnterLeaveContext icelc) {
+			_trace.Verbose($"leave");
+			ValueAxis = null;
+			CategoryAxis = null;
+			icelc.Remove(Segments);
+		}
+		/// <summary>
+		/// Adjust transforms for the various components.
+		/// Geometry: scaled to actual values in cartesian coordinates as indicated by axes.
+		/// </summary>
+		/// <param name="icrc"></param>
+		public override void Transforms(IChartRenderContext icrc) {
+			base.Transforms(icrc);
+			if (CategoryAxis == null || ValueAxis == null) return;
+			var scalex = icrc.Area.Width / CategoryAxis.Range;
+			var scaley = icrc.Area.Height / ValueAxis.Range;
+			var offsetx = scalex * CategoryAxisOffset;
+			var matx = new Matrix(scalex, 0, 0, -scaley, icrc.Area.Left + offsetx, icrc.Area.Top + icrc.Area.Height / 2);
+			_trace.Verbose($"scale {scalex:F3},{scaley:F3} mat:{matx}");
+			Geometry.Transform = new MatrixTransform() { Matrix = matx };
+			// TODO must counter-scale (in Y-axis) the markers to preserve aspect ratio
+			foreach (var gx in Geometry.Children) {
+				TransformMarker(gx, scalex, scaley);
+			}
+		}
+		/// <summary>
+		/// Counter-scale the marker's Y-axis to preserve aspect ratio.
+		/// </summary>
+		/// <param name="mk">The marker.</param>
+		/// <param name="scalex">X-axis scale.</param>
+		/// <param name="scaley">Y-axis scale.</param>
+		protected void TransformMarker(Geometry mk, double scalex, double scaley) {
+			if(mk is EllipseGeometry) {
+				var eg = mk as EllipseGeometry;
+				var xpx = eg.RadiusX * scalex;
+				var yv = xpx / scaley;
+				eg.RadiusY = yv;
+			}
+		}
+		#endregion
+		#region IDataSourceRenderer
+		class State {
+			internal BindingEvaluator bx;
+			internal BindingEvaluator by;
+			internal BindingEvaluator bl;
+		}
+		Geometry CloneMarker(double mappedx, double mappedy) {
+			if(Marker is EllipseGeometry) {
+				var eg = Marker as EllipseGeometry;
+				return new EllipseGeometry() { Center = new Point(mappedx, mappedy), RadiusX = eg.RadiusX, RadiusY = eg.RadiusY };
+			}
+			return new EllipseGeometry() { Center = new Point(mappedx, mappedy), RadiusX = .5, RadiusY = 1 };
+		}
+		object IDataSourceRenderer.Preamble(IChartRenderContext icrc) {
+			if (ValueAxis == null || CategoryAxis == null) return null;
+			if (String.IsNullOrEmpty(ValuePath)) return null;
+			var by = new BindingEvaluator(ValuePath);
+			// TODO report the binding error
+			if (by == null) return null;
+			ResetLimits();
+			Geometry.Children.Clear();
+			return new State() {
+				bx = !String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
+				bl = !String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null,
+				by = by
+			};
+		}
+		void IDataSourceRenderer.Render(object state, int index, object item) {
+			var st = state as State;
+			// TODO handle datetime et al values that aren't double
+			var valuey = (double)st.by.For(item);
+			var valuex = st.bx != null ? (double)st.bx.For(item) : index;
+			UpdateLimits(valuex, valuey);
+			var mappedy = ValueAxis.For(valuey);
+			var mappedx = st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()));
+			_trace.Verbose($"[{index}] {valuey} ({mappedx},{mappedy})");
+			var mk = CloneMarker(mappedx, mappedy);
+			Geometry.Children.Add(mk);
+		}
+		void IDataSourceRenderer.Postamble(object state) {
+			var st = state as State;
+			ApplyLimitsToAxes();
 			Dirty = false;
 		}
 		#endregion
@@ -428,7 +607,7 @@ namespace eScapeLLC.UWP.Charts {
 			internal BindingEvaluator bl;
 			internal int ix;
 		}
-		object IDataSourceRenderer.Preamble() {
+		object IDataSourceRenderer.Preamble(IChartRenderContext icrc) {
 			if (ValueAxis == null || CategoryAxis == null) return null;
 			if (String.IsNullOrEmpty(ValuePath)) return null;
 			var by = new BindingEvaluator(ValuePath);
@@ -450,7 +629,6 @@ namespace eScapeLLC.UWP.Charts {
 			UpdateLimits(valuex, 0);
 			var topy = ValueAxis.For(valuey);
 			var bottomy = ValueAxis.For(0);
-			//var leftx = CategoryAxis.For(valuex) + BarOffset;
 			var leftx = (st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()))) + BarOffset;
 			var rightx = leftx + BarWidth;
 			_trace.Verbose($"[{index}] {valuey} ({leftx},{topy}) ({rightx},{bottomy})");
@@ -463,8 +641,9 @@ namespace eScapeLLC.UWP.Charts {
 			if (st.bx == null) {
 				// needs one extra "cell"
 				CategoryAxis.For(st.ix + 1);
+				UpdateLimits(st.ix + 1, 0);
 			}
-			//LastDataSourceCount = st.ix;
+			ApplyLimitsToAxes();
 			Dirty = false;
 		}
 		#endregion

@@ -222,6 +222,12 @@ namespace eScapeLLC.UWP.Charts {
 		}
 	}
 	#endregion
+	#region ChartDataSourceCollection
+	/// <summary>
+	/// This is to appease the XAML infrastruction which eschews generic classes as property type.
+	/// </summary>
+	public class ChartDataSourceCollection : ObservableCollection<DataSource> { }
+	#endregion
 	#region ChartComponentCollection
 	/// <summary>
 	/// This is to appease the XAML infrastruction which eschews generic classes as property type.
@@ -238,7 +244,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// The list of data sources.
 		/// </summary>
-		public DependencyObjectCollection DataSources { get; private set; }
+		public ChartDataSourceCollection DataSources { get; private set; }
 		/// <summary>
 		/// The chart's visual components.
 		/// Obtained from the XAML and programmatic.
@@ -273,8 +279,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public Chart() :base() {
 			DefaultStyleKey = typeof(Chart);
-			DataSources = new DependencyObjectCollection();
-			DataSources.VectorChanged += DataSources_VectorChanged;
+			DataSources = new ChartDataSourceCollection();
+			DataSources.CollectionChanged += DataSources_CollectionChanged;
 			Components = new ChartComponentCollection();
 			Components.CollectionChanged += new NotifyCollectionChangedEventHandler(Components_CollectionChanged);
 			Axes = new List<IChartAxis>();
@@ -285,12 +291,6 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region evhs
-		private void DataSources_VectorChanged(Windows.Foundation.Collections.IObservableVector<DependencyObject> sender, Windows.Foundation.Collections.IVectorChangedEventArgs ivcea) {
-			_trace.Verbose($"DataSourcesChanged {ivcea.CollectionChange} {ivcea.Index}");
-			if(Surface != null) {
-				RenderComponents(LastLayout);
-			}
-		}
 		/// <summary>
 		/// Propagate data context changes to data sources and components.
 		/// The number of times this is called is non-deterministic.
@@ -352,6 +352,25 @@ namespace eScapeLLC.UWP.Charts {
 				LastLayout = sz;
 			}
 		}
+		private void DataSources_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
+			_trace.Verbose($"DataSourcesChanged {e}");
+			if (e.OldItems != null) {
+				foreach (DataSource ds in e.OldItems) {
+					_trace.Verbose($"leave '{ds.Name}' {ds}");
+					ds.RefreshRequest += DataSource_RefreshRequest1;
+				}
+			}
+			if (e.NewItems != null) {
+				foreach (DataSource ds in e.NewItems) {
+					_trace.Verbose($"enter '{ds.Name}' {ds}");
+					ds.RefreshRequest -= DataSource_RefreshRequest1;
+					ds.DataContext = DataContext;
+				}
+			}
+			if (Surface != null) {
+				RenderComponents(LastLayout);
+			}
+		}
 		/// <summary>
 		/// Reconfigure components that enter and leave.
 		/// </summary>
@@ -362,14 +381,14 @@ namespace eScapeLLC.UWP.Charts {
 			if (e.OldItems != null) {
 				foreach (ChartComponent cc in e.OldItems) {
 					_trace.Verbose($"leave '{cc.Name}' {cc}");
-					cc.RefreshRequest -= Cc_RefreshRequest;
+					cc.RefreshRequest -= ChartComponent_RefreshRequest;
 					LeaveComponent(celc, cc);
 				}
 			}
 			if (e.NewItems != null) {
 				foreach (ChartComponent cc in e.NewItems) {
 					_trace.Verbose($"enter '{cc.Name}' {cc}");
-					cc.RefreshRequest += Cc_RefreshRequest;
+					cc.RefreshRequest += ChartComponent_RefreshRequest;
 					cc.DataContext = DataContext;
 					if(Surface != null)  {
 						EnterComponent(celc, cc);
@@ -383,8 +402,23 @@ namespace eScapeLLC.UWP.Charts {
 				InvalidateArrange();
 			}
 		}
-		private void Cc_RefreshRequest(ChartComponent cc) {
-			_trace.Verbose($"refresh-request '{cc.Name}' {cc}");
+		private void DataSource_RefreshRequest1(DataSource ds) {
+			_trace.Verbose($"refresh-request-ds '{ds.Name}' {ds}");
+			if (Surface != null) {
+				RenderComponents(LastLayout);
+			}
+		}
+		private void ChartComponent_RefreshRequest(ChartComponent cc) {
+			_trace.Verbose($"refresh-request-cc '{cc.Name}' {cc}");
+			if (Surface != null) {
+				if (cc is DataSeries) {
+					var ds = DataSources.SingleOrDefault(dds => dds.Name == (cc as DataSeries).DataSourceName);
+					if(ds != null) {
+						ds.IsDirty = true;
+					}
+				}
+				RenderComponents(LastLayout);
+			}
 		}
 		#endregion
 		#region preset brushes
@@ -501,8 +535,9 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"remaining {dlc.RemainingRect}");
 			dlc.FinalizeRects();
 			// render the data sources -> series -> axes
-			foreach(DataSource ds in DataSources) {
-				ds.Render();
+			var dsctx = new DefaultRenderContext(Surface, Components, inner, Rect.Empty, dlc.RemainingRect, DataContext);
+			foreach (DataSource ds in DataSources) {
+				ds.Render(dsctx);
 			}
 			// axes have seen all values; render+transform them now
 			foreach (var axis in Axes) {

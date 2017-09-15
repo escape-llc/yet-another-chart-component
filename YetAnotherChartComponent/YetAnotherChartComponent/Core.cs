@@ -88,6 +88,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		void ResetLimits();
 		/// <summary>
+		/// Do bookkeeping for updating limits/range.
+		/// </summary>
+		/// <param name="value">The value.</param>
+		void UpdateLimits(double value);
+		/// <summary>
 		/// Map the value.
 		/// </summary>
 		/// <param name="value">Input (actual) value.</param>

@@ -1,21 +1,27 @@
 ﻿using eScape.Core;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using Windows.Foundation;
 using Windows.UI.Xaml;
 
 namespace eScapeLLC.UWP.Charts {
 	#region IDataSourceRenderer
 	/// <summary>
 	/// Ability to render the items of a data source.
+	/// preamble, foreach render, postamble.
 	/// </summary>
 	public interface IDataSourceRenderer {
 		/// <summary>
 		/// Return a state object that gets passed back on subsequent calls.
+		/// Includes limit initialization.
 		/// </summary>
+		/// <param name="icrc">Render context.</param>
 		/// <returns>NULL: do not participate; !NULL: The state.</returns>
-		object Preamble();
+		object Preamble(IChartRenderContext icrc);
 		/// <summary>
 		/// Render the current item.
+		/// Includes limit updates.
 		/// Not called if Preamble() returned NULL.
 		/// </summary>
 		/// <param name="state">Return from preamble().</param>
@@ -24,6 +30,7 @@ namespace eScapeLLC.UWP.Charts {
 		void Render(object state, int index, object item);
 		/// <summary>
 		/// Perform terminal actions.
+		/// Includes axis notification of limits.
 		/// Not called if Preamble() returned NULL.
 		/// </summary>
 		/// <param name="state">Return from preamble().</param>
@@ -32,9 +39,16 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region DataSource
 	/// <summary>
+	/// Refresh delegate.
+	/// </summary>
+	/// <param name="ds">Originating component.</param>
+	public delegate void DataSourceRefreshRequestEventHandler(DataSource ds);
+	/// <summary>
 	/// Represents a source of data for one-or-more series.
 	/// Primary purpose is to consolidate the data traversal for all series using this data.
 	/// This is important when the data changes; only one notification is handled instead one per series.
+	/// Automatically tracks anything that implements <see cref="INotifyCollectionChanged"/>.
+	/// Otherwise, owner must call Refresh() at appropriate time.
 	/// </summary>
 	public class DataSource : FrameworkElement {
 		static LogTools.Flag _trace = LogTools.Add("DataSource", LogTools.Level.Verbose);
@@ -43,7 +57,7 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region items DP
 		/// <summary>
-		/// Identifies <see cref="DataSource"/> dependency property.
+		/// Identifies <see cref="Items"/> dependency property.
 		/// </summary>
 		public static readonly DependencyProperty ItemsProperty = DependencyProperty.Register(
 			"Items", typeof(System.Collections.IEnumerable), typeof(DataSource), new PropertyMetadata(null, new PropertyChangedCallback(ItemsPropertyChanged))
@@ -51,36 +65,42 @@ namespace eScapeLLC.UWP.Charts {
 		private static void ItemsPropertyChanged(DependencyObject dobj, DependencyPropertyChangedEventArgs dpcea) {
 			DataSource ds = dobj as DataSource;
 			if (dpcea.OldValue != dpcea.NewValue) {
-				DetachItemsCollectionChanged(ds, dpcea.OldValue);
-				AttachItemsCollectionChanged(ds, dpcea.NewValue);
-				ds.Dirty();
-				ds.ProcessData(dpcea.Property);
+				DetachCollectionChanged(ds, dpcea.OldValue);
+				AttachCollectionChanged(ds, dpcea.NewValue);
+				ds.Refresh();
 			}
 		}
-		private static void DetachItemsCollectionChanged(DataSource ds, object dataSource) {
+		private static void DetachCollectionChanged(DataSource ds, object dataSource) {
 			if (dataSource is INotifyCollectionChanged) {
 				(dataSource as INotifyCollectionChanged).CollectionChanged -= ds.ItemsCollectionChanged;
 			}
 		}
-		private static void AttachItemsCollectionChanged(DataSource ds, object dataSource) {
+		private static void AttachCollectionChanged(DataSource ds, object dataSource) {
 			if (dataSource is INotifyCollectionChanged) {
 				(dataSource as INotifyCollectionChanged).CollectionChanged += new NotifyCollectionChangedEventHandler(ds.ItemsCollectionChanged);
 			}
 		}
 		private void ItemsCollectionChanged(object sender, NotifyCollectionChangedEventArgs nccea) {
-			Dirty();
-			ProcessData(ItemsProperty);
+			Refresh();
 		}
 		#endregion
 		#region properties
 		/// <summary>
 		/// Data source for the series.
+		/// If the object implements <see cref="INotifyCollectionChanged"/> (e.g. <see cref="System.Collections.ObjectModel.ObservableCollection{T}"/>), updates are tracked automatically.
+		/// Otherwise (e.g. <see cref="System.Collections.IList"/>), owner must call Refresh() after the underlying source is modified.
 		/// </summary>
 		public System.Collections.IEnumerable Items { get { return (System.Collections.IEnumerable)GetValue(ItemsProperty); } set { SetValue(ItemsProperty, value); } }
 		/// <summary>
 		/// True: render required.
 		/// </summary>
 		public bool IsDirty { get; set; }
+		#endregion
+		#region events
+		/// <summary>
+		/// "External" interest in this source's updates.
+		/// </summary>
+		public event DataSourceRefreshRequestEventHandler RefreshRequest;
 		#endregion
 		#region extension points
 		/// <summary>
@@ -94,19 +114,18 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		protected virtual void Clean() { IsDirty = false; }
 		/// <summary>
-		/// Process the items.
+		/// Process the items through the list of <see cref="IDataSourceRenderer"/>.
 		/// Default impl.
 		/// </summary>
-		/// <param name="dp">MUST be ItemsProperty.</param>
-		protected virtual void ProcessData(DependencyProperty dp) {
+		/// <param name="icrc">Render context. icrc.Area is set to Rect.Empty.</param>
+		protected virtual void ProcessItems(IChartRenderContext icrc) {
 			_trace.Verbose($"ProcessData {Name} i:{Items} c:{_renderers.Count}");
-			if (dp != ItemsProperty) return;
 			if (Items == null) return;
 			if (_renderers.Count == 0) return;
 			var pmap = new Dictionary<IDataSourceRenderer, object>();
 			// init each renderer; it may opt-out by returning NULL
 			foreach (var idsr in _renderers) {
-				var preamble = idsr.Preamble();
+				var preamble = idsr.Preamble(icrc);
 				// TODO may want an exception instead
 				if (preamble != null) {
 					pmap.Add(idsr, preamble);
@@ -117,8 +136,7 @@ namespace eScapeLLC.UWP.Charts {
 				int ix = 0;
 				foreach (var item in Items) {
 					foreach (var idsr in _renderers) {
-						var preamble = default(object);
-						if (pmap.TryGetValue(idsr, out preamble)) {
+						if (pmap.TryGetValue(idsr, out object preamble)) {
 							idsr.Render(preamble, ix, item);
 						}
 					}
@@ -126,8 +144,7 @@ namespace eScapeLLC.UWP.Charts {
 				}
 				// finalize renderers
 				foreach (var idsr in _renderers) {
-					var preamble = default(object);
-					if (pmap.TryGetValue(idsr, out preamble)) {
+					if (pmap.TryGetValue(idsr, out object preamble)) {
 						idsr.Postamble(preamble);
 					}
 				}
@@ -149,7 +166,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Process items if IsDirty == true.
 		/// </summary>
-		public void Render() { if (IsDirty) ProcessData(ItemsProperty); }
+		public void Render(IChartRenderContext icrc) { if (IsDirty) ProcessItems(icrc); }
+		/// <summary>
+		/// Mark as dirty and fire refresh request event.
+		/// Use this with sources that <b>don't</b> implement <see cref="INotifyCollectionChanged"/>.
+		/// </summary>
+		public void Refresh() { Dirty(); RefreshRequest?.Invoke(this); }
 		#endregion
 	}
 	#endregion

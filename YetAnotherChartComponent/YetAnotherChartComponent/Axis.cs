@@ -116,24 +116,30 @@ namespace eScapeLLC.UWP.Charts {
 		#region public
 		/// <summary>
 		/// Reset the limits to NaN.
+		/// Set Dirty = true.
 		/// </summary>
 		public virtual void ResetLimits() { Minimum = double.NaN; Maximum = double.NaN; Dirty = true; }
 		/// <summary>
-		/// Update limits based on given value.
+		/// Map given value.
 		/// </summary>
 		/// <param name="value">Value to "see".</param>
 		/// <returns>The "mapped" value. By default it's the identity.</returns>
-		public double For(double value) {
-			if (double.IsNaN(Minimum) || value < Minimum) { Minimum = value; Dirty = true; }
-			if (double.IsNaN(Maximum) || value > Maximum) { Maximum = value; Dirty = true; }
-			return value;
-		}
+		public virtual double For(double value) { return value; }
 		/// <summary>
-		/// Update limites based on given value, and register label.
+		/// Map given value, and register label.
 		/// </summary>
 		/// <param name="valueWithLabel"></param>
-		/// <returns></returns>
-		public abstract double For(Tuple<double, String> valueWithLabel);
+		/// <returns>Identity Tuple.Value1.</returns>
+		public virtual double For(Tuple<double, String> valueWithLabel) { return valueWithLabel.Item1; }
+		/// <summary>
+		/// Update the min/max.
+		/// Sets Dirty = true if it updates either limit.
+		/// </summary>
+		/// <param name="value"></param>
+		public void UpdateLimits(double value) {
+			if (double.IsNaN(Minimum) || value < Minimum) { Minimum = value; Dirty = true; }
+			if (double.IsNaN(Maximum) || value > Maximum) { Maximum = value; Dirty = true; }
+		}
 		#endregion
 	}
 	#endregion
@@ -198,14 +204,6 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region extensions
-		/// <summary>
-		/// Label currently not processed; does the same as For(double).
-		/// </summary>
-		/// <param name="valueWithLabel"></param>
-		/// <returns></returns>
-		public override double For(Tuple<double, string> valueWithLabel) {
-			return base.For(valueWithLabel.Item1);
-		}
 		/// <summary>
 		/// Add elements and attach bindings.
 		/// </summary>
@@ -299,7 +297,7 @@ namespace eScapeLLC.UWP.Charts {
 			var gscaley = icrc.SeriesArea.Height / Range;
 			var gscalex = icrc.SeriesArea.Width;
 			var gmatx = new Matrix(gscalex, 0, 0, gscaley, icrc.SeriesArea.Left, icrc.SeriesArea.Top + icrc.SeriesArea.Height / 2);
-			_trace.Verbose($"transforms sy:{scaley} matx:{matx} gmatx:{gmatx} sa:{icrc.SeriesArea}");
+			_trace.Verbose($"transforms sy:{scaley:F3} matx:{matx} gmatx:{gmatx} sa:{icrc.SeriesArea}");
 			GridGeometry.Transform = new MatrixTransform() { Matrix = gmatx };
 			foreach(var tb in TickLabels) {
 				var vx = (double)tb.Tag;
@@ -367,7 +365,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <returns>base.For(double)</returns>
 		public override double For(Tuple<double, string> valueWithLabel) {
 			var mv = base.For(valueWithLabel.Item1);
-			int key = (int)Math.Truncate(mv);
+			int key = (int)mv;
 			if(LabelMap.ContainsKey(key)) {
 				// should be an error but just overwrite it
 				LabelMap[key] = valueWithLabel;
@@ -412,8 +410,8 @@ namespace eScapeLLC.UWP.Charts {
 			icrc.Remove(TickLabels);
 			var pf = PathHelper.Rectangle(Minimum, 0, Maximum, AxisLineThickness);
 			AxisGeometry.Figures.Add(pf);
-			var i1 = (int)Math.Truncate(Minimum);
-			var i2 = (int)Math.Truncate(Maximum);
+			var i1 = (int)Minimum;
+			var i2 = (int)Maximum;
 			var scalex = icrc.Area.Width / Range;
 			// lay out labels
 			// TODO recycle these
@@ -452,7 +450,7 @@ namespace eScapeLLC.UWP.Charts {
 			var scalex = icrc.Area.Width / Range;
 			var matx = new Matrix(scalex, 0, 0, 1, icrc.Area.Left, icrc.Area.Top + AxisMargin);
 			AxisGeometry.Transform = new MatrixTransform() { Matrix = matx };
-			_trace.Verbose($"transforms sx:{scalex} matx:{matx} a:{icrc.Area}");
+			_trace.Verbose($"transforms sx:{scalex:F3} matx:{matx} a:{icrc.Area}");
 			foreach (var tb in TickLabels) {
 				var vx = (Tuple<double,String>)tb.Tag;
 				tb.SetValue(Canvas.LeftProperty, icrc.Area.Left + vx.Item1 * scalex);

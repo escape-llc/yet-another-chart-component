@@ -44,10 +44,6 @@
 			<yacc:Chart.Components>
 				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" AxisFill="{StaticResource red}"
 					LabelForeground="{StaticResource limegreen}" />
-				<yacc:ValueAxis x:Name="yaxis" Side="Left" AxisFill="{StaticResource red}"
-					GridStroke="{StaticResource gray}" LabelForeground="{StaticResource limegreen}"
-					LabelFormatString="F1"
-					GridVisibility="{Binding ElementName=cb_yaxis_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
 				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value1" CategoryLabelPath="Label"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					Stroke="DarkOrchid" Fill="{StaticResource blue-to-green}" BarOffset=".25" BarWidth=".25" />
@@ -58,6 +54,17 @@
 					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".5"
 					Stroke="{StaticResource green}" StrokeThickness="5"
 					StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+				<yacc:MarkerSeries DataSourceName="data" ValuePath="Value1"
+					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".5"
+					Stroke="{StaticResource red}" Fill="{StaticResource blue}">
+					<yacc:MarkerSeries.Marker>
+						<EllipseGeometry Center="0,0" RadiusX=".1" RadiusY=".1" />
+					</yacc:MarkerSeries.Marker>
+				</yacc:MarkerSeries>
+				<yacc:ValueAxis x:Name="yaxis" Side="Left" AxisFill="{StaticResource red}"
+					GridStroke="{StaticResource gray}" LabelForeground="{StaticResource limegreen}"
+					LabelFormatString="F1"
+					GridVisibility="{Binding ElementName=cb_yaxis_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>
 	</Grid>
