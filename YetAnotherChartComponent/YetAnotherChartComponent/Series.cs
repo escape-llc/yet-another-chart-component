@@ -12,38 +12,13 @@ namespace eScapeLLC.UWP.Charts {
 	/// Base class of components that represent a data series.
 	/// </summary>
 	public abstract class DataSeries : ChartComponent {
-		#region data source
+		#region DPs
 		/// <summary>
-		/// Identifies <see cref="DataSource"/> dependency property.
+		/// DataSourceName DP.
 		/// </summary>
-		public static readonly DependencyProperty DataSourceProperty = DependencyProperty.Register(
-			"DataSource", typeof(System.Collections.IEnumerable), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSourcePropertyChanged))
+		public static readonly DependencyProperty DataSourceNameProperty = DependencyProperty.Register(
+			"DataSourceName", typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
 		);
-		private static void DataSourcePropertyChanged(DependencyObject dobj, DependencyPropertyChangedEventArgs dpcea) {
-			DataSeries ds = dobj as DataSeries;
-			if (dpcea.OldValue != dpcea.NewValue) {
-				DetachDataSourceCollectionChanged(ds, dpcea.OldValue);
-				AttachDataSourceCollectionChanged(ds, dpcea.NewValue);
-				ds.Dirty = true;
-				ds.ProcessData(dpcea.Property);
-			}
-		}
-		private static void DetachDataSourceCollectionChanged(DataSeries ds, object dataSource) {
-			if (dataSource is INotifyCollectionChanged) {
-				(dataSource as INotifyCollectionChanged).CollectionChanged -= ds.DataSourceCollectionChanged;
-			}
-		}
-		private static void AttachDataSourceCollectionChanged(DataSeries ds, object dataSource) {
-			if (dataSource is INotifyCollectionChanged) {
-				(dataSource as INotifyCollectionChanged).CollectionChanged += new NotifyCollectionChangedEventHandler(ds.DataSourceCollectionChanged);
-			}
-		}
-		private void DataSourceCollectionChanged(object sender, NotifyCollectionChangedEventArgs nccea) {
-			Dirty = true;
-			ProcessData(DataSourceProperty);
-		}
-		#endregion
-		#region category/value member path
 		/// <summary>
 		/// ValueMemberPath DP.
 		/// </summary>
@@ -70,14 +45,15 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="dpcea"></param>
 		private static void DataSeriesPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs dpcea) {
 			DataSeries ds = d as DataSeries;
-			ds.ProcessData(dpcea.Property);
+			ds.Dirty = true;
+			ds.Refresh();
 		}
 		#endregion
 		#region properties
 		/// <summary>
-		/// Data source for the series.
+		/// The name of the data source in the DataSources collection.
 		/// </summary>
-		public System.Collections.IEnumerable DataSource { get { return (System.Collections.IEnumerable)GetValue(DataSourceProperty); } set { SetValue(DataSourceProperty, value); } }
+		public String DataSourceName { get { return (String)GetValue(DataSourceNameProperty); } set { SetValue(DataSourceNameProperty, value); } }
 		/// <summary>
 		/// Binding path to the category axis value.
 		/// MAY be NULL, in which case the data-index is used instead.
@@ -144,8 +120,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="dp"></param>
 		/// <returns></returns>
 		protected virtual String DPName(DependencyProperty dp) {
-			if (dp == DataSourceProperty) return "DataSource";
-			else if (dp == ValueMemberPathProperty) return "ValueMemberPath";
+			if (dp == ValueMemberPathProperty) return "ValueMemberPath";
 			else if (dp == CategoryMemberPathProperty) return "CategoryMemberPath";
 			return dp.ToString();
 		}
@@ -182,10 +157,20 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region extensions
 		/// <summary>
-		/// Iterate through the DataSource and compute visuals.
+		/// Update axes if not dirty.
+		/// This is no longer called for DataSeries; it's handled by DataSource.Render().
 		/// </summary>
-		/// <param name="dp">Triggering DP; if unknown, SHOULD be DataSourceProperty.</param>
-		protected abstract void ProcessData(DependencyProperty dp);
+		/// <param name="icrc"></param>
+		public override void Render(IChartRenderContext icrc) {
+			//_trace.Verbose($"render v:{ValueAxis} c:{CategoryAxis} d:{DataSourceName} dirty:{Dirty}");
+			if (ValueAxis == null || CategoryAxis == null) return;
+			if (!Dirty) {
+				ValueAxis.For(Minimum);
+				ValueAxis.For(Maximum);
+				CategoryAxis.For(CategoryMinimum);
+				CategoryAxis.For(CategoryMaximum);
+			}
+		}
 		#endregion
 	}
 	#endregion
@@ -193,7 +178,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Data series that generates a Polyline visual.
 	/// </summary>
-	public class LineSeries : DataSeries {
+	public class LineSeries : DataSeries, IDataSourceRenderer {
 		static LogTools.Flag _trace = LogTools.Add("LineSeries", LogTools.Level.Verbose);
 		#region properties
 		/// <summary>
@@ -245,9 +230,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// Ctor.
 		/// </summary>
 		public LineSeries() {
-			Segments = new Path();
 			Geometry = new PathGeometry();
-			Segments.Data = Geometry;
+			Segments = new Path() {
+				Data = Geometry
+			};
 		}
 		#endregion
 		#region extensions
@@ -256,7 +242,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icelc"></param>
 		public override void Enter(IChartEnterLeaveContext icelc) {
-			_trace.Verbose($"enter v:{ValueAxisName} c:{ValueAxisName} d:{DataSource}");
+			EnsureAxes(icelc);
+			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis} c:{ValueAxisName}:{ValueAxis} d:{DataSourceName}");
 			icelc.Add(Segments);
 			BindTo(this, "Stroke", Segments, Path.StrokeProperty);
 			Segments.StrokeThickness = StrokeThickness;
@@ -269,26 +256,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icelc"></param>
 		public override void Leave(IChartEnterLeaveContext icelc) {
-			_trace.Verbose($"leave v:{ValueAxisName} c:{ValueAxisName} d:{DataSource}");
+			_trace.Verbose($"leave v:{ValueAxisName} c:{ValueAxisName} d:{DataSourceName}");
 			icelc.Remove(Segments);
-		}
-		/// <summary>
-		/// Traverse the data source and create geometry.
-		/// </summary>
-		/// <param name="icrc"></param>
-		public override void Render(IChartRenderContext icrc) {
-			EnsureAxes(icrc);
-			_trace.Verbose($"render v:{ValueAxis} c:{CategoryAxis} d:{DataSource} dirty:{Dirty}");
-			if (ValueAxis == null || CategoryAxis == null || DataSource == null) return;
-			if (Dirty) {
-				ProcessData(DataSourceProperty);
-			}
-			else {
-				ValueAxis.For(Minimum);
-				ValueAxis.For(Maximum);
-				CategoryAxis.For(CategoryMinimum);
-				CategoryAxis.For(CategoryMaximum);
-			}
 		}
 		/// <summary>
 		/// Adjust transforms for the various components.
@@ -305,40 +274,47 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"scale {scalex:F3},{scaley:F3} mat:{matx}");
 			Geometry.Transform = new MatrixTransform() { Matrix = matx };
 		}
-		/// <summary>
-		/// Re-calculate visuals and clear Dirty flag.
-		/// </summary>
-		/// <param name="dp"></param>
-		protected override void ProcessData(DependencyProperty dp) {
-			_trace.Verbose($"process-data dp:{DPName(dp)}");
-			if (ValueAxis == null || CategoryAxis == null || DataSource == null) return;
-			if (String.IsNullOrEmpty(ValueMemberPath)) return;
+		#endregion
+		#region IDataSourceRenderer
+		class State {
+			internal BindingEvaluator bx;
+			internal BindingEvaluator by;
+			internal BindingEvaluator bl;
+			internal PathFigure pf;
+		}
+		object IDataSourceRenderer.Preamble() {
+			if (ValueAxis == null || CategoryAxis == null) return null;
+			if (String.IsNullOrEmpty(ValueMemberPath)) return null;
 			var by = new BindingEvaluator(ValueMemberPath);
 			// TODO report the binding error
-			if (by == null) return;
-			var bx = !String.IsNullOrEmpty(CategoryMemberPath) ? new BindingEvaluator(CategoryMemberPath) : null;
-			var bl = !String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null;
-			int ix = 0;
+			if (by == null) return null;
 			ResetLimits();
-			Geometry.Figures.Clear();
-			var pf = new PathFigure();
-			foreach (var vx in DataSource) {
-				// TODO handle datetime et al values that aren't double
-				var valuey = (double)by.For(vx);
-				var valuex = bx != null ? (double)bx.For(vx) : ix;
-				UpdateLimits(valuex, valuey);
-				var mappedy = ValueAxis.For(valuey);
-				var mappedx = bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double,String>(valuex, bl.For(vx).ToString()));
-				_trace.Verbose($"[{ix}] {valuey} ({mappedx},{mappedy})");
-				if(ix == 0) {
-					pf.StartPoint = new Point(mappedx, mappedy);
-				}
-				else {
-					pf.Segments.Add(new LineSegment() { Point = new Point(mappedx, mappedy) });
-				}
-				ix++;
+			return new State() {
+				bx = !String.IsNullOrEmpty(CategoryMemberPath) ? new BindingEvaluator(CategoryMemberPath) : null,
+				bl = !String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null,
+				by = by,
+				pf = new PathFigure()
+			};
+		}
+		void IDataSourceRenderer.Render(object state, int index, object item) {
+			var st = state as State;
+			// TODO handle datetime et al values that aren't double
+			var valuey = (double)st.by.For(item);
+			var valuex = st.bx != null ? (double)st.bx.For(item) : index;
+			UpdateLimits(valuex, valuey);
+			var mappedy = ValueAxis.For(valuey);
+			var mappedx = st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()));
+			_trace.Verbose($"[{index}] {valuey} ({mappedx},{mappedy})");
+			if (index == 0) {
+				st.pf.StartPoint = new Point(mappedx, mappedy);
+			} else {
+				st.pf.Segments.Add(new LineSegment() { Point = new Point(mappedx, mappedy) });
 			}
-			Geometry.Figures.Add(pf);
+		}
+		void IDataSourceRenderer.Postamble(object state) {
+			var st = state as State;
+			Geometry.Figures.Clear();
+			Geometry.Figures.Add(st.pf);
 			Dirty = false;
 		}
 		#endregion
@@ -346,10 +322,11 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region ColumnSeries
 	/// <summary>
+	/// Data series that generates a series of Rectangles on a single Path.
 	/// If there's no CategoryMemberPath defined (i.e. using data index) this component reserves one "extra" cell on the Category Axis, to present the last column(s).
-	/// Category axis cells start on the left and extend rightward (in device X-units).
+	/// Category axis cells start on the left and extend positive-X (in device units).  Each cell is one unit long.
 	/// </summary>
-	public class ColumnSeries : DataSeries {
+	public class ColumnSeries : DataSeries, IDataSourceRenderer {
 		static LogTools.Flag _trace = LogTools.Add("ColumnSeries", LogTools.Level.Verbose);
 		#region properties
 		/// <summary>
@@ -407,7 +384,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icelc"></param>
 		public override void Enter(IChartEnterLeaveContext icelc) {
-			_trace.Verbose($"enter v:{ValueAxisName} c:{ValueAxisName} d:{DataSource}");
+			EnsureAxes(icelc);
+			_trace.Verbose($"enter v:{ValueAxisName} {ValueAxis} c:{CategoryAxisName} {CategoryAxis} d:{DataSourceName}");
 			icelc.Add(Segments);
 			BindTo(this, "Stroke", Segments, Path.StrokeProperty);
 			BindTo(this, "Fill", Segments, Path.FillProperty);
@@ -417,25 +395,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icelc"></param>
 		public override void Leave(IChartEnterLeaveContext icelc) {
-			_trace.Verbose($"leave v:{ValueAxisName} c:{ValueAxisName} d:{DataSource}");
+			_trace.Verbose($"leave v:{ValueAxisName} c:{ValueAxisName} d:{DataSourceName}");
 			icelc.Remove(Segments);
-		}
-		/// <summary>
-		/// Traverse the data source and create geometry.
-		/// </summary>
-		/// <param name="icrc"></param>
-		public override void Render(IChartRenderContext icrc) {
-			EnsureAxes(icrc);
-			_trace.Verbose($"render v:{ValueAxis} c:{CategoryAxis} d:{DataSource} dirty:{Dirty}");
-			if (ValueAxis == null || CategoryAxis == null || DataSource == null) return;
-			if (Dirty) {
-				ProcessData(DataSourceProperty);
-			} else {
-				ValueAxis.For(Minimum);
-				ValueAxis.For(Maximum);
-				CategoryAxis.For(CategoryMinimum);
-				CategoryAxis.For(CategoryMaximum);
-			}
 		}
 		/// <summary>
 		/// Adjust transforms for the various components.
@@ -451,43 +412,51 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"scale {scalex:F3},{scaley:F3} mat:{matx}");
 			Geometry.Transform = new MatrixTransform() { Matrix = matx };
 		}
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="dp"></param>
-		protected override void ProcessData(DependencyProperty dp) {
-			_trace.Verbose($"process-data dp:{DPName(dp)}");
-			if (ValueAxis == null || CategoryAxis == null || DataSource == null) return;
-			if (String.IsNullOrEmpty(ValueMemberPath)) return;
+		#endregion
+		#region IDataSourceRenderer
+		class State {
+			internal BindingEvaluator bx;
+			internal BindingEvaluator by;
+			internal BindingEvaluator bl;
+			internal int ix;
+		}
+		object IDataSourceRenderer.Preamble() {
+			if (ValueAxis == null || CategoryAxis == null) return null;
+			if (String.IsNullOrEmpty(ValueMemberPath)) return null;
 			var by = new BindingEvaluator(ValueMemberPath);
 			// TODO report the binding error
-			if (by == null) return;
-			var bx = !String.IsNullOrEmpty(CategoryMemberPath) ? new BindingEvaluator(CategoryMemberPath) : null;
-			var bl = !String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null;
-			int ix = 0;
+			if (by == null) return null;
 			ResetLimits();
 			Geometry.Figures.Clear();
-			foreach (var vx in DataSource) {
-				// TODO handle datetime et al values that aren't double
-				var valuey = (double)by.For(vx);
-				var valuex = bx != null ? (double)bx.For(vx) : ix;
-				UpdateLimits(valuex, valuey);
-				UpdateLimits(valuex, 0);
-				var topy = ValueAxis.For(valuey);
-				var bottomy = ValueAxis.For(0);
-				//var leftx = CategoryAxis.For(valuex) + BarOffset;
-				var leftx = (bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, bl.For(vx).ToString()))) + BarOffset;
-				var rightx = leftx + BarWidth;
-				_trace.Verbose($"[{ix}] {valuey} ({leftx},{topy}) ({rightx},{bottomy})");
-				var pf = PathHelper.Rectangle(leftx, Math.Max(topy, bottomy), rightx, Math.Min(topy, bottomy));
-				Geometry.Figures.Add(pf);
-				ix++;
-			}
-			if (bx == null) {
+			return new State() {
+				bx = !String.IsNullOrEmpty(CategoryMemberPath) ? new BindingEvaluator(CategoryMemberPath) : null,
+				bl = !String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null,
+				by = by
+			};
+		}
+		void IDataSourceRenderer.Render(object state, int index, object item) {
+			var st = state as State;
+			var valuey = (double)st.by.For(item);
+			var valuex = st.bx != null ? (double)st.bx.For(item) : index;
+			UpdateLimits(valuex, valuey);
+			UpdateLimits(valuex, 0);
+			var topy = ValueAxis.For(valuey);
+			var bottomy = ValueAxis.For(0);
+			//var leftx = CategoryAxis.For(valuex) + BarOffset;
+			var leftx = (st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()))) + BarOffset;
+			var rightx = leftx + BarWidth;
+			_trace.Verbose($"[{index}] {valuey} ({leftx},{topy}) ({rightx},{bottomy})");
+			var pf = PathHelper.Rectangle(leftx, Math.Max(topy, bottomy), rightx, Math.Min(topy, bottomy));
+			Geometry.Figures.Add(pf);
+			st.ix = index;
+		}
+		void IDataSourceRenderer.Postamble(object state) {
+			var st = state as State;
+			if (st.bx == null) {
 				// needs one extra "cell"
-				CategoryAxis.For(ix);
+				CategoryAxis.For(st.ix + 1);
 			}
-			//LastDataSourceCount = ix;
+			//LastDataSourceCount = st.ix;
 			Dirty = false;
 		}
 		#endregion

@@ -109,6 +109,7 @@
   <ItemGroup>
     <Compile Include="Axis.cs" />
     <Compile Include="Chart.cs" />
+    <Compile Include="DataSource.cs" />
     <Compile Include="Core.cs" />
     <Compile Include="LogTools.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

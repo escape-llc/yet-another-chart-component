@@ -236,6 +236,11 @@ namespace eScapeLLC.UWP.Charts {
 		static LogTools.Flag _trace = LogTools.Add("Chart", LogTools.Level.Verbose);
 		#region properties
 		/// <summary>
+		/// The list of data sources.
+		/// </summary>
+		public DependencyObjectCollection DataSources { get; private set; }
+		/// <summary>
+		/// The chart's visual components.
 		/// Obtained from the XAML and programmatic.
 		/// </summary>
 		public ChartComponentCollection Components { get; private set; }
@@ -268,6 +273,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public Chart() :base() {
 			DefaultStyleKey = typeof(Chart);
+			DataSources = new DependencyObjectCollection();
+			DataSources.VectorChanged += DataSources_VectorChanged;
 			Components = new ChartComponentCollection();
 			Components.CollectionChanged += new NotifyCollectionChangedEventHandler(Components_CollectionChanged);
 			Axes = new List<IChartAxis>();
@@ -278,8 +285,14 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region evhs
+		private void DataSources_VectorChanged(Windows.Foundation.Collections.IObservableVector<DependencyObject> sender, Windows.Foundation.Collections.IVectorChangedEventArgs ivcea) {
+			_trace.Verbose($"DataSourcesChanged {ivcea.CollectionChange} {ivcea.Index}");
+			if(Surface != null) {
+				RenderComponents(LastLayout);
+			}
+		}
 		/// <summary>
-		/// Propagate data context changes to components.
+		/// Propagate data context changes to data sources and components.
 		/// The number of times this is called is non-deterministic.
 		/// </summary>
 		/// <param name="sender"></param>
@@ -290,12 +303,20 @@ namespace eScapeLLC.UWP.Charts {
 				foreach (var cc in Components) {
 					cc.DataContext = args.NewValue;
 				}
+				foreach(DataSource ds in DataSources) {
+					ds.DataContext = args.NewValue;
+				}
 			}
 			else {
 				foreach (var cc in Components) {
 					if (cc.DataContext != args.NewValue) {
 						_trace.Verbose($"DataContextChanged {cc} {args.NewValue}");
 						cc.DataContext = args.NewValue;
+					}
+				}
+				foreach (DataSource ds in DataSources) {
+					if (ds.DataContext != args.NewValue) {
+						ds.DataContext = args.NewValue;
 					}
 				}
 			}
@@ -342,13 +363,7 @@ namespace eScapeLLC.UWP.Charts {
 				foreach (ChartComponent cc in e.OldItems) {
 					_trace.Verbose($"leave '{cc.Name}' {cc}");
 					cc.RefreshRequest -= Cc_RefreshRequest;
-					cc.Leave(celc);
-					if(cc is IChartAxis) {
-						Axes.Remove(cc as IChartAxis);
-					}
-					else if(cc is DataSeries) {
-						Series.Remove(cc as DataSeries);
-					}
+					LeaveComponent(celc, cc);
 				}
 			}
 			if (e.NewItems != null) {
@@ -404,8 +419,35 @@ namespace eScapeLLC.UWP.Charts {
 			if (cc is IChartAxis) {
 				Axes.Add(cc as IChartAxis);
 			} else if (cc is DataSeries) {
-				Series.Add(cc as DataSeries);
+				var ds = cc as DataSeries;
+				Series.Add(ds);
+				if (ds is IDataSourceRenderer) {
+					var source = DataSources.Cast<DataSource>().SingleOrDefault<DataSource>((dds) => dds.Name == ds.DataSourceName);
+					if (source != null) {
+						source.Register(ds as IDataSourceRenderer);
+					}
+				}
 			}
+		}
+		/// <summary>
+		/// Common logic for leaving the chart.
+		/// </summary>
+		/// <param name="icelc"></param>
+		/// <param name="cc"></param>
+		protected void LeaveComponent(IChartEnterLeaveContext icelc, ChartComponent cc) {
+			if (cc is IChartAxis) {
+				Axes.Remove(cc as IChartAxis);
+			} else if (cc is DataSeries) {
+				var ds = cc as DataSeries;
+				if (ds is IDataSourceRenderer) {
+					var source = DataSources.Cast<DataSource>().SingleOrDefault<DataSource>((dds) => dds.Name == ds.DataSourceName);
+					if (source != null) {
+						source.Unregister(ds as IDataSourceRenderer);
+					}
+				}
+				Series.Remove(ds);
+			}
+			cc.Leave(icelc);
 		}
 		/// <summary>
 		/// Adjust layout and transforms based on size change.
@@ -457,13 +499,9 @@ namespace eScapeLLC.UWP.Charts {
 			// what's left is for the data series area
 			_trace.Verbose($"remaining {dlc.RemainingRect}");
 			dlc.FinalizeRects();
-			// render the series' visual elements
-			foreach (DataSeries cc in Series) {
-				var rect = dlc.For(cc);
-				_trace.Verbose($"render {cc} rect:{rect}");
-				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
-				// a "clean" series MUST still report its limits to ALL its axes
-				cc.Render(ctx);
+			// render the data sources -> series -> axes
+			foreach(DataSource ds in DataSources) {
+				ds.Render();
 			}
 			// axes have seen all values; render+transform them now
 			foreach (var axis in Axes) {
@@ -491,7 +529,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		private void RenderComponents(Size sz) {
 			_trace.Verbose($"render-components {sz.Width}x{sz.Height}");
-			if (Components.Any((cx) => cx.Dirty)) {
+			if (DataSources.Cast<DataSource>().Any((cx) => cx.IsDirty)) {
 				FullLayout(sz);
 			} else {
 				TransformsOnly(sz);
