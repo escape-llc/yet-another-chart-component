@@ -1,14 +1,10 @@
 ﻿using eScape.Core;
-using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Windows.UI.Xaml;
 
 namespace eScapeLLC.UWP.Charts {
-	#region DataSourceRenderer
+	#region IDataSourceRenderer
 	/// <summary>
 	/// Ability to render the items of a data source.
 	/// </summary>

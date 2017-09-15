@@ -20,16 +20,16 @@ namespace eScapeLLC.UWP.Charts {
 			"DataSourceName", typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
 		);
 		/// <summary>
-		/// ValueMemberPath DP.
+		/// ValuePath DP.
 		/// </summary>
-		public static readonly DependencyProperty ValueMemberPathProperty = DependencyProperty.Register(
-			"ValueMemberPath", typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
+		public static readonly DependencyProperty ValuePathProperty = DependencyProperty.Register(
+			"ValuePath", typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
 		);
 		/// <summary>
-		/// CategoryMemberPath DP.
+		/// CategoryPath DP.
 		/// </summary>
-		public static readonly DependencyProperty CategoryMemberPathProperty = DependencyProperty.Register(
-			"CategoryMemberPath", typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
+		public static readonly DependencyProperty CategoryPathProperty = DependencyProperty.Register(
+			"CategoryPath", typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
 		);
 		/// <summary>
 		/// CategoryLabelPath DP.
@@ -58,7 +58,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Binding path to the category axis value.
 		/// MAY be NULL, in which case the data-index is used instead.
 		/// </summary>
-		public String CategoryMemberPath { get { return (String)GetValue(CategoryMemberPathProperty); } set { SetValue(CategoryMemberPathProperty, value); } }
+		public String CategoryPath { get { return (String)GetValue(CategoryPathProperty); } set { SetValue(CategoryPathProperty, value); } }
 		/// <summary>
 		/// Binding path to the category axis label.
 		/// If multiple series are presenting the same data source, only one MUST HAVE this property set.
@@ -69,7 +69,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Binding path to the value axis value.
 		/// </summary>
-		public String ValueMemberPath { get { return (String)GetValue(ValueMemberPathProperty); } set { SetValue(ValueMemberPathProperty, value); } }
+		public String ValuePath { get { return (String)GetValue(ValuePathProperty); } set { SetValue(ValuePathProperty, value); } }
 		/// <summary>
 		/// Component name of value axis.
 		/// Referenced component MUST implement IChartAxis.
@@ -120,8 +120,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="dp"></param>
 		/// <returns></returns>
 		protected virtual String DPName(DependencyProperty dp) {
-			if (dp == ValueMemberPathProperty) return "ValueMemberPath";
-			else if (dp == CategoryMemberPathProperty) return "CategoryMemberPath";
+			if (dp == ValuePathProperty) return "ValuePath";
+			else if (dp == CategoryPathProperty) return "CategoryPath";
+			else if (dp == CategoryLabelPathProperty) return "CategoryLabelPath";
+			else if (dp == DataSourceNameProperty) return "DataSourceName";
 			return dp.ToString();
 		}
 		/// <summary>
@@ -149,10 +151,12 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		/// <summary>
 		/// Reset the value and category limits.
+		/// Sets Dirty = true.
 		/// </summary>
 		protected void ResetLimits() {
 			Minimum = double.NaN; Maximum = double.NaN;
 			CategoryMinimum = double.NaN; CategoryMaximum = double.NaN;
+			Dirty = true;
 		}
 		#endregion
 		#region extensions
@@ -256,7 +260,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icelc"></param>
 		public override void Leave(IChartEnterLeaveContext icelc) {
-			_trace.Verbose($"leave v:{ValueAxisName} c:{ValueAxisName} d:{DataSourceName}");
+			_trace.Verbose($"leave");
+			ValueAxis = null;
+			CategoryAxis = null;
 			icelc.Remove(Segments);
 		}
 		/// <summary>
@@ -284,13 +290,13 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		object IDataSourceRenderer.Preamble() {
 			if (ValueAxis == null || CategoryAxis == null) return null;
-			if (String.IsNullOrEmpty(ValueMemberPath)) return null;
-			var by = new BindingEvaluator(ValueMemberPath);
+			if (String.IsNullOrEmpty(ValuePath)) return null;
+			var by = new BindingEvaluator(ValuePath);
 			// TODO report the binding error
 			if (by == null) return null;
 			ResetLimits();
 			return new State() {
-				bx = !String.IsNullOrEmpty(CategoryMemberPath) ? new BindingEvaluator(CategoryMemberPath) : null,
+				bx = !String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
 				bl = !String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null,
 				by = by,
 				pf = new PathFigure()
@@ -395,7 +401,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icelc"></param>
 		public override void Leave(IChartEnterLeaveContext icelc) {
-			_trace.Verbose($"leave v:{ValueAxisName} c:{ValueAxisName} d:{DataSourceName}");
+			_trace.Verbose($"leave");
+			ValueAxis = null;
+			CategoryAxis = null;
 			icelc.Remove(Segments);
 		}
 		/// <summary>
@@ -422,14 +430,14 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		object IDataSourceRenderer.Preamble() {
 			if (ValueAxis == null || CategoryAxis == null) return null;
-			if (String.IsNullOrEmpty(ValueMemberPath)) return null;
-			var by = new BindingEvaluator(ValueMemberPath);
+			if (String.IsNullOrEmpty(ValuePath)) return null;
+			var by = new BindingEvaluator(ValuePath);
 			// TODO report the binding error
 			if (by == null) return null;
 			ResetLimits();
 			Geometry.Figures.Clear();
 			return new State() {
-				bx = !String.IsNullOrEmpty(CategoryMemberPath) ? new BindingEvaluator(CategoryMemberPath) : null,
+				bx = !String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
 				bl = !String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null,
 				by = by
 			};

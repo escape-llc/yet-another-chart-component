@@ -48,15 +48,16 @@
 					GridStroke="{StaticResource gray}" LabelForeground="{StaticResource limegreen}"
 					LabelFormatString="F1"
 					GridVisibility="{Binding ElementName=cb_yaxis_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
-				<yacc:ColumnSeries DataSourceName="data" ValueMemberPath="Value1" CategoryLabelPath="Label"
+				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value1" CategoryLabelPath="Label"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					Stroke="DarkOrchid" Fill="{StaticResource blue-to-green}" BarOffset=".25" BarWidth=".25" />
-				<yacc:ColumnSeries DataSourceName="data" ValueMemberPath="Value2"
+				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value2"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					Stroke="DarkOrchid" Fill="{StaticResource green-to-blue}" BarOffset=".5" BarWidth=".25" />
-				<yacc:LineSeries DataSourceName="data" ValueMemberPath="Value2"
+				<yacc:LineSeries DataSourceName="data" ValuePath="Value2"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".5"
-					Stroke="{StaticResource green}" StrokeThickness="5" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+					Stroke="{StaticResource green}" StrokeThickness="5"
+					StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
 			</yacc:Chart.Components>
 		</yacc:Chart>
 	</Grid>

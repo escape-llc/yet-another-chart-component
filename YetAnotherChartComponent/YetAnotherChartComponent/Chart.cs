@@ -481,6 +481,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Perform a full layout and rendering pass.
 		/// At least ONE component reported as dirty.
+		/// The full rendering sequence is: axis-reset, layout, render, transforms.
 		/// </summary>
 		/// <param name="sz">Dimensions.</param>
 		protected void FullLayout(Size sz) {
@@ -522,10 +523,9 @@ namespace eScapeLLC.UWP.Charts {
 			}
 		}
 		/// <summary>
-		/// Iterate the components for rendering.
-		/// The full rendering sequence is: axis-reset, layout, render, transforms.
-		/// Once all components are "clean" only the visual transforms are changed; no data operations are done.
-		/// If nothing is dirty, adjust transforms, else full layout.
+		/// Determine what kind of render is required, and run it.
+		/// If anything is dirty, full layout, else adjust transforms.
+		/// Once all components are "clean" only the visual transforms are updated; no data traversal is done.
 		/// </summary>
 		private void RenderComponents(Size sz) {
 			_trace.Verbose($"render-components {sz.Width}x{sz.Height}");
