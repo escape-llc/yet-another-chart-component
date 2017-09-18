@@ -238,8 +238,13 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// The chart.
 	/// </summary>
+	[TemplatePart(Name = PART_Canvas, Type = typeof(Canvas))]
 	public class Chart : Control {
 		static LogTools.Flag _trace = LogTools.Add("Chart", LogTools.Level.Verbose);
+		/// <summary>
+		/// Control template part: canvas.
+		/// </summary>
+		public const String PART_Canvas = "PART_Canvas";
 		#region properties
 		/// <summary>
 		/// The list of data sources.
@@ -323,19 +328,6 @@ namespace eScapeLLC.UWP.Charts {
 			args.Handled = true;
 		}
 		/// <summary>
-		/// Obtain UI elements from the control template.
-		/// Happens Before Chart_LayoutUpdated.
-		/// </summary>
-		protected override void OnApplyTemplate() {
-			Surface = (Canvas)TreeHelper.TemplateFindName("PART_Canvas", this);
-			_trace.Verbose($"OnApplyTemplate ({Width}x{Height}) {Surface} d:{DeferredEnter.Count}");
-			var celc = new DefaultEnterLeaveContext(Surface, Components, LastLayout, Rect.Empty, Rect.Empty, DataContext);
-			foreach(var cc in DeferredEnter) {
-				EnterComponent(celc, cc);
-			}
-			DeferredEnter.Clear();
-		}
-		/// <summary>
 		/// Reconfigure components in response to layout change.
 		/// Happens After OnApplyTemplate.
 		/// </summary>
@@ -347,23 +339,29 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"LayoutUpdated ({sz.Width}x{sz.Height})");
 			if (!double.IsNaN(sz.Width) && !double.IsNaN(sz.Height)) {
 				// we are sized; see if dimensions actually changed
+				if (sz.Width == 0 || sz.Height == 0) return;
 				if (LastLayout.Width == sz.Width && LastLayout.Height == sz.Height) return;
 				RenderComponents(sz);
 				LastLayout = sz;
 			}
 		}
+		/// <summary>
+		/// Manage data source enter/leave.
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
 		private void DataSources_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
 			_trace.Verbose($"DataSourcesChanged {e}");
 			if (e.OldItems != null) {
 				foreach (DataSource ds in e.OldItems) {
 					_trace.Verbose($"leave '{ds.Name}' {ds}");
-					ds.RefreshRequest += DataSource_RefreshRequest1;
+					ds.RefreshRequest += DataSource_RefreshRequest;
 				}
 			}
 			if (e.NewItems != null) {
 				foreach (DataSource ds in e.NewItems) {
 					_trace.Verbose($"enter '{ds.Name}' {ds}");
-					ds.RefreshRequest -= DataSource_RefreshRequest1;
+					ds.RefreshRequest -= DataSource_RefreshRequest;
 					ds.DataContext = DataContext;
 				}
 			}
@@ -402,26 +400,62 @@ namespace eScapeLLC.UWP.Charts {
 				InvalidateArrange();
 			}
 		}
-		private void DataSource_RefreshRequest1(DataSource ds) {
+		/// <summary>
+		/// Data source is requesting a refresh.
+		/// Render chart subject to current dirtiness.
+		/// This method is invoke-safe; it MAY be called from a different thread.
+		/// </summary>
+		/// <param name="ds"></param>
+		private async void DataSource_RefreshRequest(DataSource ds) {
 			_trace.Verbose($"refresh-request-ds '{ds.Name}' {ds}");
-			if (Surface != null) {
-				RenderComponents(LastLayout);
-			}
-		}
-		private void ChartComponent_RefreshRequest(ChartComponent cc) {
-			_trace.Verbose($"refresh-request-cc '{cc.Name}' {cc}");
-			if (Surface != null) {
-				if (cc is DataSeries) {
-					var ds = DataSources.SingleOrDefault(dds => dds.Name == (cc as DataSeries).DataSourceName);
-					if(ds != null) {
-						ds.IsDirty = true;
-					}
+			await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => {
+				if (Surface != null) {
+					RenderComponents(LastLayout);
 				}
-				RenderComponents(LastLayout);
+			});
+		}
+		/// <summary>
+		/// Component is requesting a refresh.
+		/// Mark the chart's data source dirty and render chart.
+		/// TODO get the DS to just refresh this CC.
+		/// This method is invoke-safe; it MAY be called from a different thread.
+		/// </summary>
+		/// <param name="cc"></param>
+		private async void ChartComponent_RefreshRequest(ChartComponent cc) {
+			_trace.Verbose($"refresh-request-cc '{cc.Name}' {cc}");
+			await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => {
+				if (Surface != null) {
+					if (cc is DataSeries) {
+						var ds = DataSources.SingleOrDefault(dds => dds.Name == (cc as DataSeries).DataSourceName);
+						if (ds != null) {
+							ds.IsDirty = true;
+						}
+					}
+					RenderComponents(LastLayout);
+				}
+			});
+		}
+		#endregion
+		#region extensions
+		/// <summary>
+		/// Obtain UI elements from the control template.
+		/// Happens Before Chart_LayoutUpdated.
+		/// </summary>
+		protected override void OnApplyTemplate() {
+			try {
+				Surface = GetTemplateChild(PART_Canvas) as Canvas;
+				_trace.Verbose($"OnApplyTemplate ({Width}x{Height}) {Surface} d:{DeferredEnter.Count}");
+				var celc = new DefaultEnterLeaveContext(Surface, Components, LastLayout, Rect.Empty, Rect.Empty, DataContext);
+				foreach (var cc in DeferredEnter) {
+					EnterComponent(celc, cc);
+				}
+				DeferredEnter.Clear();
+			} finally {
+				base.OnApplyTemplate();
 			}
 		}
 		#endregion
-		#region preset brushes
+		#region preset brushes - not currently used
 		private List<Brush> _presetBrushes = new List<Brush>() {
 			new SolidColorBrush(Color.FromArgb(0xFF, 0xFF, 0x66, 0x00)),
 			new SolidColorBrush(Color.FromArgb(0xFF, 0xFC, 0xD2, 0x02)),
@@ -490,6 +524,7 @@ namespace eScapeLLC.UWP.Charts {
 		protected void TransformsOnly(Size sz) {
 			var initialRect = new Rect(Padding.Left, Padding.Top, sz.Width - Padding.Left - Padding.Right, sz.Height - Padding.Top - Padding.Bottom);
 			var inner = new Size(initialRect.Width, initialRect.Height);
+			// Phase I: re-claim space (because the size changed)
 			var dlc = new DefaultLayoutContext(inner, initialRect);
 			_trace.Verbose($"transforms-only starting {initialRect}");
 			foreach (var cc in Components) {
@@ -498,6 +533,7 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			_trace.Verbose($"transforms-only remaining:{dlc.RemainingRect}");
 			dlc.FinalizeRects();
+			// Phase II: update axis transforms
 			foreach (var axis in Axes) {
 				var cc = axis as ChartComponent;
 				var rect = dlc.For(cc);
@@ -505,6 +541,7 @@ namespace eScapeLLC.UWP.Charts {
 				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
 				cc.Transforms(ctx);
 			}
+			// Phase III: update series transforms
 			foreach (DataSeries cc in Series) {
 				var rect = dlc.For(cc);
 				_trace.Verbose($"transforms-only {cc} {rect}");
@@ -519,12 +556,14 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="sz">Dimensions.</param>
 		protected void FullLayout(Size sz) {
+			var initialRect = new Rect(Padding.Left, Padding.Top, sz.Width - Padding.Left - Padding.Right, sz.Height - Padding.Top - Padding.Bottom);
+			var inner = new Size(initialRect.Width, initialRect.Height);
+			// Phase I: reset axes
 			foreach (var axis in Axes) {
 				_trace.Verbose($"reset {(axis as ChartComponent).Name} {axis}");
 				axis.ResetLimits();
 			}
-			var initialRect = new Rect(Padding.Left, Padding.Top, sz.Width - Padding.Left - Padding.Right, sz.Height - Padding.Top - Padding.Bottom);
-			var inner = new Size(initialRect.Width, initialRect.Height);
+			// Phase II: claim space
 			var dlc = new DefaultLayoutContext(inner, initialRect);
 			_trace.Verbose($"starting {initialRect}");
 			foreach (var cc in Components) {
@@ -534,12 +573,12 @@ namespace eScapeLLC.UWP.Charts {
 			// what's left is for the data series area
 			_trace.Verbose($"remaining {dlc.RemainingRect}");
 			dlc.FinalizeRects();
-			// render the data sources -> series -> axes
+			// Phase III: render the data sources -> series -> axes
 			var dsctx = new DefaultRenderContext(Surface, Components, inner, Rect.Empty, dlc.RemainingRect, DataContext);
 			foreach (DataSource ds in DataSources) {
 				ds.Render(dsctx);
 			}
-			// axes have seen all values; render+transform them now
+			// Phase IV: axes have seen all values; render+transform them now
 			foreach (var axis in Axes) {
 				var acc = axis as ChartComponent;
 				var scale = (axis.Type == AxisType.Value ? inner.Height : inner.Width) / axis.Range;
@@ -549,7 +588,7 @@ namespace eScapeLLC.UWP.Charts {
 				acc.Render(ctx);
 				acc.Transforms(ctx);
 			}
-			// configure series transforms now axes are configured
+			// Phase V: configure series transforms now axes are configured
 			foreach (DataSeries cc in Series) {
 				var rect = dlc.For(cc);
 				_trace.Verbose($"transforms {cc} {rect}");

@@ -1,6 +1,5 @@
 ﻿using eScape.Core;
 using System;
-using System.Collections.Specialized;
 using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media;
@@ -330,11 +329,13 @@ namespace eScapeLLC.UWP.Charts {
 				st.pf.Segments.Add(new LineSegment() { Point = new Point(mappedx, mappedy) });
 			}
 		}
+		void IDataSourceRenderer.RenderComplete(object state) {
+			ApplyLimitsToAxes();
+		}
 		void IDataSourceRenderer.Postamble(object state) {
 			var st = state as State;
 			Geometry.Figures.Clear();
 			Geometry.Figures.Add(st.pf);
-			ApplyLimitsToAxes();
 			Dirty = false;
 		}
 		#endregion
@@ -497,9 +498,11 @@ namespace eScapeLLC.UWP.Charts {
 			var mk = CloneMarker(mappedx, mappedy);
 			Geometry.Children.Add(mk);
 		}
+		void IDataSourceRenderer.RenderComplete(object state) {
+			ApplyLimitsToAxes();
+		}
 		void IDataSourceRenderer.Postamble(object state) {
 			var st = state as State;
-			ApplyLimitsToAxes();
 			Dirty = false;
 		}
 		#endregion
@@ -636,7 +639,11 @@ namespace eScapeLLC.UWP.Charts {
 			Geometry.Figures.Add(pf);
 			st.ix = index;
 		}
-		void IDataSourceRenderer.Postamble(object state) {
+		/// <summary>
+		/// Have to perform update here and not in Postamble because we are altering axis limits.
+		/// </summary>
+		/// <param name="state"></param>
+		void IDataSourceRenderer.RenderComplete(object state) {
 			var st = state as State;
 			if (st.bx == null) {
 				// needs one extra "cell"
@@ -644,6 +651,8 @@ namespace eScapeLLC.UWP.Charts {
 				UpdateLimits(st.ix + 1, 0);
 			}
 			ApplyLimitsToAxes();
+		}
+		void IDataSourceRenderer.Postamble(object state) {
 			Dirty = false;
 		}
 		#endregion

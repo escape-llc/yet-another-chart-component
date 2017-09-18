@@ -1,8 +1,6 @@
 ﻿using eScape.Core;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using Windows.Foundation;
 using Windows.UI.Xaml;
 
 namespace eScapeLLC.UWP.Charts {
@@ -29,8 +27,15 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="item">Current item.</param>
 		void Render(object state, int index, object item);
 		/// <summary>
+		/// Apply axis and other linked component updates.
+		/// Called after all items are processed, and before Postamble().
+		/// Not called if Preamble() returned NULL.
+		/// </summary>
+		/// <param name="state">Return from preamble().</param>
+		void RenderComplete(object state);
+		/// <summary>
 		/// Perform terminal actions.
-		/// Includes axis notification of limits.
+		/// Axis limits were finalized (in RenderComplete) and MAY be use in layout calculations.
 		/// Not called if Preamble() returned NULL.
 		/// </summary>
 		/// <param name="state">Return from preamble().</param>
@@ -123,7 +128,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (Items == null) return;
 			if (_renderers.Count == 0) return;
 			var pmap = new Dictionary<IDataSourceRenderer, object>();
-			// init each renderer; it may opt-out by returning NULL
+			// Phase I: init each renderer; it may opt-out by returning NULL
 			foreach (var idsr in _renderers) {
 				var preamble = idsr.Preamble(icrc);
 				// TODO may want an exception instead
@@ -132,7 +137,7 @@ namespace eScapeLLC.UWP.Charts {
 				}
 			}
 			if (pmap.Count > 0) {
-				// traverse the data and distribute to renderers
+				// Phase II: traverse the data and distribute to renderers
 				int ix = 0;
 				foreach (var item in Items) {
 					foreach (var idsr in _renderers) {
@@ -142,7 +147,14 @@ namespace eScapeLLC.UWP.Charts {
 					}
 					ix++;
 				}
-				// finalize renderers
+				// Phase III: finalize all axes etc. before we finalize renderers
+				// this MUST occur so all renders see the same axes limits in postamble!
+				foreach (var idsr in _renderers) {
+					if (pmap.TryGetValue(idsr, out object preamble)) {
+						idsr.RenderComplete(preamble);
+					}
+				}
+				// Phase IV: finalize renderers
 				foreach (var idsr in _renderers) {
 					if (pmap.TryGetValue(idsr, out object preamble)) {
 						idsr.Postamble(preamble);

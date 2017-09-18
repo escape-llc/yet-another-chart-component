@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("Yet Another Chart Component")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("A chart framework for UWP under Apache 2.0 license.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("eScape Technology LLC")]
 [assembly: AssemblyProduct("Charts for UWP")]

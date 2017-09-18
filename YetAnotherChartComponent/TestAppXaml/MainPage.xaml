@@ -47,13 +47,6 @@
 				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value1" CategoryLabelPath="Label"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					Stroke="DarkOrchid" Fill="{StaticResource blue-to-green}" BarOffset=".25" BarWidth=".25" />
-				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value2"
-					ValueAxisName="yaxis" CategoryAxisName="xaxis"
-					Stroke="DarkOrchid" Fill="{StaticResource green-to-blue}" BarOffset=".5" BarWidth=".25" />
-				<yacc:LineSeries DataSourceName="data" ValuePath="Value2"
-					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".5"
-					Stroke="{StaticResource green}" StrokeThickness="5"
-					StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
 				<yacc:MarkerSeries DataSourceName="data" ValuePath="Value1"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".5"
 					Stroke="{StaticResource red}" Fill="{StaticResource blue}">
@@ -61,6 +54,13 @@
 						<EllipseGeometry Center="0,0" RadiusX=".1" RadiusY=".1" />
 					</yacc:MarkerSeries.Marker>
 				</yacc:MarkerSeries>
+				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value2"
+					ValueAxisName="yaxis" CategoryAxisName="xaxis"
+					Stroke="DarkOrchid" Fill="{StaticResource green-to-blue}" BarOffset=".5" BarWidth=".25" />
+				<yacc:LineSeries DataSourceName="data" ValuePath="Value2"
+					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".5"
+					Stroke="{StaticResource green}" StrokeThickness="5"
+					StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" AxisFill="{StaticResource red}"
 					GridStroke="{StaticResource gray}" LabelForeground="{StaticResource limegreen}"
 					LabelFormatString="F1"
