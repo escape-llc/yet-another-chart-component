@@ -37,7 +37,7 @@
 		<StackPanel Grid.Row="1" Orientation="Horizontal" Padding="4">
 			<CheckBox x:Name="cb_yaxis_grid" Content="Value (Y) axis grid" IsChecked="True"/>
 		</StackPanel>
-		<yacc:Chart x:Name="cx" Grid.Row="2" Background="Black" Padding="16" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+		<yacc:Chart x:Name="cx" Grid.Row="2" Background="Black" Padding="32" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
 			<yacc:Chart.DataSources>
 				<yacc:DataSource x:Name="data" Items="{Binding Data}"/>
 			</yacc:Chart.DataSources>
@@ -62,6 +62,7 @@
 					Stroke="{StaticResource green}" StrokeThickness="5"
 					StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" AxisFill="{StaticResource red}"
+					LimitMaximum="12"
 					GridStroke="{StaticResource gray}" LabelForeground="{StaticResource limegreen}"
 					LabelFormatString="F1"
 					GridVisibility="{Binding ElementName=cb_yaxis_grid, Path=IsChecked, Converter={StaticResource b2v}}" />

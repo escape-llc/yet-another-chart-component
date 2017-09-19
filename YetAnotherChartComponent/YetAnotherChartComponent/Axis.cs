@@ -11,10 +11,14 @@ namespace eScapeLLC.UWP.Charts {
 	#region AxisCommon
 	/// <summary>
 	/// Consolidate common properties for axes and implement IChartAxis.
+	/// By default, axes auto-scale their limits based on "observed" values.
+	/// Setting the LimitXXX properties to a non-NaN "fixes" that limit.
+	/// It's possible to have one or both limits "fixed" in this way.
 	/// </summary>
 	public abstract class AxisCommon : ChartComponent, IChartAxis {
 		static LogTools.Flag _trace = LogTools.Add("AxisCommon", LogTools.Level.Verbose);
 		#region properties
+		#region axis
 		/// <summary>
 		/// The axis type.
 		/// </summary>
@@ -39,6 +43,18 @@ namespace eScapeLLC.UWP.Charts {
 		/// The axis range or NaN if limits were not initialized.
 		/// </summary>
 		public double Range { get { return double.IsNaN(Minimum) || double.IsNaN(Maximum) ? double.NaN : Maximum - Minimum; } }
+		/// <summary>
+		/// Set this to override auto-scaling behavior on Minimum.
+		/// Default value is NaN.
+		/// </summary>
+		public double LimitMinimum { get; set; } = double.NaN;
+		/// <summary>
+		/// Set this to override auto-scaling behavior on Maximum.
+		/// Default value is NaN.
+		/// </summary>
+		public double LimitMaximum { get; set; } = double.NaN;
+		#endregion
+		#region presentation
 		/// <summary>
 		/// The PX width of the axis "line".
 		/// Default value is 2.
@@ -81,6 +97,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public String LabelFormatString { get; set; }
 		#endregion
+		#endregion
 		#region DPs
 		/// <summary>
 		/// Identifies <see cref="AxisFill"/> dependency property.
@@ -117,7 +134,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Reset the limits to NaN.
 		/// Set Dirty = true.
 		/// </summary>
-		public virtual void ResetLimits() { Minimum = double.NaN; Maximum = double.NaN; Dirty = true; }
+		public virtual void ResetLimits() { Minimum = LimitMinimum; Maximum = LimitMaximum; Dirty = true; }
 		/// <summary>
 		/// Map given value.
 		/// </summary>
@@ -136,8 +153,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="value"></param>
 		public void UpdateLimits(double value) {
-			if (double.IsNaN(Minimum) || value < Minimum) { Minimum = value; Dirty = true; }
-			if (double.IsNaN(Maximum) || value > Maximum) { Maximum = value; Dirty = true; }
+			if (double.IsNaN(LimitMinimum) && (double.IsNaN(Minimum) || value < Minimum)) { Minimum = value; Dirty = true; }
+			if (double.IsNaN(LimitMaximum) && (double.IsNaN(Maximum) || value > Maximum)) { Maximum = value; Dirty = true; }
 		}
 		#endregion
 	}
@@ -285,18 +302,17 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		/// <summary>
 		/// X-coordinates	"px"
-		/// Y-coordinates	axis
+		/// Y-coordinates	[0..1]
 		/// Grid-coordinates (x:[0..1], y:axis)
 		/// </summary>
 		/// <param name="icrc"></param>
 		public override void Transforms(IChartRenderContext icrc) {
 			var scaley = icrc.Area.Height / Range;
-			var matx = new Matrix(1, 0, 0, scaley, icrc.Area.Left + AxisMargin*(Side == Side.Right ? 1 : -1), icrc.Area.Top + icrc.Area.Height/2);
+			var matx = new Matrix(1, 0, 0, -scaley, icrc.Area.Left + AxisMargin*(Side == Side.Right ? 1 : -1), icrc.Area.Top + Maximum*scaley);
 			AxisGeometry.Transform = new MatrixTransform() { Matrix = matx };
 			var gscaley = icrc.SeriesArea.Height / Range;
-			var gscalex = icrc.SeriesArea.Width;
-			var gmatx = new Matrix(gscalex, 0, 0, gscaley, icrc.SeriesArea.Left, icrc.SeriesArea.Top + icrc.SeriesArea.Height / 2);
-			_trace.Verbose($"transforms sy:{scaley:F3} matx:{matx} gmatx:{gmatx} sa:{icrc.SeriesArea}");
+			var gmatx = new Matrix(icrc.SeriesArea.Width, 0, 0, -gscaley, icrc.SeriesArea.Left, icrc.SeriesArea.Top + Maximum*gscaley);
+			_trace.Verbose($"transforms sy:{scaley:F3} gsy:{gscaley:F3} matx:{matx} gmatx:{gmatx} a:{icrc.Area} sa:{icrc.SeriesArea}");
 			GridGeometry.Transform = new MatrixTransform() { Matrix = gmatx };
 			foreach(var tb in TickLabels) {
 				var vx = (double)tb.Tag;

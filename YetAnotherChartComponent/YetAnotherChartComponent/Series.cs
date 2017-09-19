@@ -288,7 +288,7 @@ namespace eScapeLLC.UWP.Charts {
 			var scalex = icrc.Area.Width / CategoryAxis.Range;
 			var scaley = icrc.Area.Height / ValueAxis.Range;
 			var offsetx = scalex * CategoryAxisOffset;
-			var matx = new Matrix(scalex, 0, 0, -scaley, icrc.Area.Left + offsetx, icrc.Area.Top + icrc.Area.Height/2);
+			var matx = new Matrix(scalex, 0, 0, -scaley, icrc.Area.Left + offsetx, icrc.Area.Top + ValueAxis.Maximum*scaley);
 			_trace.Verbose($"scale {scalex:F3},{scaley:F3} mat:{matx}");
 			Geometry.Transform = new MatrixTransform() { Matrix = matx };
 		}
@@ -335,7 +335,9 @@ namespace eScapeLLC.UWP.Charts {
 		void IDataSourceRenderer.Postamble(object state) {
 			var st = state as State;
 			Geometry.Figures.Clear();
-			Geometry.Figures.Add(st.pf);
+			if (st.pf.Segments.Count > 0) {
+				Geometry.Figures.Add(st.pf);
+			}
 			Dirty = false;
 		}
 		#endregion
@@ -436,7 +438,7 @@ namespace eScapeLLC.UWP.Charts {
 			var scalex = icrc.Area.Width / CategoryAxis.Range;
 			var scaley = icrc.Area.Height / ValueAxis.Range;
 			var offsetx = scalex * CategoryAxisOffset;
-			var matx = new Matrix(scalex, 0, 0, -scaley, icrc.Area.Left + offsetx, icrc.Area.Top + icrc.Area.Height / 2);
+			var matx = new Matrix(scalex, 0, 0, -scaley, icrc.Area.Left + offsetx, icrc.Area.Top + ValueAxis.Maximum * scaley);
 			_trace.Verbose($"scale {scalex:F3},{scaley:F3} mat:{matx}");
 			Geometry.Transform = new MatrixTransform() { Matrix = matx };
 			// TODO must counter-scale (in Y-axis) the markers to preserve aspect ratio
@@ -598,7 +600,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			var scalex = icrc.Area.Width / CategoryAxis.Range;
 			var scaley = icrc.Area.Height / ValueAxis.Range;
-			var matx = new Matrix(scalex, 0, 0, -scaley, icrc.Area.Left, icrc.Area.Top + icrc.Area.Height / 2);
+			var matx = new Matrix(scalex, 0, 0, -scaley, icrc.Area.Left, icrc.Area.Top + ValueAxis.Maximum * scaley);
 			_trace.Verbose($"scale {scalex:F3},{scaley:F3} mat:{matx}");
 			Geometry.Transform = new MatrixTransform() { Matrix = matx };
 		}
