@@ -62,7 +62,6 @@
 					Stroke="{StaticResource green}" StrokeThickness="5"
 					StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" AxisFill="{StaticResource red}"
-					LimitMaximum="12"
 					GridStroke="{StaticResource gray}" LabelForeground="{StaticResource limegreen}"
 					LabelFormatString="F1"
 					GridVisibility="{Binding ElementName=cb_yaxis_grid, Path=IsChecked, Converter={StaticResource b2v}}" />

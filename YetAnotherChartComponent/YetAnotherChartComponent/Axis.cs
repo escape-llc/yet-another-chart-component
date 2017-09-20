@@ -269,35 +269,50 @@ namespace eScapeLLC.UWP.Charts {
 			// grid lines
 			var start = Math.Round(Minimum);
 			var end = Math.Round(Maximum);
+			// TODO something based on log10(Range)
 			var incr = 1.0;
 			_trace.Verbose($"grid start:{start} end:{end} inc:{incr}");
 			GridGeometry.Children.Clear();
 			icrc.Remove(TickLabels);
 			// grid lines and tick labels
-			// TODO reuse existing labels in the loop
-			TickLabels.Clear();
-			for (var vx = start; vx <= end; vx += incr) {
-				//_trace.Verbose($"grid vx:{vx}");
-				var grid = new LineGeometry() { StartPoint = new Point(0, vx), EndPoint = new Point(1, vx) };
-				GridGeometry.Children.Add(grid);
+			// layout and recycle labels
+			var tbr = new Recycler<TextBlock>(TickLabels, () => {
 				var tb = new TextBlock() {
 					FontSize = LabelFontSize,
 					Foreground = LabelForeground ?? AxisFill,
-					Text = vx.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString),
 					VerticalAlignment = VerticalAlignment.Center,
 					HorizontalAlignment = Side == Side.Right ? HorizontalAlignment.Left : HorizontalAlignment.Right,
-					Width = icrc.Area.Width - AxisLineThickness - 2*AxisMargin,
+					Width = icrc.Area.Width - AxisLineThickness - 2 * AxisMargin,
 					TextAlignment = Side == Side.Right ? TextAlignment.Left : TextAlignment.Right,
-					Padding = Side == Side.Right ? new Thickness(AxisLineThickness + 2*AxisMargin, 0, 0, 0) : new Thickness(0, 0, AxisLineThickness + 2*AxisMargin, 0)
+					Padding = Side == Side.Right ? new Thickness(AxisLineThickness + 2 * AxisMargin, 0, 0, 0) : new Thickness(0, 0, AxisLineThickness + 2 * AxisMargin, 0)
 				};
-				//BindTo(this, "GridVisibility", tb, UIElement.VisibilityProperty);
-				tb.SetValue(Canvas.LeftProperty, icrc.Area.Left);
-				tb.SetValue(Canvas.TopProperty, vx);
-				// cheat: save the grid value so we can rescale the Top in Transforms()
-				tb.Tag = vx;
-				TickLabels.Add(tb);
+				return tb;
+			});
+			var tbget = tbr.Items().GetEnumerator();
+			double vx = start;
+			for (int ix = 0; vx < end; ix++) {
+				// do it this way to avoid accumulated error
+				vx = start + ix * incr;
+				//_trace.Verbose($"grid vx:{vx}");
+				var grid = new LineGeometry() { StartPoint = new Point(0, vx), EndPoint = new Point(1, vx) };
+				GridGeometry.Children.Add(grid);
+				if (tbget.MoveNext()) {
+					var tb = tbget.Current;
+					tb.Text = vx.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
+					//BindTo(this, "GridVisibility", tb, UIElement.VisibilityProperty);
+					tb.SetValue(Canvas.LeftProperty, icrc.Area.Left);
+					tb.SetValue(Canvas.TopProperty, vx);
+					// cheat: save the grid value so we can rescale the Left in Transforms()
+					tb.Tag = vx;
+				}
 			}
-			icrc.Add(TickLabels);
+			// VT and internal bookkeeping
+			icrc.Remove(tbr.Unused);
+			icrc.Add(tbr.Created);
+			foreach (var tb in tbr.Unused) {
+				TickLabels.Remove(tb);
+			}
+			TickLabels.AddRange(tbr.Created);
 			Dirty = false;
 		}
 		/// <summary>
@@ -428,31 +443,42 @@ namespace eScapeLLC.UWP.Charts {
 			var i1 = (int)Minimum;
 			var i2 = (int)Maximum;
 			var scalex = icrc.Area.Width / Range;
-			// lay out labels
-			// TODO recycle these
-			TickLabels.Clear();
+			// recycle and lay out tick labels
+			var tbr = new Recycler<TextBlock>(TickLabels, () => {
+				var tb = new TextBlock() {
+					FontSize = LabelFontSize,
+					Foreground = LabelForeground ?? AxisFill,
+					//Text = tpx.Item2,
+					VerticalAlignment = VerticalAlignment.Center,
+					HorizontalAlignment = HorizontalAlignment.Center,
+					Width = scalex,
+					TextAlignment = TextAlignment.Center
+				};
+				return tb;
+			});
+			var tbget = tbr.Items().GetEnumerator();
 			for (var ix = i1; ix <= i2; ix++) {
 				if(LabelMap.ContainsKey(ix)) {
 					// create a label
 					var tpx = LabelMap[ix];
 					_trace.Verbose($"key {ix} label {tpx.Item2}");
-					var tb = new TextBlock() {
-						FontSize = LabelFontSize,
-						Foreground = LabelForeground ?? AxisFill,
-						Text = tpx.Item2,
-						VerticalAlignment = VerticalAlignment.Center,
-						HorizontalAlignment = HorizontalAlignment.Center,
-						Width = scalex,
-						TextAlignment = TextAlignment.Center
-					};
-					tb.SetValue(Canvas.LeftProperty, icrc.Area.Left + ix*scalex);
-					tb.SetValue(Canvas.TopProperty, icrc.Area.Top + AxisLineThickness + 2*AxisMargin);
-					// cheat: save the grid value so we can rescale the Left in Transforms()
-					tb.Tag = tpx;
-					TickLabels.Add(tb);
+					if(tbget.MoveNext()) {
+						var tb = tbget.Current;
+						tb.SetValue(Canvas.LeftProperty, icrc.Area.Left + ix * scalex);
+						tb.SetValue(Canvas.TopProperty, icrc.Area.Top + AxisLineThickness + 2 * AxisMargin);
+						// cheat: save the grid value so we can rescale the Left in Transforms()
+						tb.Tag = tpx;
+						tb.Text = tpx.Item2;
+					}
 				}
 			}
-			icrc.Add(TickLabels);
+			// VT and internal bookkeeping
+			icrc.Remove(tbr.Unused);
+			icrc.Add(tbr.Created);
+			foreach (var tb in tbr.Unused) {
+				TickLabels.Remove(tb);
+			}
+			TickLabels.AddRange(tbr.Created);
 			Dirty = false;
 		}
 		/// <summary>

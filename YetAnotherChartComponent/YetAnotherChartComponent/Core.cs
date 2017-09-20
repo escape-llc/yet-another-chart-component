@@ -437,4 +437,58 @@ namespace eScapeLLC.UWP.Charts {
 		}
 	}
 	#endregion
+	#region Recycler
+	/// <summary>
+	/// Recycles an input list of instances, then provides new instances.
+	/// Does the bookkeeping to track unused and newly-provided instances.
+	/// </summary>
+	/// <typeparam name="T"></typeparam>
+	public class Recycler<T> {
+		#region data
+		readonly List<T> _unused = new List<T>();
+		readonly List<T> _created = new List<T>();
+		readonly IEnumerable<T> _source;
+		readonly Func<T> _factory;
+		#endregion
+		#region properties
+		/// <summary>
+		/// Original items that were not used up by iterating.
+		/// </summary>
+		public IEnumerable<T> Unused { get { return _unused; } }
+		/// <summary>
+		/// Excess items that were created after original items were used up.
+		/// </summary>
+		public IEnumerable<T> Created { get { return _created; } }
+		#endregion
+		#region ctor
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="source"></param>
+		/// <param name="factory"></param>
+		public Recycler(IEnumerable<T> source, Func<T> factory) {
+			if (source == null) throw new ArgumentNullException(nameof(source));
+			if (factory == null) throw new ArgumentNullException(nameof(factory));
+			_unused.AddRange(source);
+			_source = source;
+			_factory = factory;
+		}
+		#endregion
+		/// <summary>
+		/// First exhaust the original source, then start creating new instances until no longer iterating.
+		/// </summary>
+		/// <returns></returns>
+		public IEnumerable<T> Items() {
+			foreach(var tx in _source) {
+				_unused.Remove(tx);
+				yield return tx;
+			}
+			while(true) {
+				var tx = _factory();
+				_created.Add(tx);
+				yield return tx;
+			}
+		}
+	}
+	#endregion
 }
