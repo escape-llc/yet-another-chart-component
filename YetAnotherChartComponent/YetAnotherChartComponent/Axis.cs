@@ -273,7 +273,7 @@ namespace eScapeLLC.UWP.Charts {
 			var incr = 1.0;
 			_trace.Verbose($"grid start:{start} end:{end} inc:{incr}");
 			GridGeometry.Children.Clear();
-			icrc.Remove(TickLabels);
+			//icrc.Remove(TickLabels);
 			// grid lines and tick labels
 			// layout and recycle labels
 			var tbr = new Recycler<TextBlock>(TickLabels, () => {
@@ -437,7 +437,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (!Dirty) return;
 			_trace.Verbose($"{Name} min:{Minimum} max:{Maximum} r:{Range}");
 			AxisGeometry.Figures.Clear();
-			icrc.Remove(TickLabels);
+			//icrc.Remove(TickLabels);
 			var pf = PathHelper.Rectangle(Minimum, 0, Maximum, AxisLineThickness);
 			AxisGeometry.Figures.Add(pf);
 			var i1 = (int)Minimum;

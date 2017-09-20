@@ -355,13 +355,13 @@ namespace eScapeLLC.UWP.Charts {
 			if (e.OldItems != null) {
 				foreach (DataSource ds in e.OldItems) {
 					_trace.Verbose($"leave '{ds.Name}' {ds}");
-					ds.RefreshRequest += DataSource_RefreshRequest;
+					ds.RefreshRequest -= DataSource_RefreshRequest;
 				}
 			}
 			if (e.NewItems != null) {
 				foreach (DataSource ds in e.NewItems) {
 					_trace.Verbose($"enter '{ds.Name}' {ds}");
-					ds.RefreshRequest -= DataSource_RefreshRequest;
+					ds.RefreshRequest += DataSource_RefreshRequest;
 					ds.DataContext = DataContext;
 				}
 			}

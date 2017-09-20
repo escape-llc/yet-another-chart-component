@@ -36,6 +36,9 @@
 		<TextBlock HorizontalAlignment="Stretch" TextAlignment="Center" Text="eScape LLC YACC Demo"/>
 		<StackPanel Grid.Row="1" Orientation="Horizontal" Padding="4">
 			<CheckBox x:Name="cb_yaxis_grid" Content="Value (Y) axis grid" IsChecked="True"/>
+			<Button x:Name="add_item" Content="Add Item" Click="add_item_Click"/>
+			<Button x:Name="remove_head" Content="Remove Head" Click="remove_head_Click"/>
+			<Button x:Name="add_and_remove_head" Content="Both" Click="add_and_remove_head_Click"/>
 		</StackPanel>
 		<yacc:Chart x:Name="cx" Grid.Row="2" Background="Black" Padding="32" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
 			<yacc:Chart.DataSources>
