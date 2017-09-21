@@ -351,10 +351,6 @@ namespace eScapeLLC.UWP.Charts {
 		static LogTools.Flag _trace = LogTools.Add("MarkerSeries", LogTools.Level.Error);
 		#region properties
 		/// <summary>
-		/// Geometry to use for the marker.
-		/// </summary>
-		public Geometry Marker { get; set; }
-		/// <summary>
 		/// The brush for the series.
 		/// </summary>
 		public Brush Stroke { get { return (Brush)GetValue(StrokeProperty); } set { SetValue(StrokeProperty, value); } }
@@ -362,6 +358,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// The fill brush for the series.
 		/// </summary>
 		public Brush Fill { get { return (Brush)GetValue(FillProperty); } set { SetValue(FillProperty, value); } }
+		/// <summary>
+		/// Geometry template for marker.
+		/// Currently MUST be EllipseGeometry.
+		/// </summary>
+		public DataTemplate MarkerTemplate { get { return (DataTemplate)GetValue(MarkerTemplateProperty); } set { SetValue(MarkerTemplateProperty, value); } }
 		/// <summary>
 		/// Offset in Category axis offset in [0..1].
 		/// Use with ColumnSeries to get the "points" to align with the column(s) layout in their cells.
@@ -385,6 +386,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// Identifies <see cref="Fill"/> dependency property.
 		/// </summary>
 		public static readonly DependencyProperty FillProperty = DependencyProperty.Register("Fill", typeof(Brush), typeof(MarkerSeries), new PropertyMetadata(null));
+		/// <summary>
+		/// Identifies <see cref="MarkerTemplate"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty MarkerTemplateProperty = DependencyProperty.Register("MarkerTemplate", typeof(DataTemplate), typeof(MarkerSeries), new PropertyMetadata(null));
 		#endregion
 		#region ctor
 		/// <summary>
@@ -441,6 +446,7 @@ namespace eScapeLLC.UWP.Charts {
 			var matx = new Matrix(scalex, 0, 0, -scaley, icrc.Area.Left + offsetx, icrc.Area.Top + ValueAxis.Maximum * scaley);
 			_trace.Verbose($"scale {scalex:F3},{scaley:F3} mat:{matx}");
 			Geometry.Transform = new MatrixTransform() { Matrix = matx };
+			Segments.Clip = new RectangleGeometry() { Rect = new Rect(0, 0, icrc.Area.Width, icrc.Area.Height) };
 			// TODO must counter-scale (in Y-axis) the markers to preserve aspect ratio
 			foreach (var gx in Geometry.Children) {
 				TransformMarker(gx, scalex, scaley);
@@ -467,12 +473,17 @@ namespace eScapeLLC.UWP.Charts {
 			internal BindingEvaluator by;
 			internal BindingEvaluator bl;
 		}
-		Geometry CloneMarker(double mappedx, double mappedy) {
-			if(Marker is EllipseGeometry) {
-				var eg = Marker as EllipseGeometry;
-				return new EllipseGeometry() { Center = new Point(mappedx, mappedy), RadiusX = eg.RadiusX, RadiusY = eg.RadiusY };
+		/// <summary>
+		/// Initialize the new marker coordinates.
+		/// </summary>
+		/// <param name="mappedx"></param>
+		/// <param name="mappedy"></param>
+		/// <param name="mk"></param>
+		void InitializeMarker(double mappedx, double mappedy, Geometry mk) {
+			if (mk is EllipseGeometry) {
+				var eg = mk as EllipseGeometry;
+				eg.Center = new Point(mappedx, mappedy);
 			}
-			return new EllipseGeometry() { Center = new Point(mappedx, mappedy), RadiusX = .5, RadiusY = 1 };
 		}
 		object IDataSourceRenderer.Preamble(IChartRenderContext icrc) {
 			if (ValueAxis == null || CategoryAxis == null) return null;
@@ -497,7 +508,8 @@ namespace eScapeLLC.UWP.Charts {
 			var mappedy = ValueAxis.For(valuey);
 			var mappedx = st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()));
 			_trace.Verbose($"[{index}] {valuey} ({mappedx},{mappedy})");
-			var mk = CloneMarker(mappedx, mappedy);
+			var mk = MarkerTemplate.LoadContent() as Geometry;
+			InitializeMarker(mappedx, mappedy, mk);
 			Geometry.Children.Add(mk);
 		}
 		void IDataSourceRenderer.RenderComplete(object state) {
@@ -603,6 +615,7 @@ namespace eScapeLLC.UWP.Charts {
 			var matx = new Matrix(scalex, 0, 0, -scaley, icrc.Area.Left, icrc.Area.Top + ValueAxis.Maximum * scaley);
 			_trace.Verbose($"scale {scalex:F3},{scaley:F3} mat:{matx}");
 			Geometry.Transform = new MatrixTransform() { Matrix = matx };
+			Segments.Clip = new RectangleGeometry() { Rect = new Rect(0,0, icrc.Area.Width, icrc.Area.Height) };
 		}
 		#endregion
 		#region IDataSourceRenderer

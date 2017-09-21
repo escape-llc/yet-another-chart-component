@@ -53,9 +53,12 @@
 				<yacc:MarkerSeries DataSourceName="data" ValuePath="Value1"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".5"
 					Stroke="{StaticResource red}" Fill="{StaticResource blue}">
-					<yacc:MarkerSeries.Marker>
-						<EllipseGeometry Center="0,0" RadiusX=".1" RadiusY=".1" />
-					</yacc:MarkerSeries.Marker>
+					<yacc:MarkerSeries.MarkerTemplate>
+						<DataTemplate>
+							<!-- Center and RadiusY are calculated based on current size -->
+							<EllipseGeometry RadiusX=".1" />
+						</DataTemplate>
+					</yacc:MarkerSeries.MarkerTemplate>
 				</yacc:MarkerSeries>
 				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value2"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis"

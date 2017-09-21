@@ -267,8 +267,9 @@ namespace eScapeLLC.UWP.Charts {
 			var pf = PathHelper.Rectangle(Side == Side.Right ? 0 : icrc.Area.Width, Minimum, Side == Side.Right ? AxisLineThickness : icrc.Area.Width - AxisLineThickness, Maximum);
 			AxisGeometry.Figures.Add(pf);
 			// grid lines
-			var start = Math.Round(Minimum);
-			var end = Math.Round(Maximum);
+			// TODO round off based on log10(Range)
+			var start = Math.Truncate(Minimum);
+			var end = Math.Truncate(Maximum);
 			// TODO something based on log10(Range)
 			var incr = 1.0;
 			_trace.Verbose($"grid start:{start} end:{end} inc:{incr}");
@@ -332,7 +333,10 @@ namespace eScapeLLC.UWP.Charts {
 			foreach(var tb in TickLabels) {
 				var vx = (double)tb.Tag;
 				tb.SetValue(Canvas.LeftProperty, icrc.Area.Left);
-				tb.SetValue(Canvas.TopProperty, icrc.Area.Bottom - (vx - Minimum)*scaley - tb.FontSize/2);
+				var adj = tb.FontSize / 2;
+				var top = icrc.Area.Bottom - (vx - Minimum) * scaley - adj;
+				tb.SetValue(Canvas.TopProperty, top);
+				//tb.SetValue(TextBlock.VisibilityProperty, top >= icrc.Area.Top - adj && top <= icrc.Area.Bottom ? Visibility.Visible : Visibility.Collapsed);
 			}
 		}
 		#endregion
