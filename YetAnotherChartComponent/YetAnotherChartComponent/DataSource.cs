@@ -56,7 +56,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// Otherwise, owner must call Refresh() at appropriate time.
 	/// </summary>
 	public class DataSource : FrameworkElement {
-		static LogTools.Flag _trace = LogTools.Add("DataSource", LogTools.Level.Verbose);
+		static LogTools.Flag _trace = LogTools.Add("DataSource", LogTools.Level.Error);
 		#region data
 		List<IDataSourceRenderer> _renderers = new List<IDataSourceRenderer>();
 		#endregion

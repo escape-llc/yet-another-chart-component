@@ -240,7 +240,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	[TemplatePart(Name = PART_Canvas, Type = typeof(Canvas))]
 	public class Chart : Control {
-		static LogTools.Flag _trace = LogTools.Add("Chart", LogTools.Level.Verbose);
+		static LogTools.Flag _trace = LogTools.Add("Chart", LogTools.Level.Error);
 		/// <summary>
 		/// Control template part: canvas.
 		/// </summary>

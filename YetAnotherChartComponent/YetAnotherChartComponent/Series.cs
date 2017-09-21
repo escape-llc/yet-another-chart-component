@@ -195,7 +195,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// Data series that generates a Polyline visual.
 	/// </summary>
 	public class LineSeries : DataSeries, IDataSourceRenderer {
-		static LogTools.Flag _trace = LogTools.Add("LineSeries", LogTools.Level.Verbose);
+		static LogTools.Flag _trace = LogTools.Add("LineSeries", LogTools.Level.Error);
 		#region properties
 		/// <summary>
 		/// Series path stroke thickness.
@@ -348,7 +348,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// Series that places the given marker at each point.
 	/// </summary>
 	public class MarkerSeries : DataSeries, IDataSourceRenderer {
-		static LogTools.Flag _trace = LogTools.Add("MarkerSeries", LogTools.Level.Verbose);
+		static LogTools.Flag _trace = LogTools.Add("MarkerSeries", LogTools.Level.Error);
 		#region properties
 		/// <summary>
 		/// Geometry to use for the marker.
@@ -517,7 +517,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// Category axis cells start on the left and extend positive-X (in device units).  Each cell is one unit long.
 	/// </summary>
 	public class ColumnSeries : DataSeries, IDataSourceRenderer {
-		static LogTools.Flag _trace = LogTools.Add("ColumnSeries", LogTools.Level.Verbose);
+		static LogTools.Flag _trace = LogTools.Add("ColumnSeries", LogTools.Level.Error);
 		#region properties
 		/// <summary>
 		/// The fill brush for the series.

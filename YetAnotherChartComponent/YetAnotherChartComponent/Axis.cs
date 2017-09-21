@@ -16,7 +16,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// It's possible to have one or both limits "fixed" in this way.
 	/// </summary>
 	public abstract class AxisCommon : ChartComponent, IChartAxis {
-		static LogTools.Flag _trace = LogTools.Add("AxisCommon", LogTools.Level.Verbose);
+		static LogTools.Flag _trace = LogTools.Add("AxisCommon", LogTools.Level.Error);
 		#region properties
 		#region axis
 		/// <summary>
@@ -164,7 +164,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// Value axis is a "vertical" axis that represents the "Y" coordinate.
 	/// </summary>
 	public class ValueAxis : AxisCommon {
-		static LogTools.Flag _trace = LogTools.Add("ValueAxis", LogTools.Level.Verbose);
+		static LogTools.Flag _trace = LogTools.Add("ValueAxis", LogTools.Level.Error);
 		#region properties
 		/// <summary>
 		/// Path for the axis "bar".
@@ -346,7 +346,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// Certain series types MAY extend the discrete axis by ONE cell, to draw the "last" elements there.
 	/// </summary>
 	public class CategoryAxis : AxisCommon {
-		static LogTools.Flag _trace = LogTools.Add("CategoryAxis", LogTools.Level.Verbose);
+		static LogTools.Flag _trace = LogTools.Add("CategoryAxis", LogTools.Level.Error);
 		#region properties
 		/// <summary>
 		/// Path for axis "bar".
