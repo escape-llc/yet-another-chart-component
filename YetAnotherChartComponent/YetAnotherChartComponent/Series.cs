@@ -446,7 +446,6 @@ namespace eScapeLLC.UWP.Charts {
 			var matx = new Matrix(scalex, 0, 0, -scaley, icrc.Area.Left + offsetx, icrc.Area.Top + ValueAxis.Maximum * scaley);
 			_trace.Verbose($"scale {scalex:F3},{scaley:F3} mat:{matx}");
 			Geometry.Transform = new MatrixTransform() { Matrix = matx };
-			Segments.Clip = new RectangleGeometry() { Rect = new Rect(0, 0, icrc.Area.Width, icrc.Area.Height) };
 			// TODO must counter-scale (in Y-axis) the markers to preserve aspect ratio
 			foreach (var gx in Geometry.Children) {
 				TransformMarker(gx, scalex, scaley);
@@ -461,9 +460,11 @@ namespace eScapeLLC.UWP.Charts {
 		protected void TransformMarker(Geometry mk, double scalex, double scaley) {
 			if(mk is EllipseGeometry) {
 				var eg = mk as EllipseGeometry;
+				var matx = new Matrix(1, 0, 0, 1 / scaley, 0, eg.Center.Y);
+				mk.Transform = new MatrixTransform() { Matrix = matx };
 				var xpx = eg.RadiusX * scalex;
-				var yv = xpx / scaley;
-				eg.RadiusY = yv;
+				//var yv = xpx / scaley;
+				eg.RadiusY = /*yv*/ xpx;
 			}
 		}
 		#endregion

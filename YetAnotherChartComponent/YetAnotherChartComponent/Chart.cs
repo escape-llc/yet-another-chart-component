@@ -541,8 +541,8 @@ namespace eScapeLLC.UWP.Charts {
 				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
 				cc.Transforms(ctx);
 			}
-			// Phase III: update series transforms
-			foreach (DataSeries cc in Series) {
+			// Phase III: update non-axis component transforms
+			foreach (ChartComponent cc in Components.Where((cc2)=>!(cc2 is IChartAxis))) {
 				var rect = dlc.For(cc);
 				_trace.Verbose($"transforms-only {cc} {rect}");
 				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
@@ -581,15 +581,20 @@ namespace eScapeLLC.UWP.Charts {
 			// Phase IV: axes have seen all values; render+transform them now
 			foreach (var axis in Axes) {
 				var acc = axis as ChartComponent;
-				var scale = (axis.Type == AxisType.Value ? inner.Height : inner.Width) / axis.Range;
 				var rect = dlc.For(acc);
 				_trace.Verbose($"limits {acc.Name} ({axis.Minimum},{axis.Maximum}) r:{axis.Range} rect:{rect}");
 				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
 				acc.Render(ctx);
 				acc.Transforms(ctx);
 			}
-			// Phase V: configure series transforms now axes are configured
-			foreach (DataSeries cc in Series) {
+			// Phase IV.1: render non-series non-axis components
+			foreach (ChartComponent cc in Components.Where((cc2) => !(cc2 is IChartAxis) && !(cc2 is DataSeries))) {
+				var rect = dlc.For(cc);
+				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
+				cc.Render(ctx);
+			}
+			// Phase V: configure non-axis component transforms now axes are configured
+			foreach (ChartComponent cc in Components.Where((cc2) => !(cc2 is IChartAxis))) {
 				var rect = dlc.For(cc);
 				_trace.Verbose($"transforms {cc} {rect}");
 				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
