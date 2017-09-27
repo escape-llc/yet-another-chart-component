@@ -256,6 +256,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public ChartComponentCollection Components { get; private set; }
 		/// <summary>
+		/// The list of Legend items.
+		/// This is intended for data binding to an external UI to present the legend.
+		/// </summary>
+		public ObservableCollection<Legend> LegendItems { get; private set; }
+		/// <summary>
 		/// Obtained from the templated parent.
 		/// </summary>
 		protected Canvas Surface { get; set; }
@@ -284,6 +289,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public Chart() :base() {
 			DefaultStyleKey = typeof(Chart);
+			LegendItems = new ObservableCollection<Legend>();
 			DataSources = new ChartDataSourceCollection();
 			DataSources.CollectionChanged += DataSources_CollectionChanged;
 			Components = new ChartComponentCollection();

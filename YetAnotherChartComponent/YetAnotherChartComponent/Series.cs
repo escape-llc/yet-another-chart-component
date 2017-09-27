@@ -443,7 +443,7 @@ namespace eScapeLLC.UWP.Charts {
 			var scalex = icrc.Area.Width / CategoryAxis.Range;
 			var scaley = icrc.Area.Height / ValueAxis.Range;
 			var offsetx = scalex * CategoryAxisOffset;
-			var matx = new Matrix(scalex, 0, 0, -scaley, icrc.Area.Left + offsetx, icrc.Area.Top + ValueAxis.Maximum * scaley);
+			var matx = new Matrix(scalex, 0, 0, -scaley, icrc.Area.Left + offsetx, icrc.Area.Top  + ValueAxis.Maximum * scaley);
 			_trace.Verbose($"scale {scalex:F3},{scaley:F3} mat:{matx}");
 			Geometry.Transform = new MatrixTransform() { Matrix = matx };
 			// TODO must counter-scale (in Y-axis) the markers to preserve aspect ratio
@@ -460,11 +460,15 @@ namespace eScapeLLC.UWP.Charts {
 		protected void TransformMarker(Geometry mk, double scalex, double scaley) {
 			if(mk is EllipseGeometry) {
 				var eg = mk as EllipseGeometry;
-				var matx = new Matrix(1, 0, 0, 1 / scaley, 0, eg.Center.Y);
+				// problem: putting scalex in the factor gets the radius correct, but then Center.Y is off.
+				// problem: attempts to rescale Center.Y have failed; it should just be the same factor.
+				// this factor counter-scales back to unity; which is now the xaxis scale!
+				var factor = (-1 / scaley);
+				var matx = new Matrix(1, 0, 0, factor, 0, eg.Center.Y);
 				mk.Transform = new MatrixTransform() { Matrix = matx };
+				// putting this scalex in factor makes RadiusY come out correctly, but then Center.Y is off.
 				var xpx = eg.RadiusX * scalex;
-				//var yv = xpx / scaley;
-				eg.RadiusY = /*yv*/ xpx;
+				eg.RadiusY = xpx;
 			}
 		}
 		#endregion

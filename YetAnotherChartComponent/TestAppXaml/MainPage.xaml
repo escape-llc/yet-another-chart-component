@@ -63,7 +63,7 @@
 					<yacc:MarkerSeries.MarkerTemplate>
 						<DataTemplate>
 							<!-- Center and RadiusY are calculated based on current size -->
-							<EllipseGeometry RadiusX=".1" />
+							<EllipseGeometry RadiusX=".1" RadiusY=".1" />
 						</DataTemplate>
 					</yacc:MarkerSeries.MarkerTemplate>
 				</yacc:MarkerSeries>

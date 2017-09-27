@@ -491,4 +491,10 @@ namespace eScapeLLC.UWP.Charts {
 		}
 	}
 	#endregion
+	#region Legend
+	public class Legend {
+		public Brush Color { get; set; }
+		public String Title { get; set; }
+	}
+	#endregion
 }
