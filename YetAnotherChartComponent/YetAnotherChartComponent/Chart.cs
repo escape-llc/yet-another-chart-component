@@ -490,15 +490,20 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="cc"></param>
 		protected void EnterComponent(IChartEnterLeaveContext icelc, ChartComponent cc) {
 			cc.Enter(icelc);
-			if (cc is IChartAxis) {
-				Axes.Add(cc as IChartAxis);
-			} else if (cc is DataSeries) {
-				var ds = cc as DataSeries;
+			// for now anything can provide a legend item
+			if(cc is IProvideLegend ipl) {
+				var leg = ipl.Legend();
+				LegendItems.Add(leg);
+			}
+			// axis and series are mutually-exclusive
+			if (cc is IChartAxis ica) {
+				Axes.Add(ica);
+			} else if (cc is DataSeries ds) {
 				Series.Add(ds);
-				if (ds is IDataSourceRenderer) {
+				if (ds is IDataSourceRenderer idsr) {
 					var source = DataSources.Cast<DataSource>().SingleOrDefault<DataSource>((dds) => dds.Name == ds.DataSourceName);
 					if (source != null) {
-						source.Register(ds as IDataSourceRenderer);
+						source.Register(idsr);
 					}
 				}
 			}
@@ -509,14 +514,16 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icelc"></param>
 		/// <param name="cc"></param>
 		protected void LeaveComponent(IChartEnterLeaveContext icelc, ChartComponent cc) {
-			if (cc is IChartAxis) {
-				Axes.Remove(cc as IChartAxis);
-			} else if (cc is DataSeries) {
-				var ds = cc as DataSeries;
-				if (ds is IDataSourceRenderer) {
+			if(cc is IProvideLegend ipl) {
+			// TODO pull out the legend item from collection.
+			}
+			if (cc is IChartAxis ica) {
+				Axes.Remove(ica);
+			} else if (cc is DataSeries ds) {
+				if (ds is IDataSourceRenderer idsr) {
 					var source = DataSources.Cast<DataSource>().SingleOrDefault<DataSource>((dds) => dds.Name == ds.DataSourceName);
 					if (source != null) {
-						source.Unregister(ds as IDataSourceRenderer);
+						source.Unregister(idsr);
 					}
 				}
 				Series.Remove(ds);

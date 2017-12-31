@@ -13,8 +13,17 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public class Background : ChartComponent {
 		#region properties
+		/// <summary>
+		/// The fill brush to use.
+		/// </summary>
 		public Brush Fill { get { return (Brush)GetValue(FillProperty); } set { SetValue(FillProperty, value); } }
+		/// <summary>
+		/// The path to attach geometry et al.
+		/// </summary>
 		protected Path Path { get; set; }
+		/// <summary>
+		/// The geometry to use for this component.
+		/// </summary>
 		protected RectangleGeometry Rectangle { get; set; }
 		#endregion
 		#region DPs
@@ -49,10 +58,18 @@ namespace eScapeLLC.UWP.Charts {
 			#endif
 		}
 		#endregion
+		/// <summary>
+		/// Component is entering the chart.
+		/// </summary>
+		/// <param name="icelc">Context.</param>
 		public override void Enter(IChartEnterLeaveContext icelc) {
 			icelc.Add(Path);
 			DoBindings(icelc);
 		}
+		/// <summary>
+		/// Component is leaving the chart.
+		/// </summary>
+		/// <param name="icelc">Context.</param>
 		public override void Leave(IChartEnterLeaveContext icelc) {
 			icelc.Remove(Path);
 		}
@@ -60,7 +77,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Render the background.
 		/// Uses NDC coordinates.
 		/// </summary>
-		/// <param name="icrc"></param>
+		/// <param name="icrc">Context.</param>
 		public override void Render(IChartRenderContext icrc) {
 			//if (!Dirty) return;
 			Rectangle.Rect = new Windows.Foundation.Rect(0, 0, 1, 1);
@@ -68,7 +85,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Scale the NDC rectangle to the dimensions given.
 		/// </summary>
-		/// <param name="icrc"></param>
+		/// <param name="icrc">Context.</param>
 		public override void Transforms(IChartRenderContext icrc) {
 			var matx = new Matrix(icrc.SeriesArea.Width, 0, 0, icrc.SeriesArea.Height, icrc.SeriesArea.Left, icrc.SeriesArea.Top);
 			Rectangle.Transform = new MatrixTransform() { Matrix = matx };

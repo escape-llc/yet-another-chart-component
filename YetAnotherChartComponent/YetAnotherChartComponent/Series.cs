@@ -1,6 +1,7 @@
 ﻿using eScape.Core;
 using System;
 using Windows.Foundation;
+using Windows.UI;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
@@ -194,7 +195,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Data series that generates a Polyline visual.
 	/// </summary>
-	public class LineSeries : DataSeries, IDataSourceRenderer {
+	public class LineSeries : DataSeries, IDataSourceRenderer, IProvideLegend {
 		static LogTools.Flag _trace = LogTools.Add("LineSeries", LogTools.Level.Error);
 		#region properties
 		/// <summary>
@@ -222,6 +223,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public Brush Stroke { get { return (Brush)GetValue(StrokeProperty); } set { SetValue(StrokeProperty, value); } }
 		/// <summary>
+		/// The title for the series.
+		/// </summary>
+		public String Title { get { return (String)GetValue(TitleProperty); } set { SetValue(TitleProperty, value); } }
+		/// <summary>
 		/// Offset in Category axis offset in [0..1].
 		/// Use with ColumnSeries to get the "points" to align with the column(s) layout in their cells.
 		/// </summary>
@@ -240,6 +245,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// Identifies <see cref="Stroke"/> dependency property.
 		/// </summary>
 		public static readonly DependencyProperty StrokeProperty = DependencyProperty.Register("Stroke", typeof(Brush), typeof(LineSeries), new PropertyMetadata(null));
+		/// <summary>
+		/// Identifies <see cref="Title"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty TitleProperty = DependencyProperty.Register("Title", typeof(String), typeof(LineSeries), new PropertyMetadata("Title"));
 		#endregion
 		#region ctor
 		/// <summary>
@@ -291,6 +300,11 @@ namespace eScapeLLC.UWP.Charts {
 			var matx = new Matrix(scalex, 0, 0, -scaley, icrc.Area.Left + offsetx, icrc.Area.Top + ValueAxis.Maximum*scaley);
 			_trace.Verbose($"scale {scalex:F3},{scaley:F3} mat:{matx}");
 			Geometry.Transform = new MatrixTransform() { Matrix = matx };
+		}
+		#endregion
+		#region IProvideLegend
+		Legend IProvideLegend.Legend() {
+			return new Legend() { Title = Title, Fill = Stroke, Stroke = Stroke };
 		}
 		#endregion
 		#region IDataSourceRenderer
@@ -347,7 +361,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Series that places the given marker at each point.
 	/// </summary>
-	public class MarkerSeries : DataSeries, IDataSourceRenderer {
+	public class MarkerSeries : DataSeries, IDataSourceRenderer, IProvideLegend {
 		static LogTools.Flag _trace = LogTools.Add("MarkerSeries", LogTools.Level.Error);
 		#region properties
 		/// <summary>
@@ -358,6 +372,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// The fill brush for the series.
 		/// </summary>
 		public Brush Fill { get { return (Brush)GetValue(FillProperty); } set { SetValue(FillProperty, value); } }
+		/// <summary>
+		/// The title for the series.
+		/// </summary>
+		public String Title { get { return (String)GetValue(TitleProperty); } set { SetValue(TitleProperty, value); } }
 		/// <summary>
 		/// Geometry template for marker.
 		/// Currently MUST be EllipseGeometry.
@@ -386,6 +404,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// Identifies <see cref="Fill"/> dependency property.
 		/// </summary>
 		public static readonly DependencyProperty FillProperty = DependencyProperty.Register("Fill", typeof(Brush), typeof(MarkerSeries), new PropertyMetadata(null));
+		/// <summary>
+		/// Identifies <see cref="Title"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty TitleProperty = DependencyProperty.Register("Title", typeof(String), typeof(MarkerSeries), new PropertyMetadata("Title"));
 		/// <summary>
 		/// Identifies <see cref="MarkerTemplate"/> dependency property.
 		/// </summary>
@@ -450,6 +472,7 @@ namespace eScapeLLC.UWP.Charts {
 			foreach (var gx in Geometry.Children) {
 				TransformMarker(gx, scalex, scaley);
 			}
+			Segments.Clip = new RectangleGeometry() { Rect = icrc.Area };
 		}
 		/// <summary>
 		/// Counter-scale the marker's Y-axis to preserve aspect ratio.
@@ -470,6 +493,11 @@ namespace eScapeLLC.UWP.Charts {
 				var xpx = eg.RadiusX * scalex;
 				eg.RadiusY = xpx;
 			}
+		}
+		#endregion
+		#region IProvideLegend
+		Legend IProvideLegend.Legend() {
+			return new Legend() { Title = Title, Fill = Fill, Stroke = Stroke };
 		}
 		#endregion
 		#region IDataSourceRenderer
@@ -533,8 +561,9 @@ namespace eScapeLLC.UWP.Charts {
 	/// If there's no CategoryMemberPath defined (i.e. using data index) this component reserves one "extra" cell on the Category Axis, to present the last column(s).
 	/// Category axis cells start on the left and extend positive-X (in device units).  Each cell is one unit long.
 	/// </summary>
-	public class ColumnSeries : DataSeries, IDataSourceRenderer {
+	public class ColumnSeries : DataSeries, IDataSourceRenderer, IProvideLegend {
 		static LogTools.Flag _trace = LogTools.Add("ColumnSeries", LogTools.Level.Error);
+		static LogTools.Flag _traceg = LogTools.Add("ColumnSeriesPaths", LogTools.Level.Off);
 		#region properties
 		/// <summary>
 		/// The fill brush for the series.
@@ -544,6 +573,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// The stroke brush for the series.
 		/// </summary>
 		public Brush Stroke { get { return (Brush)GetValue(StrokeProperty); } set { SetValue(StrokeProperty, value); } }
+		/// <summary>
+		/// The title for the series.
+		/// </summary>
+		public String Title { get { return (String)GetValue(TitleProperty); } set { SetValue(TitleProperty, value); } }
 		/// <summary>
 		/// Fractional offset into the "cell" of the category axis.
 		/// BarOffset + BarWidth &lt;= 1.0
@@ -562,6 +595,14 @@ namespace eScapeLLC.UWP.Charts {
 		/// Geometry for the column bars.
 		/// </summary>
 		protected PathGeometry Geometry { get; set; }
+		/// <summary>
+		/// Geometry for debug: clip region.
+		/// </summary>
+		protected RectangleGeometry DebugClip { get; set; }
+		/// <summary>
+		/// Path for the debug graphics.
+		/// </summary>
+		protected Path DebugSegments { get; set; }
 		#endregion
 		#region DPs
 		/// <summary>
@@ -572,6 +613,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// Identifies <see cref="Stroke"/> dependency property.
 		/// </summary>
 		public static readonly DependencyProperty StrokeProperty = DependencyProperty.Register("Stroke", typeof(Brush), typeof(ColumnSeries), new PropertyMetadata(null));
+		/// <summary>
+		/// Identifies <see cref="Title"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty TitleProperty = DependencyProperty.Register("Title", typeof(String), typeof(ColumnSeries), new PropertyMetadata("Title"));
 		#endregion
 		#region ctor
 		/// <summary>
@@ -582,7 +627,16 @@ namespace eScapeLLC.UWP.Charts {
 			Segments = new Path() {
 				StrokeThickness = 1,
 				Data = Geometry
-		};
+			};
+			_traceg.Verbose(() => {
+				DebugClip = new RectangleGeometry();
+				DebugSegments = new Path() {
+					StrokeThickness = 1,
+					Fill = new SolidColorBrush(Color.FromArgb(32, Colors.LimeGreen.R, Colors.LimeGreen.G, Colors.LimeGreen.B)),
+					Data = DebugClip
+				};
+				return "Created Debug path";
+			});
 		}
 		#endregion
 		#region extensions
@@ -594,6 +648,9 @@ namespace eScapeLLC.UWP.Charts {
 			EnsureAxes(icelc);
 			_trace.Verbose($"enter v:{ValueAxisName} {ValueAxis} c:{CategoryAxisName} {CategoryAxis} d:{DataSourceName}");
 			icelc.Add(Segments);
+			if (DebugSegments != null) {
+				icelc.Add(DebugSegments);
+			}
 			BindTo(this, "Stroke", Segments, Path.StrokeProperty);
 			BindTo(this, "Fill", Segments, Path.FillProperty);
 		}
@@ -605,6 +662,9 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"leave");
 			ValueAxis = null;
 			CategoryAxis = null;
+			if(DebugSegments != null) {
+				icelc.Remove(DebugSegments);
+			}
 			icelc.Remove(Segments);
 		}
 		/// <summary>
@@ -618,9 +678,18 @@ namespace eScapeLLC.UWP.Charts {
 			var scalex = icrc.Area.Width / CategoryAxis.Range;
 			var scaley = icrc.Area.Height / ValueAxis.Range;
 			var matx = new Matrix(scalex, 0, 0, -scaley, icrc.Area.Left, icrc.Area.Top + ValueAxis.Maximum * scaley);
-			_trace.Verbose($"scale {scalex:F3},{scaley:F3} mat:{matx}");
+			var clip = new Rect(icrc.Area.Left, icrc.Area.Top, icrc.Area.Width, icrc.Area.Height);
+			_trace.Verbose($"scale {scalex:F3},{scaley:F3} mat:{matx} clip:{clip}");
+			Segments.Clip = new RectangleGeometry() { Rect = clip };
 			Geometry.Transform = new MatrixTransform() { Matrix = matx };
-			Segments.Clip = new RectangleGeometry() { Rect = new Rect(0,0, icrc.Area.Width, icrc.Area.Height) };
+			if (DebugClip != null) {
+				DebugClip.Rect = clip;
+			}
+		}
+		#endregion
+		#region IProvideLegend
+		Legend IProvideLegend.Legend() {
+			return new Legend() { Title = Title, Fill = Fill, Stroke = Stroke };
 		}
 		#endregion
 		#region IDataSourceRenderer

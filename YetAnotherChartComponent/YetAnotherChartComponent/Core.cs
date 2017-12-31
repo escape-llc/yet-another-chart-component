@@ -212,6 +212,18 @@ namespace eScapeLLC.UWP.Charts {
 		void Remove(FrameworkElement fe);
 	}
 	#endregion
+	#region IProvideLegend
+	/// <summary>
+	/// Ability to participate in the legend items collection.
+	/// </summary>
+	public interface IProvideLegend {
+		/// <summary>
+		/// Create the legend for this item.
+		/// </summary>
+		/// <returns></returns>
+		Legend Legend();
+	}
+	#endregion
 	#region ChartComponent
 	/// <summary>
 	/// Refresh delegate.
@@ -492,8 +504,21 @@ namespace eScapeLLC.UWP.Charts {
 	}
 	#endregion
 	#region Legend
+	/// <summary>
+	/// Base VM for the chart legend.
+	/// </summary>
 	public class Legend {
-		public Brush Color { get; set; }
+		/// <summary>
+		/// The color swatch to display.
+		/// </summary>
+		public Brush Fill { get; set; }
+		/// <summary>
+		/// The border for the swatch.
+		/// </summary>
+		public Brush Stroke { get; set; }
+		/// <summary>
+		/// The title.
+		/// </summary>
 		public String Title { get; set; }
 	}
 	#endregion
