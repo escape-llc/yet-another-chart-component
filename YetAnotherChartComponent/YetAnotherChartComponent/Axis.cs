@@ -8,6 +8,109 @@ using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
 
 namespace eScapeLLC.UWP.Charts {
+	#region TickCalculator
+	/// <summary>
+	/// Helper to calculate grid lines/tick marks.
+	/// The "sweet spot" for grids is 10, so calculations use base-10 logarithms.
+	/// The grid "origin" is selected as follows:
+	///		If the extents have opposing signs, ZERO is the "center" point (regardless of where it falls),
+	///		Otherwise it's the arithmetic midpoint (Minimum + Range/2) rounded to the nearest TickInterval.
+	/// </summary>
+	public class TickCalculator {
+		#region properties
+		/// <summary>
+		/// The low extent.
+		/// </summary>
+		public double Minimum { get; private set; }
+		/// <summary>
+		/// The high extent.
+		/// </summary>
+		public double Maximum { get; private set; }
+		/// <summary>
+		/// Range of the interval.
+		/// Initialized in ctor.
+		/// </summary>
+		public double Range { get; private set; }
+		/// <summary>
+		/// Computed tick interval, based on range.
+		/// Initialized in ctor.
+		/// SHOULD be a Power of Ten.
+		/// </summary>
+		public double TickInterval { get; private set; }
+		/// <summary>
+		/// Power of 10 to use for ticks.
+		/// Based on Log10(Range).
+		/// </summary>
+		public int DecimalPlaces { get; private set; }
+		#endregion
+		#region ctor
+		/// <summary>
+		/// Ctor.
+		/// Initialize Range, TickInterval.
+		/// </summary>
+		/// <param name="minimum">The minimum value.</param>
+		/// <param name="maximum">The maximum value.</param>
+		public TickCalculator(double minimum, double maximum) {
+			Minimum = minimum;
+			Maximum = maximum;
+			Range = Math.Abs(maximum - minimum);
+			DecimalPlaces = (int)Math.Round(Math.Log10(Range) - 1.0);
+			TickInterval = Math.Pow(10, DecimalPlaces);
+		}
+		#endregion
+		#region public
+		/// <summary>
+		/// Round the number to nearest multiple.
+		/// </summary>
+		/// <param name="val">Source value.</param>
+		/// <param name="multiple">Multiple for rounding.</param>
+		/// <returns>Rounded value.</returns>
+		public static double RoundTo(double val, double multiple) {
+			return Math.Round(val / multiple) * multiple;
+		}
+		/// <summary>
+		/// Compare the values, using the given threshold.
+		/// As is common in floating-point-land, the bit pattern produced by a numeric "string" may not match exactly.
+		/// Underlying cause is the power-of-two/power-of-ten mismatch.
+		/// There is also possibility of accumulated error, depending on source calculations.
+		/// </summary>
+		/// <param name="v1">Value 1.</param>
+		/// <param name="v2">Value 2.</param>
+		/// <param name="epsilon">Threshold for comparison.</param>
+		/// <returns>True: under threshold; False: over or equal threshold.</returns>
+		public static bool Equals(double v1, double v2, double epsilon) {
+			return Math.Abs(v1 - v2) < epsilon;
+		}
+		/// <summary>
+		/// Enumerate the ticks.
+		/// Starts at the "center" and works "outward" toward each extent, alternating positive/negative direction.
+		/// Once an extent is "filled", only values of the opposite extent SHALL appear.
+		/// If extents "contain" zero, start at zero, otherwise the "center" of the range, to nearest tick.
+		/// </summary>
+		/// <returns></returns>
+		public IEnumerable<double> GetTicks() {
+			var center = Math.Sign(Minimum) != Math.Sign(Maximum) ? 0 : RoundTo(Minimum + Range / 2, TickInterval);
+			yield return center;
+			var inside = true;
+			for (int ix = 1; inside; ix++) {
+				bool didu = false, didl = false;
+				// do it this way to avoid accumulated error
+				var upper = center + ix * TickInterval;
+				var lower = center - ix * TickInterval;
+				if (upper <= Maximum) {
+					yield return upper;
+					didu = true;
+				}
+				if (lower >= Minimum) {
+					yield return lower;
+					didl = true;
+				}
+				inside = didu || didl;
+			}
+		}
+		#endregion
+	}
+	#endregion
 	#region AxisCommon
 	/// <summary>
 	/// Consolidate common properties for axes and implement IChartAxis.
@@ -131,12 +234,12 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region public
 		/// <summary>
-		/// Reset the limits to NaN.
+		/// Reset the limits to LimitXXX.
 		/// Set Dirty = true.
 		/// </summary>
 		public virtual void ResetLimits() { Minimum = LimitMinimum; Maximum = LimitMaximum; Dirty = true; }
 		/// <summary>
-		/// Map given value.
+		/// Map given data value to that of the axis.
 		/// </summary>
 		/// <param name="value">Value to "see".</param>
 		/// <returns>The "mapped" value. By default it's the identity.</returns>
@@ -267,12 +370,8 @@ namespace eScapeLLC.UWP.Charts {
 			var pf = PathHelper.Rectangle(Side == Side.Right ? 0 : icrc.Area.Width, Minimum, Side == Side.Right ? AxisLineThickness : icrc.Area.Width - AxisLineThickness, Maximum);
 			AxisGeometry.Figures.Add(pf);
 			// grid lines
-			// TODO round off based on log10(Range)
-			var start = Math.Truncate(Minimum);
-			var end = Math.Truncate(Maximum);
-			// TODO something based on log10(Range)
-			var incr = 1.0;
-			_trace.Verbose($"grid start:{start} end:{end} inc:{incr}");
+			var tc = new TickCalculator(Minimum, Maximum);
+			_trace.Verbose($"grid range:{tc.Range} tintv:{tc.TickInterval}");
 			GridGeometry.Children.Clear();
 			//icrc.Remove(TickLabels);
 			// grid lines and tick labels
@@ -290,21 +389,17 @@ namespace eScapeLLC.UWP.Charts {
 				return tb;
 			});
 			var tbget = tbr.Items().GetEnumerator();
-			double vx = start;
-			for (int ix = 0; vx < end; ix++) {
-				// do it this way to avoid accumulated error
-				vx = start + ix * incr;
-				//_trace.Verbose($"grid vx:{vx}");
-				var grid = new LineGeometry() { StartPoint = new Point(0, vx), EndPoint = new Point(1, vx) };
+			foreach (var tick in tc.GetTicks()) {
+				//_trace.Verbose($"grid vx:{tick}");
+				var grid = new LineGeometry() { StartPoint = new Point(0, tick), EndPoint = new Point(1, tick) };
 				GridGeometry.Children.Add(grid);
 				if (tbget.MoveNext()) {
 					var tb = tbget.Current;
-					tb.Text = vx.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
-					//BindTo(this, "GridVisibility", tb, UIElement.VisibilityProperty);
+					tb.Text = tick.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
 					tb.SetValue(Canvas.LeftProperty, icrc.Area.Left);
-					tb.SetValue(Canvas.TopProperty, vx);
-					// cheat: save the grid value so we can rescale the Left in Transforms()
-					tb.Tag = vx;
+					tb.SetValue(Canvas.TopProperty, tick);
+					// cheat: save the grid value so we can rescale the Canvas.Top in Transforms()
+					tb.Tag = tick;
 				}
 			}
 			// VT and internal bookkeeping

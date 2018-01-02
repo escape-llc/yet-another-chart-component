@@ -130,10 +130,10 @@ namespace eScapeLLC.UWP.Charts {
 			var pmap = new Dictionary<IDataSourceRenderer, object>();
 			// Phase I: init each renderer; it may opt-out by returning NULL
 			foreach (var idsr in _renderers) {
-				var preamble = idsr.Preamble(icrc);
+				var state = idsr.Preamble(icrc);
 				// TODO may want an exception instead
-				if (preamble != null) {
-					pmap.Add(idsr, preamble);
+				if (state != null) {
+					pmap.Add(idsr, state);
 				}
 			}
 			if (pmap.Count > 0) {
@@ -141,8 +141,8 @@ namespace eScapeLLC.UWP.Charts {
 				int ix = 0;
 				foreach (var item in Items) {
 					foreach (var idsr in _renderers) {
-						if (pmap.TryGetValue(idsr, out object preamble)) {
-							idsr.Render(preamble, ix, item);
+						if (pmap.TryGetValue(idsr, out object state)) {
+							idsr.Render(state, ix, item);
 						}
 					}
 					ix++;
@@ -150,14 +150,14 @@ namespace eScapeLLC.UWP.Charts {
 				// Phase III: finalize all axes etc. before we finalize renderers
 				// this MUST occur so all renders see the same axes limits in postamble!
 				foreach (var idsr in _renderers) {
-					if (pmap.TryGetValue(idsr, out object preamble)) {
-						idsr.RenderComplete(preamble);
+					if (pmap.TryGetValue(idsr, out object state)) {
+						idsr.RenderComplete(state);
 					}
 				}
 				// Phase IV: finalize renderers
 				foreach (var idsr in _renderers) {
-					if (pmap.TryGetValue(idsr, out object preamble)) {
-						idsr.Postamble(preamble);
+					if (pmap.TryGetValue(idsr, out object state)) {
+						idsr.Postamble(state);
 					}
 				}
 			}

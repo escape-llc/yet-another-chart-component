@@ -11,7 +11,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Base class of components that represent a data series.
 	/// </summary>
-	public abstract class DataSeries : ChartComponent {
+	public abstract class DataSeries : ChartComponent, IProvideValueExtents, IProvideCategoryExtents {
 		#region DPs
 		/// <summary>
 		/// DataSourceName DP.
@@ -105,6 +105,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public double Range { get { return double.IsNaN(Minimum) || double.IsNaN(Maximum) ? double.NaN : Maximum - Minimum + 1; } }
 		/// <summary>
+		/// Whether to clip geometry to the data region.
+		/// Default value is true.
+		/// </summary>
+		public bool ClipToDataRegion { get; set; } = true;
+		/// <summary>
 		/// Dereferenced value axis.
 		/// </summary>
 		protected IChartAxis ValueAxis { get; set; }
@@ -182,10 +187,10 @@ namespace eScapeLLC.UWP.Charts {
 			//_trace.Verbose($"render v:{ValueAxis} c:{CategoryAxis} d:{DataSourceName} dirty:{Dirty}");
 			if (ValueAxis == null || CategoryAxis == null) return;
 			if (!Dirty) {
-				ValueAxis.For(Minimum);
-				ValueAxis.For(Maximum);
-				CategoryAxis.For(CategoryMinimum);
-				CategoryAxis.For(CategoryMaximum);
+				ValueAxis.UpdateLimits(Minimum);
+				ValueAxis.UpdateLimits(Maximum);
+				CategoryAxis.UpdateLimits(CategoryMinimum);
+				CategoryAxis.UpdateLimits(CategoryMaximum);
 			}
 		}
 		#endregion
@@ -268,7 +273,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icelc"></param>
 		public override void Enter(IChartEnterLeaveContext icelc) {
 			EnsureAxes(icelc);
-			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis} c:{ValueAxisName}:{ValueAxis} d:{DataSourceName}");
+			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis} c:{CategoryAxisName}:{CategoryAxis} d:{DataSourceName}");
 			icelc.Add(Segments);
 			BindTo(this, "Stroke", Segments, Path.StrokeProperty);
 			Segments.StrokeThickness = StrokeThickness;
@@ -298,8 +303,12 @@ namespace eScapeLLC.UWP.Charts {
 			var scaley = icrc.Area.Height / ValueAxis.Range;
 			var offsetx = scalex * CategoryAxisOffset;
 			var matx = new Matrix(scalex, 0, 0, -scaley, icrc.Area.Left + offsetx, icrc.Area.Top + ValueAxis.Maximum*scaley);
-			_trace.Verbose($"scale {scalex:F3},{scaley:F3} mat:{matx}");
+			var clip = new Rect(icrc.Area.Left, icrc.Area.Top, icrc.Area.Width, icrc.Area.Height);
+			_trace.Verbose($"scale {scalex:F3},{scaley:F3} mat:{matx} clip:{clip}");
 			Geometry.Transform = new MatrixTransform() { Matrix = matx };
+			if(ClipToDataRegion) {
+				Segments.Clip = new RectangleGeometry() { Rect = clip };
+			}
 		}
 		#endregion
 		#region IProvideLegend
@@ -382,10 +391,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public DataTemplate MarkerTemplate { get { return (DataTemplate)GetValue(MarkerTemplateProperty); } set { SetValue(MarkerTemplateProperty, value); } }
 		/// <summary>
-		/// Offset in Category axis offset in [0..1].
+		/// Marker Offset in Category axis units [0..1].
 		/// Use with ColumnSeries to get the "points" to align with the column(s) layout in their cells.
 		/// </summary>
-		public double CategoryAxisOffset { get; set; }
+		public double MarkerOffset { get; set; }
 		/// <summary>
 		/// The series drawing attributes etc. on the Canvas.
 		/// </summary>
@@ -431,7 +440,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icelc"></param>
 		public override void Enter(IChartEnterLeaveContext icelc) {
 			EnsureAxes(icelc);
-			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis} c:{ValueAxisName}:{ValueAxis} d:{DataSourceName}");
+			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis} c:{CategoryAxisName}:{CategoryAxis} d:{DataSourceName}");
 			icelc.Add(Segments);
 			BindTo(this, "Stroke", Segments, Path.StrokeProperty);
 			BindTo(this, "Fill", Segments, Path.FillProperty);
@@ -464,7 +473,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			var scalex = icrc.Area.Width / CategoryAxis.Range;
 			var scaley = icrc.Area.Height / ValueAxis.Range;
-			var offsetx = scalex * CategoryAxisOffset;
+			var offsetx = scalex * MarkerOffset;
 			var matx = new Matrix(scalex, 0, 0, -scaley, icrc.Area.Left + offsetx, icrc.Area.Top  + ValueAxis.Maximum * scaley);
 			_trace.Verbose($"scale {scalex:F3},{scaley:F3} mat:{matx}");
 			Geometry.Transform = new MatrixTransform() { Matrix = matx };
@@ -472,7 +481,9 @@ namespace eScapeLLC.UWP.Charts {
 			foreach (var gx in Geometry.Children) {
 				TransformMarker(gx, scalex, scaley);
 			}
-			Segments.Clip = new RectangleGeometry() { Rect = icrc.Area };
+			if (ClipToDataRegion) {
+				Segments.Clip = new RectangleGeometry() { Rect = icrc.Area };
+			}
 		}
 		/// <summary>
 		/// Counter-scale the marker's Y-axis to preserve aspect ratio.
@@ -680,7 +691,9 @@ namespace eScapeLLC.UWP.Charts {
 			var matx = new Matrix(scalex, 0, 0, -scaley, icrc.Area.Left, icrc.Area.Top + ValueAxis.Maximum * scaley);
 			var clip = new Rect(icrc.Area.Left, icrc.Area.Top, icrc.Area.Width, icrc.Area.Height);
 			_trace.Verbose($"scale {scalex:F3},{scaley:F3} mat:{matx} clip:{clip}");
-			Segments.Clip = new RectangleGeometry() { Rect = clip };
+			if (ClipToDataRegion) {
+				Segments.Clip = new RectangleGeometry() { Rect = clip };
+			}
 			Geometry.Transform = new MatrixTransform() { Matrix = matx };
 			if (DebugClip != null) {
 				DebugClip.Rect = clip;

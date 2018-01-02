@@ -224,6 +224,40 @@ namespace eScapeLLC.UWP.Charts {
 		Legend Legend();
 	}
 	#endregion
+	#region IProvideValueExtents
+	/// <summary>
+	/// Ability to provide value-axis extents.
+	/// </summary>
+	public interface IProvideValueExtents {
+		/// <summary>
+		/// The lowest value.
+		/// If unset, MUST be double.NaN.
+		/// </summary>
+		double Minimum { get; }
+		/// <summary>
+		/// The highest value.
+		/// If unset, MUST be double.NaN.
+		/// </summary>
+		double Maximum { get; }
+	}
+	#endregion
+	#region IProvideCategoryExtents
+	/// <summary>
+	/// Ability to provide category-axis extents.
+	/// </summary>
+	public interface IProvideCategoryExtents {
+		/// <summary>
+		/// The lowest value.
+		/// If unset, MUST be double.NaN.
+		/// </summary>
+		double CategoryMinimum { get; }
+		/// <summary>
+		/// The highest value.
+		/// If unset, MUST be double.NaN.
+		/// </summary>
+		double CategoryMaximum { get; }
+	}
+	#endregion
 	#region ChartComponent
 	/// <summary>
 	/// Refresh delegate.
@@ -486,6 +520,7 @@ namespace eScapeLLC.UWP.Charts {
 			_factory = factory;
 		}
 		#endregion
+		#region public
 		/// <summary>
 		/// First exhaust the original source, then start creating new instances until no longer iterating.
 		/// </summary>
@@ -501,6 +536,7 @@ namespace eScapeLLC.UWP.Charts {
 				yield return tx;
 			}
 		}
+		#endregion
 	}
 	#endregion
 	#region Legend

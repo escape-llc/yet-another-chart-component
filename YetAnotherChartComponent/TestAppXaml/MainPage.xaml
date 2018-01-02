@@ -47,6 +47,8 @@
 		<StackPanel x:Name="toolbar" Orientation="Horizontal" Padding="4"
 			RelativePanel.AlignTopWithPanel="True">
 			<CheckBox x:Name="cb_yaxis_grid" Content="Value (Y) axis grid" IsChecked="True"/>
+			<CheckBox x:Name="cb_rule_upper" Content="Upper Rule" IsChecked="True"/>
+			<CheckBox x:Name="cb_rule_lower" Content="Lower Rule" IsChecked="True"/>
 			<Button x:Name="add_item" Margin="2,0" Content="Add Item" Click="add_item_Click"/>
 			<Button x:Name="remove_head" Margin="2,0" Content="Remove Head" Click="remove_head_Click"/>
 			<Button x:Name="add_and_remove_head" Margin="2,0" Content="Both" Click="add_and_remove_head_Click"/>
@@ -64,7 +66,7 @@
 					ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					Stroke="DarkOrchid" Fill="{StaticResource blue-to-green}" BarOffset=".25" BarWidth=".25" />
 				<yacc:MarkerSeries DataSourceName="data" ValuePath="Value1" Title="Value 1 Marker"
-					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".5"
+					ValueAxisName="yaxis" CategoryAxisName="xaxis" MarkerOffset=".5"
 					Stroke="{StaticResource red}" Fill="{StaticResource blue}">
 					<yacc:MarkerSeries.MarkerTemplate>
 						<DataTemplate>
@@ -73,6 +75,8 @@
 						</DataTemplate>
 					</yacc:MarkerSeries.MarkerTemplate>
 				</yacc:MarkerSeries>
+				<yacc:HorizontalRule Value="-2.5" ValueAxisName="yaxis" Stroke="Salmon" StrokeThickness="3"
+					RuleVisibility="{Binding ElementName=cb_rule_lower, Path=IsChecked, Converter={StaticResource b2v}}" />
 				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value2" Title="Value 2 Bar"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					Stroke="DarkOrchid" Fill="{StaticResource green-to-blue}" BarOffset=".5" BarWidth=".25" />
@@ -80,6 +84,8 @@
 					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".5"
 					Stroke="{StaticResource green}" StrokeThickness="5"
 					StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+				<yacc:HorizontalRule Value="2.5" ValueAxisName="yaxis" Stroke="OrangeRed" StrokeThickness="3"
+					RuleVisibility="{Binding ElementName=cb_rule_upper, Path=IsChecked, Converter={StaticResource b2v}}" />
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" AxisFill="{StaticResource red}"
 					GridStroke="{StaticResource gray}" LabelForeground="{StaticResource limegreen}"
 					LabelFormatString="F1"
