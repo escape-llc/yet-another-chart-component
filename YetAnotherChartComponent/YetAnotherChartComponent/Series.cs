@@ -177,23 +177,6 @@ namespace eScapeLLC.UWP.Charts {
 			Dirty = true;
 		}
 		#endregion
-		#region extensions
-		/// <summary>
-		/// Update axes if not dirty.
-		/// This is no longer called for DataSeries; it's handled by DataSource.Render().
-		/// </summary>
-		/// <param name="icrc"></param>
-		void DONTUSE_Render(IChartRenderContext icrc) {
-			//_trace.Verbose($"render v:{ValueAxis} c:{CategoryAxis} d:{DataSourceName} dirty:{Dirty}");
-			if (ValueAxis == null || CategoryAxis == null) return;
-			if (!Dirty) {
-				ValueAxis.UpdateLimits(Minimum);
-				ValueAxis.UpdateLimits(Maximum);
-				CategoryAxis.UpdateLimits(CategoryMinimum);
-				CategoryAxis.UpdateLimits(CategoryMaximum);
-			}
-		}
-		#endregion
 	}
 	#endregion
 	#region LineSeries

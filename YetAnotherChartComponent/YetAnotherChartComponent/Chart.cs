@@ -78,6 +78,36 @@ namespace eScapeLLC.UWP.Charts {
 		public void Remove(IEnumerable<FrameworkElement> fes) { foreach (var fe in fes) Surface.Children.Remove(fe); }
 	}
 	#endregion
+	#region DefaultDataSourceRenderContext
+	/// <summary>
+	/// Default implementation for IDataSourceRenderContext.
+	/// </summary>
+	public class DefaultDataSourceRenderContext : DefaultRenderContext, IDataSourceRenderContext {
+		readonly IEnumerable<ChartComponent> arc;
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="surface"></param>
+		/// <param name="components"></param>
+		/// <param name="sz"></param>
+		/// <param name="rc"></param>
+		/// <param name="sa"></param>
+		/// <param name="dc"></param>
+		public DefaultDataSourceRenderContext(Canvas surface, ObservableCollection<ChartComponent> components, Size sz, Rect rc, Rect sa, object dc)
+		:base(surface, components, sz, rc, sa, dc) {
+			arc = components.Where((cc2) => cc2 is IRequireAfterRenderComplete);
+		}
+		/// <summary>
+		/// Handle components that want a callback for AfterRenderComplete.
+		/// </summary>
+		/// <param name="ds"></param>
+		public void AfterRenderComplete(DataSource ds) {
+			foreach(IRequireAfterRenderComplete cc in arc) {
+				cc.RenderComplete();
+			}
+		}
+	}
+	#endregion
 	#region DefaultEnterLeaveContext
 	/// <summary>
 	/// Default impl of the enter/leave context.
@@ -593,7 +623,7 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"remaining {dlc.RemainingRect}");
 			dlc.FinalizeRects();
 			// Phase III: render the data sources -> series -> axes
-			var dsctx = new DefaultRenderContext(Surface, Components, inner, Rect.Empty, dlc.RemainingRect, DataContext);
+			var dsctx = new DefaultDataSourceRenderContext(Surface, Components, inner, Rect.Empty, dlc.RemainingRect, DataContext);
 			foreach (DataSource ds in DataSources) {
 				ds.Render(dsctx);
 			}

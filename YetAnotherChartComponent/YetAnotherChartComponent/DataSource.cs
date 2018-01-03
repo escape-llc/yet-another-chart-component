@@ -49,6 +49,18 @@ namespace eScapeLLC.UWP.Charts {
 	/// <param name="ds">Originating component.</param>
 	public delegate void DataSourceRefreshRequestEventHandler(DataSource ds);
 	#endregion
+	#region IDataSourceRenderContext
+	/// <summary>
+	/// Context for the DataSource.Render method.
+	/// </summary>
+	public interface IDataSourceRenderContext : IChartRenderContext {
+		/// <summary>
+		/// Notification that the Render-complete phase is complete.
+		/// </summary>
+		/// <param name="ds">the data source.</param>
+		void AfterRenderComplete(DataSource ds);
+	}
+	#endregion
 	#region DataSource
 	/// <summary>
 	/// Represents a source of data for one-or-more series.
@@ -126,15 +138,15 @@ namespace eScapeLLC.UWP.Charts {
 		/// Process the items through the list of <see cref="IDataSourceRenderer"/>.
 		/// Default impl.
 		/// </summary>
-		/// <param name="icrc">Render context. icrc.Area is set to Rect.Empty.</param>
-		protected virtual void ProcessItems(IChartRenderContext icrc) {
+		/// <param name="idsrc">Render context. icrc.Area is set to Rect.Empty.</param>
+		protected virtual void ProcessItems(IDataSourceRenderContext idsrc) {
 			_trace.Verbose($"ProcessData {Name} i:{Items} c:{_renderers.Count}");
 			if (Items == null) return;
 			if (_renderers.Count == 0) return;
 			var pmap = new Dictionary<IDataSourceRenderer, object>();
 			// Phase I: init each renderer; it may opt-out by returning NULL
 			foreach (var idsr in _renderers) {
-				var state = idsr.Preamble(icrc);
+				var state = idsr.Preamble(idsrc);
 				// TODO may want an exception instead
 				if (state != null) {
 					pmap.Add(idsr, state);
@@ -151,13 +163,15 @@ namespace eScapeLLC.UWP.Charts {
 					}
 					ix++;
 				}
-				// Phase III: finalize all axes etc. before we finalize renderers
+				// Phase IIIa: finalize all axes etc. before we finalize renderers
 				// this MUST occur so all renders see the same axes limits in postamble!
 				foreach (var idsr in _renderers) {
 					if (pmap.TryGetValue(idsr, out object state)) {
 						idsr.RenderComplete(state);
 					}
 				}
+				// Phase IIIb: Notify so we can expose axes to non-series components that MAY adjust axes, e.g. HorizontalRule
+				idsrc.AfterRenderComplete(this);
 				// Phase IV: finalize renderers
 				foreach (var idsr in _renderers) {
 					if (pmap.TryGetValue(idsr, out object state)) {
@@ -182,8 +196,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Process items if IsDirty == true.
 		/// </summary>
-		/// <param name="icrc">The context.</param>
-		public void Render(IChartRenderContext icrc) { if (IsDirty) ProcessItems(icrc); }
+		/// <param name="idsrc">The context.</param>
+		public void Render(IDataSourceRenderContext idsrc) { if (IsDirty) ProcessItems(idsrc); }
 		/// <summary>
 		/// Mark as dirty and fire refresh request event.
 		/// Use this with sources that <b>don't</b> implement <see cref="INotifyCollectionChanged"/>.

@@ -81,7 +81,7 @@
 				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" AxisFill="Red"
 					LabelForeground="LimeGreen" />
 				<yacc:HorizontalRule ValueAxisName="yaxis" Value="{Binding Value1Average}"
-					Stroke="Salmon" StrokeThickness="3"
+					Stroke="LightCyan" StrokeThickness="3"
 					RuleVisibility="{Binding ElementName=cb_rule_value1, Path=IsChecked, Converter={StaticResource b2v}}" />
 				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value1" CategoryLabelPath="Label"
 					Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis"
@@ -105,7 +105,7 @@
 					</yacc:MarkerSeries.MarkerTemplate>
 				</yacc:MarkerSeries>
 				<yacc:HorizontalRule ValueAxisName="yaxis" Value="{Binding Value2Average}"
-					Stroke="OrangeRed" StrokeThickness="3"
+					Stroke="LightBlue" StrokeThickness="3"
 					RuleVisibility="{Binding ElementName=cb_rule_value2, Path=IsChecked, Converter={StaticResource b2v}}" />
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" AxisFill="Red" GridStroke="Gray"
 					LabelForeground="LimeGreen" LabelFormatString="F1"

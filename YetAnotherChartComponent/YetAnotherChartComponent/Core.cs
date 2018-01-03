@@ -313,6 +313,11 @@ namespace eScapeLLC.UWP.Charts {
 		double Maximum { get; }
 	}
 	#endregion
+	#region IRequireAfterRenderComplete
+	public interface IRequireAfterRenderComplete {
+		void RenderComplete();
+	}
+	#endregion
 	#region IProvideCategoryExtents
 	/// <summary>
 	/// Ability to provide Category-Axis extents.

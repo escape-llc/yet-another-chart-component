@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media;
@@ -98,9 +94,9 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region HorizontalRule
 	/// <summary>
-	/// Represents a horizontal "rule" on the chart.
+	/// Represents a horizontal "rule" on the chart, for a value not belonging to any data source value, e.g. a value computed "outside" the series itself (Average).
 	/// </summary>
-	public class HorizontalRule : ChartComponent, IProvideValueExtents, IRequireEnterLeave, IRequireRender, IRequireTransforms {
+	public class HorizontalRule : ChartComponent, IProvideValueExtents, IRequireEnterLeave, IRequireRender, IRequireTransforms, IRequireAfterRenderComplete {
 		#region properties
 		/// <summary>
 		/// Brush for the axis grid lines.
@@ -251,10 +247,16 @@ namespace eScapeLLC.UWP.Charts {
 			if(ClipToDataRegion) {
 				Path.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
 			}
+			Dirty = false;
+		}
+		/// <summary>
+		/// Propagate axis update for the value.
+		/// </summary>
+		void IRequireAfterRenderComplete.RenderComplete() {
+			if (ValueAxis == null) return;
 			if (ShowOnAxis) {
 				ValueAxis.UpdateLimits(Value);
 			}
-			Dirty = false;
 		}
 		/// <summary>
 		/// rule coordinates (x:[0..1], y:axis)
