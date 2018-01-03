@@ -212,6 +212,60 @@ namespace eScapeLLC.UWP.Charts {
 		void Remove(FrameworkElement fe);
 	}
 	#endregion
+	#region IRequireLayout
+	/// <summary>
+	/// Require participation in layout pass.
+	/// </summary>
+	public interface IRequireLayout {
+		/// <summary>
+		/// Claim layout space before rendering begins.
+		/// </summary>
+		/// <param name="iclc"></param>
+		void Layout(IChartLayoutContext iclc);
+	}
+	#endregion
+	#region IRequireEnterLeave
+	/// <summary>
+	/// Require component lifecycle.
+	/// </summary>
+	public interface IRequireEnterLeave {
+		/// <summary>
+		/// Component is entering the chart.
+		/// Opportunity to add objects to the Visual Tree, then obtain/transfer bindings to those objects from the component's DPs.
+		/// Framework makes an effort to defer this call until the VT is available.
+		/// Example: components included directly in XAML via Chart.Components.
+		/// </summary>
+		/// <param name="icelc"></param>
+		void Enter(IChartEnterLeaveContext icelc);
+		/// <summary>
+		/// Component is leaving the chart.
+		/// Opportunity to remove objects from Visual Tree etc. the dual of Enter().
+		/// </summary>
+		/// <param name="icelc"></param>
+		void Leave(IChartEnterLeaveContext icelc);
+	}
+	#endregion
+	#region IRequireRender
+	/// <summary>
+	/// Require rendering pass.
+	/// </summary>
+	public interface IRequireRender {
+		/// <summary>
+		/// Render the component.
+		/// This is where data SHOULD be processed and Geometry etc. built.
+		/// Non-geomerty drawing attributes MAY be configured here, but SHOULD have been arranged in ChartComponent.Enter.
+		/// Geometry coordinates MUST be represented in layout-invariant coordinates!
+		/// This means when the layout rectangle size changes, only the GeometryTransform is adjusted (in ChartComponent.Transforms); no data is re-calculated.
+		/// </summary>
+		/// <param name="icrc"></param>
+		void Render(IChartRenderContext icrc);
+		/// <summary>
+		/// Adjust transforms after layout and rendering are completed.
+		/// </summary>
+		/// <param name="icrc"></param>
+		void Transforms(IChartRenderContext icrc);
+	}
+	#endregion
 	#region IProvideLegend
 	/// <summary>
 	/// Ability to participate in the legend items collection.
