@@ -2,10 +2,13 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Navigation;
 
-namespace TestAppXaml {
+namespace Yacc.Demo {
+	#region MainPage
 	/// <summary>
 	/// Chart demo page.
 	/// </summary>
@@ -43,6 +46,38 @@ namespace TestAppXaml {
 			(DataContext as ViewModel).AddAndRemoveHead();
 		}
 	}
+	#endregion
+	#region converters
+	/// <summary>
+	/// Converter for bool to Visibility.
+	/// </summary>
+	public class BoolToVisibilityConverter : IValueConverter {
+		/// <summary>
+		/// convert.
+		/// </summary>
+		/// <param name="value"></param>
+		/// <param name="targetType"></param>
+		/// <param name="parameter"></param>
+		/// <param name="language"></param>
+		/// <returns></returns>
+		public object Convert(object value, Type targetType, object parameter, string language) {
+			var isChecked = (bool)value;
+			return isChecked ? Visibility.Visible : Visibility.Collapsed;
+		}
+		/// <summary>
+		/// Unconvert.
+		/// </summary>
+		/// <param name="value"></param>
+		/// <param name="targetType"></param>
+		/// <param name="parameter"></param>
+		/// <param name="language"></param>
+		/// <returns></returns>
+		public object ConvertBack(object value, Type targetType, object parameter, string language) {
+			throw new NotImplementedException();
+		}
+	}
+	#endregion
+	#region View Model stuff
 	/// <summary>
 	/// Represents one "cell" of the chart.
 	/// This would be typical of a SQL DAO or other domain object.
@@ -103,4 +138,5 @@ namespace TestAppXaml {
 			Changed(nameof(Value2Average));
 		}
 	}
+	#endregion
 }

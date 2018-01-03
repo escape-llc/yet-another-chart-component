@@ -6,7 +6,7 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Media;
 
 namespace eScapeLLC.UWP.Charts {
-	#region IChartAxis
+	#region AxisType
 	/// <summary>
 	/// Allowed axis types.
 	/// </summary>
@@ -20,6 +20,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		Value
 	};
+	#endregion
+	#region AxisOrientation
 	/// <summary>
 	/// Allowed axis orientations.
 	/// </summary>
@@ -33,6 +35,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		Vertical
 	};
+	#endregion
+	#region AxisVisibility
 	/// <summary>
 	/// Axis visibility.
 	/// </summary>
@@ -50,10 +54,39 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		Collapsed
 	};
+	#endregion
+	#region Side
+	/// <summary>
+	/// Side to claim space from.
+	/// </summary>
+	public enum Side {
+		/// <summary>
+		/// Top.
+		/// </summary>
+		Top,
+		/// <summary>
+		/// Right.
+		/// </summary>
+		Right,
+		/// <summary>
+		/// Bottom.
+		/// </summary>
+		Bottom,
+		/// <summary>
+		/// Left.
+		/// </summary>
+		Left,
+		/// <summary>
+		/// No fixed side, no space claimed.
+		/// </summary>
+		Float
+	};
+	#endregion
+	#region IChartAxis
 	/// <summary>
 	/// Features for axes.
-	/// Axes must be present in the component list, to provide the infrastructure for scaling data series, even if they
-	/// will not display.
+	/// Axes must be present in the component list, to provide the infrastructure for scaling data series,
+	/// even if they will not display.
 	/// </summary>
 	public interface IChartAxis {
 		/// <summary>
@@ -107,32 +140,7 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region IChartLayoutContext
 	/// <summary>
-	/// Side to claim space from.
-	/// </summary>
-	public enum Side {
-		/// <summary>
-		/// Top.
-		/// </summary>
-		Top,
-		/// <summary>
-		/// Right.
-		/// </summary>
-		Right,
-		/// <summary>
-		/// Bottom.
-		/// </summary>
-		Bottom,
-		/// <summary>
-		/// Left.
-		/// </summary>
-		Left,
-		/// <summary>
-		/// No fixed side, no space claimed.
-		/// </summary>
-		Float
-	};
-	/// <summary>
-	/// Context interface for the layout process.
+	/// The context for IRequireLayout interface.
 	/// </summary>
 	public interface IChartLayoutContext {
 		/// <summary>
@@ -158,7 +166,7 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region IChartRenderContext
 	/// <summary>
-	/// Feaatures for rendering.
+	/// The context for IRequireRender and IRequireTransforms interfaces.
 	/// </summary>
 	public interface IChartRenderContext {
 		/// <summary>
@@ -197,7 +205,7 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region IChartEnterLeaveContext
 	/// <summary>
-	/// Additional features for enter/leave.
+	/// The context for IRequireEnterLeave interface.
 	/// </summary>
 	public interface IChartEnterLeaveContext : IChartRenderContext {
 		/// <summary>
@@ -249,6 +257,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Require rendering pass.
 	/// Use this interface if NOT using <see cref="IDataSourceRenderer"/>.
+	/// SHOULD also implement <see cref="IRequireTransforms"/>.
 	/// </summary>
 	public interface IRequireRender {
 		/// <summary>
@@ -265,6 +274,7 @@ namespace eScapeLLC.UWP.Charts {
 	#region IRequireTransforms
 	/// <summary>
 	/// Require Transforms pass.
+	/// SHOULD also implement one of <see cref="IRequireRender"/> or <see cref="IDataSourceRenderer"/>.
 	/// </summary>
 	public interface IRequireTransforms {
 		/// <summary>
@@ -288,7 +298,7 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region IProvideValueExtents
 	/// <summary>
-	/// Ability to provide value-axis extents.
+	/// Ability to provide Value-Axis extents.
 	/// </summary>
 	public interface IProvideValueExtents {
 		/// <summary>
@@ -305,7 +315,7 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region IProvideCategoryExtents
 	/// <summary>
-	/// Ability to provide category-axis extents.
+	/// Ability to provide Category-Axis extents.
 	/// </summary>
 	public interface IProvideCategoryExtents {
 		/// <summary>
@@ -320,12 +330,14 @@ namespace eScapeLLC.UWP.Charts {
 		double CategoryMaximum { get; }
 	}
 	#endregion
-	#region ChartComponent
+	#region RefreshRequestEventHandler
 	/// <summary>
 	/// Refresh delegate.
 	/// </summary>
 	/// <param name="cc">Originating component.</param>
 	public delegate void RefreshRequestEventHandler(ChartComponent cc);
+	#endregion
+	#region ChartComponent
 	/// <summary>
 	/// Base class of chart components.
 	/// It is FrameworkElement primarily to participate in DataContext and Binding.
@@ -372,9 +384,10 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 	}
 	#endregion
-	#region TreeHelper
+	#region TreeHelper (disabled not used)
+#if false
 	/// <summary>
-	/// Static Helpers for visual tree.
+	/// Static Helpers for visual tree navigation.
 	/// </summary>
 	public static class TreeHelper {
 		/// <summary>
@@ -400,6 +413,7 @@ namespace eScapeLLC.UWP.Charts {
 			return null;
 		}
 	}
+#endif
 	#endregion
 	#region BindingEvaluator
 	/// <summary>
@@ -410,9 +424,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Created binding evaluator and set path to the property which's value should be evaluated.
 		/// </summary>
-		/// <param name="propertyPath">Path to the property.</param>
-		public BindingEvaluator(string propertyPath) {
-			_pp = new PropertyPath(propertyPath);
+		/// <param name="path">Path to the property.</param>
+		public BindingEvaluator(string path) {
+			_pp = new PropertyPath(path);
 		}
 		/// <summary>
 		/// Dependency property used to evaluate values.
@@ -477,42 +491,12 @@ namespace eScapeLLC.UWP.Charts {
 		}
 	}
 	#endregion
-	#region converters
-	/// <summary>
-	/// Converter for bool to Visibility.
-	/// </summary>
-	public class BoolToVisibilityConverter : IValueConverter {
-		/// <summary>
-		/// convert.
-		/// </summary>
-		/// <param name="value"></param>
-		/// <param name="targetType"></param>
-		/// <param name="parameter"></param>
-		/// <param name="language"></param>
-		/// <returns></returns>
-		public object Convert(object value, Type targetType, object parameter, string language) {
-			var isChecked = (bool)value;
-			return isChecked ? Visibility.Visible : Visibility.Collapsed;
-		}
-		/// <summary>
-		/// Unconvert.
-		/// </summary>
-		/// <param name="value"></param>
-		/// <param name="targetType"></param>
-		/// <param name="parameter"></param>
-		/// <param name="language"></param>
-		/// <returns></returns>
-		public object ConvertBack(object value, Type targetType, object parameter, string language) {
-			throw new NotImplementedException();
-		}
-	}
-	#endregion
 	#region Recycler
 	/// <summary>
 	/// Recycles an input list of instances, then provides new instances.
 	/// Does the bookkeeping to track unused and newly-provided instances.
 	/// </summary>
-	/// <typeparam name="T"></typeparam>
+	/// <typeparam name="T">Type of items to recycle.</typeparam>
 	public class Recycler<T> {
 		#region data
 		readonly List<T> _unused = new List<T>();

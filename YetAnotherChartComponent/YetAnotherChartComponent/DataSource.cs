@@ -42,12 +42,14 @@ namespace eScapeLLC.UWP.Charts {
 		void Postamble(object state);
 	}
 	#endregion
-	#region DataSource
+	#region DataSourceRefreshRequestEventHandler
 	/// <summary>
 	/// Refresh delegate.
 	/// </summary>
 	/// <param name="ds">Originating component.</param>
 	public delegate void DataSourceRefreshRequestEventHandler(DataSource ds);
+	#endregion
+	#region DataSource
 	/// <summary>
 	/// Represents a source of data for one-or-more series.
 	/// Primary purpose is to consolidate the data traversal for all series using this data.
@@ -76,13 +78,13 @@ namespace eScapeLLC.UWP.Charts {
 			}
 		}
 		private static void DetachCollectionChanged(DataSource ds, object dataSource) {
-			if (dataSource is INotifyCollectionChanged) {
-				(dataSource as INotifyCollectionChanged).CollectionChanged -= ds.ItemsCollectionChanged;
+			if (dataSource is INotifyCollectionChanged incc) {
+				incc.CollectionChanged -= ds.ItemsCollectionChanged;
 			}
 		}
 		private static void AttachCollectionChanged(DataSource ds, object dataSource) {
-			if (dataSource is INotifyCollectionChanged) {
-				(dataSource as INotifyCollectionChanged).CollectionChanged += new NotifyCollectionChangedEventHandler(ds.ItemsCollectionChanged);
+			if (dataSource is INotifyCollectionChanged incc) {
+				incc.CollectionChanged += new NotifyCollectionChangedEventHandler(ds.ItemsCollectionChanged);
 			}
 		}
 		private void ItemsCollectionChanged(object sender, NotifyCollectionChangedEventArgs nccea) {
@@ -110,11 +112,13 @@ namespace eScapeLLC.UWP.Charts {
 		#region extension points
 		/// <summary>
 		/// Hook for dirty.
+		/// Sets IsDirty = True.
 		/// Default impl.
 		/// </summary>
 		protected virtual void Dirty() { IsDirty = true; }
 		/// <summary>
 		/// Hook for clean.
+		/// Sets IsDirty = False.
 		/// Default impl.
 		/// </summary>
 		protected virtual void Clean() { IsDirty = false; }
@@ -168,16 +172,17 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Register for rendering notification.
 		/// </summary>
-		/// <param name="idsr"></param>
+		/// <param name="idsr">Instance to register.</param>
 		public void Register(IDataSourceRenderer idsr) { if(!_renderers.Contains(idsr)) _renderers.Add(idsr); }
 		/// <summary>
 		/// Unregister for rendering notification.
 		/// </summary>
-		/// <param name="isdr"></param>
-		public void Unregister(IDataSourceRenderer isdr) { _renderers.Remove(isdr); }
+		/// <param name="idsr">Instance to unregister.</param>
+		public void Unregister(IDataSourceRenderer idsr) { _renderers.Remove(idsr); }
 		/// <summary>
 		/// Process items if IsDirty == true.
 		/// </summary>
+		/// <param name="icrc">The context.</param>
 		public void Render(IChartRenderContext icrc) { if (IsDirty) ProcessItems(icrc); }
 		/// <summary>
 		/// Mark as dirty and fire refresh request event.

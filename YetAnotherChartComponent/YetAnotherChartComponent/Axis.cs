@@ -85,9 +85,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// Enumerate the ticks.
 		/// Starts at the "center" and works "outward" toward each extent, alternating positive/negative direction.
 		/// Once an extent is "filled", only values of the opposite extent SHALL appear.
-		/// If extents "contain" zero, start at zero, otherwise the "center" of the range, to nearest tick.
+		/// If extents "cross" zero, start at zero, otherwise the "center" of the range, to nearest tick.
 		/// </summary>
-		/// <returns></returns>
+		/// <returns>Series of values, as described above.</returns>
 		public IEnumerable<double> GetTicks() {
 			var center = Math.Sign(Minimum) != Math.Sign(Maximum) ? 0 : RoundTo(Minimum + Range / 2, TickInterval);
 			yield return center;
@@ -117,6 +117,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// By default, axes auto-scale their limits based on "observed" values.
 	/// Setting the LimitXXX properties to a non-NaN "fixes" that limit.
 	/// It's possible to have one or both limits "fixed" in this way.
+	/// When limits are fixed, some chart elements may not appear due to clipping.
 	/// </summary>
 	public abstract class AxisCommon : ChartComponent, IChartAxis {
 		static LogTools.Flag _trace = LogTools.Add("AxisCommon", LogTools.Level.Error);
@@ -226,7 +227,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="at"></param>
 		/// <param name="ao"></param>
 		/// <param name="sd"></param>
-		public AxisCommon(AxisType at, AxisOrientation ao, Side sd) {
+		protected AxisCommon(AxisType at, AxisOrientation ao, Side sd) {
 			Type = at;
 			Orientation = ao;
 			Side = sd;
@@ -326,8 +327,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Add elements and attach bindings.
 		/// </summary>
-		/// <param name="icelc"></param>
-		public void Enter(IChartEnterLeaveContext icelc) {
+		/// <param name="icelc">The context.</param>
+		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			icelc.Add(Axis);
 			icelc.Add(Grid);
 			DoBindings(icelc);
@@ -335,8 +336,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Reverse effect of Enter.
 		/// </summary>
-		/// <param name="icelc"></param>
-		public void Leave(IChartEnterLeaveContext icelc) {
+		/// <param name="icelc">The context.</param>
+		void IRequireEnterLeave.Leave(IChartEnterLeaveContext icelc) {
 			icelc.Remove(Grid);
 			icelc.Remove(Axis);
 			icelc.Remove(TickLabels);
@@ -345,7 +346,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Claim the space indicated by properties.
 		/// </summary>
 		/// <param name="iclc"></param>
-		public void Layout(IChartLayoutContext iclc) {
+		void IRequireLayout.Layout(IChartLayoutContext iclc) {
 			var space = AxisMargin + AxisLineThickness + MinWidth;
 			iclc.ClaimSpace(this, Side, space);
 		}
@@ -362,7 +363,7 @@ namespace eScapeLLC.UWP.Charts {
 		///		x, y: PX
 		/// </summary>
 		/// <param name="icrc"></param>
-		public void Render(IChartRenderContext icrc) {
+		void IRequireRender.Render(IChartRenderContext icrc) {
 			if (!Dirty) return;
 			_trace.Verbose($"{Name} min:{Minimum} max:{Maximum} r:{Range}");
 			// axis and tick marks
@@ -417,7 +418,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Grid-coordinates (x:[0..1], y:axis)
 		/// </summary>
 		/// <param name="icrc"></param>
-		public void Transforms(IChartRenderContext icrc) {
+		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
 			var scaley = icrc.Area.Height / Range;
 			var matx = new Matrix(1, 0, 0, -scaley, icrc.Area.Left + AxisMargin*(Side == Side.Right ? 1 : -1), icrc.Area.Top + Maximum*scaley);
 			AxisGeometry.Transform = new MatrixTransform() { Matrix = matx };
@@ -508,7 +509,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Add elements and attach bindings.
 		/// </summary>
 		/// <param name="icelc"></param>
-		public void Enter(IChartEnterLeaveContext icelc) {
+		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			icelc.Add(Axis);
 			BindTo(this, "AxisFill", Axis, Path.FillProperty);
 		}
@@ -516,7 +517,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Reverse effect of Enter.
 		/// </summary>
 		/// <param name="icelc"></param>
-		public void Leave(IChartEnterLeaveContext icelc) {
+		void IRequireEnterLeave.Leave(IChartEnterLeaveContext icelc) {
 			icelc.Remove(Axis);
 			icelc.Remove(TickLabels);
 		}
@@ -524,7 +525,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Claim the space indicated by properties.
 		/// </summary>
 		/// <param name="iclc"></param>
-		public void Layout(IChartLayoutContext iclc) {
+		void IRequireLayout.Layout(IChartLayoutContext iclc) {
 			var space = AxisMargin + AxisLineThickness + MinHeight; 
 			iclc.ClaimSpace(this, Side, space);
 		}
@@ -532,7 +533,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Compute axis visual elements.
 		/// </summary>
 		/// <param name="icrc"></param>
-		public void Render(IChartRenderContext icrc) {
+		void IRequireRender.Render(IChartRenderContext icrc) {
 			if (!Dirty) return;
 			_trace.Verbose($"{Name} min:{Minimum} max:{Maximum} r:{Range}");
 			AxisGeometry.Figures.Clear();
@@ -586,7 +587,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Grid-coordinates (x:axis, y:[0..1])
 		/// </summary>
 		/// <param name="icrc"></param>
-		public void Transforms(IChartRenderContext icrc) {
+		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
 			var scalex = icrc.Area.Width / Range;
 			var matx = new Matrix(scalex, 0, 0, 1, icrc.Area.Left, icrc.Area.Top + AxisMargin);
 			AxisGeometry.Transform = new MatrixTransform() { Matrix = matx };
