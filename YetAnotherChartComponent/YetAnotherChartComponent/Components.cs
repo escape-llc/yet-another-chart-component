@@ -170,7 +170,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Value DP.
 		/// </summary>
 		public static readonly DependencyProperty ValueProperty = DependencyProperty.Register(
-			"Value", typeof(double), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(ComponentPropertyChanged))
+			"Value", typeof(double), typeof(HorizontalRule), new PropertyMetadata(null, new PropertyChangedCallback(ComponentPropertyChanged))
 		);
 		/// <summary>
 		/// Generic DP property change handler.

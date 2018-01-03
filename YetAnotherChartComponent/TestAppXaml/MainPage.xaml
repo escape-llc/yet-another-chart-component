@@ -27,11 +27,6 @@
 			<GradientStop Color="#448888cc" Offset=".6"/>
 			<GradientStop Color="Transparent" Offset=".8"/>
 		</LinearGradientBrush>
-		<SolidColorBrush x:Key="green" Color="Green"/>
-		<SolidColorBrush x:Key="limegreen" Color="LimeGreen"/>
-		<SolidColorBrush x:Key="red" Color="Red"/>
-		<SolidColorBrush x:Key="black" Color="Black"/>
-		<SolidColorBrush x:Key="gray" Color="Gray"/>
 		<DataTemplate x:Key="LegendItem">
 			<Grid Padding="2">
 				<Grid.ColumnDefinitions>
@@ -42,41 +37,65 @@
 				<TextBlock Grid.Column="1" Margin="4,0,0,0" Foreground="White" FontSize="10" Text="{Binding Title}"/>
 			</Grid>
 		</DataTemplate>
+		<Style x:Key="cbStyle" TargetType="CheckBox">
+			<Setter Property="Margin" Value="4,0"/>
+		</Style>
+		<Style x:Key="btnStyle" TargetType="Button">
+			<Setter Property="Margin" Value="4,0"/>
+		</Style>
+		<Style x:Key="Legend" TargetType="Border">
+			<Setter Property="Margin" Value="0,8,8,0"/>
+			<Setter Property="Background" Value="DarkGray"/>
+			<Setter Property="BorderBrush" Value="White"/>
+			<Setter Property="BorderThickness" Value="2"/>
+			<Setter Property="CornerRadius" Value="4"/>
+		</Style>
+		<Style x:Key="Title" TargetType="TextBlock">
+			<Setter Property="Margin" Value="2"/>
+			<Setter Property="Padding" Value="2"/>
+			<Setter Property="Foreground" Value="White"/>
+			<Setter Property="TextAlignment" Value="Center"/>
+		</Style>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 		<StackPanel x:Name="toolbar" Orientation="Horizontal" Padding="4"
 			RelativePanel.AlignTopWithPanel="True">
-			<CheckBox x:Name="cb_yaxis_grid" Content="Value (Y) axis grid" IsChecked="True"/>
-			<CheckBox x:Name="cb_rule_upper" Content="Upper Rule" IsChecked="True"/>
-			<CheckBox x:Name="cb_rule_lower" Content="Lower Rule" IsChecked="True"/>
-			<Button x:Name="add_item" Margin="2,0" Content="Add Item" Click="add_item_Click"/>
-			<Button x:Name="remove_head" Margin="2,0" Content="Remove Head" Click="remove_head_Click"/>
-			<Button x:Name="add_and_remove_head" Margin="2,0" Content="Both" Click="add_and_remove_head_Click"/>
+			<CheckBox x:Name="cb_yaxis_grid" Style="{StaticResource cbStyle}" Content="Value (Y) axis grid" IsChecked="True"/>
+			<CheckBox x:Name="cb_rule_upper" Style="{StaticResource cbStyle}" Content="Upper Rule" IsChecked="True"/>
+			<CheckBox x:Name="cb_rule_lower" Style="{StaticResource cbStyle}" Content="Lower Rule" IsChecked="True"/>
+			<CheckBox x:Name="cb_legend" Style="{StaticResource cbStyle}" Content="Legend" IsChecked="True"/>
+			<Button x:Name="add_item" Style="{StaticResource btnStyle}" Content="Add Item" Click="add_item_Click"/>
+			<Button x:Name="remove_head" Style="{StaticResource btnStyle}" Content="Remove Head" Click="remove_head_Click"/>
+			<Button x:Name="add_and_remove_head" Style="{StaticResource btnStyle}" Content="Both" Click="add_and_remove_head_Click"/>
 		</StackPanel>
-		<yacc:Chart x:Name="chart" Background="Black" Padding="32" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-			RelativePanel.Below="toolbar" RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True">
+		<yacc:Chart x:Name="chart" Background="Black" Padding="32"
+			HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+			RelativePanel.Below="toolbar" RelativePanel.AlignBottomWithPanel="True"
+			RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True">
 			<yacc:Chart.DataSources>
 				<yacc:DataSource x:Name="data" Items="{Binding Data}"/>
 			</yacc:Chart.DataSources>
 			<yacc:Chart.Components>
 				<yacc:Background Fill="{StaticResource series-background}"/>
-				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" AxisFill="{StaticResource red}"
-					LabelForeground="{StaticResource limegreen}" />
-				<yacc:HorizontalRule Value="-2.5" ValueAxisName="yaxis" Stroke="Salmon" StrokeThickness="3"
+				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" AxisFill="Red"
+					LabelForeground="LimeGreen" />
+				<yacc:HorizontalRule ValueAxisName="yaxis" Value="{Binding LowerLimit}"
+					Stroke="Salmon" StrokeThickness="3"
 					RuleVisibility="{Binding ElementName=cb_rule_lower, Path=IsChecked, Converter={StaticResource b2v}}" />
-				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value1" CategoryLabelPath="Label" Title="Value 1 Bar"
-					ValueAxisName="yaxis" CategoryAxisName="xaxis"
+				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value1" CategoryLabelPath="Label"
+					Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					Stroke="DarkOrchid" Fill="{StaticResource blue-to-green}" BarOffset=".25" BarWidth=".25" />
-				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value2" Title="Value 2 Bar"
-					ValueAxisName="yaxis" CategoryAxisName="xaxis"
+				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value2"
+					Title="Value 2 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					Stroke="DarkOrchid" Fill="{StaticResource green-to-blue}" BarOffset=".5" BarWidth=".25" />
 				<yacc:LineSeries DataSourceName="data" ValuePath="Value2" Title="Value 2 Line"
-					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".350" ClipToDataRegion="False"
-					Stroke="{StaticResource green}" StrokeThickness="5"
+					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".375"
+					ClipToDataRegion="False" Stroke="Green" StrokeThickness="5"
 					StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
-				<yacc:MarkerSeries DataSourceName="data" ValuePath="Value1" Title="Value 1 Marker"
-					ValueAxisName="yaxis" CategoryAxisName="xaxis" MarkerOffset=".625"
-					Stroke="{StaticResource red}" Fill="{StaticResource blue}">
+				<yacc:MarkerSeries DataSourceName="data"
+					ValuePath="Value1" Title="Value 1 Marker"
+					ValueAxisName="yaxis" CategoryAxisName="xaxis"
+					MarkerOffset=".625" Stroke="Red" Fill="Blue">
 					<yacc:MarkerSeries.MarkerTemplate>
 						<DataTemplate>
 							<!-- Center and RadiusY are calculated based on current size -->
@@ -84,18 +103,24 @@
 						</DataTemplate>
 					</yacc:MarkerSeries.MarkerTemplate>
 				</yacc:MarkerSeries>
-				<yacc:HorizontalRule Value="2.5" ValueAxisName="yaxis" Stroke="OrangeRed" StrokeThickness="3"
+				<yacc:HorizontalRule ValueAxisName="yaxis" Value="{Binding UpperLimit}"
+					Stroke="OrangeRed" StrokeThickness="3"
 					RuleVisibility="{Binding ElementName=cb_rule_upper, Path=IsChecked, Converter={StaticResource b2v}}" />
-				<yacc:ValueAxis x:Name="yaxis" Side="Left" AxisFill="{StaticResource red}"
-					GridStroke="{StaticResource gray}" LabelForeground="{StaticResource limegreen}"
-					LabelFormatString="F1"
+				<yacc:ValueAxis x:Name="yaxis" Side="Left" AxisFill="Red" GridStroke="Gray"
+					LabelForeground="LimeGreen" LabelFormatString="F1"
 					GridVisibility="{Binding ElementName=cb_yaxis_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>
-		<TextBlock x:Name="title" HorizontalAlignment="Stretch" TextAlignment="Center" Margin="2" Padding="2" Foreground="White" Text="eScape LLC YACC Demo"
-			RelativePanel.AlignTopWith="chart" RelativePanel.AlignLeftWith="chart" RelativePanel.AlignRightWith="chart"/>
-		<Border Background="DarkGray" CornerRadius="4" BorderBrush="White" BorderThickness="2" Margin="0,8,8,0" RelativePanel.AlignRightWith="chart" RelativePanel.AlignTopWith="chart">
-			<ItemsControl x:Name="legend" Margin="2" Padding="2" ItemsSource="{Binding ElementName=chart,Path=LegendItems}" ItemTemplate="{StaticResource LegendItem}"/>
+		<TextBlock x:Name="title" Style="{StaticResource Title}" Text="YACC Demonstration Chart"
+			RelativePanel.AlignTopWith="chart" RelativePanel.AlignHorizontalCenterWithPanel="True"/>
+		<Image Source="ms-appx:/Assets/Square44x44Logo.scale-100.png" Stretch="None" Margin="2"
+			RelativePanel.LeftOf="title" RelativePanel.AlignVerticalCenterWith="title" />
+		<Border Style="{StaticResource Legend}"
+			Visibility="{Binding ElementName=cb_legend,Path=IsChecked}"
+			RelativePanel.AlignRightWith="chart" RelativePanel.AlignTopWith="chart">
+			<ItemsControl x:Name="legend" Margin="2" Padding="2"
+				ItemsSource="{Binding ElementName=chart,Path=LegendItems}"
+				ItemTemplate="{StaticResource LegendItem}"/>
 		</Border>
 	</RelativePanel>
 </Page>

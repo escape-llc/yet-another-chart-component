@@ -46,6 +46,8 @@ namespace TestAppXaml {
 	public class ViewModel {
 		readonly Random rnd = new Random();
 		public int GroupCounter { get; set; }
+		public double UpperLimit { get; set; } = 2.5;
+		public double LowerLimit { get; set; } = -2.5;
 		public ObservableCollection<Observation> Data { get; private set; } = new ObservableCollection<Observation>();
 		public void AddItem() {
 			GroupCounter++;
