@@ -13,7 +13,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Background fill for the chart data area.
 	/// </summary>
-	public class Background : ChartComponent {
+	public class Background : ChartComponent, IRequireEnterLeave, IRequireRender, IRequireTransforms {
 		#region properties
 		/// <summary>
 		/// The fill brush to use.
@@ -65,7 +65,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Component is entering the chart.
 		/// </summary>
 		/// <param name="icelc">Context.</param>
-		public override void Enter(IChartEnterLeaveContext icelc) {
+		public void Enter(IChartEnterLeaveContext icelc) {
 			icelc.Add(Path);
 			DoBindings(icelc);
 		}
@@ -73,7 +73,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Component is leaving the chart.
 		/// </summary>
 		/// <param name="icelc">Context.</param>
-		public override void Leave(IChartEnterLeaveContext icelc) {
+		public void Leave(IChartEnterLeaveContext icelc) {
 			icelc.Remove(Path);
 		}
 		/// <summary>
@@ -81,7 +81,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Uses NDC coordinates.
 		/// </summary>
 		/// <param name="icrc">Context.</param>
-		public override void Render(IChartRenderContext icrc) {
+		public void Render(IChartRenderContext icrc) {
 			//if (!Dirty) return;
 			Rectangle.Rect = new Windows.Foundation.Rect(0, 0, 1, 1);
 		}
@@ -89,7 +89,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Scale the NDC rectangle to the dimensions given.
 		/// </summary>
 		/// <param name="icrc">Context.</param>
-		public override void Transforms(IChartRenderContext icrc) {
+		public void Transforms(IChartRenderContext icrc) {
 			var matx = new Matrix(icrc.SeriesArea.Width, 0, 0, icrc.SeriesArea.Height, icrc.SeriesArea.Left, icrc.SeriesArea.Top);
 			Rectangle.Transform = new MatrixTransform() { Matrix = matx };
 		}
@@ -100,7 +100,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Represents a horizontal "rule" on the chart.
 	/// </summary>
-	public class HorizontalRule : ChartComponent, IProvideValueExtents {
+	public class HorizontalRule : ChartComponent, IProvideValueExtents, IRequireEnterLeave, IRequireRender, IRequireTransforms {
 		#region properties
 		/// <summary>
 		/// Brush for the axis grid lines.
@@ -222,7 +222,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Add elements and attach bindings.
 		/// </summary>
 		/// <param name="icelc"></param>
-		public override void Enter(IChartEnterLeaveContext icelc) {
+		public void Enter(IChartEnterLeaveContext icelc) {
 			EnsureAxes(icelc);
 			//_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis}");
 			icelc.Add(Path);
@@ -232,14 +232,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// Reverse effect of Enter.
 		/// </summary>
 		/// <param name="icelc"></param>
-		public override void Leave(IChartEnterLeaveContext icelc) {
+		public void Leave(IChartEnterLeaveContext icelc) {
 			icelc.Remove(Path);
-		}
-		/// <summary>
-		/// Claim the space indicated by properties.
-		/// </summary>
-		/// <param name="iclc"></param>
-		public override void Layout(IChartLayoutContext iclc) {
 		}
 		/// <summary>
 		/// Rule coordinates:
@@ -247,7 +241,7 @@ namespace eScapeLLC.UWP.Charts {
 		///		y: "axis" scale
 		/// </summary>
 		/// <param name="icrc"></param>
-		public override void Render(IChartRenderContext icrc) {
+		public void Render(IChartRenderContext icrc) {
 			if (!Dirty) return;
 			if (ValueAxis == null) return;
 			//_trace.Verbose($"{Name} val:{Value}");
@@ -266,7 +260,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// rule coordinates (x:[0..1], y:axis)
 		/// </summary>
 		/// <param name="icrc"></param>
-		public override void Transforms(IChartRenderContext icrc) {
+		public void Transforms(IChartRenderContext icrc) {
 			var gscaley = icrc.SeriesArea.Height / ValueAxis.Range;
 			var gmatx = new Matrix(icrc.SeriesArea.Width, 0, 0, -gscaley, icrc.SeriesArea.Left, icrc.SeriesArea.Top + ValueAxis.Maximum * gscaley);
 			//_trace.Verbose($"transforms sy:{scaley:F3} gsy:{gscaley:F3} matx:{matx} gmatx:{gmatx} a:{icrc.Area} sa:{icrc.SeriesArea}");

@@ -62,11 +62,20 @@
 				<yacc:Background Fill="{StaticResource series-background}"/>
 				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" AxisFill="{StaticResource red}"
 					LabelForeground="{StaticResource limegreen}" />
+				<yacc:HorizontalRule Value="-2.5" ValueAxisName="yaxis" Stroke="Salmon" StrokeThickness="3"
+					RuleVisibility="{Binding ElementName=cb_rule_lower, Path=IsChecked, Converter={StaticResource b2v}}" />
 				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value1" CategoryLabelPath="Label" Title="Value 1 Bar"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					Stroke="DarkOrchid" Fill="{StaticResource blue-to-green}" BarOffset=".25" BarWidth=".25" />
+				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value2" Title="Value 2 Bar"
+					ValueAxisName="yaxis" CategoryAxisName="xaxis"
+					Stroke="DarkOrchid" Fill="{StaticResource green-to-blue}" BarOffset=".5" BarWidth=".25" />
+				<yacc:LineSeries DataSourceName="data" ValuePath="Value2" Title="Value 2 Line"
+					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".350" ClipToDataRegion="False"
+					Stroke="{StaticResource green}" StrokeThickness="5"
+					StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
 				<yacc:MarkerSeries DataSourceName="data" ValuePath="Value1" Title="Value 1 Marker"
-					ValueAxisName="yaxis" CategoryAxisName="xaxis" MarkerOffset=".5"
+					ValueAxisName="yaxis" CategoryAxisName="xaxis" MarkerOffset=".625"
 					Stroke="{StaticResource red}" Fill="{StaticResource blue}">
 					<yacc:MarkerSeries.MarkerTemplate>
 						<DataTemplate>
@@ -75,15 +84,6 @@
 						</DataTemplate>
 					</yacc:MarkerSeries.MarkerTemplate>
 				</yacc:MarkerSeries>
-				<yacc:HorizontalRule Value="-2.5" ValueAxisName="yaxis" Stroke="Salmon" StrokeThickness="3"
-					RuleVisibility="{Binding ElementName=cb_rule_lower, Path=IsChecked, Converter={StaticResource b2v}}" />
-				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value2" Title="Value 2 Bar"
-					ValueAxisName="yaxis" CategoryAxisName="xaxis"
-					Stroke="DarkOrchid" Fill="{StaticResource green-to-blue}" BarOffset=".5" BarWidth=".25" />
-				<yacc:LineSeries DataSourceName="data" ValuePath="Value2" Title="Value 2 Line"
-					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".5"
-					Stroke="{StaticResource green}" StrokeThickness="5"
-					StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
 				<yacc:HorizontalRule Value="2.5" ValueAxisName="yaxis" Stroke="OrangeRed" StrokeThickness="3"
 					RuleVisibility="{Binding ElementName=cb_rule_upper, Path=IsChecked, Converter={StaticResource b2v}}" />
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" AxisFill="{StaticResource red}"

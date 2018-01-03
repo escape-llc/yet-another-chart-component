@@ -266,7 +266,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Value axis is a "vertical" axis that represents the "Y" coordinate.
 	/// </summary>
-	public class ValueAxis : AxisCommon {
+	public class ValueAxis : AxisCommon, IRequireLayout, IRequireRender, IRequireTransforms, IRequireEnterLeave {
 		static LogTools.Flag _trace = LogTools.Add("ValueAxis", LogTools.Level.Error);
 		#region properties
 		/// <summary>
@@ -327,7 +327,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Add elements and attach bindings.
 		/// </summary>
 		/// <param name="icelc"></param>
-		public override void Enter(IChartEnterLeaveContext icelc) {
+		public void Enter(IChartEnterLeaveContext icelc) {
 			icelc.Add(Axis);
 			icelc.Add(Grid);
 			DoBindings(icelc);
@@ -336,7 +336,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Reverse effect of Enter.
 		/// </summary>
 		/// <param name="icelc"></param>
-		public override void Leave(IChartEnterLeaveContext icelc) {
+		public void Leave(IChartEnterLeaveContext icelc) {
 			icelc.Remove(Grid);
 			icelc.Remove(Axis);
 			icelc.Remove(TickLabels);
@@ -345,7 +345,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Claim the space indicated by properties.
 		/// </summary>
 		/// <param name="iclc"></param>
-		public override void Layout(IChartLayoutContext iclc) {
+		public void Layout(IChartLayoutContext iclc) {
 			var space = AxisMargin + AxisLineThickness + MinWidth;
 			iclc.ClaimSpace(this, Side, space);
 		}
@@ -362,7 +362,7 @@ namespace eScapeLLC.UWP.Charts {
 		///		x, y: PX
 		/// </summary>
 		/// <param name="icrc"></param>
-		public override void Render(IChartRenderContext icrc) {
+		public void Render(IChartRenderContext icrc) {
 			if (!Dirty) return;
 			_trace.Verbose($"{Name} min:{Minimum} max:{Maximum} r:{Range}");
 			// axis and tick marks
@@ -417,7 +417,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Grid-coordinates (x:[0..1], y:axis)
 		/// </summary>
 		/// <param name="icrc"></param>
-		public override void Transforms(IChartRenderContext icrc) {
+		public void Transforms(IChartRenderContext icrc) {
 			var scaley = icrc.Area.Height / Range;
 			var matx = new Matrix(1, 0, 0, -scaley, icrc.Area.Left + AxisMargin*(Side == Side.Right ? 1 : -1), icrc.Area.Top + Maximum*scaley);
 			AxisGeometry.Transform = new MatrixTransform() { Matrix = matx };
@@ -444,7 +444,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// The discrete category axis is a simple "positional-index" axis [0..N-1].  Each index defines a "cell" that allows "normalized" positioning [0..1) within the cell.
 	/// Certain series types MAY extend the discrete axis by ONE cell, to draw the "last" elements there.
 	/// </summary>
-	public class CategoryAxis : AxisCommon {
+	public class CategoryAxis : AxisCommon, IRequireLayout, IRequireRender, IRequireTransforms, IRequireEnterLeave {
 		static LogTools.Flag _trace = LogTools.Add("CategoryAxis", LogTools.Level.Error);
 		#region properties
 		/// <summary>
@@ -508,7 +508,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Add elements and attach bindings.
 		/// </summary>
 		/// <param name="icelc"></param>
-		public override void Enter(IChartEnterLeaveContext icelc) {
+		public void Enter(IChartEnterLeaveContext icelc) {
 			icelc.Add(Axis);
 			BindTo(this, "AxisFill", Axis, Path.FillProperty);
 		}
@@ -516,7 +516,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Reverse effect of Enter.
 		/// </summary>
 		/// <param name="icelc"></param>
-		public override void Leave(IChartEnterLeaveContext icelc) {
+		public void Leave(IChartEnterLeaveContext icelc) {
 			icelc.Remove(Axis);
 			icelc.Remove(TickLabels);
 		}
@@ -524,7 +524,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Claim the space indicated by properties.
 		/// </summary>
 		/// <param name="iclc"></param>
-		public override void Layout(IChartLayoutContext iclc) {
+		public void Layout(IChartLayoutContext iclc) {
 			var space = AxisMargin + AxisLineThickness + MinHeight; 
 			iclc.ClaimSpace(this, Side, space);
 		}
@@ -532,7 +532,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Compute axis visual elements.
 		/// </summary>
 		/// <param name="icrc"></param>
-		public override void Render(IChartRenderContext icrc) {
+		public void Render(IChartRenderContext icrc) {
 			if (!Dirty) return;
 			_trace.Verbose($"{Name} min:{Minimum} max:{Maximum} r:{Range}");
 			AxisGeometry.Figures.Clear();
@@ -586,7 +586,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Grid-coordinates (x:axis, y:[0..1])
 		/// </summary>
 		/// <param name="icrc"></param>
-		public override void Transforms(IChartRenderContext icrc) {
+		public void Transforms(IChartRenderContext icrc) {
 			var scalex = icrc.Area.Width / Range;
 			var matx = new Matrix(scalex, 0, 0, 1, icrc.Area.Left, icrc.Area.Top + AxisMargin);
 			AxisGeometry.Transform = new MatrixTransform() { Matrix = matx };

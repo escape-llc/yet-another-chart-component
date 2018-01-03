@@ -183,7 +183,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// This is no longer called for DataSeries; it's handled by DataSource.Render().
 		/// </summary>
 		/// <param name="icrc"></param>
-		public override void Render(IChartRenderContext icrc) {
+		void DONTUSE_Render(IChartRenderContext icrc) {
 			//_trace.Verbose($"render v:{ValueAxis} c:{CategoryAxis} d:{DataSourceName} dirty:{Dirty}");
 			if (ValueAxis == null || CategoryAxis == null) return;
 			if (!Dirty) {
@@ -200,7 +200,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Data series that generates a Polyline visual.
 	/// </summary>
-	public class LineSeries : DataSeries, IDataSourceRenderer, IProvideLegend {
+	public class LineSeries : DataSeries, IDataSourceRenderer, IProvideLegend, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("LineSeries", LogTools.Level.Error);
 		#region properties
 		/// <summary>
@@ -271,7 +271,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Initialize after entering VT.
 		/// </summary>
 		/// <param name="icelc"></param>
-		public override void Enter(IChartEnterLeaveContext icelc) {
+		public void Enter(IChartEnterLeaveContext icelc) {
 			EnsureAxes(icelc);
 			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis} c:{CategoryAxisName}:{CategoryAxis} d:{DataSourceName}");
 			icelc.Add(Segments);
@@ -285,7 +285,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Undo effects of Enter().
 		/// </summary>
 		/// <param name="icelc"></param>
-		public override void Leave(IChartEnterLeaveContext icelc) {
+		public void Leave(IChartEnterLeaveContext icelc) {
 			_trace.Verbose($"leave");
 			ValueAxis = null;
 			CategoryAxis = null;
@@ -296,8 +296,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Geometry: scaled to actual values in cartesian coordinates as indicated by axes.
 		/// </summary>
 		/// <param name="icrc"></param>
-		public override void Transforms(IChartRenderContext icrc) {
-			base.Transforms(icrc);
+		public void Transforms(IChartRenderContext icrc) {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			var scalex = icrc.Area.Width / CategoryAxis.Range;
 			var scaley = icrc.Area.Height / ValueAxis.Range;
@@ -370,7 +369,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Series that places the given marker at each point.
 	/// </summary>
-	public class MarkerSeries : DataSeries, IDataSourceRenderer, IProvideLegend {
+	public class MarkerSeries : DataSeries, IDataSourceRenderer, IProvideLegend, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("MarkerSeries", LogTools.Level.Error);
 		#region properties
 		/// <summary>
@@ -438,7 +437,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Initialize after entering VT.
 		/// </summary>
 		/// <param name="icelc"></param>
-		public override void Enter(IChartEnterLeaveContext icelc) {
+		public void Enter(IChartEnterLeaveContext icelc) {
 			EnsureAxes(icelc);
 			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis} c:{CategoryAxisName}:{CategoryAxis} d:{DataSourceName}");
 			icelc.Add(Segments);
@@ -457,7 +456,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Undo effects of Enter().
 		/// </summary>
 		/// <param name="icelc"></param>
-		public override void Leave(IChartEnterLeaveContext icelc) {
+		public void Leave(IChartEnterLeaveContext icelc) {
 			_trace.Verbose($"leave");
 			ValueAxis = null;
 			CategoryAxis = null;
@@ -468,8 +467,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Geometry: scaled to actual values in cartesian coordinates as indicated by axes.
 		/// </summary>
 		/// <param name="icrc"></param>
-		public override void Transforms(IChartRenderContext icrc) {
-			base.Transforms(icrc);
+		public void Transforms(IChartRenderContext icrc) {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			var scalex = icrc.Area.Width / CategoryAxis.Range;
 			var scaley = icrc.Area.Height / ValueAxis.Range;
@@ -572,7 +570,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// If there's no CategoryMemberPath defined (i.e. using data index) this component reserves one "extra" cell on the Category Axis, to present the last column(s).
 	/// Category axis cells start on the left and extend positive-X (in device units).  Each cell is one unit long.
 	/// </summary>
-	public class ColumnSeries : DataSeries, IDataSourceRenderer, IProvideLegend {
+	public class ColumnSeries : DataSeries, IDataSourceRenderer, IProvideLegend, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("ColumnSeries", LogTools.Level.Error);
 		static LogTools.Flag _traceg = LogTools.Add("ColumnSeriesPaths", LogTools.Level.Off);
 		#region properties
@@ -655,7 +653,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Initialize after entering VT.
 		/// </summary>
 		/// <param name="icelc"></param>
-		public override void Enter(IChartEnterLeaveContext icelc) {
+		public void Enter(IChartEnterLeaveContext icelc) {
 			EnsureAxes(icelc);
 			_trace.Verbose($"enter v:{ValueAxisName} {ValueAxis} c:{CategoryAxisName} {CategoryAxis} d:{DataSourceName}");
 			icelc.Add(Segments);
@@ -669,7 +667,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Undo effects of Enter().
 		/// </summary>
 		/// <param name="icelc"></param>
-		public override void Leave(IChartEnterLeaveContext icelc) {
+		public void Leave(IChartEnterLeaveContext icelc) {
 			_trace.Verbose($"leave");
 			ValueAxis = null;
 			CategoryAxis = null;
@@ -683,8 +681,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Geometry: scaled to actual values in cartesian coordinates as indicated by axes.
 		/// </summary>
 		/// <param name="icrc"></param>
-		public override void Transforms(IChartRenderContext icrc) {
-			base.Transforms(icrc);
+		public void Transforms(IChartRenderContext icrc) {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			var scalex = icrc.Area.Width / CategoryAxis.Range;
 			var scaley = icrc.Area.Height / ValueAxis.Range;

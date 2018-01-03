@@ -489,7 +489,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icelc"></param>
 		/// <param name="cc"></param>
 		protected void EnterComponent(IChartEnterLeaveContext icelc, ChartComponent cc) {
-			cc.Enter(icelc);
+			if (cc is IRequireEnterLeave irel) {
+				irel.Enter(icelc);
+			}
 			// for now anything can provide a legend item
 			if(cc is IProvideLegend ipl) {
 				var leg = ipl.Legend();
@@ -528,7 +530,9 @@ namespace eScapeLLC.UWP.Charts {
 				}
 				Series.Remove(ds);
 			}
-			cc.Leave(icelc);
+			if (cc is IRequireEnterLeave irel) {
+				irel.Leave(icelc);
+			}
 		}
 		/// <summary>
 		/// Adjust layout and transforms based on size change.
@@ -540,23 +544,25 @@ namespace eScapeLLC.UWP.Charts {
 			// Phase I: re-claim space (because the size changed)
 			var dlc = new DefaultLayoutContext(inner, initialRect);
 			_trace.Verbose($"transforms-only starting {initialRect}");
-			foreach (var cc in Components) {
+			foreach (IRequireLayout cc in Components.Where((cc2) => cc2 is IRequireLayout)) {
 				_trace.Verbose($"layout {cc}");
 				cc.Layout(dlc);
 			}
 			_trace.Verbose($"transforms-only remaining:{dlc.RemainingRect}");
 			dlc.FinalizeRects();
 			// Phase II: update axis transforms
-			foreach (var axis in Axes) {
+			foreach (var axis in Axes.Where((cc2) => cc2 is IRequireTransforms)) {
 				var cc = axis as ChartComponent;
 				var rect = dlc.For(cc);
 				_trace.Verbose($"transforms-only {cc.Name} {axis} {rect}");
-				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
-				cc.Transforms(ctx);
+				if (cc is IRequireTransforms irt) {
+					var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
+					irt.Transforms(ctx);
+				}
 			}
 			// Phase III: update non-axis component transforms
-			foreach (ChartComponent cc in Components.Where((cc2)=>!(cc2 is IChartAxis))) {
-				var rect = dlc.For(cc);
+			foreach (IRequireTransforms cc in Components.Where((cc2) => !(cc2 is IChartAxis) && cc2 is IRequireTransforms)) {
+				var rect = dlc.For(cc as ChartComponent);
 				_trace.Verbose($"transforms-only {cc} {rect}");
 				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
 				cc.Transforms(ctx);
@@ -579,7 +585,7 @@ namespace eScapeLLC.UWP.Charts {
 			// Phase II: claim space
 			var dlc = new DefaultLayoutContext(inner, initialRect);
 			_trace.Verbose($"starting {initialRect}");
-			foreach (var cc in Components) {
+			foreach (IRequireLayout cc in Components.Where((cc2) => cc2 is IRequireLayout)) {
 				_trace.Verbose($"layout {cc}");
 				cc.Layout(dlc);
 			}
@@ -592,23 +598,27 @@ namespace eScapeLLC.UWP.Charts {
 				ds.Render(dsctx);
 			}
 			// Phase IV: axes have seen all values; render+transform them now
-			foreach (var axis in Axes) {
+			foreach (var axis in Axes.Where((cc2) => cc2 is IRequireRender || cc2 is IRequireTransforms)) {
 				var acc = axis as ChartComponent;
 				var rect = dlc.For(acc);
 				_trace.Verbose($"limits {acc.Name} ({axis.Minimum},{axis.Maximum}) r:{axis.Range} rect:{rect}");
 				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
-				acc.Render(ctx);
-				acc.Transforms(ctx);
+				if (axis is IRequireRender irr) {
+					irr.Render(ctx);
+				}
+				if (axis is IRequireTransforms irt) {
+					irt.Transforms(ctx);
+				}
 			}
 			// Phase IV.1: render non-series non-axis components
-			foreach (ChartComponent cc in Components.Where((cc2) => !(cc2 is IChartAxis) && !(cc2 is DataSeries))) {
-				var rect = dlc.For(cc);
+			foreach (IRequireRender cc in Components.Where((cc2) => !(cc2 is IChartAxis) && (cc2 is IRequireRender))) {
+				var rect = dlc.For(cc as ChartComponent);
 				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
 				cc.Render(ctx);
 			}
 			// Phase V: configure non-axis component transforms now axes are configured
-			foreach (ChartComponent cc in Components.Where((cc2) => !(cc2 is IChartAxis))) {
-				var rect = dlc.For(cc);
+			foreach (IRequireTransforms cc in Components.Where((cc2) => !(cc2 is IChartAxis) && cc2 is IRequireTransforms)) {
+				var rect = dlc.For(cc as ChartComponent);
 				_trace.Verbose($"transforms {cc} {rect}");
 				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
 				cc.Transforms(ctx);

@@ -220,7 +220,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Claim layout space before rendering begins.
 		/// </summary>
-		/// <param name="iclc"></param>
+		/// <param name="iclc">The context.</param>
 		void Layout(IChartLayoutContext iclc);
 	}
 	#endregion
@@ -235,19 +235,20 @@ namespace eScapeLLC.UWP.Charts {
 		/// Framework makes an effort to defer this call until the VT is available.
 		/// Example: components included directly in XAML via Chart.Components.
 		/// </summary>
-		/// <param name="icelc"></param>
+		/// <param name="icelc">The context.</param>
 		void Enter(IChartEnterLeaveContext icelc);
 		/// <summary>
 		/// Component is leaving the chart.
 		/// Opportunity to remove objects from Visual Tree etc. the dual of Enter().
 		/// </summary>
-		/// <param name="icelc"></param>
+		/// <param name="icelc">The context.</param>
 		void Leave(IChartEnterLeaveContext icelc);
 	}
 	#endregion
 	#region IRequireRender
 	/// <summary>
 	/// Require rendering pass.
+	/// Use this interface if NOT using <see cref="IDataSourceRenderer"/>.
 	/// </summary>
 	public interface IRequireRender {
 		/// <summary>
@@ -257,12 +258,19 @@ namespace eScapeLLC.UWP.Charts {
 		/// Geometry coordinates MUST be represented in layout-invariant coordinates!
 		/// This means when the layout rectangle size changes, only the GeometryTransform is adjusted (in ChartComponent.Transforms); no data is re-calculated.
 		/// </summary>
-		/// <param name="icrc"></param>
+		/// <param name="icrc">The context.</param>
 		void Render(IChartRenderContext icrc);
+	}
+	#endregion
+	#region IRequireTransforms
+	/// <summary>
+	/// Require Transforms pass.
+	/// </summary>
+	public interface IRequireTransforms {
 		/// <summary>
 		/// Adjust transforms after layout and rendering are completed.
 		/// </summary>
-		/// <param name="icrc"></param>
+		/// <param name="icrc">The context.</param>
 		void Transforms(IChartRenderContext icrc);
 	}
 	#endregion
@@ -328,44 +336,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// Default ctor.
 		/// </summary>
 		protected ChartComponent() { }
-		#endregion
-		#region extension points
-		/// <summary>
-		/// Claim layout space before rendering begins.
-		/// </summary>
-		/// <param name="iclc"></param>
-		public virtual void Layout(IChartLayoutContext iclc) { }
-		/// <summary>
-		/// Render the component.
-		/// This is where data SHOULD be processed and Geometry etc. built.
-		/// Non-geomerty drawing attributes MAY be configured here, but SHOULD have been arranged in ChartComponent.Enter.
-		/// Geometry coordinates MUST be represented in layout-invariant coordinates!
-		/// This means when the layout rectangle size changes, only the GeometryTransform is adjusted (in ChartComponent.Transforms); no data is re-calculated.
-		/// </summary>
-		/// <param name="icrc"></param>
-		public abstract void Render(IChartRenderContext icrc);
-		/// <summary>
-		/// Adjust transforms after layout and rendering are completed.
-		/// Default impl.
-		/// </summary>
-		/// <param name="icrc"></param>
-		public virtual void Transforms(IChartRenderContext icrc) { }
-		/// <summary>
-		/// Component is entering the chart.
-		/// Opportunity to add objects to the Visual Tree, then obtain/transfer bindings to those objects from the component's DPs.
-		/// Framework makes an effort to defer this call until the VT is available.
-		/// Example: components included directly in XAML via Chart.Components.
-		/// Default impl.
-		/// </summary>
-		/// <param name="icelc"></param>
-		public virtual void Enter(IChartEnterLeaveContext icelc) { }
-		/// <summary>
-		/// Component is leaving the chart.
-		/// Opportunity to remove objects from Visual Tree etc. the dual of Enter().
-		/// Default impl.
-		/// </summary>
-		/// <param name="icelc"></param>
-		public virtual void Leave(IChartEnterLeaveContext icelc) { }
 		#endregion
 		#region events
 		/// <summary>
@@ -564,11 +534,13 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Ctor.
 		/// </summary>
-		/// <param name="source"></param>
-		/// <param name="factory"></param>
+		/// <param name="source">Initial list to reuse; MAY be empty.</param>
+		/// <param name="factory">Used to create new instances when SOURCE runs out.</param>
 		public Recycler(IEnumerable<T> source, Func<T> factory) {
+#pragma warning disable IDE0016 // Use 'throw' expression
 			if (source == null) throw new ArgumentNullException(nameof(source));
 			if (factory == null) throw new ArgumentNullException(nameof(factory));
+#pragma warning restore IDE0016 // Use 'throw' expression
 			_unused.AddRange(source);
 			_source = source;
 			_factory = factory;
@@ -577,8 +549,10 @@ namespace eScapeLLC.UWP.Charts {
 		#region public
 		/// <summary>
 		/// First exhaust the original source, then start creating new instances until no longer iterating.
+		/// Do the bookkeeping for used and created lists.
+		/// DO NOT use this to control looping!
 		/// </summary>
-		/// <returns></returns>
+		/// <returns>Another instance.  MAY be newly created.</returns>
 		public IEnumerable<T> Items() {
 			foreach(var tx in _source) {
 				_unused.Remove(tx);
