@@ -9,13 +9,13 @@
 	<Page.Resources>
 		<yacc:BoolToVisibilityConverter x:Key="b2v"/>
 		<SolidColorBrush x:Key="blue" Color="Blue"/>
-		<LinearGradientBrush x:Key="blue-to-green" StartPoint="0,0" EndPoint="1,1">
+		<LinearGradientBrush x:Key="blue-to-green" StartPoint=".5,0" EndPoint=".5,1">
 			<GradientStop Color="Blue" Offset="0"/>
 			<GradientStop Color="Orange" Offset=".25"/>
 			<GradientStop Color="Yellow" Offset=".75"/>
 			<GradientStop Color="Green" Offset="1"/>
 		</LinearGradientBrush>
-		<LinearGradientBrush x:Key="green-to-blue" StartPoint="0,0" EndPoint="1,1">
+		<LinearGradientBrush x:Key="green-to-blue" StartPoint=".5,0" EndPoint=".5,1">
 			<GradientStop Color="Blue" Offset="1"/>
 			<GradientStop Color="Orange" Offset=".75"/>
 			<GradientStop Color="Yellow" Offset=".25"/>
@@ -61,8 +61,8 @@
 		<StackPanel x:Name="toolbar" Orientation="Horizontal" Padding="4"
 			RelativePanel.AlignTopWithPanel="True">
 			<CheckBox x:Name="cb_yaxis_grid" Style="{StaticResource cbStyle}" Content="Value (Y) axis grid" IsChecked="True"/>
-			<CheckBox x:Name="cb_rule_upper" Style="{StaticResource cbStyle}" Content="Upper Rule" IsChecked="True"/>
-			<CheckBox x:Name="cb_rule_lower" Style="{StaticResource cbStyle}" Content="Lower Rule" IsChecked="True"/>
+			<CheckBox x:Name="cb_rule_value1" Style="{StaticResource cbStyle}" Content="Value1 Avg" IsChecked="True"/>
+			<CheckBox x:Name="cb_rule_value2" Style="{StaticResource cbStyle}" Content="Value2 Avg" IsChecked="True"/>
 			<CheckBox x:Name="cb_legend" Style="{StaticResource cbStyle}" Content="Legend" IsChecked="True"/>
 			<Button x:Name="add_item" Style="{StaticResource btnStyle}" Content="Add Item" Click="add_item_Click"/>
 			<Button x:Name="remove_head" Style="{StaticResource btnStyle}" Content="Remove Head" Click="remove_head_Click"/>
@@ -79,9 +79,9 @@
 				<yacc:Background Fill="{StaticResource series-background}"/>
 				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" AxisFill="Red"
 					LabelForeground="LimeGreen" />
-				<yacc:HorizontalRule ValueAxisName="yaxis" Value="{Binding LowerLimit}"
+				<yacc:HorizontalRule ValueAxisName="yaxis" Value="{Binding Value1Average}"
 					Stroke="Salmon" StrokeThickness="3"
-					RuleVisibility="{Binding ElementName=cb_rule_lower, Path=IsChecked, Converter={StaticResource b2v}}" />
+					RuleVisibility="{Binding ElementName=cb_rule_value1, Path=IsChecked, Converter={StaticResource b2v}}" />
 				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value1" CategoryLabelPath="Label"
 					Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					Stroke="DarkOrchid" Fill="{StaticResource blue-to-green}" BarOffset=".25" BarWidth=".25" />
@@ -103,9 +103,9 @@
 						</DataTemplate>
 					</yacc:MarkerSeries.MarkerTemplate>
 				</yacc:MarkerSeries>
-				<yacc:HorizontalRule ValueAxisName="yaxis" Value="{Binding UpperLimit}"
+				<yacc:HorizontalRule ValueAxisName="yaxis" Value="{Binding Value2Average}"
 					Stroke="OrangeRed" StrokeThickness="3"
-					RuleVisibility="{Binding ElementName=cb_rule_upper, Path=IsChecked, Converter={StaticResource b2v}}" />
+					RuleVisibility="{Binding ElementName=cb_rule_value2, Path=IsChecked, Converter={StaticResource b2v}}" />
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" AxisFill="Red" GridStroke="Gray"
 					LabelForeground="LimeGreen" LabelFormatString="F1"
 					GridVisibility="{Binding ElementName=cb_yaxis_grid, Path=IsChecked, Converter={StaticResource b2v}}" />

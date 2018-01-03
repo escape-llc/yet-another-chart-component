@@ -1,16 +1,22 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Linq;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
 
 namespace TestAppXaml {
 	/// <summary>
-	/// An empty page that can be used on its own or navigated to within a Frame.
+	/// Chart demo page.
 	/// </summary>
 	public sealed partial class MainPage : Page {
 		public MainPage() {
 			this.InitializeComponent();
 		}
+		/// <summary>
+		/// Initialize VM and set the DataContext.
+		/// </summary>
+		/// <param name="e"></param>
 		protected override void OnNavigatedTo(NavigationEventArgs e) {
 			base.OnNavigatedTo(e);
 			var vm = new ViewModel();
@@ -21,6 +27,7 @@ namespace TestAppXaml {
 			vm.Data.Add(new Observation("Group 5", 4, -5));
 			vm.Data.Add(new Observation("Group 6", -5.25, 0.04));
 			vm.GroupCounter = vm.Data.Count;
+			vm.Recalculate();
 			DataContext = vm;
 		}
 
@@ -36,6 +43,10 @@ namespace TestAppXaml {
 			(DataContext as ViewModel).AddAndRemoveHead();
 		}
 	}
+	/// <summary>
+	/// Represents one "cell" of the chart.
+	/// This would be typical of a SQL DAO or other domain object.
+	/// </summary>
 	public class Observation {
 		public String Label { get; private set; }
 		public double Value1 { get; private set; }
@@ -43,23 +54,53 @@ namespace TestAppXaml {
 		public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.Now;
 		public Observation(String label, double v1, double v2) { Label = label; Value1 = v1; Value2 = v2; }
 	}
-	public class ViewModel {
+	/// <summary>
+	/// Simple VM that maintains list of observations and the average of its two values.
+	/// </summary>
+	public class ViewModel : INotifyPropertyChanged {
 		readonly Random rnd = new Random();
+		public event PropertyChangedEventHandler PropertyChanged;
 		public int GroupCounter { get; set; }
-		public double UpperLimit { get; set; } = 2.5;
-		public double LowerLimit { get; set; } = -2.5;
+		public double Value1Average { get; private set; }
+		public double Value2Average { get; private set; }
 		public ObservableCollection<Observation> Data { get; private set; } = new ObservableCollection<Observation>();
+		/// <summary>
+		/// Trigger INotifyPropertyChanged event.
+		/// </summary>
+		/// <param name="name"></param>
+		void Changed(String name) { PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name)); }
+		/// <summary>
+		/// Randomly generate an item and add it to end and recalculate.
+		/// </summary>
 		public void AddItem() {
 			GroupCounter++;
 			var obs = new Observation($"Group {GroupCounter}", 10*rnd.NextDouble() - 5, 10*rnd.NextDouble() - 4);
 			Data.Add(obs);
+			Recalculate();
 		}
+		/// <summary>
+		/// Remove the first item and recalculate.
+		/// </summary>
 		public void RemoveHead() {
 			Data.RemoveAt(0);
+			Recalculate();
 		}
+		/// <summary>
+		/// Modify both ends of list and recalculate.
+		/// </summary>
 		public void AddAndRemoveHead() {
 			RemoveHead();
 			AddItem();
+			Recalculate();
+		}
+		/// <summary>
+		/// Recalculate and trigger INPC.
+		/// </summary>
+		public void Recalculate() {
+			Value1Average = Data.Average((ob) => ob.Value1);
+			Value2Average = Data.Average((ob) => ob.Value2);
+			Changed(nameof(Value1Average));
+			Changed(nameof(Value2Average));
 		}
 	}
 }
