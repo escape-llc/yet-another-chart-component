@@ -174,19 +174,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public Brush AxisFill { get { return (Brush)GetValue(AxisFillProperty); } set { SetValue(AxisFillProperty, value); } }
 		/// <summary>
-		/// Brush for the axis grid lines.
-		/// </summary>
-		public Brush GridStroke { get { return (Brush)GetValue(GridStrokeProperty); } set { SetValue(GridStrokeProperty, value); } }
-		/// <summary>
-		/// Visibility of the grid lines.
-		/// </summary>
-		public Visibility GridVisibility { get { return (Visibility)GetValue(GridVisibilityProperty); } set { SetValue(GridVisibilityProperty, value); } }
-		/// <summary>
-		/// Stroke thickness for axis grid lines.
-		/// Default value is 0.5
-		/// </summary>
-		public double GridStrokeThickness { get; set; } = 0.5;
-		/// <summary>
 		/// Brush for the label foreground.
 		/// If not set, the Brush property is used.
 		/// </summary>
@@ -207,14 +194,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// Identifies <see cref="AxisFill"/> dependency property.
 		/// </summary>
 		public static readonly DependencyProperty AxisFillProperty = DependencyProperty.Register("AxisFill", typeof(Brush), typeof(AxisCommon), new PropertyMetadata(null));
-		/// <summary>
-		/// Identifies <see cref="GridStroke"/> dependency property.
-		/// </summary>
-		public static readonly DependencyProperty GridStrokeProperty = DependencyProperty.Register("GridStroke", typeof(Brush), typeof(AxisCommon), new PropertyMetadata(null));
-		/// <summary>
-		/// Identifies <see cref="GridVisibility"/> dependency property.
-		/// </summary>
-		public static readonly DependencyProperty GridVisibilityProperty = DependencyProperty.Register("GridVisibility", typeof(Visibility), typeof(AxisCommon), new PropertyMetadata(null));
 		/// <summary>
 		/// Identifies <see cref="LabelForeground"/> dependency property.
 		/// </summary>
@@ -279,14 +258,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		protected PathGeometry AxisGeometry { get; set; }
 		/// <summary>
-		/// Path for the grid lines.
-		/// </summary>
-		protected Path Grid { get; set; }
-		/// <summary>
-		/// Geometry for the grid lines.
-		/// </summary>
-		protected GeometryGroup GridGeometry { get; set; }
-		/// <summary>
 		/// List of active TextBlocks for labels.
 		/// </summary>
 		protected List<TextBlock> TickLabels { get; set; }
@@ -299,28 +270,17 @@ namespace eScapeLLC.UWP.Charts {
 		public ValueAxis() :base(AxisType.Value, AxisOrientation.Vertical, Side.Left) {
 			CommonInit();
 		}
+		#endregion
+		#region helpers
 		private void CommonInit() {
 			TickLabels = new List<TextBlock>();
 			Axis = new Path();
 			AxisGeometry = new PathGeometry();
 			Axis.Data = AxisGeometry;
-			Grid = new Path();
-			GridGeometry = new GeometryGroup();
-			Grid.Data = GridGeometry;
 			MinWidth = 32;
 		}
-		#endregion
-		#region helpers
 		void DoBindings(IChartEnterLeaveContext icelc) {
 			BindTo(this, "AxisFill", Axis, Path.FillProperty);
-			BindTo(this, "GridStroke", Grid, Path.StrokeProperty);
-			BindTo(this, "GridStrokeThickness", Grid, Path.StrokeThicknessProperty);
-			var bx = GetBindingExpression(GridVisibilityProperty);
-			if (bx != null) {
-				Grid.SetBinding(UIElement.VisibilityProperty, bx.ParentBinding);
-			} else {
-				BindTo(this, "GridVisibility", Grid, Path.VisibilityProperty);
-			}
 		}
 		#endregion
 		#region extensions
@@ -330,7 +290,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icelc">The context.</param>
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			icelc.Add(Axis);
-			icelc.Add(Grid);
 			DoBindings(icelc);
 		}
 		/// <summary>
@@ -338,7 +297,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icelc">The context.</param>
 		void IRequireEnterLeave.Leave(IChartEnterLeaveContext icelc) {
-			icelc.Remove(Grid);
 			icelc.Remove(Axis);
 			icelc.Remove(TickLabels);
 		}
@@ -356,9 +314,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// Axis "bar" and Tick marks:
 		///		x: PX (scale 1)
 		///		y: "axis" scale
-		/// Grid coordinates:
-		///		x: "normalized" [0..1] and scaled to the area-width
-		///		y: "axis" scale
 		/// Tick labels:
 		///		x, y: PX
 		/// </summary>
@@ -373,7 +328,6 @@ namespace eScapeLLC.UWP.Charts {
 			// grid lines
 			var tc = new TickCalculator(Minimum, Maximum);
 			_trace.Verbose($"grid range:{tc.Range} tintv:{tc.TickInterval}");
-			GridGeometry.Children.Clear();
 			//icrc.Remove(TickLabels);
 			// grid lines and tick labels
 			// layout and recycle labels
@@ -392,8 +346,6 @@ namespace eScapeLLC.UWP.Charts {
 			var tbget = tbr.Items().GetEnumerator();
 			foreach (var tick in tc.GetTicks()) {
 				//_trace.Verbose($"grid vx:{tick}");
-				var grid = new LineGeometry() { StartPoint = new Point(0, tick), EndPoint = new Point(1, tick) };
-				GridGeometry.Children.Add(grid);
 				if (tbget.MoveNext()) {
 					var tb = tbget.Current;
 					tb.Text = tick.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
@@ -415,7 +367,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// X-coordinates	"px"
 		/// Y-coordinates	[0..1]
-		/// Grid-coordinates (x:[0..1], y:axis)
 		/// </summary>
 		/// <param name="icrc"></param>
 		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
@@ -423,9 +374,7 @@ namespace eScapeLLC.UWP.Charts {
 			var matx = new Matrix(1, 0, 0, -scaley, icrc.Area.Left + AxisMargin*(Side == Side.Right ? 1 : -1), icrc.Area.Top + Maximum*scaley);
 			AxisGeometry.Transform = new MatrixTransform() { Matrix = matx };
 			var gscaley = icrc.SeriesArea.Height / Range;
-			var gmatx = new Matrix(icrc.SeriesArea.Width, 0, 0, -gscaley, icrc.SeriesArea.Left, icrc.SeriesArea.Top + Maximum*gscaley);
-			_trace.Verbose($"transforms sy:{scaley:F3} gsy:{gscaley:F3} matx:{matx} gmatx:{gmatx} a:{icrc.Area} sa:{icrc.SeriesArea}");
-			GridGeometry.Transform = new MatrixTransform() { Matrix = gmatx };
+			_trace.Verbose($"transforms sy:{scaley:F3} gsy:{gscaley:F3} matx:{matx} a:{icrc.Area} sa:{icrc.SeriesArea}");
 			foreach(var tb in TickLabels) {
 				var vx = (double)tb.Tag;
 				tb.SetValue(Canvas.LeftProperty, icrc.Area.Left);

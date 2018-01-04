@@ -139,8 +139,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// Default impl.
 		/// </summary>
 		/// <param name="idsrc">Render context. icrc.Area is set to Rect.Empty.</param>
-		protected virtual void ProcessItems(IDataSourceRenderContext idsrc) {
-			_trace.Verbose($"ProcessData {Name} i:{Items} c:{_renderers.Count}");
+		protected virtual void RenderPipeline(IDataSourceRenderContext idsrc) {
+			_trace.Verbose($"RenderPipeline {Name} i:{Items} c:{_renderers.Count}");
 			if (Items == null) return;
 			if (_renderers.Count == 0) return;
 			var pmap = new Dictionary<IDataSourceRenderer, object>();
@@ -170,7 +170,7 @@ namespace eScapeLLC.UWP.Charts {
 						idsr.RenderComplete(state);
 					}
 				}
-				// Phase IIIb: Notify so we can expose axes to non-series components that MAY adjust axes, e.g. HorizontalRule
+				// Phase IIIb: Callback so "external" parties can make adjustments to axes etc.
 				idsrc.AfterRenderComplete(this);
 				// Phase IV: finalize renderers
 				foreach (var idsr in _renderers) {
@@ -197,7 +197,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Process items if IsDirty == true.
 		/// </summary>
 		/// <param name="idsrc">The context.</param>
-		public void Render(IDataSourceRenderContext idsrc) { if (IsDirty) ProcessItems(idsrc); }
+		public void Render(IDataSourceRenderContext idsrc) { if (IsDirty) RenderPipeline(idsrc); }
 		/// <summary>
 		/// Mark as dirty and fire refresh request event.
 		/// Use this with sources that <b>don't</b> implement <see cref="INotifyCollectionChanged"/>.

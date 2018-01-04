@@ -108,10 +108,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public double StrokeThickness { get; set; } = 1;
 		/// <summary>
-		/// Visibility of the grid lines.
-		/// </summary>
-		public Visibility RuleVisibility { get { return (Visibility)GetValue(RuleVisibilityProperty); } set { SetValue(RuleVisibilityProperty, value); } }
-		/// <summary>
 		/// Component name of value axis.
 		/// Referenced component MUST implement IChartAxis.
 		/// </summary>
@@ -157,11 +153,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Identifies <see cref="Stroke"/> dependency property.
 		/// </summary>
-		public static readonly DependencyProperty StrokeProperty = DependencyProperty.Register("Stroke", typeof(Brush), typeof(HorizontalRule), new PropertyMetadata(null));
-		/// <summary>
-		/// Identifies <see cref="RuleVisibility"/> dependency property.
-		/// </summary>
-		public static readonly DependencyProperty RuleVisibilityProperty = DependencyProperty.Register("RuleVisibility", typeof(Visibility), typeof(HorizontalRule), new PropertyMetadata(null));
+		public static readonly DependencyProperty StrokeProperty = DependencyProperty.Register(
+			"Stroke", typeof(Brush), typeof(HorizontalRule), new PropertyMetadata(null)
+		);
 		/// <summary>
 		/// Value DP.
 		/// </summary>
@@ -196,11 +190,11 @@ namespace eScapeLLC.UWP.Charts {
 			BindTo(this, "Stroke", Path, Path.FillProperty);
 			BindTo(this, "Stroke", Path, Path.StrokeProperty);
 			BindTo(this, "StrokeThickness", Path, Path.StrokeThicknessProperty);
-			var bx = GetBindingExpression(RuleVisibilityProperty);
+			var bx = GetBindingExpression(UIElement.VisibilityProperty);
 			if (bx != null) {
 				Path.SetBinding(UIElement.VisibilityProperty, bx.ParentBinding);
 			} else {
-				BindTo(this, "RuleVisibility", Path, Path.VisibilityProperty);
+				BindTo(this, "Visibility", Path, Path.VisibilityProperty);
 			}
 		}
 		/// <summary>
@@ -267,6 +261,125 @@ namespace eScapeLLC.UWP.Charts {
 			var gmatx = new Matrix(icrc.SeriesArea.Width, 0, 0, -gscaley, icrc.SeriesArea.Left, icrc.SeriesArea.Top + ValueAxis.Maximum * gscaley);
 			//_trace.Verbose($"transforms sy:{scaley:F3} gsy:{gscaley:F3} matx:{matx} gmatx:{gmatx} a:{icrc.Area} sa:{icrc.SeriesArea}");
 			Rule.Transform = new MatrixTransform() { Matrix = gmatx };
+		}
+		#endregion
+	}
+	#endregion
+	#region ValueAxisGrid
+	/// <summary>
+	/// Grid lines for the value axis.
+	/// </summary>
+	public class ValueAxisGrid : ChartComponent, IRequireEnterLeave, IRequireRender, IRequireTransforms {
+		#region properties
+		/// <summary>
+		/// Brush for the axis grid lines.
+		/// </summary>
+		public Brush Stroke { get { return (Brush)GetValue(StrokeProperty); } set { SetValue(StrokeProperty, value); } }
+		/// <summary>
+		/// Stroke thickness for axis grid lines.
+		/// Default value is 0.5
+		/// </summary>
+		public double StrokeThickness { get; set; } = 0.5;
+		/// <summary>
+		/// Component name of value axis.
+		/// Referenced component MUST implement IChartAxis.
+		/// </summary>
+		public String ValueAxisName { get; set; }
+		/// <summary>
+		/// The dereferenced value axis.
+		/// </summary>
+		protected IChartAxis ValueAxis { get; set; }
+		/// <summary>
+		/// Path for the grid lines.
+		/// </summary>
+		protected Path Grid { get; set; }
+		/// <summary>
+		/// Geometry for the grid lines.
+		/// </summary>
+		protected GeometryGroup GridGeometry { get; set; }
+		#endregion
+		#region DPs
+		/// <summary>
+		/// Identifies <see cref="Stroke"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty StrokeProperty = DependencyProperty.Register(
+			"Stroke", typeof(Brush), typeof(ValueAxisGrid), new PropertyMetadata(null)
+		);
+		#endregion
+		#region ctor
+		/// <summary>
+		/// Ctor.
+		/// Initialize geometry and path.
+		/// </summary>
+		public ValueAxisGrid() {
+			Grid = new Path();
+			GridGeometry = new GeometryGroup();
+			Grid.Data = GridGeometry;
+		}
+		#endregion
+		#region helpers
+		/// <summary>
+		/// Dereference the ValueAxisName.
+		/// </summary>
+		/// <param name="icrc"></param>
+		void EnsureAxes(IChartRenderContext icrc) {
+			if (ValueAxis == null && !String.IsNullOrEmpty(ValueAxisName)) {
+				ValueAxis = icrc.Find(ValueAxisName) as IChartAxis;
+			}
+		}
+		/// <summary>
+		/// Apply bindings to internal elements.
+		/// </summary>
+		/// <param name="icelc"></param>
+		void DoBindings(IChartEnterLeaveContext icelc) {
+			BindTo(this, "Stroke", Grid, Path.StrokeProperty);
+			BindTo(this, "StrokeThickness", Grid, Path.StrokeThicknessProperty);
+			var bx = GetBindingExpression(UIElement.VisibilityProperty);
+			if (bx != null) {
+				Grid.SetBinding(UIElement.VisibilityProperty, bx.ParentBinding);
+			} else {
+				BindTo(this, "Visibility", Grid, Path.VisibilityProperty);
+			}
+		}
+		#endregion
+		#region extensions
+		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
+			EnsureAxes(icelc);
+			icelc.Add(Grid);
+			DoBindings(icelc);
+		}
+		void IRequireEnterLeave.Leave(IChartEnterLeaveContext icelc) {
+			ValueAxis = null;
+			icelc.Remove(Grid);
+		}
+		/// <summary>
+		/// Grid coordinates:
+		///		x: "normalized" [0..1] and scaled to the area-width
+		///		y: "axis" scale
+		/// </summary>
+		/// <param name="icrc"></param>
+		void IRequireRender.Render(IChartRenderContext icrc) {
+			if (ValueAxis == null) return;
+			// grid lines
+			var tc = new TickCalculator(ValueAxis.Minimum, ValueAxis.Maximum);
+			//_trace.Verbose($"grid range:{tc.Range} tintv:{tc.TickInterval}");
+			GridGeometry.Children.Clear();
+			foreach (var tick in tc.GetTicks()) {
+				//_trace.Verbose($"grid vx:{tick}");
+				var grid = new LineGeometry() { StartPoint = new Point(0, tick), EndPoint = new Point(1, tick) };
+				GridGeometry.Children.Add(grid);
+			}
+			Dirty = false;
+		}
+		/// <summary>
+		/// Grid-coordinates (x:[0..1], y:axis)
+		/// </summary>
+		/// <param name="icrc"></param>
+		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
+			if (ValueAxis == null) return;
+			var gscaley = icrc.SeriesArea.Height / ValueAxis.Range;
+			var gmatx = new Matrix(icrc.SeriesArea.Width, 0, 0, -gscaley, icrc.SeriesArea.Left, icrc.SeriesArea.Top + ValueAxis.Maximum * gscaley);
+			GridGeometry.Transform = new MatrixTransform() { Matrix = gmatx };
 		}
 		#endregion
 	}

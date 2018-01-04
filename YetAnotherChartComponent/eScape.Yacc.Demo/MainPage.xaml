@@ -44,6 +44,12 @@
 		<Style x:Key="btnStyle" TargetType="Button">
 			<Setter Property="Margin" Value="4,0"/>
 		</Style>
+		<Style x:Key="Chart" TargetType="yacc:Chart">
+			<Setter Property="Padding" Value="32"/>
+			<Setter Property="Background" Value="Black"/>
+			<Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+			<Setter Property="VerticalContentAlignment" Value="Stretch"/>
+		</Style>
 		<Style x:Key="Legend" TargetType="Border">
 			<Setter Property="Margin" Value="0,8,8,0"/>
 			<Setter Property="Background" Value="DarkGray"/>
@@ -65,12 +71,13 @@
 			<CheckBox x:Name="cb_rule_value1" Style="{StaticResource cbStyle}" Content="Value1 Avg" IsChecked="True"/>
 			<CheckBox x:Name="cb_rule_value2" Style="{StaticResource cbStyle}" Content="Value2 Avg" IsChecked="True"/>
 			<CheckBox x:Name="cb_legend" Style="{StaticResource cbStyle}" Content="Legend" IsChecked="True"/>
-			<Button x:Name="add_item" Style="{StaticResource btnStyle}" Content="Add Item" Click="add_item_Click"/>
-			<Button x:Name="remove_head" Style="{StaticResource btnStyle}" Content="Remove Head" Click="remove_head_Click"/>
-			<Button x:Name="add_and_remove_head" Style="{StaticResource btnStyle}" Content="Both" Click="add_and_remove_head_Click"/>
+			<Button x:Name="add_head" Style="{StaticResource btnStyle}" Content="+ Head" Click="add_head_Click"/>
+			<Button x:Name="add_tail" Style="{StaticResource btnStyle}" Content="+ Tail" Click="add_item_Click"/>
+			<Button x:Name="remove_head" Style="{StaticResource btnStyle}" Content="- Head" Click="remove_head_Click"/>
+			<Button x:Name="remove_tail" Style="{StaticResource btnStyle}" Content="- Tail" Click="remove_tail_Click"/>
+			<Button x:Name="add_and_remove_head" Style="{StaticResource btnStyle}" Content="- Head, + Tail" Click="add_and_remove_head_Click"/>
 		</StackPanel>
-		<yacc:Chart x:Name="chart" Background="Black" Padding="32"
-			HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+		<yacc:Chart x:Name="chart" Style="{StaticResource Chart}"
 			RelativePanel.Below="toolbar" RelativePanel.AlignBottomWithPanel="True"
 			RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True">
 			<yacc:Chart.DataSources>
@@ -82,7 +89,7 @@
 					LabelForeground="LimeGreen" />
 				<yacc:HorizontalRule ValueAxisName="yaxis" Value="{Binding Value1Average}"
 					Stroke="LightCyan" StrokeThickness="3"
-					RuleVisibility="{Binding ElementName=cb_rule_value1, Path=IsChecked, Converter={StaticResource b2v}}" />
+					Visibility="{Binding ElementName=cb_rule_value1, Path=IsChecked, Converter={StaticResource b2v}}" />
 				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value1" CategoryLabelPath="Label"
 					Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					Stroke="DarkOrchid" Fill="{StaticResource blue-to-green}" BarOffset=".25" BarWidth=".25" />
@@ -106,10 +113,11 @@
 				</yacc:MarkerSeries>
 				<yacc:HorizontalRule ValueAxisName="yaxis" Value="{Binding Value2Average}"
 					Stroke="LightBlue" StrokeThickness="3"
-					RuleVisibility="{Binding ElementName=cb_rule_value2, Path=IsChecked, Converter={StaticResource b2v}}" />
-				<yacc:ValueAxis x:Name="yaxis" Side="Left" AxisFill="Red" GridStroke="Gray"
-					LabelForeground="LimeGreen" LabelFormatString="F1"
-					GridVisibility="{Binding ElementName=cb_yaxis_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
+					Visibility="{Binding ElementName=cb_rule_value2, Path=IsChecked, Converter={StaticResource b2v}}" />
+				<yacc:ValueAxis x:Name="yaxis" Side="Left" AxisFill="Red"
+					LabelForeground="LimeGreen" LabelFormatString="F1" />
+				<yacc:ValueAxisGrid ValueAxisName="yaxis" Stroke="Gray"
+					Visibility="{Binding ElementName=cb_yaxis_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>
 		<TextBlock x:Name="title" Style="{StaticResource Title}" Text="YACC Demonstration Chart"

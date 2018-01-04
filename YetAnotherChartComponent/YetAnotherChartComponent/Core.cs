@@ -314,7 +314,13 @@ namespace eScapeLLC.UWP.Charts {
 	}
 	#endregion
 	#region IRequireAfterRenderComplete
+	/// <summary>
+	/// Requirement for hooking into the data source render pipeline (DSRP).
+	/// </summary>
 	public interface IRequireAfterRenderComplete {
+		/// <summary>
+		/// Callback for after the 'render-complete' phase.
+		/// </summary>
 		void RenderComplete();
 	}
 	#endregion
