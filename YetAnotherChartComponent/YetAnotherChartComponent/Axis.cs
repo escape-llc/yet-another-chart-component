@@ -1,7 +1,6 @@
 ﻿using eScape.Core;
 using System;
 using System.Collections.Generic;
-using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
@@ -174,19 +173,13 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public Brush AxisFill { get { return (Brush)GetValue(AxisFillProperty); } set { SetValue(AxisFillProperty, value); } }
 		/// <summary>
-		/// Brush for the label foreground.
-		/// If not set, the Brush property is used.
-		/// </summary>
-		public Brush LabelForeground { get { return (Brush)GetValue(LabelForegroundProperty); } set { SetValue(LabelForegroundProperty, value); } }
-		/// <summary>
-		/// FontSize for the label text.
-		/// Default value is 10.
-		/// </summary>
-		public double LabelFontSize { get; set; } = 10;
-		/// <summary>
 		/// Alternate format string for labels.
 		/// </summary>
 		public String LabelFormatString { get; set; }
+		/// <summary>
+		/// The style to apply to labels.
+		/// </summary>
+		public Style LabelStyle { get { return (Style)GetValue(LabelStyleProperty); } set { SetValue(LabelStyleProperty, value); } }
 		#endregion
 		#endregion
 		#region DPs
@@ -195,9 +188,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public static readonly DependencyProperty AxisFillProperty = DependencyProperty.Register("AxisFill", typeof(Brush), typeof(AxisCommon), new PropertyMetadata(null));
 		/// <summary>
-		/// Identifies <see cref="LabelForeground"/> dependency property.
+		/// Identifies <see cref="LabelStyle"/> dependency property.
 		/// </summary>
-		public static readonly DependencyProperty LabelForegroundProperty = DependencyProperty.Register("LabelForeground", typeof(Brush), typeof(AxisCommon), new PropertyMetadata(null));
+		public static readonly DependencyProperty LabelStyleProperty = DependencyProperty.Register("LabelStyle", typeof(Style), typeof(AxisCommon), new PropertyMetadata(null));
 		#endregion
 		#region ctor
 		/// <summary>
@@ -291,6 +284,9 @@ namespace eScapeLLC.UWP.Charts {
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			icelc.Add(Axis);
 			DoBindings(icelc);
+			if (LabelStyle == null && Resources.ContainsKey("AxisLabelStyle")) {
+				LabelStyle = Resources["AxisLabelStyle"] as Style;
+			}
 		}
 		/// <summary>
 		/// Reverse effect of Enter.
@@ -331,17 +327,29 @@ namespace eScapeLLC.UWP.Charts {
 			//icrc.Remove(TickLabels);
 			// grid lines and tick labels
 			// layout and recycle labels
+			var padding = AxisLineThickness + 2 * AxisMargin;
 			var tbr = new Recycler<TextBlock>(TickLabels, () => {
-				var tb = new TextBlock() {
-					FontSize = LabelFontSize,
-					Foreground = LabelForeground ?? AxisFill,
-					VerticalAlignment = VerticalAlignment.Center,
-					HorizontalAlignment = Side == Side.Right ? HorizontalAlignment.Left : HorizontalAlignment.Right,
-					Width = icrc.Area.Width - AxisLineThickness - 2 * AxisMargin,
-					TextAlignment = Side == Side.Right ? TextAlignment.Left : TextAlignment.Right,
-					Padding = Side == Side.Right ? new Thickness(AxisLineThickness + 2 * AxisMargin, 0, 0, 0) : new Thickness(0, 0, AxisLineThickness + 2 * AxisMargin, 0)
-				};
-				return tb;
+				if (LabelStyle != null) {
+					// let style override everything but what MUST be calculated
+					var tb = new TextBlock() {
+						Width = icrc.Area.Width - padding,
+						Padding = Side == Side.Right ? new Thickness(padding, 0, 0, 0) : new Thickness(0, 0, padding, 0)
+					};
+					tb.Style = LabelStyle;
+					return tb;
+				} else {
+					// SHOULD NOT execute this code, unless default style failed!
+					var tb = new TextBlock() {
+						FontSize = 10,
+						Foreground = AxisFill,
+						VerticalAlignment = VerticalAlignment.Center,
+						HorizontalAlignment = Side == Side.Right ? HorizontalAlignment.Left : HorizontalAlignment.Right,
+						Width = icrc.Area.Width - padding,
+						TextAlignment = Side == Side.Right ? TextAlignment.Left : TextAlignment.Right,
+						Padding = Side == Side.Right ? new Thickness(padding, 0, 0, 0) : new Thickness(0, 0, padding, 0)
+					};
+					return tb;
+				}
 			});
 			var tbget = tbr.Items().GetEnumerator();
 			foreach (var tick in tc.GetTicks()) {
@@ -461,6 +469,9 @@ namespace eScapeLLC.UWP.Charts {
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			icelc.Add(Axis);
 			BindTo(this, "AxisFill", Axis, Path.FillProperty);
+			if (LabelStyle == null && Resources.ContainsKey("AxisLabelStyle")) {
+				LabelStyle = Resources["AxisLabelStyle"] as Style;
+			}
 		}
 		/// <summary>
 		/// Reverse effect of Enter.
@@ -494,16 +505,25 @@ namespace eScapeLLC.UWP.Charts {
 			var scalex = icrc.Area.Width / Range;
 			// recycle and lay out tick labels
 			var tbr = new Recycler<TextBlock>(TickLabels, () => {
-				var tb = new TextBlock() {
-					FontSize = LabelFontSize,
-					Foreground = LabelForeground ?? AxisFill,
-					//Text = tpx.Item2,
-					VerticalAlignment = VerticalAlignment.Center,
-					HorizontalAlignment = HorizontalAlignment.Center,
-					Width = scalex,
-					TextAlignment = TextAlignment.Center
-				};
-				return tb;
+				if (LabelStyle != null) {
+					// let style override everything but what MUST be calculated
+					var tb = new TextBlock() {
+						Width = scalex,
+					};
+					tb.Style = LabelStyle;
+					return tb;
+				} else {
+					// SHOULD NOT execute this code, unless default style failed!
+					var tb = new TextBlock() {
+						FontSize = 10,
+						Foreground = AxisFill,
+						VerticalAlignment = VerticalAlignment.Center,
+						HorizontalAlignment = HorizontalAlignment.Center,
+						Width = scalex,
+						TextAlignment = TextAlignment.Center
+					};
+					return tb;
+				}
 			});
 			var tbget = tbr.Items().GetEnumerator();
 			for (var ix = i1; ix <= i2; ix++) {

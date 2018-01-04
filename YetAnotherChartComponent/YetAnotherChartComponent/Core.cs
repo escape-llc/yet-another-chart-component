@@ -191,6 +191,14 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="name">Name.</param>
 		/// <returns>Matching component or NULL.</returns>
 		ChartComponent Find(String name);
+		#if false
+		/// <summary>
+		/// Look up a default style.
+		/// </summary>
+		/// <param name="name"></param>
+		/// <returns></returns>
+		//Style FindStyle(String name);
+		#endif
 		/// <summary>
 		/// Add group of components.
 		/// </summary>

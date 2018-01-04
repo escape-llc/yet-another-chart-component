@@ -290,6 +290,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// This is intended for data binding to an external UI to present the legend.
 		/// </summary>
 		public ObservableCollection<Legend> LegendItems { get; private set; }
+		public Style AxisLabelStyle { get { return (Style)GetValue(AxisLabelStyleProperty); } set { SetValue(AxisLabelStyleProperty, value); } }
 		/// <summary>
 		/// Obtained from the templated parent.
 		/// </summary>
@@ -311,6 +312,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// LayoutUpdated gets called frequently, so it gets debounced.
 		/// </summary>
 		protected Size LastLayout { get; set; }
+		#endregion
+		#region DPs
+		public static readonly DependencyProperty AxisLabelStyleProperty = DependencyProperty.Register("AxisLabelStyle", typeof(Style), typeof(Chart), new PropertyMetadata(null));
 		#endregion
 		#region ctor
 		/// <summary>
@@ -516,9 +520,14 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Common logic for component entering the chart.
 		/// </summary>
-		/// <param name="icelc"></param>
-		/// <param name="cc"></param>
+		/// <param name="icelc">The context.</param>
+		/// <param name="cc">The component entering chart.</param>
 		protected void EnterComponent(IChartEnterLeaveContext icelc, ChartComponent cc) {
+			// pre-load resources
+			if (AxisLabelStyle != null && !cc.Resources.ContainsKey(nameof(AxisLabelStyle))) {
+				cc.Resources.Add(nameof(AxisLabelStyle), AxisLabelStyle);
+			}
+			// invoke IREL
 			if (cc is IRequireEnterLeave irel) {
 				irel.Enter(icelc);
 			}
@@ -563,6 +572,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (cc is IRequireEnterLeave irel) {
 				irel.Leave(icelc);
 			}
+			cc.Resources.Remove(nameof(AxisLabelStyle));
 		}
 		/// <summary>
 		/// Adjust layout and transforms based on size change.
