@@ -31,7 +31,6 @@ namespace Yacc.Demo {
 				new Observation("Group 5", 4, -5),
 				new Observation("Group 6", -5.25, 0.04)
 			});
-			vm.Data.Add(new Observation("Group 1", -0.5, 0.02));
 			vm.GroupCounter = vm.Data.Count;
 			DataContext = vm;
 		}

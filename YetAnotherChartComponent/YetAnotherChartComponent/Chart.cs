@@ -290,6 +290,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// This is intended for data binding to an external UI to present the legend.
 		/// </summary>
 		public ObservableCollection<Legend> LegendItems { get; private set; }
+		/// <summary>
+		/// The style to use for the axis labels.
+		/// If NULL, attempts to initialize from ChartComponent.Resources.
+		/// If that fails, axis uses hard-coded styling.
+		/// </summary>
 		public Style AxisLabelStyle { get { return (Style)GetValue(AxisLabelStyleProperty); } set { SetValue(AxisLabelStyleProperty, value); } }
 		/// <summary>
 		/// Obtained from the templated parent.
@@ -314,6 +319,9 @@ namespace eScapeLLC.UWP.Charts {
 		protected Size LastLayout { get; set; }
 		#endregion
 		#region DPs
+		/// <summary>
+		/// Deendency property for <see cref="AxisLabelStyle"/>.
+		/// </summary>
 		public static readonly DependencyProperty AxisLabelStyleProperty = DependencyProperty.Register("AxisLabelStyle", typeof(Style), typeof(Chart), new PropertyMetadata(null));
 		#endregion
 		#region ctor
@@ -669,9 +677,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// If anything is dirty, full layout, else adjust transforms.
 		/// Once all components are "clean" only the visual transforms are updated; no data traversal is done.
 		/// </summary>
+		/// <param name="sz">The dimensions.</param>
 		private void RenderComponents(Size sz) {
 			_trace.Verbose($"render-components {sz.Width}x{sz.Height}");
-			if (DataSources.Cast<DataSource>().Any((cx) => cx.IsDirty)) {
+			if (DataSources.Cast<DataSource>().Any((ds) => ds.IsDirty)) {
 				FullLayout(sz);
 			} else {
 				TransformsOnly(sz);
