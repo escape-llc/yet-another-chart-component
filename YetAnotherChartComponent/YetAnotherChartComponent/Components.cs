@@ -1,4 +1,5 @@
-﻿using System;
+﻿using eScape.Core;
+using System;
 using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media;
@@ -96,7 +97,8 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Represents a horizontal "rule" on the chart, for a value not belonging to any data source value, e.g. a value computed "outside" the series itself (Average).
 	/// </summary>
-	public class HorizontalRule : ChartComponent, IProvideValueExtents, IRequireEnterLeave, IRequireRender, IRequireTransforms, IRequireAfterRenderComplete {
+	public class HorizontalRule : ChartComponent, IProvideValueExtents, IRequireEnterLeave, IRequireRender, IRequireTransforms/*, IRequireAfterRenderComplete*/ {
+		static LogTools.Flag _trace = LogTools.Add("HorizontalRule", LogTools.Level.Error);
 		#region properties
 		/// <summary>
 		/// Brush for the axis grid lines.
@@ -170,8 +172,16 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="dpcea"></param>
 		private static void ComponentPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs dpcea) {
 			HorizontalRule hr = d as HorizontalRule;
-			hr.Dirty = true;
-			hr.Refresh();
+			if (dpcea.OldValue != dpcea.NewValue) {
+				if (hr.ValueAxis == null) return;
+				var aus = AxisUpdateState.None;
+				if(hr.Value > hr.ValueAxis.Maximum || hr.Value < hr.ValueAxis.Minimum) {
+					_trace.Verbose($"{hr.Name} axis-update-required");
+					aus = AxisUpdateState.Value;
+				}
+				hr.Dirty = true;
+				hr.Refresh(RefreshRequestType.ValueDirty, aus);
+			}
 		}
 		#endregion
 		#region ctor
@@ -214,7 +224,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icelc">The context.</param>
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			EnsureAxes(icelc);
-			//_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis}");
+			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis}");
 			icelc.Add(Path);
 			DoBindings(icelc);
 		}
@@ -232,35 +242,37 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icrc">The context.</param>
 		void IRequireRender.Render(IChartRenderContext icrc) {
-			if (!Dirty) return;
 			if (ValueAxis == null) return;
-			//_trace.Verbose($"{Name} val:{Value}");
+			_trace.Verbose($"{Name} val:{Value}");
 			var vx = ValueAxis.For(Value);
 			Rule.StartPoint = new Point(0, vx);
 			Rule.EndPoint = new Point(1, vx);
-			if(ClipToDataRegion) {
-				Path.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
-			}
 			Dirty = false;
 		}
 		/// <summary>
 		/// Propagate axis update for the value.
 		/// </summary>
+		#if false
 		void IRequireAfterRenderComplete.RenderComplete() {
 			if (ValueAxis == null) return;
 			if (ShowOnAxis) {
 				ValueAxis.UpdateLimits(Value);
 			}
 		}
+		#endif
 		/// <summary>
 		/// rule coordinates (x:[0..1], y:axis)
 		/// </summary>
 		/// <param name="icrc">The context.</param>
 		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
-			var gscaley = icrc.SeriesArea.Height / ValueAxis.Range;
-			var gmatx = new Matrix(icrc.SeriesArea.Width, 0, 0, -gscaley, icrc.SeriesArea.Left, icrc.SeriesArea.Top + ValueAxis.Maximum * gscaley);
-			//_trace.Verbose($"transforms sy:{scaley:F3} gsy:{gscaley:F3} matx:{matx} gmatx:{gmatx} a:{icrc.Area} sa:{icrc.SeriesArea}");
-			Rule.Transform = new MatrixTransform() { Matrix = gmatx };
+			if (ValueAxis == null) return;
+			var scaley = icrc.SeriesArea.Height / ValueAxis.Range;
+			var matx = new Matrix(icrc.SeriesArea.Width, 0, 0, -scaley, icrc.SeriesArea.Left, icrc.SeriesArea.Top + ValueAxis.Maximum * scaley);
+			_trace.Verbose($"transforms sy:{scaley:F3} matx:{matx} sa:{icrc.SeriesArea}");
+			if (ClipToDataRegion) {
+				Path.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
+			}
+			Rule.Transform = new MatrixTransform() { Matrix = matx };
 		}
 		#endregion
 	}
@@ -360,6 +372,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icrc"></param>
 		void IRequireRender.Render(IChartRenderContext icrc) {
 			if (ValueAxis == null) return;
+			if (double.IsNaN(ValueAxis.Maximum) || double.IsNaN(ValueAxis.Minimum)) return;
 			// grid lines
 			var tc = new TickCalculator(ValueAxis.Minimum, ValueAxis.Maximum);
 			//_trace.Verbose($"grid range:{tc.Range} tintv:{tc.TickInterval}");

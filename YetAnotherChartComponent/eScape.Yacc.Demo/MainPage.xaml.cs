@@ -24,12 +24,12 @@ namespace Yacc.Demo {
 		protected override void OnNavigatedTo(NavigationEventArgs e) {
 			base.OnNavigatedTo(e);
 			var vm = new ViewModel(new[] {
-				new Observation("Group 1", -0.5, 0.02),
+				new Observation("Group 1", -0.5, 1),
 				new Observation("Group 2", 3, 10),
 				new Observation("Group 3", 2, 5),
 				new Observation("Group 4", 3, -10),
 				new Observation("Group 5", 4, -5),
-				new Observation("Group 6", -5.25, 0.04)
+				new Observation("Group 6", -5.25, 0.5)
 			});
 			vm.GroupCounter = vm.Data.Count;
 			DataContext = vm;

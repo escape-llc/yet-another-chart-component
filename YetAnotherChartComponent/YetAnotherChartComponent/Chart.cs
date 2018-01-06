@@ -95,16 +95,18 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="dc"></param>
 		public DefaultDataSourceRenderContext(Canvas surface, ObservableCollection<ChartComponent> components, Size sz, Rect rc, Rect sa, object dc)
 		:base(surface, components, sz, rc, sa, dc) {
-			arc = components.Where((cc2) => cc2 is IRequireAfterRenderComplete);
+			arc = components.Where((cc2) => /*cc2 is IRequireAfterRenderComplete*/ true);
 		}
 		/// <summary>
 		/// Handle components that want a callback for AfterRenderComplete.
 		/// </summary>
 		/// <param name="ds"></param>
 		public void AfterRenderComplete(DataSource ds) {
+		#if false
 			foreach(IRequireAfterRenderComplete cc in arc) {
 				cc.RenderComplete();
 			}
+		#endif
 		}
 	}
 	#endregion
@@ -468,9 +470,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// TODO get the DS to just refresh this CC.
 		/// This method is invoke-safe; it MAY be called from a different thread.
 		/// </summary>
-		/// <param name="cc"></param>
-		private async void ChartComponent_RefreshRequest(ChartComponent cc) {
-			_trace.Verbose($"refresh-request-cc '{cc.Name}' {cc}");
+		/// <param name="cc">Component requesting refresh.</param>
+		/// <param name="rrea">The request parameter.</param>
+		private async void ChartComponent_RefreshRequest(ChartComponent cc, RefreshRequestEventArgs rrea) {
+			_trace.Verbose($"refresh-request-cc '{cc.Name}' {cc} r:{rrea.Request} a:{rrea.Axis}");
 			await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => {
 				if (Surface != null) {
 					if (cc is DataSeries) {
@@ -478,10 +481,73 @@ namespace eScapeLLC.UWP.Charts {
 						if (ds != null) {
 							ds.IsDirty = true;
 						}
+						RenderComponents(LastLayout);
+					} else {
+						// dispatch other kinds of refresh requests
+						if (rrea.Request == RefreshRequestType.LayoutDirty && rrea.Component is IRequireLayout) {
+							ComponentRender(LastLayout, rrea);
+						} else if (rrea.Request == RefreshRequestType.ValueDirty && rrea.Component is IRequireRender) {
+							ComponentRender(LastLayout, rrea);
+						} else if (rrea.Request == RefreshRequestType.TransformsDirty && cc is IRequireTransforms) {
+							ComponentTransforms(LastLayout, rrea);
+						}
 					}
-					RenderComponents(LastLayout);
 				}
 			});
+		}
+
+		private void ComponentTransforms(Size sz, RefreshRequestEventArgs rrea) {
+			if (sz.Width == 0 || sz.Height == 0) return;
+			if(rrea.Component is IRequireTransforms irt) {
+				var initialRect = CalculateInitialRect(sz);
+				var inner = new Size(initialRect.Width, initialRect.Height);
+				// FOR NOW just re-run this, but it SHOULD be cached (when LastLayout is)
+				var dlc = new DefaultLayoutContext(inner, initialRect);
+				_trace.Verbose($"cr.starting {initialRect}");
+				Phase_Layout(dlc);
+				var rect = dlc.For(rrea.Component);
+				_trace.Verbose($"component-render {rrea.Component} {rrea.Axis} {rect}");
+				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
+				irt.Transforms(ctx);
+			}
+		}
+
+		private void ComponentRender(Size sz, RefreshRequestEventArgs rrea) {
+			if (sz.Width == 0 || sz.Height == 0) return;
+			if (rrea.Component is IRequireRender irr) {
+				var initialRect = CalculateInitialRect(sz);
+				var inner = new Size(initialRect.Width, initialRect.Height);
+				// FOR NOW just re-run this, but it SHOULD be cached (when LastLayout is)
+				var dlc = new DefaultLayoutContext(inner, initialRect);
+				_trace.Verbose($"cr.starting {initialRect}");
+				Phase_Layout(dlc);
+				var rect = dlc.For(rrea.Component);
+				_trace.Verbose($"component-render {rrea.Component} {rrea.Axis} {rect}");
+				if (rrea.Axis != AxisUpdateState.None) {
+					// put axis limits into correct state for IRenderRequest components
+					Phase_ResetAxes();
+					Phase_AxisLimits((cc2) => cc2 is DataSeries && (cc2 is IProvideCategoryExtents || cc2 is IProvideValueExtents));
+				}
+				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
+				irr.Render(ctx);
+				if(rrea.Axis != AxisUpdateState.None) {
+#if false
+					if (rrea.Component is IRequireAfterRenderComplete irarc) {
+						// this may touch the axes
+						irarc.RenderComplete();
+					}
+#endif
+					// axes MUST be re-evaluated because this thing changed.
+					Phase_AxisLimits((cc2) => !(cc2 is DataSeries) && (cc2 is IProvideCategoryExtents || cc2 is IProvideValueExtents));
+					Phase_RenderAxes(dlc, inner);
+					Phase_Transforms(dlc, inner);
+				}
+				else {
+					if(rrea.Component is IRequireTransforms irt) {
+						irt.Transforms(ctx);
+					}
+				}
+			}
 		}
 		#endregion
 		#region extensions
@@ -523,6 +589,86 @@ namespace eScapeLLC.UWP.Charts {
 		/// Gets a collection of preset brushes used for graphs when their Brush property isn't set explicitly.
 		/// </summary>
 		public List<Brush> PresetBrushes { get { return _presetBrushes; } }
+		#endregion
+		#region phase helpers
+		protected void Phase_ResetAxes() {
+			foreach (var axis in Axes) {
+				_trace.Verbose($"reset {(axis as ChartComponent).Name} {axis}");
+				axis.ResetLimits();
+			}
+		}
+		/// <summary>
+		/// Update limits for all components except the excluded one.
+		/// Assumed excluded one will update limits itself afterwards.
+		/// </summary>
+		/// <param name="pred">Component filter.</param>
+		protected void Phase_AxisLimits(Func<ChartComponent,bool> pred) {
+			foreach (var cc in Components.Where(pred)) {
+				_trace.Verbose($"axis-limits '{cc.Name}' {cc}");
+				if(cc is IProvideCategoryExtents ipce) {
+					var axis = Axes.SingleOrDefault((ax) => ipce.CategoryAxisName == (ax as ChartComponent).Name);
+					_trace.Verbose($"axis-limits x-axis:{axis}");
+					if (axis != null) {
+						axis.UpdateLimits(ipce.CategoryMaximum);
+						axis.UpdateLimits(ipce.CategoryMinimum);
+					}
+				}
+				if(cc is IProvideValueExtents ipve) {
+					var axis = Axes.SingleOrDefault((ax) => ipve.ValueAxisName == (ax as ChartComponent).Name);
+					_trace.Verbose($"axis-limits y-axis:{axis}");
+					if (axis != null) {
+						axis.UpdateLimits(ipve.Maximum);
+						axis.UpdateLimits(ipve.Minimum);
+					}
+				}
+			}
+		}
+		protected void Phase_Layout(DefaultLayoutContext dlc) {
+			foreach (IRequireLayout cc in Components.Where((cc2) => cc2 is IRequireLayout)) {
+				_trace.Verbose($"layout {cc}");
+				cc.Layout(dlc);
+			}
+			// what's left is for the data series area
+			_trace.Verbose($"remaining {dlc.RemainingRect}");
+			dlc.FinalizeRects();
+		}
+		protected void Phase_RenderDataSources(DefaultLayoutContext dlc, Size inner) {
+			var dsctx = new DefaultDataSourceRenderContext(Surface, Components, inner, Rect.Empty, dlc.RemainingRect, DataContext);
+			foreach (DataSource ds in DataSources) {
+				ds.Render(dsctx);
+			}
+		}
+		/// <summary>
+		/// Phase: axes have seen all values let them render (IRequireRender)
+		/// </summary>
+		/// <param name="dlc"></param>
+		/// <param name="inner"></param>
+		protected void Phase_RenderAxes(DefaultLayoutContext dlc, Size inner) {
+			foreach (var axis in Axes.Where((cc2) => cc2 is IRequireRender)) {
+				var acc = axis as ChartComponent;
+				var rect = dlc.For(acc);
+				_trace.Verbose($"limits {acc.Name} ({axis.Minimum},{axis.Maximum}) r:{axis.Range} rect:{rect}");
+				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
+				if (axis is IRequireRender irr) {
+					irr.Render(ctx);
+				}
+			}
+		}
+		protected void Phase_RenderComponents(DefaultLayoutContext dlc, Size inner) {
+			foreach (IRequireRender cc in Components.Where((cc2) => !(cc2 is IChartAxis) && (cc2 is IRequireRender))) {
+				var rect = dlc.For(cc as ChartComponent);
+				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
+				cc.Render(ctx);
+			}
+		}
+		protected void Phase_Transforms(DefaultLayoutContext dlc, Size inner) {
+			foreach (IRequireTransforms cc in Components.Where((cc2) => cc2 is IRequireTransforms)) {
+				var rect = dlc.For(cc as ChartComponent);
+				_trace.Verbose($"transforms {cc} {rect}");
+				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
+				cc.Transforms(ctx);
+			}
+		}
 		#endregion
 		#region helpers
 		/// <summary>
@@ -582,39 +728,20 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			cc.Resources.Remove(nameof(AxisLabelStyle));
 		}
+		protected Rect CalculateInitialRect(Size sz) {
+			return new Rect(Padding.Left, Padding.Top, sz.Width - Padding.Left - Padding.Right, sz.Height - Padding.Top - Padding.Bottom);
+		}
 		/// <summary>
 		/// Adjust layout and transforms based on size change.
 		/// </summary>
 		/// <param name="sz">Dimensions.</param>
 		protected void TransformsOnly(Size sz) {
-			var initialRect = new Rect(Padding.Left, Padding.Top, sz.Width - Padding.Left - Padding.Right, sz.Height - Padding.Top - Padding.Bottom);
+			var initialRect = CalculateInitialRect(sz);
 			var inner = new Size(initialRect.Width, initialRect.Height);
-			// Phase I: re-claim space (because the size changed)
 			var dlc = new DefaultLayoutContext(inner, initialRect);
 			_trace.Verbose($"transforms-only starting {initialRect}");
-			foreach (IRequireLayout cc in Components.Where((cc2) => cc2 is IRequireLayout)) {
-				_trace.Verbose($"layout {cc}");
-				cc.Layout(dlc);
-			}
-			_trace.Verbose($"transforms-only remaining:{dlc.RemainingRect}");
-			dlc.FinalizeRects();
-			// Phase II: update axis transforms
-			foreach (var axis in Axes.Where((cc2) => cc2 is IRequireTransforms)) {
-				var cc = axis as ChartComponent;
-				var rect = dlc.For(cc);
-				_trace.Verbose($"transforms-only {cc.Name} {axis} {rect}");
-				if (cc is IRequireTransforms irt) {
-					var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
-					irt.Transforms(ctx);
-				}
-			}
-			// Phase III: update non-axis component transforms
-			foreach (IRequireTransforms cc in Components.Where((cc2) => !(cc2 is IChartAxis) && cc2 is IRequireTransforms)) {
-				var rect = dlc.For(cc as ChartComponent);
-				_trace.Verbose($"transforms-only {cc} {rect}");
-				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
-				cc.Transforms(ctx);
-			}
+			Phase_Layout(dlc);
+			Phase_Transforms(dlc, inner);
 		}
 		/// <summary>
 		/// Perform a full layout and rendering pass.
@@ -623,54 +750,25 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="sz">Dimensions.</param>
 		protected void FullLayout(Size sz) {
-			var initialRect = new Rect(Padding.Left, Padding.Top, sz.Width - Padding.Left - Padding.Right, sz.Height - Padding.Top - Padding.Bottom);
+			var initialRect = CalculateInitialRect(sz);
 			var inner = new Size(initialRect.Width, initialRect.Height);
 			// Phase I: reset axes
-			foreach (var axis in Axes) {
-				_trace.Verbose($"reset {(axis as ChartComponent).Name} {axis}");
-				axis.ResetLimits();
-			}
-			// Phase II: claim space
+			Phase_ResetAxes();
+			// Phase II: claim space (IRequireLayout)
 			var dlc = new DefaultLayoutContext(inner, initialRect);
-			_trace.Verbose($"starting {initialRect}");
-			foreach (IRequireLayout cc in Components.Where((cc2) => cc2 is IRequireLayout)) {
-				_trace.Verbose($"layout {cc}");
-				cc.Layout(dlc);
-			}
-			// what's left is for the data series area
-			_trace.Verbose($"remaining {dlc.RemainingRect}");
-			dlc.FinalizeRects();
-			// Phase III: render the data sources -> series -> axes
-			var dsctx = new DefaultDataSourceRenderContext(Surface, Components, inner, Rect.Empty, dlc.RemainingRect, DataContext);
-			foreach (DataSource ds in DataSources) {
-				ds.Render(dsctx);
-			}
-			// Phase IV: axes have seen all values; render+transform them now
-			foreach (var axis in Axes.Where((cc2) => cc2 is IRequireRender || cc2 is IRequireTransforms)) {
-				var acc = axis as ChartComponent;
-				var rect = dlc.For(acc);
-				_trace.Verbose($"limits {acc.Name} ({axis.Minimum},{axis.Maximum}) r:{axis.Range} rect:{rect}");
-				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
-				if (axis is IRequireRender irr) {
-					irr.Render(ctx);
-				}
-				if (axis is IRequireTransforms irt) {
-					irt.Transforms(ctx);
-				}
-			}
-			// Phase IV.1: render non-series non-axis components
-			foreach (IRequireRender cc in Components.Where((cc2) => !(cc2 is IChartAxis) && (cc2 is IRequireRender))) {
-				var rect = dlc.For(cc as ChartComponent);
-				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
-				cc.Render(ctx);
-			}
-			// Phase V: configure non-axis component transforms now axes are configured
-			foreach (IRequireTransforms cc in Components.Where((cc2) => !(cc2 is IChartAxis) && cc2 is IRequireTransforms)) {
-				var rect = dlc.For(cc as ChartComponent);
-				_trace.Verbose($"transforms {cc} {rect}");
-				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
-				cc.Transforms(ctx);
-			}
+			_trace.Verbose($"full starting {initialRect}");
+			Phase_Layout(dlc);
+			// Phase III: data source rendering pipeline (IDataSourceRenderer)
+			Phase_RenderDataSources(dlc, inner);
+			Phase_AxisLimits((cc2) => cc2 is DataSeries && (cc2 is IProvideCategoryExtents || cc2 is IProvideValueExtents));
+			// Phase IV: render non-axis components (IRequireRender)
+			Phase_RenderComponents(dlc, inner);
+			// Phase V: set axis limmits
+			Phase_AxisLimits((cc2) => !(cc2 is DataSeries) && (cc2 is IProvideCategoryExtents || cc2 is IProvideValueExtents));
+			// Phase VI: axes have seen all values let them render (IRequireRender)
+			Phase_RenderAxes(dlc, inner);
+			// Phase VII: configure all transforms now axes are configured
+			Phase_Transforms(dlc, inner);
 		}
 		/// <summary>
 		/// Determine what kind of render is required, and run it.

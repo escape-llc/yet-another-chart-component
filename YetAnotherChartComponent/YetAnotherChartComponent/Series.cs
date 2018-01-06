@@ -46,7 +46,7 @@ namespace eScapeLLC.UWP.Charts {
 		private static void DataSeriesPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs dpcea) {
 			DataSeries ds = d as DataSeries;
 			ds.Dirty = true;
-			ds.Refresh();
+			ds.Refresh(RefreshRequestType.ValueDirty, AxisUpdateState.Unknown);
 		}
 		#endregion
 		#region properties
@@ -143,6 +143,7 @@ namespace eScapeLLC.UWP.Charts {
 				CategoryAxis = icrc.Find(CategoryAxisName) as IChartAxis;
 			}
 		}
+		#if false
 		/// <summary>
 		/// Register the series limits with the axes.
 		/// </summary>
@@ -156,6 +157,7 @@ namespace eScapeLLC.UWP.Charts {
 				CategoryAxis.UpdateLimits(CategoryMaximum);
 			}
 		}
+		#endif
 		/// <summary>
 		/// Update value and category limits.
 		/// </summary>
@@ -283,13 +285,12 @@ namespace eScapeLLC.UWP.Charts {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			var scalex = icrc.Area.Width / CategoryAxis.Range;
 			var scaley = icrc.Area.Height / ValueAxis.Range;
-			var offsetx = scalex * CategoryAxisOffset;
-			var matx = new Matrix(scalex, 0, 0, -scaley, icrc.Area.Left + offsetx, icrc.Area.Top + ValueAxis.Maximum*scaley);
-			var clip = new Rect(icrc.Area.Left, icrc.Area.Top, icrc.Area.Width, icrc.Area.Height);
-			_trace.Verbose($"scale {scalex:F3},{scaley:F3} mat:{matx} clip:{clip}");
+			var matx = new Matrix(scalex, 0, 0, -scaley, icrc.Area.Left, icrc.Area.Top + ValueAxis.Maximum*scaley);
+			//var clip = new Rect(icrc.Area.Left, icrc.Area.Top, icrc.Area.Width, icrc.Area.Height);
+			_trace.Verbose($"scale {scalex:F3},{scaley:F3} mat:{matx} clip:{icrc.SeriesArea}");
 			Geometry.Transform = new MatrixTransform() { Matrix = matx };
 			if(ClipToDataRegion) {
-				Segments.Clip = new RectangleGeometry() { Rect = clip };
+				Segments.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
 			}
 		}
 		#endregion
@@ -304,6 +305,7 @@ namespace eScapeLLC.UWP.Charts {
 			internal BindingEvaluator by;
 			internal BindingEvaluator bl;
 			internal PathFigure pf;
+			internal int ix;
 		}
 		object IDataSourceRenderer.Preamble(IChartRenderContext icrc) {
 			if (ValueAxis == null || CategoryAxis == null) return null;
@@ -324,18 +326,27 @@ namespace eScapeLLC.UWP.Charts {
 			// TODO handle datetime et al values that aren't double
 			var valuey = (double)st.by.For(item);
 			var valuex = st.bx != null ? (double)st.bx.For(item) : index;
+			valuex += CategoryAxisOffset;
 			UpdateLimits(valuex, valuey);
 			var mappedy = ValueAxis.For(valuey);
 			var mappedx = st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()));
-			_trace.Verbose($"[{index}] {valuey} ({mappedx},{mappedy})");
+			_trace.Verbose($"{Name}[{index}] v:({valuex},{valuey}) m:({mappedx},{mappedy})");
 			if (index == 0) {
 				st.pf.StartPoint = new Point(mappedx, mappedy);
 			} else {
 				st.pf.Segments.Add(new LineSegment() { Point = new Point(mappedx, mappedy) });
 			}
+			st.ix = index;
 		}
 		void IDataSourceRenderer.RenderComplete(object state) {
+			var st = state as State;
+			if (st.bx == null) {
+				// needs one extra "cell"
+				UpdateLimits(st.ix + 1, 0);
+			}
+			#if false
 			ApplyLimitsToAxes();
+			#endif
 		}
 		void IDataSourceRenderer.Postamble(object state) {
 			var st = state as State;
@@ -374,9 +385,13 @@ namespace eScapeLLC.UWP.Charts {
 		public DataTemplate MarkerTemplate { get { return (DataTemplate)GetValue(MarkerTemplateProperty); } set { SetValue(MarkerTemplateProperty, value); } }
 		/// <summary>
 		/// Marker Offset in Category axis units [0..1].
-		/// Use with ColumnSeries to get the "points" to align with the column(s) layout in their cells.
 		/// </summary>
 		public double MarkerOffset { get; set; }
+		/// <summary>
+		/// Marker Width/Height in Category axis units [0..1].
+		/// Currently marker is a square with interior coordinates in NDC.
+		/// </summary>
+		public double MarkerWidth { get; set; }
 		/// <summary>
 		/// The series drawing attributes etc. on the Canvas.
 		/// </summary>
@@ -463,7 +478,7 @@ namespace eScapeLLC.UWP.Charts {
 				TransformMarker(gx, scalex, scaley);
 			}
 			if (ClipToDataRegion) {
-				Segments.Clip = new RectangleGeometry() { Rect = icrc.Area };
+				Segments.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
 			}
 		}
 		/// <summary>
@@ -538,7 +553,9 @@ namespace eScapeLLC.UWP.Charts {
 			Geometry.Children.Add(mk);
 		}
 		void IDataSourceRenderer.RenderComplete(object state) {
+		#if false
 			ApplyLimitsToAxes();
+		#endif
 		}
 		void IDataSourceRenderer.Postamble(object state) {
 			var st = state as State;
@@ -580,6 +597,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public double BarWidth { get; set; } = 0.5;
 		/// <summary>
+		/// Whether to display debug paths.
+		/// Should only be on for ONE series for best results.
+		/// </summary>
+		public bool EnableDebugPaths { get; set; }
+		/// <summary>
 		/// Path for the column bars.
 		/// </summary>
 		protected Path Segments { get; set; }
@@ -590,7 +612,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Geometry for debug: clip region.
 		/// </summary>
-		protected RectangleGeometry DebugClip { get; set; }
+		protected GeometryGroup DebugClip { get; set; }
 		/// <summary>
 		/// Path for the debug graphics.
 		/// </summary>
@@ -620,15 +642,6 @@ namespace eScapeLLC.UWP.Charts {
 				StrokeThickness = 1,
 				Data = Geometry
 			};
-			_traceg.Verbose(() => {
-				DebugClip = new RectangleGeometry();
-				DebugSegments = new Path() {
-					StrokeThickness = 1,
-					Fill = new SolidColorBrush(Color.FromArgb(32, Colors.LimeGreen.R, Colors.LimeGreen.G, Colors.LimeGreen.B)),
-					Data = DebugClip
-				};
-				return "Created Debug path";
-			});
 		}
 		#endregion
 		#region extensions
@@ -638,8 +651,20 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icelc"></param>
 		public void Enter(IChartEnterLeaveContext icelc) {
 			EnsureAxes(icelc);
-			_trace.Verbose($"enter v:{ValueAxisName} {ValueAxis} c:{CategoryAxisName} {CategoryAxis} d:{DataSourceName}");
+			_trace.Verbose($"{Name} enter v:{ValueAxisName} {ValueAxis} c:{CategoryAxisName} {CategoryAxis} d:{DataSourceName}");
 			icelc.Add(Segments);
+			if (EnableDebugPaths) {
+				_traceg.Verbose(() => {
+					DebugClip = new GeometryGroup();
+					DebugSegments = new Path() {
+						StrokeThickness = 1,
+						Fill = new SolidColorBrush(Color.FromArgb(32, Colors.LimeGreen.R, Colors.LimeGreen.G, Colors.LimeGreen.B)),
+						Stroke = new SolidColorBrush(Colors.White),
+						Data = DebugClip
+					};
+					return "Created Debug path";
+				});
+			}
 			if (DebugSegments != null) {
 				icelc.Add(DebugSegments);
 			}
@@ -651,7 +676,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icelc"></param>
 		public void Leave(IChartEnterLeaveContext icelc) {
-			_trace.Verbose($"leave");
+			_trace.Verbose($"{Name} leave");
 			ValueAxis = null;
 			CategoryAxis = null;
 			if(DebugSegments != null) {
@@ -669,14 +694,18 @@ namespace eScapeLLC.UWP.Charts {
 			var scalex = icrc.Area.Width / CategoryAxis.Range;
 			var scaley = icrc.Area.Height / ValueAxis.Range;
 			var matx = new Matrix(scalex, 0, 0, -scaley, icrc.Area.Left, icrc.Area.Top + ValueAxis.Maximum * scaley);
-			var clip = new Rect(icrc.Area.Left, icrc.Area.Top, icrc.Area.Width, icrc.Area.Height);
-			_trace.Verbose($"scale {scalex:F3},{scaley:F3} mat:{matx} clip:{clip}");
+			//var clip = new Rect(icrc.Area.Left, icrc.Area.Top, icrc.Area.Width, icrc.Area.Height);
+			_trace.Verbose($"{Name} scale {scalex:F3},{scaley:F3} mat:{matx} clip:{icrc.SeriesArea}");
 			if (ClipToDataRegion) {
-				Segments.Clip = new RectangleGeometry() { Rect = clip };
+				Segments.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
 			}
-			Geometry.Transform = new MatrixTransform() { Matrix = matx };
+			var mt = new MatrixTransform() { Matrix = matx };
+			Geometry.Transform = mt;
 			if (DebugClip != null) {
-				DebugClip.Rect = clip;
+				DebugClip.Children.Clear();
+				//DebugClip.Children.Add(new RectangleGeometry() { Rect = clip });
+				DebugClip.Children.Add(new RectangleGeometry() { Rect = new Rect(icrc.Area.Left, icrc.Area.Top, scalex, ValueAxis.Range/2*scaley) });
+				//_trace.Verbose($"{Name} rmat:{DebugClip.Transform}");
 			}
 		}
 		#endregion
@@ -712,12 +741,14 @@ namespace eScapeLLC.UWP.Charts {
 			var valuex = st.bx != null ? (double)st.bx.For(item) : index;
 			UpdateLimits(valuex, valuey);
 			UpdateLimits(valuex, 0);
-			var topy = ValueAxis.For(valuey);
-			var bottomy = ValueAxis.For(0);
+			var y1 = ValueAxis.For(valuey);
+			var y2 = ValueAxis.For(0);
+			var topy = Math.Min(y1, y2);
+			var bottomy = Math.Max(y1, y2);
 			var leftx = (st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()))) + BarOffset;
 			var rightx = leftx + BarWidth;
-			_trace.Verbose($"[{index}] {valuey} ({leftx},{topy}) ({rightx},{bottomy})");
-			var pf = PathHelper.Rectangle(leftx, Math.Max(topy, bottomy), rightx, Math.Min(topy, bottomy));
+			_trace.Verbose($"{Name}[{index}] {valuey} ({leftx},{topy}) ({rightx},{bottomy})");
+			var pf = PathHelper.Rectangle(leftx, topy, rightx, bottomy);
 			Geometry.Figures.Add(pf);
 			st.ix = index;
 		}
@@ -729,10 +760,11 @@ namespace eScapeLLC.UWP.Charts {
 			var st = state as State;
 			if (st.bx == null) {
 				// needs one extra "cell"
-				CategoryAxis.For(st.ix + 1);
 				UpdateLimits(st.ix + 1, 0);
 			}
+			#if false
 			ApplyLimitsToAxes();
+			#endif
 		}
 		void IDataSourceRenderer.Postamble(object state) {
 			Dirty = false;

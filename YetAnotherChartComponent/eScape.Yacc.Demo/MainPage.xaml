@@ -85,18 +85,18 @@
 		</Style>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-		<StackPanel x:Name="toolbar" Orientation="Horizontal" Padding="4"
+		<VariableSizedWrapGrid x:Name="toolbar" Orientation="Horizontal"
 			RelativePanel.AlignTopWithPanel="True">
-			<CheckBox x:Name="cb_yaxis_grid" Style="{StaticResource cbStyle}" Content="Value (Y) axis grid" IsChecked="True"/>
-			<CheckBox x:Name="cb_rule_value1" Style="{StaticResource cbStyle}" Content="Value1 Avg" IsChecked="True"/>
-			<CheckBox x:Name="cb_rule_value2" Style="{StaticResource cbStyle}" Content="Value2 Avg" IsChecked="True"/>
+			<CheckBox x:Name="cb_yaxis_grid" Style="{StaticResource cbStyle}" Content="Grid" IsChecked="True"/>
+			<CheckBox x:Name="cb_rule_value1" Style="{StaticResource cbStyle}" Content="V1 Avg" IsChecked="True"/>
+			<CheckBox x:Name="cb_rule_value2" Style="{StaticResource cbStyle}" Content="V2 Avg" IsChecked="True"/>
 			<CheckBox x:Name="cb_legend" Style="{StaticResource cbStyle}" Content="Legend" IsChecked="True"/>
 			<Button x:Name="add_head" Style="{StaticResource btnStyle}" Content="+ Head" Click="add_head_Click"/>
 			<Button x:Name="add_tail" Style="{StaticResource btnStyle}" Content="+ Tail" Click="add_item_Click"/>
 			<Button x:Name="remove_head" Style="{StaticResource btnStyle}" Content="- Head" Click="remove_head_Click"/>
 			<Button x:Name="remove_tail" Style="{StaticResource btnStyle}" Content="- Tail" Click="remove_tail_Click"/>
 			<Button x:Name="add_and_remove_head" Style="{StaticResource btnStyle}" Content="- Head, + Tail" Click="add_and_remove_head_Click"/>
-		</StackPanel>
+		</VariableSizedWrapGrid>
 		<yacc:Chart x:Name="chart" Style="{StaticResource Chart}"
 			RelativePanel.Below="toolbar" RelativePanel.AlignBottomWithPanel="True"
 			RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True">
@@ -104,17 +104,19 @@
 				<yacc:DataSource x:Name="data" Items="{Binding Data}"/>
 			</yacc:Chart.DataSources>
 			<yacc:Chart.Components>
+			<!--
 				<yacc:Background Fill="{StaticResource series-background}"/>
+			-->
 				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" AxisFill="Red"
 					LabelStyle="{StaticResource CategoryAxisLabel}" />
 				<yacc:HorizontalRule ValueAxisName="yaxis" Value="{Binding Value1Average}"
 					Stroke="LightCyan" StrokeThickness="3"
 					Visibility="{Binding ElementName=cb_rule_value1, Path=IsChecked, Converter={StaticResource b2v}}" />
-				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value1" CategoryLabelPath="Label"
-					Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis"
+				<yacc:ColumnSeries x:Name="colv1" DataSourceName="data" ValuePath="Value1" CategoryLabelPath="Label" ClipToDataRegion="True"
+					Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" EnableDebugPaths="True"
 					Stroke="DarkOrchid" Fill="{StaticResource blue-to-green}" BarOffset=".25" BarWidth=".25" />
-				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value2"
-					Title="Value 2 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis"
+				<yacc:ColumnSeries x:Name="colv2" DataSourceName="data" ValuePath="Value2"
+					Title="Value 2 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" ClipToDataRegion="True"
 					Stroke="DarkOrchid" Fill="{StaticResource green-to-blue}" BarOffset=".5" BarWidth=".25" />
 				<yacc:LineSeries DataSourceName="data" ValuePath="Value2" Title="Value 2 Line"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".375"
@@ -123,7 +125,7 @@
 				<yacc:MarkerSeries DataSourceName="data"
 					ValuePath="Value1" Title="Value 1 Marker"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis"
-					MarkerOffset=".625" Stroke="Red" Fill="Blue">
+					MarkerOffset=".625"  MarkerWidth=".25" Stroke="Red" Fill="Blue">
 					<yacc:MarkerSeries.MarkerTemplate>
 						<DataTemplate>
 							<!-- Center and RadiusY are calculated based on current size -->

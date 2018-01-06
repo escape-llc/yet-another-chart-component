@@ -381,8 +381,7 @@ namespace eScapeLLC.UWP.Charts {
 			var scaley = icrc.Area.Height / Range;
 			var matx = new Matrix(1, 0, 0, -scaley, icrc.Area.Left + AxisMargin*(Side == Side.Right ? 1 : -1), icrc.Area.Top + Maximum*scaley);
 			AxisGeometry.Transform = new MatrixTransform() { Matrix = matx };
-			var gscaley = icrc.SeriesArea.Height / Range;
-			_trace.Verbose($"transforms sy:{scaley:F3} gsy:{gscaley:F3} matx:{matx} a:{icrc.Area} sa:{icrc.SeriesArea}");
+			_trace.Verbose($"transforms sy:{scaley:F3} matx:{matx} a:{icrc.Area} sa:{icrc.SeriesArea}");
 			foreach(var tb in TickLabels) {
 				var vx = (double)tb.Tag;
 				tb.SetValue(Canvas.LeftProperty, icrc.Area.Left);

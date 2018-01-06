@@ -319,9 +319,15 @@ namespace eScapeLLC.UWP.Charts {
 		/// If unset, MUST be double.NaN.
 		/// </summary>
 		double Maximum { get; }
+		/// <summary>
+		/// Name of the axis.
+		/// SHOULD be not-empty.
+		/// </summary>
+		String ValueAxisName { get; }
 	}
 	#endregion
 	#region IRequireAfterRenderComplete
+	#if false
 	/// <summary>
 	/// Requirement for hooking into the data source render pipeline (DSRP).
 	/// </summary>
@@ -331,6 +337,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		void RenderComplete();
 	}
+	#endif
 	#endregion
 	#region IProvideCategoryExtents
 	/// <summary>
@@ -347,14 +354,59 @@ namespace eScapeLLC.UWP.Charts {
 		/// If unset, MUST be double.NaN.
 		/// </summary>
 		double CategoryMaximum { get; }
+		/// <summary>
+		/// Name of the axis.
+		/// SHOULD be not-empty.
+		/// </summary>
+		String CategoryAxisName { get; }
 	}
 	#endregion
 	#region RefreshRequestEventHandler
 	/// <summary>
+	/// Refresh request type.
+	/// </summary>
+	public enum RefreshRequestType {
+		/// <summary>
+		/// So very dirty...
+		/// Implies ValueDirty and LayoutDirty.
+		/// </summary>
+		LayoutDirty,
+		/// <summary>
+		/// A value that generates Geometry has changed.
+		/// Implies TransformsDirty.
+		/// </summary>
+		ValueDirty,
+		/// <summary>
+		/// Something that affects the transforms has changed.
+		/// </summary>
+		TransformsDirty
+	};
+	public enum AxisUpdateState {  None, Value, Category, Both, Unknown };
+	/// <summary>
+	/// Refresh request event args.
+	/// </summary>
+	public sealed class RefreshRequestEventArgs : EventArgs {
+		/// <summary>
+		/// Initialize.
+		/// </summary>
+		/// <param name="rrt"></param>
+		public RefreshRequestEventArgs(RefreshRequestType rrt, AxisUpdateState aus, ChartComponent cc) {
+			this.Request = rrt;
+			this.Component = cc;
+			this.Axis = aus;
+		}
+		/// <summary>
+		/// The request type.
+		/// </summary>
+		public RefreshRequestType Request { get; private set; }
+		public ChartComponent Component { get; private set; }
+		public AxisUpdateState Axis { get; private set; }
+	}
+	/// <summary>
 	/// Refresh delegate.
 	/// </summary>
 	/// <param name="cc">Originating component.</param>
-	public delegate void RefreshRequestEventHandler(ChartComponent cc);
+	public delegate void RefreshRequestEventHandler(ChartComponent cc, RefreshRequestEventArgs rrea);
 	#endregion
 	#region ChartComponent
 	/// <summary>
@@ -384,7 +436,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Invoke the RefreshRequest event.
 		/// </summary>
-		protected void Refresh() { RefreshRequest?.Invoke(this); }
+		protected void Refresh(RefreshRequestType rrt, AxisUpdateState aus) { RefreshRequest?.Invoke(this, new RefreshRequestEventArgs(rrt, aus, this)); }
 		/// <summary>
 		/// Bind cc.Path to the given fe.DP.
 		/// </summary>

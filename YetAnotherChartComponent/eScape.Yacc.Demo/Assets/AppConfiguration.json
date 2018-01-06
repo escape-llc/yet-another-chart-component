@@ -1,0 +1,14 @@
+﻿{
+	"TraceSwitches": {
+		"AxisCommon": "Verbose",
+		"CategoryAxis": "Verbose",
+		"Chart": "Verbose",
+		"ColumnSeries": "Verbose",
+		"ColumnSeriesPaths": "Verbose",
+		"DataSource": "Verbose",
+		"HorizontalRule": "Verbose",
+		"LineSeries": "Verbose",
+		"MarkerSeries": "Verbose",
+		"ValueAxis": "Verbose"
+	}
+}
