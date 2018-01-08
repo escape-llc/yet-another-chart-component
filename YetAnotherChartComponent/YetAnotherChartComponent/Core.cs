@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Windows.Foundation;
 using Windows.UI.Xaml;
+using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Media;
 
@@ -191,14 +192,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="name">Name.</param>
 		/// <returns>Matching component or NULL.</returns>
 		ChartComponent Find(String name);
-		#if false
-		/// <summary>
-		/// Look up a default style.
-		/// </summary>
-		/// <param name="name"></param>
-		/// <returns></returns>
-		//Style FindStyle(String name);
-		#endif
 		/// <summary>
 		/// Add group of components.
 		/// </summary>
@@ -264,7 +257,9 @@ namespace eScapeLLC.UWP.Charts {
 	#region IRequireRender
 	/// <summary>
 	/// Require rendering pass.
+	/// Generate coordinates that DO NOT depend on axis limits being finalized.
 	/// Use this interface if NOT using <see cref="IDataSourceRenderer"/>.
+	/// MAY also implement <see cref="IRequireAfterAxesFinalized"/>
 	/// SHOULD also implement <see cref="IRequireTransforms"/>.
 	/// </summary>
 	public interface IRequireRender {
@@ -279,14 +274,26 @@ namespace eScapeLLC.UWP.Charts {
 		void Render(IChartRenderContext icrc);
 	}
 	#endregion
+	#region IRequireAfterAxesFinalized
+	/// <summary>
+	/// Requirement for callback after axis limits are finalized.
+	/// </summary>
+	public interface IRequireAfterAxesFinalized {
+		/// <summary>
+		/// Generate coordinates after the axis limits are finalized.
+		/// </summary>
+		void AxesFinalized(IChartRenderContext icrc);
+	}
+	#endregion
 	#region IRequireTransforms
 	/// <summary>
 	/// Require Transforms pass.
+	/// MAY also implement <see cref="IRequireAfterAxesFinalized"/>
 	/// SHOULD also implement one of <see cref="IRequireRender"/> or <see cref="IDataSourceRenderer"/>.
 	/// </summary>
 	public interface IRequireTransforms {
 		/// <summary>
-		/// Adjust transforms after layout and rendering are completed.
+		/// Adjust transforms after layout and rendering are completed OR size changed.
 		/// </summary>
 		/// <param name="icrc">The context.</param>
 		void Transforms(IChartRenderContext icrc);
@@ -325,19 +332,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		String ValueAxisName { get; }
 	}
-	#endregion
-	#region IRequireAfterRenderComplete
-	#if false
-	/// <summary>
-	/// Requirement for hooking into the data source render pipeline (DSRP).
-	/// </summary>
-	public interface IRequireAfterRenderComplete {
-		/// <summary>
-		/// Callback for after the 'render-complete' phase.
-		/// </summary>
-		void RenderComplete();
-	}
-	#endif
 	#endregion
 	#region IProvideCategoryExtents
 	/// <summary>
@@ -639,6 +633,35 @@ namespace eScapeLLC.UWP.Charts {
 		/// The title.
 		/// </summary>
 		public String Title { get; set; }
+	}
+	#endregion
+	#region IChartLayer
+	public interface IChartLayer {
+		/// <summary>
+		/// Add content.
+		/// </summary>
+		/// <param name="fe">Element to add.</param>
+		void Add(FrameworkElement fe);
+		/// <summary>
+		/// Remove content.
+		/// </summary>
+		/// <param name="fe">Element to remove.</param>
+		void Remove(FrameworkElement fe);
+		/// <summary>
+		/// Add group of elements.
+		/// </summary>
+		/// <param name="fes"></param>
+		void Add(IEnumerable<FrameworkElement> fes);
+		/// <summary>
+		/// Remove group of elements.
+		/// </summary>
+		/// <param name="fes"></param>
+		void Remove(IEnumerable<FrameworkElement> fes);
+		/// <summary>
+		/// Position the layer.
+		/// </summary>
+		/// <param name="target"></param>
+		void Layout(Rect target);
 	}
 	#endregion
 }

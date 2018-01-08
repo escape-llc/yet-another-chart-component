@@ -54,11 +54,6 @@ namespace eScapeLLC.UWP.Charts {
 	/// Context for the DataSource.Render method.
 	/// </summary>
 	public interface IDataSourceRenderContext : IChartRenderContext {
-		/// <summary>
-		/// Notification that the Render-complete phase is complete.
-		/// </summary>
-		/// <param name="ds">the data source.</param>
-		void AfterRenderComplete(DataSource ds);
 	}
 	#endregion
 	#region DataSource
@@ -170,8 +165,6 @@ namespace eScapeLLC.UWP.Charts {
 						idsr.RenderComplete(state);
 					}
 				}
-				// Phase IIIb: Callback so "external" parties can make adjustments to axes etc.
-				idsrc.AfterRenderComplete(this);
 				// Phase IV: finalize renderers
 				foreach (var idsr in _renderers) {
 					if (pmap.TryGetValue(idsr, out object state)) {
