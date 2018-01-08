@@ -280,6 +280,25 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public class ChartComponentCollection : ObservableCollection<ChartComponent>{ }
 	#endregion
+	#region LayoutState
+	/// <summary>
+	/// Keeps track of layout state between refreshes.
+	/// </summary>
+	public class LayoutState {
+		/// <summary>
+		/// Current dimensions.
+		/// </summary>
+		public Size Size { get; set; }
+		/// <summary>
+		/// Current layout context.
+		/// Only reset when Size changes.
+		/// </summary>
+		public DefaultLayoutContext Layout { get; set; }
+		public bool IsSizeChanged(Size sz) {
+			return (Size.Width != sz.Width || Size.Height != sz.Height) ;
+		}
+	}
+	#endregion
 	#region Chart
 	/// <summary>
 	/// The chart.
@@ -329,10 +348,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		protected List<ChartComponent> DeferredEnter{ get; set; }
 		/// <summary>
-		/// Last-seen value during LayoutUpdated.
+		/// Last-computed layout state.
 		/// LayoutUpdated gets called frequently, so it gets debounced.
 		/// </summary>
-		protected Size LastLayout { get; set; }
+		protected LayoutState CurrentLayout { get; set; }
 		#endregion
 		#region DPs
 		/// <summary>
@@ -357,6 +376,7 @@ namespace eScapeLLC.UWP.Charts {
 			DeferredEnter = new List<ChartComponent>();
 			LayoutUpdated += new EventHandler<object>(Chart_LayoutUpdated);
 			DataContextChanged += Chart_DataContextChanged;
+			CurrentLayout = new LayoutState();
 		}
 		#endregion
 		#region evhs
@@ -404,9 +424,11 @@ namespace eScapeLLC.UWP.Charts {
 			if (!double.IsNaN(sz.Width) && !double.IsNaN(sz.Height)) {
 				// we are sized; see if dimensions actually changed
 				if (sz.Width == 0 || sz.Height == 0) return;
-				if (LastLayout.Width == sz.Width && LastLayout.Height == sz.Height) return;
-				RenderComponents(sz);
-				LastLayout = sz;
+				if (CurrentLayout.IsSizeChanged(sz)) {
+					var ls = new LayoutState() { Size = sz, Layout = CurrentLayout.Layout };
+					RenderComponents(ls);
+					CurrentLayout = ls;
+				}
 			}
 		}
 		/// <summary>
@@ -430,7 +452,7 @@ namespace eScapeLLC.UWP.Charts {
 				}
 			}
 			if (Surface != null) {
-				RenderComponents(LastLayout);
+				RenderComponents(CurrentLayout);
 			}
 		}
 		/// <summary>
@@ -439,7 +461,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="sender"></param>
 		/// <param name="e"></param>
 		void Components_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
-			var celc = new DefaultEnterLeaveContext(Surface, Components, LastLayout, Rect.Empty, Rect.Empty, DataContext);
+			var celc = new DefaultEnterLeaveContext(Surface, Components, CurrentLayout.Size, Rect.Empty, Rect.Empty, DataContext);
 			if (e.OldItems != null) {
 				foreach (ChartComponent cc in e.OldItems) {
 					_trace.Verbose($"leave '{cc.Name}' {cc}");
@@ -474,7 +496,7 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"refresh-request-ds '{ds.Name}' {ds}");
 			await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => {
 				if (Surface != null) {
-					RenderComponents(LastLayout);
+					RenderComponents(CurrentLayout);
 				}
 			});
 		}
@@ -495,15 +517,15 @@ namespace eScapeLLC.UWP.Charts {
 						if (ds != null) {
 							ds.IsDirty = true;
 						}
-						RenderComponents(LastLayout);
+						RenderComponents(CurrentLayout);
 					} else {
 						// dispatch other kinds of refresh requests
 						if (rrea.Request == RefreshRequestType.LayoutDirty && rrea.Component is IRequireLayout) {
-							ComponentRender(LastLayout, rrea);
+							ComponentRender(CurrentLayout, rrea);
 						} else if (rrea.Request == RefreshRequestType.ValueDirty && rrea.Component is IRequireRender) {
-							ComponentRender(LastLayout, rrea);
+							ComponentRender(CurrentLayout, rrea);
 						} else if (rrea.Request == RefreshRequestType.TransformsDirty && cc is IRequireTransforms) {
-							ComponentTransforms(LastLayout, rrea);
+							ComponentTransforms(CurrentLayout, rrea);
 						}
 					}
 				}
@@ -519,7 +541,7 @@ namespace eScapeLLC.UWP.Charts {
 			try {
 				Surface = GetTemplateChild(PART_Canvas) as Canvas;
 				_trace.Verbose($"OnApplyTemplate ({Width}x{Height}) {Surface} d:{DeferredEnter.Count}");
-				var celc = new DefaultEnterLeaveContext(Surface, Components, LastLayout, Rect.Empty, Rect.Empty, DataContext);
+				var celc = new DefaultEnterLeaveContext(Surface, Components, CurrentLayout.Size, Rect.Empty, Rect.Empty, DataContext);
 				foreach (var cc in DeferredEnter) {
 					EnterComponent(celc, cc);
 				}
@@ -714,10 +736,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="sz">Current size.</param>
 		/// <param name="rrea">Refresh request.</param>
-		protected void ComponentTransforms(Size sz, RefreshRequestEventArgs rrea) {
-			if (sz.Width == 0 || sz.Height == 0) return;
+		protected void ComponentTransforms(LayoutState ls, RefreshRequestEventArgs rrea) {
+			if (ls.Size.Width == 0 || ls.Size.Height == 0) return;
 			if (rrea.Component is IRequireTransforms irt) {
-				var initialRect = CalculateInitialRect(sz);
+				var initialRect = CalculateInitialRect(ls.Size);
 				var inner = new Size(initialRect.Width, initialRect.Height);
 				// FOR NOW just re-run this, but it SHOULD be cached (when LastLayout is)
 				var dlc = new DefaultLayoutContext(inner, initialRect);
@@ -734,10 +756,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="sz">Current size.</param>
 		/// <param name="rrea">Refresh request.</param>
-		protected void ComponentRender(Size sz, RefreshRequestEventArgs rrea) {
-			if (sz.Width == 0 || sz.Height == 0) return;
+		protected void ComponentRender(LayoutState ls, RefreshRequestEventArgs rrea) {
+			if (ls.Size.Width == 0 || ls.Size.Height == 0) return;
 			if (rrea.Component is IRequireRender irr) {
-				var initialRect = CalculateInitialRect(sz);
+				var initialRect = CalculateInitialRect(ls.Size);
 				var inner = new Size(initialRect.Width, initialRect.Height);
 				// FOR NOW just re-run this, but it SHOULD be cached (when LastLayout is)
 				var dlc = new DefaultLayoutContext(inner, initialRect);
@@ -769,8 +791,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// Adjust layout and transforms based on size change.
 		/// </summary>
 		/// <param name="sz">Dimensions.</param>
-		protected void TransformsLayout(Size sz) {
-			var initialRect = CalculateInitialRect(sz);
+		protected void TransformsLayout(LayoutState ls) {
+			var initialRect = CalculateInitialRect(ls.Size);
 			var inner = new Size(initialRect.Width, initialRect.Height);
 			var dlc = new DefaultLayoutContext(inner, initialRect);
 			_trace.Verbose($"transforms-only starting {initialRect}");
@@ -783,8 +805,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// The full rendering sequence is: axis-reset, layout, render, transforms.
 		/// </summary>
 		/// <param name="sz">Dimensions.</param>
-		protected void FullLayout(Size sz) {
-			var initialRect = CalculateInitialRect(sz);
+		protected void FullLayout(LayoutState ls) {
+			var initialRect = CalculateInitialRect(ls.Size);
 			var inner = new Size(initialRect.Width, initialRect.Height);
 			// Phase I: reset axes
 			Phase_ResetAxes();
@@ -811,12 +833,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// Once all components are "clean" only the visual transforms are updated; no data traversal is done.
 		/// </summary>
 		/// <param name="sz">The dimensions.</param>
-		protected void RenderComponents(Size sz) {
-			_trace.Verbose($"render-components {sz.Width}x{sz.Height}");
+		protected void RenderComponents(LayoutState ls) {
+			_trace.Verbose($"render-components {ls.Size.Width}x{ls.Size.Height}");
 			if (DataSources.Cast<DataSource>().Any((ds) => ds.IsDirty)) {
-				FullLayout(sz);
+				FullLayout(ls);
 			} else {
-				TransformsLayout(sz);
+				TransformsLayout(ls);
 			}
 		}
 		#endregion
