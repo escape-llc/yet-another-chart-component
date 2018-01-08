@@ -189,33 +189,13 @@ namespace eScapeLLC.UWP.Charts {
 		static LogTools.Flag _trace = LogTools.Add("LineSeries", LogTools.Level.Error);
 		#region properties
 		/// <summary>
-		/// Series path stroke thickness.
-		/// Default value is 1.
-		/// </summary>
-		public int StrokeThickness { get; set; } = 1;
-		/// <summary>
-		/// Series path line join.
-		/// Default value is Bevel.
-		/// </summary>
-		public PenLineJoin StrokeLineJoin { get; set; } = PenLineJoin.Bevel;
-		/// <summary>
-		/// Series Start line cap.
-		/// Default value is Flat.
-		/// </summary>
-		public PenLineCap StrokeStartLineCap { get; set; } = PenLineCap.Flat;
-		/// <summary>
-		/// Series End line cap.
-		/// Default value is Flat.
-		/// </summary>
-		public PenLineCap StrokeEndLineCap { get; set; } = PenLineCap.Flat;
-		/// <summary>
-		/// The brush for the series.
-		/// </summary>
-		public Brush Stroke { get { return (Brush)GetValue(StrokeProperty); } set { SetValue(StrokeProperty, value); } }
-		/// <summary>
 		/// The title for the series.
 		/// </summary>
 		public String Title { get { return (String)GetValue(TitleProperty); } set { SetValue(TitleProperty, value); } }
+		/// <summary>
+		/// The style to use for Path geometry.
+		/// </summary>
+		public Style PathStyle { get { return (Style)GetValue(PathStyleProperty); } set { SetValue(PathStyleProperty, value); } }
 		/// <summary>
 		/// Offset in Category axis offset in [0..1].
 		/// Use with ColumnSeries to get the "points" to align with the column(s) layout in their cells.
@@ -232,9 +212,9 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region DPs
 		/// <summary>
-		/// Identifies <see cref="Stroke"/> dependency property.
+		/// Identifies <see cref="PathStyle"/> dependency property.
 		/// </summary>
-		public static readonly DependencyProperty StrokeProperty = DependencyProperty.Register("Stroke", typeof(Brush), typeof(LineSeries), new PropertyMetadata(null));
+		public static readonly DependencyProperty PathStyleProperty = DependencyProperty.Register("PathStyle", typeof(Style), typeof(LineSeries), new PropertyMetadata(null));
 		/// <summary>
 		/// Identifies <see cref="Title"/> dependency property.
 		/// </summary>
@@ -260,11 +240,7 @@ namespace eScapeLLC.UWP.Charts {
 			EnsureAxes(icelc);
 			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis} c:{CategoryAxisName}:{CategoryAxis} d:{DataSourceName}");
 			icelc.Add(Segments);
-			BindTo(this, "Stroke", Segments, Path.StrokeProperty);
-			Segments.StrokeThickness = StrokeThickness;
-			Segments.StrokeEndLineCap = StrokeEndLineCap;
-			Segments.StrokeLineJoin = StrokeLineJoin;
-			Segments.StrokeStartLineCap = StrokeStartLineCap;
+			BindTo(this, "PathStyle", Segments, Path.StyleProperty);
 		}
 		/// <summary>
 		/// Undo effects of Enter().
@@ -296,7 +272,7 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region IProvideLegend
 		Legend IProvideLegend.Legend() {
-			return new Legend() { Title = Title, Fill = Stroke, Stroke = Stroke };
+			return new Legend() { Title = Title, Fill = Segments.Stroke, Stroke = Segments.Stroke };
 		}
 		#endregion
 		#region IDataSourceRenderer
@@ -367,17 +343,13 @@ namespace eScapeLLC.UWP.Charts {
 		static LogTools.Flag _trace = LogTools.Add("MarkerSeries", LogTools.Level.Error);
 		#region properties
 		/// <summary>
-		/// The brush for the series.
-		/// </summary>
-		public Brush Stroke { get { return (Brush)GetValue(StrokeProperty); } set { SetValue(StrokeProperty, value); } }
-		/// <summary>
-		/// The fill brush for the series.
-		/// </summary>
-		public Brush Fill { get { return (Brush)GetValue(FillProperty); } set { SetValue(FillProperty, value); } }
-		/// <summary>
 		/// The title for the series.
 		/// </summary>
 		public String Title { get { return (String)GetValue(TitleProperty); } set { SetValue(TitleProperty, value); } }
+		/// <summary>
+		/// The style to use for Path geometry.
+		/// </summary>
+		public Style PathStyle { get { return (Style)GetValue(PathStyleProperty); } set { SetValue(PathStyleProperty, value); } }
 		/// <summary>
 		/// Geometry template for marker.
 		/// Currently MUST be EllipseGeometry.
@@ -403,13 +375,9 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region DPs
 		/// <summary>
-		/// Identifies <see cref="Stroke"/> dependency property.
+		/// Identifies <see cref="PathStyle"/> dependency property.
 		/// </summary>
-		public static readonly DependencyProperty StrokeProperty = DependencyProperty.Register("Stroke", typeof(Brush), typeof(MarkerSeries), new PropertyMetadata(null));
-		/// <summary>
-		/// Identifies <see cref="Fill"/> dependency property.
-		/// </summary>
-		public static readonly DependencyProperty FillProperty = DependencyProperty.Register("Fill", typeof(Brush), typeof(MarkerSeries), new PropertyMetadata(null));
+		public static readonly DependencyProperty PathStyleProperty = DependencyProperty.Register("PathStyle", typeof(Style), typeof(MarkerSeries), new PropertyMetadata(null));
 		/// <summary>
 		/// Identifies <see cref="Title"/> dependency property.
 		/// </summary>
@@ -439,14 +407,14 @@ namespace eScapeLLC.UWP.Charts {
 			EnsureAxes(icelc);
 			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis} c:{CategoryAxisName}:{CategoryAxis} d:{DataSourceName}");
 			icelc.Add(Segments);
+			BindTo(this, "PathStyle", Segments, Path.StyleProperty);
+#if false
 			BindTo(this, "Stroke", Segments, Path.StrokeProperty);
 			BindTo(this, "Fill", Segments, Path.FillProperty);
-#if false
 			Segments.StrokeThickness = StrokeThickness;
 			Segments.StrokeEndLineCap = StrokeEndLineCap;
 			Segments.StrokeLineJoin = StrokeLineJoin;
 			Segments.StrokeStartLineCap = StrokeStartLineCap;
-#else
 			Segments.StrokeThickness = 1;
 #endif
 		}
@@ -504,7 +472,7 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region IProvideLegend
 		Legend IProvideLegend.Legend() {
-			return new Legend() { Title = Title, Fill = Fill, Stroke = Stroke };
+			return new Legend() { Title = Title, Fill = Segments.Fill, Stroke = Segments.Stroke };
 		}
 		#endregion
 		#region IDataSourceRenderer
@@ -575,17 +543,13 @@ namespace eScapeLLC.UWP.Charts {
 		static LogTools.Flag _traceg = LogTools.Add("ColumnSeriesPaths", LogTools.Level.Off);
 		#region properties
 		/// <summary>
-		/// The fill brush for the series.
-		/// </summary>
-		public Brush Fill { get { return (Brush)GetValue(FillProperty); } set { SetValue(FillProperty, value); } }
-		/// <summary>
-		/// The stroke brush for the series.
-		/// </summary>
-		public Brush Stroke { get { return (Brush)GetValue(StrokeProperty); } set { SetValue(StrokeProperty, value); } }
-		/// <summary>
 		/// The title for the series.
 		/// </summary>
 		public String Title { get { return (String)GetValue(TitleProperty); } set { SetValue(TitleProperty, value); } }
+		/// <summary>
+		/// The style to use for Path geometry.
+		/// </summary>
+		public Style PathStyle { get { return (Style)GetValue(PathStyleProperty); } set { SetValue(PathStyleProperty, value); } }
 		/// <summary>
 		/// Fractional offset into the "cell" of the category axis.
 		/// BarOffset + BarWidth &lt;= 1.0
@@ -620,13 +584,9 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region DPs
 		/// <summary>
-		/// Identifies <see cref="Fill"/> dependency property.
+		/// Identifies <see cref="PathStyle"/> dependency property.
 		/// </summary>
-		public static readonly DependencyProperty FillProperty = DependencyProperty.Register("Fill", typeof(Brush), typeof(ColumnSeries), new PropertyMetadata(null));
-		/// <summary>
-		/// Identifies <see cref="Stroke"/> dependency property.
-		/// </summary>
-		public static readonly DependencyProperty StrokeProperty = DependencyProperty.Register("Stroke", typeof(Brush), typeof(ColumnSeries), new PropertyMetadata(null));
+		public static readonly DependencyProperty PathStyleProperty = DependencyProperty.Register("PathStyle", typeof(Style), typeof(ColumnSeries), new PropertyMetadata(null));
 		/// <summary>
 		/// Identifies <see cref="Title"/> dependency property.
 		/// </summary>
@@ -668,8 +628,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (DebugSegments != null) {
 				icelc.Add(DebugSegments);
 			}
-			BindTo(this, "Stroke", Segments, Path.StrokeProperty);
-			BindTo(this, "Fill", Segments, Path.FillProperty);
+			BindTo(this, "PathStyle", Segments, Path.StyleProperty);
 		}
 		/// <summary>
 		/// Undo effects of Enter().
@@ -711,7 +670,7 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region IProvideLegend
 		Legend IProvideLegend.Legend() {
-			return new Legend() { Title = Title, Fill = Fill, Stroke = Stroke };
+			return new Legend() { Title = Title, Fill = Segments.Fill, Stroke = Segments.Stroke };
 		}
 		#endregion
 		#region IDataSourceRenderer

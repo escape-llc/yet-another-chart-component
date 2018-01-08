@@ -83,6 +83,47 @@
 			<Setter Property="VerticalAlignment" Value="Center"/>
 			<Setter Property="HorizontalAlignment" Value="Center"/>
 		</Style>
+		<Style x:Key="Bkg" TargetType="Path">
+			<Setter Property="Fill" Value="{StaticResource series-background}"/>
+		</Style>
+		<Style x:Key="Axes" TargetType="Path">
+			<Setter Property="Fill" Value="Red"/>
+		</Style>
+		<Style x:Key="Grid" TargetType="Path">
+			<Setter Property="Stroke" Value="Gray"/>
+			<Setter Property="StrokeThickness" Value=".5"/>
+			<Setter Property="StrokeDashArray" Value="4,4"/>
+		</Style>
+		<Style x:Key="Rule_v1" TargetType="Path">
+			<Setter Property="Stroke" Value="LightCyan"/>
+			<Setter Property="StrokeThickness" Value="3"/>
+		</Style>
+		<Style x:Key="Rule_v2" TargetType="Path">
+			<Setter Property="Stroke" Value="LightBlue"/>
+			<Setter Property="StrokeThickness" Value="3"/>
+		</Style>
+		<Style x:Key="Column_v1" TargetType="Path">
+			<Setter Property="Stroke" Value="DarkOrchid"/>
+			<Setter Property="StrokeThickness" Value="1"/>
+			<Setter Property="Fill" Value="{StaticResource blue-to-green}"/>
+		</Style>
+		<Style x:Key="Column_v2" TargetType="Path">
+			<Setter Property="Stroke" Value="DarkOrchid"/>
+			<Setter Property="StrokeThickness" Value="1"/>
+			<Setter Property="Fill" Value="{StaticResource green-to-blue}"/>
+		</Style>
+		<Style x:Key="Marker_v1" TargetType="Path">
+			<Setter Property="Stroke" Value="Red"/>
+			<Setter Property="StrokeThickness" Value="1"/>
+			<Setter Property="Fill" Value="Blue"/>
+		</Style>
+		<Style x:Key="Line_v2" TargetType="Path">
+			<Setter Property="Stroke" Value="Green"/>
+			<Setter Property="StrokeThickness" Value="5"/>
+			<Setter Property="StrokeLineJoin" Value="Round"/>
+			<Setter Property="StrokeStartLineCap" Value="Round"/>
+			<Setter Property="StrokeEndLineCap" Value="Round"/>
+		</Style>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 		<VariableSizedWrapGrid x:Name="toolbar" Orientation="Horizontal"
@@ -104,28 +145,25 @@
 				<yacc:DataSource x:Name="data" Items="{Binding Data}"/>
 			</yacc:Chart.DataSources>
 			<yacc:Chart.Components>
-			<!--
-				<yacc:Background Fill="{StaticResource series-background}"/>
-			-->
-				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" AxisFill="Red"
+				<yacc:Background PathStyle="{StaticResource Bkg}"/>
+				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" PathStyle="{StaticResource Axes}"
 					LabelStyle="{StaticResource CategoryAxisLabel}" />
 				<yacc:HorizontalRule ValueAxisName="yaxis" Value="{Binding Value1Average}"
-					Stroke="LightCyan" StrokeThickness="3"
+					PathStyle="{StaticResource Rule_v1}"
 					Visibility="{Binding ElementName=cb_rule_value1, Path=IsChecked, Converter={StaticResource b2v}}" />
 				<yacc:ColumnSeries x:Name="colv1" DataSourceName="data" ValuePath="Value1" CategoryLabelPath="Label" ClipToDataRegion="True"
 					Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" EnableDebugPaths="True"
-					Stroke="DarkOrchid" Fill="{StaticResource blue-to-green}" BarOffset=".25" BarWidth=".25" />
+					PathStyle="{StaticResource Column_v1}" BarOffset=".25" BarWidth=".25" />
 				<yacc:ColumnSeries x:Name="colv2" DataSourceName="data" ValuePath="Value2"
 					Title="Value 2 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" ClipToDataRegion="True"
-					Stroke="DarkOrchid" Fill="{StaticResource green-to-blue}" BarOffset=".5" BarWidth=".25" />
-				<yacc:LineSeries DataSourceName="data" ValuePath="Value2" Title="Value 2 Line"
+					PathStyle="{StaticResource Column_v2}" BarOffset=".5" BarWidth=".25" />
+				<yacc:LineSeries x:Name="linev2" DataSourceName="data" ValuePath="Value2" Title="Value 2 Line"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".375"
-					ClipToDataRegion="False" Stroke="Green" StrokeThickness="5"
-					StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+					ClipToDataRegion="False" PathStyle="{StaticResource Line_v2}" />
 				<yacc:MarkerSeries DataSourceName="data"
 					ValuePath="Value1" Title="Value 1 Marker"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis"
-					MarkerOffset=".625"  MarkerWidth=".25" Stroke="Red" Fill="Blue">
+					MarkerOffset=".625"  MarkerWidth=".25" PathStyle="{StaticResource Marker_v1}">
 					<yacc:MarkerSeries.MarkerTemplate>
 						<DataTemplate>
 							<!-- Center and RadiusY are calculated based on current size -->
@@ -134,11 +172,11 @@
 					</yacc:MarkerSeries.MarkerTemplate>
 				</yacc:MarkerSeries>
 				<yacc:HorizontalRule ValueAxisName="yaxis" Value="{Binding Value2Average}"
-					Stroke="LightBlue" StrokeThickness="3"
+					PathStyle="{StaticResource Rule_v2}"
 					Visibility="{Binding ElementName=cb_rule_value2, Path=IsChecked, Converter={StaticResource b2v}}" />
-				<yacc:ValueAxis x:Name="yaxis" Side="Left" AxisFill="Red"
+				<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}"
 					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="F1" />
-				<yacc:ValueAxisGrid ValueAxisName="yaxis" Stroke="Gray"
+				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource Grid}"
 					Visibility="{Binding ElementName=cb_yaxis_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>

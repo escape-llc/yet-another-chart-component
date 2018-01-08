@@ -13,9 +13,9 @@ namespace eScapeLLC.UWP.Charts {
 	public class Background : ChartComponent, IRequireEnterLeave, IRequireRender, IRequireTransforms {
 		#region properties
 		/// <summary>
-		/// The fill brush to use.
+		/// The style to use for Path geometry.
 		/// </summary>
-		public Brush Fill { get { return (Brush)GetValue(FillProperty); } set { SetValue(FillProperty, value); } }
+		public Style PathStyle { get { return (Style)GetValue(PathStyleProperty); } set { SetValue(PathStyleProperty, value); } }
 		/// <summary>
 		/// The path to attach geometry et al.
 		/// </summary>
@@ -27,9 +27,9 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region DPs
 		/// <summary>
-		/// Identifies <see cref="Fill"/> dependency property.
+		/// Identifies <see cref="PathStyle"/> dependency property.
 		/// </summary>
-		public static readonly DependencyProperty FillProperty = DependencyProperty.Register("Fill", typeof(Brush), typeof(Background), new PropertyMetadata(null));
+		public static readonly DependencyProperty PathStyleProperty = DependencyProperty.Register("PathStyle", typeof(Style), typeof(Background), new PropertyMetadata(null));
 		#endregion
 		#region ctor
 		/// <summary>
@@ -44,10 +44,8 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region helpers
 		void DoBindings(IChartEnterLeaveContext icelc) {
-			BindTo(this, "Fill", Path, Path.FillProperty);
+			BindTo(this, "PathStyle", Path, Path.StyleProperty);
 			#if false
-			BindTo(this, "GridStroke", Grid, Path.StrokeProperty);
-			BindTo(this, "GridStrokeThickness", Grid, Path.StrokeThicknessProperty);
 			var bx = GetBindingExpression(GridVisibilityProperty);
 			if (bx != null) {
 				Grid.SetBinding(UIElement.VisibilityProperty, bx.ParentBinding);
@@ -101,14 +99,9 @@ namespace eScapeLLC.UWP.Charts {
 		static LogTools.Flag _trace = LogTools.Add("HorizontalRule", LogTools.Level.Error);
 		#region properties
 		/// <summary>
-		/// Brush for the axis grid lines.
+		/// The style to use for Path geometry.
 		/// </summary>
-		public Brush Stroke { get { return (Brush)GetValue(StrokeProperty); } set { SetValue(StrokeProperty, value); } }
-		/// <summary>
-		/// Stroke thickness for rule.
-		/// Default value is 1
-		/// </summary>
-		public double StrokeThickness { get; set; } = 1;
+		public Style PathStyle { get { return (Style)GetValue(PathStyleProperty); } set { SetValue(PathStyleProperty, value); } }
 		/// <summary>
 		/// Component name of value axis.
 		/// Referenced component MUST implement IChartAxis.
@@ -153,11 +146,9 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region DPs
 		/// <summary>
-		/// Identifies <see cref="Stroke"/> dependency property.
+		/// Identifies <see cref="PathStyle"/> dependency property.
 		/// </summary>
-		public static readonly DependencyProperty StrokeProperty = DependencyProperty.Register(
-			"Stroke", typeof(Brush), typeof(HorizontalRule), new PropertyMetadata(null)
-		);
+		public static readonly DependencyProperty PathStyleProperty = DependencyProperty.Register("PathStyle", typeof(Style), typeof(HorizontalRule), new PropertyMetadata(null));
 		/// <summary>
 		/// Value DP.
 		/// </summary>
@@ -197,9 +188,7 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region helpers
 		void DoBindings(IChartEnterLeaveContext icelc) {
-			BindTo(this, "Stroke", Path, Path.FillProperty);
-			BindTo(this, "Stroke", Path, Path.StrokeProperty);
-			BindTo(this, "StrokeThickness", Path, Path.StrokeThicknessProperty);
+			BindTo(this, "PathStyle", Path, Path.StyleProperty);
 			var bx = GetBindingExpression(UIElement.VisibilityProperty);
 			if (bx != null) {
 				Path.SetBinding(UIElement.VisibilityProperty, bx.ParentBinding);
@@ -284,14 +273,9 @@ namespace eScapeLLC.UWP.Charts {
 	public class ValueAxisGrid : ChartComponent, IRequireEnterLeave, IRequireRender, IRequireTransforms {
 		#region properties
 		/// <summary>
-		/// Brush for the axis grid lines.
+		/// The style to use for Path geometry.
 		/// </summary>
-		public Brush Stroke { get { return (Brush)GetValue(StrokeProperty); } set { SetValue(StrokeProperty, value); } }
-		/// <summary>
-		/// Stroke thickness for axis grid lines.
-		/// Default value is 0.5
-		/// </summary>
-		public double StrokeThickness { get; set; } = 0.5;
+		public Style PathStyle { get { return (Style)GetValue(PathStyleProperty); } set { SetValue(PathStyleProperty, value); } }
 		/// <summary>
 		/// Component name of value axis.
 		/// Referenced component MUST implement IChartAxis.
@@ -312,11 +296,9 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region DPs
 		/// <summary>
-		/// Identifies <see cref="Stroke"/> dependency property.
+		/// Identifies <see cref="PathStyle"/> dependency property.
 		/// </summary>
-		public static readonly DependencyProperty StrokeProperty = DependencyProperty.Register(
-			"Stroke", typeof(Brush), typeof(ValueAxisGrid), new PropertyMetadata(null)
-		);
+		public static readonly DependencyProperty PathStyleProperty = DependencyProperty.Register("PathStyle", typeof(Style), typeof(ValueAxisGrid), new PropertyMetadata(null));
 		#endregion
 		#region ctor
 		/// <summary>
@@ -344,8 +326,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icelc"></param>
 		void DoBindings(IChartEnterLeaveContext icelc) {
-			BindTo(this, "Stroke", Grid, Path.StrokeProperty);
-			BindTo(this, "StrokeThickness", Grid, Path.StrokeThicknessProperty);
+			BindTo(this, "PathStyle", Grid, Path.StyleProperty);
 			var bx = GetBindingExpression(UIElement.VisibilityProperty);
 			if (bx != null) {
 				Grid.SetBinding(UIElement.VisibilityProperty, bx.ParentBinding);

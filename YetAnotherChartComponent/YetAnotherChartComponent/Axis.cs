@@ -169,13 +169,13 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public double AxisMargin { get; set; } = 2;
 		/// <summary>
-		/// Fill brush for the axis "line" which is actually a filled rectangle.
-		/// </summary>
-		public Brush AxisFill { get { return (Brush)GetValue(AxisFillProperty); } set { SetValue(AxisFillProperty, value); } }
-		/// <summary>
 		/// Alternate format string for labels.
 		/// </summary>
 		public String LabelFormatString { get; set; }
+		/// <summary>
+		/// The style to use for Path geometry.
+		/// </summary>
+		public Style PathStyle { get { return (Style)GetValue(PathStyleProperty); } set { SetValue(PathStyleProperty, value); } }
 		/// <summary>
 		/// The style to apply to labels.
 		/// </summary>
@@ -184,9 +184,9 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region DPs
 		/// <summary>
-		/// Identifies <see cref="AxisFill"/> dependency property.
+		/// Identifies <see cref="PathStyle"/> dependency property.
 		/// </summary>
-		public static readonly DependencyProperty AxisFillProperty = DependencyProperty.Register("AxisFill", typeof(Brush), typeof(AxisCommon), new PropertyMetadata(null));
+		public static readonly DependencyProperty PathStyleProperty = DependencyProperty.Register("PathStyle", typeof(Style), typeof(AxisCommon), new PropertyMetadata(null));
 		/// <summary>
 		/// Identifies <see cref="LabelStyle"/> dependency property.
 		/// </summary>
@@ -273,7 +273,7 @@ namespace eScapeLLC.UWP.Charts {
 			MinWidth = 32;
 		}
 		void DoBindings(IChartEnterLeaveContext icelc) {
-			BindTo(this, "AxisFill", Axis, Path.FillProperty);
+			BindTo(this, "PathStyle", Axis, Path.StyleProperty);
 		}
 		#endregion
 		#region extensions
@@ -341,7 +341,7 @@ namespace eScapeLLC.UWP.Charts {
 					// SHOULD NOT execute this code, unless default style failed!
 					var tb = new TextBlock() {
 						FontSize = 10,
-						Foreground = AxisFill,
+						Foreground = Axis.Fill,
 						VerticalAlignment = VerticalAlignment.Center,
 						HorizontalAlignment = Side == Side.Right ? HorizontalAlignment.Left : HorizontalAlignment.Right,
 						Width = icrc.Area.Width - padding,
@@ -467,7 +467,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icelc"></param>
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			icelc.Add(Axis);
-			BindTo(this, "AxisFill", Axis, Path.FillProperty);
+			BindTo(this, "PathStyle", Axis, Path.StyleProperty);
 			if (LabelStyle == null && Resources.ContainsKey("AxisLabelStyle")) {
 				LabelStyle = Resources["AxisLabelStyle"] as Style;
 			}
@@ -515,7 +515,7 @@ namespace eScapeLLC.UWP.Charts {
 					// SHOULD NOT execute this code, unless default style failed!
 					var tb = new TextBlock() {
 						FontSize = 10,
-						Foreground = AxisFill,
+						Foreground = Axis.Fill,
 						VerticalAlignment = VerticalAlignment.Center,
 						HorizontalAlignment = HorizontalAlignment.Center,
 						Width = scalex,
