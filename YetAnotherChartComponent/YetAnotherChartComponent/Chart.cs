@@ -242,11 +242,19 @@ namespace eScapeLLC.UWP.Charts {
 	}
 	#endregion
 	#region CanvasLayer
+	/// <summary>
+	/// Layer bound to a Canvas (COULD be IPanel).
+	/// </summary>
 	public class CanvasLayer : IChartLayer {
+		#region data
 		readonly Canvas canvas;
+		#endregion
+		#region ctor
 		public CanvasLayer(Canvas canvas) {
 			this.canvas = canvas;
 		}
+		#endregion
+		#region IChartLayer
 		void IChartLayer.Add(FrameworkElement fe) { canvas.Children.Add(fe); }
 		void IChartLayer.Add(IEnumerable<FrameworkElement> fes) { foreach (var fe in fes) canvas.Children.Add(fe); }
 		void IChartLayer.Layout(Rect target) {
@@ -257,6 +265,7 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		void IChartLayer.Remove(FrameworkElement fe) { canvas.Children.Remove(fe); }
 		void IChartLayer.Remove(IEnumerable<FrameworkElement> fes) { foreach (var fe in fes) canvas.Children.Remove(fe); }
+		#endregion
 	}
 	#endregion
 	#region ChartDataSourceCollection
@@ -542,6 +551,9 @@ namespace eScapeLLC.UWP.Charts {
 		public List<Brush> PresetBrushes { get { return _presetBrushes; } }
 		#endregion
 		#region phase helpers
+		/// <summary>
+		/// Reset all axis extents.
+		/// </summary>
 		protected void Phase_ResetAxes() {
 			foreach (var axis in Axes) {
 				_trace.Verbose($"reset {(axis as ChartComponent).Name} {axis}");
@@ -633,6 +645,14 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region helpers
 		/// <summary>
+		/// Account for padding.
+		/// </summary>
+		/// <param name="sz">Size.</param>
+		/// <returns>Adjusted rectangle.</returns>
+		protected Rect CalculateInitialRect(Size sz) {
+			return new Rect(Padding.Left, Padding.Top, sz.Width - Padding.Left - Padding.Right, sz.Height - Padding.Top - Padding.Bottom);
+		}
+		/// <summary>
 		/// Common logic for component entering the chart.
 		/// </summary>
 		/// <param name="icelc">The context.</param>
@@ -688,14 +708,6 @@ namespace eScapeLLC.UWP.Charts {
 				irel.Leave(icelc);
 			}
 			cc.Resources.Remove(nameof(AxisLabelStyle));
-		}
-		/// <summary>
-		/// Account for padding.
-		/// </summary>
-		/// <param name="sz">Size.</param>
-		/// <returns>Adjusted rectangle.</returns>
-		protected Rect CalculateInitialRect(Size sz) {
-			return new Rect(Padding.Left, Padding.Top, sz.Width - Padding.Left - Padding.Right, sz.Height - Padding.Top - Padding.Bottom);
 		}
 		/// <summary>
 		/// Transforms for single component.
@@ -757,7 +769,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Adjust layout and transforms based on size change.
 		/// </summary>
 		/// <param name="sz">Dimensions.</param>
-		protected void TransformsOnly(Size sz) {
+		protected void TransformsLayout(Size sz) {
 			var initialRect = CalculateInitialRect(sz);
 			var inner = new Size(initialRect.Width, initialRect.Height);
 			var dlc = new DefaultLayoutContext(inner, initialRect);
@@ -799,12 +811,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// Once all components are "clean" only the visual transforms are updated; no data traversal is done.
 		/// </summary>
 		/// <param name="sz">The dimensions.</param>
-		private void RenderComponents(Size sz) {
+		protected void RenderComponents(Size sz) {
 			_trace.Verbose($"render-components {sz.Width}x{sz.Height}");
 			if (DataSources.Cast<DataSource>().Any((ds) => ds.IsDirty)) {
 				FullLayout(sz);
 			} else {
-				TransformsOnly(sz);
+				TransformsLayout(sz);
 			}
 		}
 		#endregion
