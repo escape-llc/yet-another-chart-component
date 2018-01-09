@@ -224,6 +224,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// <returns>Identity Tuple.Value1.</returns>
 		public virtual double For(Tuple<double, String> valueWithLabel) { return valueWithLabel.Item1; }
 		/// <summary>
+		/// Calculate the scale factor for this axis OR NaN.
+		/// </summary>
+		/// <param name="dimension"></param>
+		/// <returns>The scale OR NaN.</returns>
+		public virtual double ScaleFor(double dimension) { return double.IsNaN(Range) || double.IsNaN(dimension) ? double.NaN : dimension / Range; }
+		/// <summary>
 		/// Update the min/max.
 		/// Sets Dirty = true if it updates either limit.
 		/// </summary>

@@ -5,11 +5,11 @@
 		"Chart": "Verbose",
 		"ColumnSeries": "Info",
 		"ColumnSeriesPaths": "Off",
-		"DataSource": "Verbose",
-		"HorizontalBand": "Verbose",
+		"DataSource": "Info",
+		"HorizontalBand": "Info",
 		"HorizontalRule": "Info",
 		"LineSeries": "Info",
-		"MarkerSeries": "Info",
+		"MarkerSeries": "Verbose",
 		"ValueAxis": "Verbose"
 	}
 }

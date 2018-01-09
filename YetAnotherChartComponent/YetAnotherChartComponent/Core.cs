@@ -137,6 +137,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="valueWithLabel">Value with its label.</param>
 		/// <returns>Axis-mapped value.</returns>
 		double For(Tuple<double, String> valueWithLabel);
+		/// <summary>
+		/// Return the "scale" for this axis.
+		/// </summary>
+		/// <param name="dimension">Overall Dimension.</param>
+		/// <returns>Dimension / Range.</returns>
+		double ScaleFor(double dimension);
 	}
 	#endregion
 	#region IChartLayoutContext
