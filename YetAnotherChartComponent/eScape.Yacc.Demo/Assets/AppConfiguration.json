@@ -3,12 +3,13 @@
 		"AxisCommon": "Verbose",
 		"CategoryAxis": "Verbose",
 		"Chart": "Verbose",
-		"ColumnSeries": "Verbose",
+		"ColumnSeries": "Info",
 		"ColumnSeriesPaths": "Off",
 		"DataSource": "Verbose",
-		"HorizontalRule": "Verbose",
-		"LineSeries": "Verbose",
-		"MarkerSeries": "Verbose",
+		"HorizontalBand": "Verbose",
+		"HorizontalRule": "Info",
+		"LineSeries": "Info",
+		"MarkerSeries": "Info",
 		"ValueAxis": "Verbose"
 	}
 }

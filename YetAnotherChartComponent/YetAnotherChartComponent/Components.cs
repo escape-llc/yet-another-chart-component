@@ -266,6 +266,247 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 	}
 	#endregion
+	#region HorizontalBand
+	/// <summary>
+	/// Represents a horizontal "rule" on the chart, for a value not belonging to any data source value, e.g. a value computed "outside" the series itself (Average).
+	/// </summary>
+	public class HorizontalBand : ChartComponent, IProvideValueExtents, IRequireEnterLeave, IRequireRender, IRequireTransforms/*, IRequireAfterRenderComplete*/ {
+		static LogTools.Flag _trace = LogTools.Add("HorizontalBand", LogTools.Level.Error);
+		#region properties
+		/// <summary>
+		/// The style to use for "rules" Path geometry.
+		/// </summary>
+		public Style PathStyle { get { return (Style)GetValue(PathStyleProperty); } set { SetValue(PathStyleProperty, value); } }
+		/// <summary>
+		/// The style to use for "band" Path geometry.
+		/// If NULL, falls back to <see cref="PathStyle"/>.
+		/// </summary>
+		public Style BandPathStyle { get { return (Style)GetValue(BandPathStyleProperty); } set { SetValue(BandPathStyleProperty, value); } }
+		/// <summary>
+		/// Component name of value axis.
+		/// Referenced component MUST implement IChartAxis.
+		/// </summary>
+		public String ValueAxisName { get; set; }
+		/// <summary>
+		/// Binding path to the maximum value axis value.
+		/// </summary>
+		public double ValueMaximum { get { return (double)GetValue(ValueMaximumProperty); } set { SetValue(ValueMaximumProperty, value); } }
+		/// <summary>
+		/// Binding path to the minimum value axis value.
+		/// </summary>
+		public double ValueMinimum { get { return (double)GetValue(ValueMinimumProperty); } set { SetValue(ValueMinimumProperty, value); } }
+		/// <summary>
+		/// Whether to clip geometry to the data region.
+		/// When true, rule will NEVER display outside the data region.
+		/// Default value is true.
+		/// </summary>
+		public bool ClipToDataRegion { get; set; } = true;
+		/// <summary>
+		/// Whether to expose the value to the value axis.
+		/// When true, forces this rule's value to appear on the axis.
+		/// Default value is True.
+		/// </summary>
+		public bool ShowOnAxis { get; set; } = true;
+		/// <summary>
+		/// Whether to internally do a min/max on the two values.
+		/// Default value is True.
+		/// </summary>
+		public bool DoMinMax { get; set; } = true;
+		/// <summary>
+		/// Property for IProvideValueExtents.
+		/// </summary>
+		public double Minimum { get { return ValueMinimum; } }
+		/// <summary>
+		/// Property for IProvideValueExtents.
+		/// </summary>
+		public double Maximum { get { return ValueMaximum; } }
+		/// <summary>
+		/// The path to attach geometry et al.
+		/// </summary>
+		protected Path MinimumPath { get; set; }
+		/// <summary>
+		/// The geometry to use for this component.
+		/// </summary>
+		protected LineGeometry MinimumRule { get; set; }
+		/// <summary>
+		/// The path to attach geometry et al.
+		/// </summary>
+		protected Path MaximumPath { get; set; }
+		/// <summary>
+		/// The geometry to use for this component.
+		/// </summary>
+		protected LineGeometry MaximumRule { get; set; }
+		/// <summary>
+		/// The path to attach geometry et al.
+		/// </summary>
+		protected Path BandPath { get; set; }
+		/// <summary>
+		/// The geometry to use for this component.
+		/// </summary>
+		protected RectangleGeometry Band { get; set; }
+		/// <summary>
+		/// Dereferenced value axis.
+		/// </summary>
+		protected IChartAxis ValueAxis { get; set; }
+		#endregion
+		#region DPs
+		/// <summary>
+		/// Identifies <see cref="PathStyle"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty PathStyleProperty = DependencyProperty.Register(
+			"PathStyle", typeof(Style), typeof(HorizontalBand), new PropertyMetadata(null)
+		);
+		/// <summary>
+		/// Identifies <see cref="BandPathStyle"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty BandPathStyleProperty = DependencyProperty.Register(
+			"BandPathStyle", typeof(Style), typeof(HorizontalBand), new PropertyMetadata(null)
+		);
+		/// <summary>
+		/// Value DP.
+		/// </summary>
+		public static readonly DependencyProperty ValueMaximumProperty = DependencyProperty.Register(
+			"ValueMaximum", typeof(double), typeof(HorizontalBand), new PropertyMetadata(null, new PropertyChangedCallback(ComponentPropertyChanged))
+		);
+		public static readonly DependencyProperty ValueMinimumProperty = DependencyProperty.Register(
+			"ValueMinimum", typeof(double), typeof(HorizontalBand), new PropertyMetadata(null, new PropertyChangedCallback(ComponentPropertyChanged))
+		);
+		/// <summary>
+		/// Generic DP property change handler.
+		/// Calls DataSeries.ProcessData().
+		/// </summary>
+		/// <param name="d"></param>
+		/// <param name="dpcea"></param>
+		private static void ComponentPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs dpcea) {
+			HorizontalBand hr = d as HorizontalBand;
+			if (dpcea.OldValue != dpcea.NewValue) {
+				if (hr.ValueAxis == null) return;
+				var aus = AxisUpdateState.None;
+				if (hr.ValueMaximum > hr.ValueAxis.Maximum || hr.ValueMinimum < hr.ValueAxis.Minimum) {
+					_trace.Verbose($"{hr.Name} axis-update-required");
+					aus = AxisUpdateState.Value;
+				}
+				hr.Dirty = true;
+				hr.Refresh(RefreshRequestType.ValueDirty, aus);
+			}
+		}
+		#endregion
+		#region ctor
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		public HorizontalBand() {
+			MinimumRule = new LineGeometry();
+			MinimumPath = new Path() {
+				Data = MinimumRule
+			};
+			MaximumRule = new LineGeometry();
+			MaximumPath = new Path() {
+				Data = MaximumRule
+			};
+			Band = new RectangleGeometry();
+			BandPath = new Path() {
+				Data = Band
+			};
+		}
+		#endregion
+		#region helpers
+		void DoBindings(IChartEnterLeaveContext icelc) {
+			BindTo(this, "PathStyle", MinimumPath, Path.StyleProperty);
+			var bx = GetBindingExpression(UIElement.VisibilityProperty);
+			if (bx != null) {
+				MinimumPath.SetBinding(UIElement.VisibilityProperty, bx.ParentBinding);
+			} else {
+				BindTo(this, "Visibility", MinimumPath, Path.VisibilityProperty);
+			}
+			BindTo(this, "PathStyle", MaximumPath, Path.StyleProperty);
+			bx = GetBindingExpression(UIElement.VisibilityProperty);
+			if (bx != null) {
+				MaximumPath.SetBinding(UIElement.VisibilityProperty, bx.ParentBinding);
+			} else {
+				BindTo(this, "Visibility", MaximumPath, Path.VisibilityProperty);
+			}
+			BindTo(this, BandPathStyle == null ? "PathStyle" : "BandPathStyle", BandPath, Path.StyleProperty);
+			bx = GetBindingExpression(UIElement.VisibilityProperty);
+			if (bx != null) {
+				BandPath.SetBinding(UIElement.VisibilityProperty, bx.ParentBinding);
+			} else {
+				BindTo(this, "Visibility", BandPath, Path.VisibilityProperty);
+			}
+		}
+		/// <summary>
+		/// Resolve axis references.
+		/// </summary>
+		/// <param name="icrc">The context.</param>
+		protected void EnsureAxes(IChartRenderContext icrc) {
+			if (ValueAxis == null && !String.IsNullOrEmpty(ValueAxisName)) {
+				ValueAxis = icrc.Find(ValueAxisName) as IChartAxis;
+			}
+		}
+		#endregion
+		#region extensions
+		/// <summary>
+		/// Add elements and attach bindings.
+		/// </summary>
+		/// <param name="icelc">The context.</param>
+		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
+			EnsureAxes(icelc);
+			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis}");
+			icelc.Add(BandPath);
+			icelc.Add(MinimumPath);
+			icelc.Add(MaximumPath);
+			DoBindings(icelc);
+		}
+		/// <summary>
+		/// Reverse effect of Enter.
+		/// </summary>
+		/// <param name="icelc">The context.</param>
+		void IRequireEnterLeave.Leave(IChartEnterLeaveContext icelc) {
+			icelc.Remove(MaximumPath);
+			icelc.Remove(MinimumPath);
+			icelc.Remove(BandPath);
+		}
+		/// <summary>
+		/// Rule coordinates:
+		///		x: "normalized" [0..1] and scaled to the area-width
+		///		y: "axis" scale
+		/// </summary>
+		/// <param name="icrc">The context.</param>
+		void IRequireRender.Render(IChartRenderContext icrc) {
+			if (ValueAxis == null) return;
+			_trace.Verbose($"{Name} max:{ValueMaximum} min:{ValueMinimum}");
+			var vmin = ValueAxis.For(ValueMinimum);
+			var vmax = ValueAxis.For(ValueMaximum);
+			var mmin = DoMinMax ? Math.Min(vmin, vmax) : vmin;
+			var mmax = DoMinMax ? Math.Max(vmin, vmax) : vmax;
+			MinimumRule.StartPoint = new Point(0, mmin);
+			MinimumRule.EndPoint = new Point(1, mmin);
+			MaximumRule.StartPoint = new Point(0, mmax);
+			MaximumRule.EndPoint = new Point(1, mmax);
+			Band.Rect = new Rect(MinimumRule.StartPoint, MaximumRule.EndPoint);
+			Dirty = false;
+		}
+		/// <summary>
+		/// rule coordinates (x:[0..1], y:axis)
+		/// </summary>
+		/// <param name="icrc">The context.</param>
+		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
+			if (ValueAxis == null) return;
+			var scaley = icrc.SeriesArea.Height / ValueAxis.Range;
+			var matx = new Matrix(icrc.SeriesArea.Width, 0, 0, -scaley, icrc.SeriesArea.Left, icrc.SeriesArea.Top + ValueAxis.Maximum * scaley);
+			_trace.Verbose($"transforms sy:{scaley:F3} matx:{matx} sa:{icrc.SeriesArea}");
+			if (ClipToDataRegion) {
+				MinimumPath.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
+				MaximumPath.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
+				BandPath.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
+			}
+			MinimumRule.Transform = new MatrixTransform() { Matrix = matx };
+			MaximumRule.Transform = new MatrixTransform() { Matrix = matx };
+			Band.Transform = new MatrixTransform() { Matrix = matx };
+		}
+		#endregion
+	}
+	#endregion
 	#region ValueAxisGrid
 	/// <summary>
 	/// Grid lines for the value axis.

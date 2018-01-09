@@ -28,6 +28,7 @@
 			<GradientStop Color="#448888cc" Offset=".6"/>
 			<GradientStop Color="Transparent" Offset=".8"/>
 		</LinearGradientBrush>
+		<SolidColorBrush x:Key="band-fill" Color="#44aaccee"/>
 		<DataTemplate x:Key="LegendItem">
 			<Grid Padding="2">
 				<Grid.ColumnDefinitions>
@@ -102,6 +103,13 @@
 			<Setter Property="Stroke" Value="LightBlue"/>
 			<Setter Property="StrokeThickness" Value="3"/>
 		</Style>
+		<Style x:Key="Band_v1v2-rule" TargetType="Path">
+			<Setter Property="Stroke" Value="AliceBlue"/>
+			<Setter Property="StrokeThickness" Value="3"/>
+		</Style>
+		<Style x:Key="Band_v1v2-band" TargetType="Path">
+			<Setter Property="Fill" Value="{StaticResource band-fill}"/>
+		</Style>
 		<Style x:Key="Column_v1" TargetType="Path">
 			<Setter Property="Stroke" Value="DarkOrchid"/>
 			<Setter Property="StrokeThickness" Value="1"/>
@@ -152,9 +160,11 @@
 				<yacc:Background PathStyle="{StaticResource Bkg}"/>
 				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" PathStyle="{StaticResource Axes}"
 					LabelStyle="{StaticResource CategoryAxisLabel}" />
+					<!--
 				<yacc:HorizontalRule ValueAxisName="yaxis" Value="{Binding Value1Average}"
 					PathStyle="{StaticResource Rule_v1}"
 					Visibility="{Binding ElementName=cb_rule_value1, Path=IsChecked, Converter={StaticResource b2v}}" />
+					-->
 				<yacc:ColumnSeries x:Name="colv1" DataSourceName="data" ValuePath="Value1" CategoryLabelPath="Label" ClipToDataRegion="True"
 					Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" EnableDebugPaths="True"
 					PathStyle="{StaticResource Column_v1}" BarOffset=".25" BarWidth=".25" />
@@ -175,9 +185,15 @@
 						</DataTemplate>
 					</yacc:MarkerSeries.MarkerTemplate>
 				</yacc:MarkerSeries>
+				<!--
 				<yacc:HorizontalRule ValueAxisName="yaxis" Value="{Binding Value2Average}"
 					PathStyle="{StaticResource Rule_v2}"
 					Visibility="{Binding ElementName=cb_rule_value2, Path=IsChecked, Converter={StaticResource b2v}}" />
+					-->
+				<yacc:HorizontalBand ValueAxisName="yaxis" ValueMaximum="{Binding Value2Average}" ValueMinimum="{Binding Value1Average}"
+					PathStyle="{StaticResource Band_v1v2-rule}" BandPathStyle="{StaticResource Band_v1v2-band}"
+					Visibility="{Binding ElementName=cb_rule_value2, Path=IsChecked, Converter={StaticResource b2v}}"
+				/>
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}"
 					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="F1" />
 				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource Grid}"
