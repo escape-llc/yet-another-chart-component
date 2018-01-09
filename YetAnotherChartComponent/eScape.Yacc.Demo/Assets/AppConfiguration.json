@@ -4,7 +4,7 @@
 		"CategoryAxis": "Verbose",
 		"Chart": "Verbose",
 		"ColumnSeries": "Verbose",
-		"ColumnSeriesPaths": "Verbose",
+		"ColumnSeriesPaths": "Off",
 		"DataSource": "Verbose",
 		"HorizontalRule": "Verbose",
 		"LineSeries": "Verbose",

@@ -128,15 +128,19 @@
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 		<VariableSizedWrapGrid x:Name="toolbar" Orientation="Horizontal"
 			RelativePanel.AlignTopWithPanel="True">
-			<CheckBox x:Name="cb_yaxis_grid" Style="{StaticResource cbStyle}" Content="Grid" IsChecked="True"/>
-			<CheckBox x:Name="cb_rule_value1" Style="{StaticResource cbStyle}" Content="V1 Avg" IsChecked="True"/>
-			<CheckBox x:Name="cb_rule_value2" Style="{StaticResource cbStyle}" Content="V2 Avg" IsChecked="True"/>
-			<CheckBox x:Name="cb_legend" Style="{StaticResource cbStyle}" Content="Legend" IsChecked="True"/>
-			<Button x:Name="add_head" Style="{StaticResource btnStyle}" Content="+ Head" Click="add_head_Click"/>
-			<Button x:Name="add_tail" Style="{StaticResource btnStyle}" Content="+ Tail" Click="add_item_Click"/>
-			<Button x:Name="remove_head" Style="{StaticResource btnStyle}" Content="- Head" Click="remove_head_Click"/>
-			<Button x:Name="remove_tail" Style="{StaticResource btnStyle}" Content="- Tail" Click="remove_tail_Click"/>
-			<Button x:Name="add_and_remove_head" Style="{StaticResource btnStyle}" Content="- Head, + Tail" Click="add_and_remove_head_Click"/>
+			<VariableSizedWrapGrid Orientation="Horizontal">
+				<CheckBox x:Name="cb_legend" Style="{StaticResource cbStyle}" Content="Legend" IsChecked="True"/>
+				<CheckBox x:Name="cb_yaxis_grid" Style="{StaticResource cbStyle}" Content="Grid" IsChecked="True"/>
+				<CheckBox x:Name="cb_rule_value1" Style="{StaticResource cbStyle}" Content="V1 Avg" IsChecked="True"/>
+				<CheckBox x:Name="cb_rule_value2" Style="{StaticResource cbStyle}" Content="V2 Avg" IsChecked="True"/>
+				</VariableSizedWrapGrid>
+			<VariableSizedWrapGrid Orientation="Horizontal">
+				<Button x:Name="add_head" Style="{StaticResource btnStyle}" Content="+ Head" Click="add_head_Click"/>
+				<Button x:Name="add_tail" Style="{StaticResource btnStyle}" Content="+ Tail" Click="add_item_Click"/>
+				<Button x:Name="remove_head" Style="{StaticResource btnStyle}" Content="- Head" Click="remove_head_Click"/>
+				<Button x:Name="remove_tail" Style="{StaticResource btnStyle}" Content="- Tail" Click="remove_tail_Click"/>
+				<Button x:Name="add_and_remove_head" Style="{StaticResource btnStyle}" Content="- Head, + Tail" Click="add_and_remove_head_Click"/>
+			</VariableSizedWrapGrid>
 		</VariableSizedWrapGrid>
 		<yacc:Chart x:Name="chart" Style="{StaticResource Chart}"
 			RelativePanel.Below="toolbar" RelativePanel.AlignBottomWithPanel="True"
