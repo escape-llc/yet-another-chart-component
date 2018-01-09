@@ -287,15 +287,72 @@ namespace eScapeLLC.UWP.Charts {
 	public class LayoutState {
 		/// <summary>
 		/// Current dimensions.
+		/// MUST NOT be (NaN,NaN) or (0,0).
 		/// </summary>
-		public Size Size { get; set; }
+		public Size Dimensions { get; set; }
+		/// <summary>
+		/// The "starting" layout rectangle.
+		/// MAY account for Padding.
+		/// Initialized by <see cref="InitializeLayoutContext(Thickness)"/>
+		/// </summary>
+		public Rect LayoutRect { get; private set; }
+		/// <summary>
+		/// The size of LayoutRect.
+		/// Initialized by <see cref="InitializeLayoutContext(Thickness)"/>
+		/// </summary>
+		public Size LayoutDimensions { get; private set; }
 		/// <summary>
 		/// Current layout context.
-		/// Only reset when Size changes.
+		/// Initialized by <see cref="InitializeLayoutContext(Thickness)"/>
 		/// </summary>
 		public DefaultLayoutContext Layout { get; set; }
+		/// <summary>
+		/// Cache for render contexts.
+		/// </summary>
+		Dictionary<ChartComponent, DefaultRenderContext> rendercache = new Dictionary<ChartComponent, DefaultRenderContext>();
+		/// <summary>
+		/// Whether the given dimensions are different from <see cref="Dimensions"/>
+		/// </summary>
+		/// <param name="sz">New dimensions.</param>
+		/// <returns></returns>
 		public bool IsSizeChanged(Size sz) {
-			return (Size.Width != sz.Width || Size.Height != sz.Height) ;
+			return (Dimensions.Width != sz.Width || Dimensions.Height != sz.Height) ;
+		}
+		/// <summary>
+		/// Calculate the initial layout rect.
+		/// </summary>
+		/// <param name="padding">Amount to subtract from rect.</param>
+		/// <returns>Rectangle minus padding.</returns>
+		Rect Initial(Thickness padding) {
+			return new Rect(padding.Left, padding.Top, Dimensions.Width - padding.Left - padding.Right, Dimensions.Height - padding.Top - padding.Bottom);
+		}
+		/// <summary>
+		/// Recreate the layout context.
+		/// Sets <see cref="LayoutRect"/>, <see cref="LayoutDimensions"/>, <see cref="Layout"/>.
+		/// Clears <see cref="rendercache"/>.
+		/// </summary>
+		/// <param name="padding"></param>
+		public void InitializeLayoutContext(Thickness padding) {
+			LayoutRect = Initial(padding);
+			LayoutDimensions = new Size(LayoutRect.Width, LayoutRect.Height);
+			Layout = new DefaultLayoutContext(LayoutDimensions, LayoutRect);
+			rendercache.Clear();
+		}
+		/// <summary>
+		/// Provide a render context for given component.
+		/// Created contexts are cached until <see cref="InitializeLayoutContext(Thickness)"/> is called.
+		/// </summary>
+		/// <param name="cc">Component to provide context for.</param>
+		/// <param name="surf">For ctor.</param>
+		/// <param name="ccs">For ctor.</param>
+		/// <param name="dc">For ctor.</param>
+		/// <returns>New or cached instance.</returns>
+		public DefaultRenderContext RenderFor(ChartComponent cc, Canvas surf, ObservableCollection<ChartComponent> ccs, object dc) {
+			if (rendercache.ContainsKey(cc)) return rendercache[cc];
+			var rect = Layout.For(cc);
+			var drc = new DefaultRenderContext(surf, ccs, LayoutDimensions, rect, Layout.RemainingRect, dc);
+			rendercache.Add(cc, drc);
+			return drc;
 		}
 	}
 	#endregion
@@ -425,7 +482,7 @@ namespace eScapeLLC.UWP.Charts {
 				// we are sized; see if dimensions actually changed
 				if (sz.Width == 0 || sz.Height == 0) return;
 				if (CurrentLayout.IsSizeChanged(sz)) {
-					var ls = new LayoutState() { Size = sz, Layout = CurrentLayout.Layout };
+					var ls = new LayoutState() { Dimensions = sz, Layout = CurrentLayout.Layout };
 					RenderComponents(ls);
 					CurrentLayout = ls;
 				}
@@ -461,7 +518,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="sender"></param>
 		/// <param name="e"></param>
 		void Components_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
-			var celc = new DefaultEnterLeaveContext(Surface, Components, CurrentLayout.Size, Rect.Empty, Rect.Empty, DataContext);
+			var celc = new DefaultEnterLeaveContext(Surface, Components, CurrentLayout.Dimensions, Rect.Empty, Rect.Empty, DataContext);
 			if (e.OldItems != null) {
 				foreach (ChartComponent cc in e.OldItems) {
 					_trace.Verbose($"leave '{cc.Name}' {cc}");
@@ -541,7 +598,7 @@ namespace eScapeLLC.UWP.Charts {
 			try {
 				Surface = GetTemplateChild(PART_Canvas) as Canvas;
 				_trace.Verbose($"OnApplyTemplate ({Width}x{Height}) {Surface} d:{DeferredEnter.Count}");
-				var celc = new DefaultEnterLeaveContext(Surface, Components, CurrentLayout.Size, Rect.Empty, Rect.Empty, DataContext);
+				var celc = new DefaultEnterLeaveContext(Surface, Components, CurrentLayout.Dimensions, Rect.Empty, Rect.Empty, DataContext);
 				foreach (var cc in DeferredEnter) {
 					EnterComponent(celc, cc);
 				}
@@ -608,17 +665,17 @@ namespace eScapeLLC.UWP.Charts {
 				}
 			}
 		}
-		protected void Phase_Layout(DefaultLayoutContext dlc) {
+		protected void Phase_Layout(LayoutState ls) {
 			foreach (IRequireLayout cc in Components.Where((cc2) => cc2 is IRequireLayout)) {
 				_trace.Verbose($"layout {cc}");
-				cc.Layout(dlc);
+				cc.Layout(ls.Layout);
 			}
 			// what's left is for the data series area
-			_trace.Verbose($"remaining {dlc.RemainingRect}");
-			dlc.FinalizeRects();
+			_trace.Verbose($"remaining {ls.Layout.RemainingRect}");
+			ls.Layout.FinalizeRects();
 		}
-		protected void Phase_RenderDataSources(DefaultLayoutContext dlc, Size inner) {
-			var dsctx = new DefaultDataSourceRenderContext(Surface, Components, inner, Rect.Empty, dlc.RemainingRect, DataContext);
+		protected void Phase_RenderDataSources(LayoutState ls) {
+			var dsctx = new DefaultDataSourceRenderContext(Surface, Components, ls.LayoutDimensions, Rect.Empty, ls.Layout.RemainingRect, DataContext);
 			foreach (DataSource ds in DataSources) {
 				ds.Render(dsctx);
 			}
@@ -628,52 +685,40 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="dlc"></param>
 		/// <param name="inner"></param>
-		protected void Phase_RenderAxes(DefaultLayoutContext dlc, Size inner) {
+		protected void Phase_RenderAxes(LayoutState ls) {
 			foreach (var axis in Axes.Where((cc2) => cc2 is IRequireRender)) {
 				var acc = axis as ChartComponent;
-				var rect = dlc.For(acc);
-				_trace.Verbose($"limits {acc.Name} ({axis.Minimum},{axis.Maximum}) r:{axis.Range} rect:{rect}");
-				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
+				var ctx = ls.RenderFor(acc, Surface, Components, DataContext);
+				_trace.Verbose($"limits {acc.Name} ({axis.Minimum},{axis.Maximum}) r:{axis.Range} rect:{ctx.Area}");
 				if (axis is IRequireRender irr) {
 					irr.Render(ctx);
 				}
 			}
 		}
-		protected void Phase_AxesFinalized(DefaultLayoutContext dlc, Size inner) {
+		protected void Phase_AxesFinalized(LayoutState ls) {
 			foreach (var cc in Components.Where((cc2) => cc2 is IRequireAfterAxesFinalized)) {
-				var rect = dlc.For(cc);
-				_trace.Verbose($"axes-finalized {cc.Name} rect:{rect}");
-				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
+				var ctx = ls.RenderFor(cc, Surface, Components, DataContext);
+				_trace.Verbose($"axes-finalized {cc.Name} rect:{ctx.Area}");
 				if (cc is IRequireAfterAxesFinalized iraaf) {
 					iraaf.AxesFinalized(ctx);
 				}
 			}
 		}
-		protected void Phase_RenderComponents(DefaultLayoutContext dlc, Size inner) {
+		protected void Phase_RenderComponents(LayoutState ls) {
 			foreach (IRequireRender cc in Components.Where((cc2) => !(cc2 is IChartAxis) && (cc2 is IRequireRender))) {
-				var rect = dlc.For(cc as ChartComponent);
-				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
+				var ctx = ls.RenderFor(cc as ChartComponent, Surface, Components, DataContext);
 				cc.Render(ctx);
 			}
 		}
-		protected void Phase_Transforms(DefaultLayoutContext dlc, Size inner) {
+		protected void Phase_Transforms(LayoutState ls) {
 			foreach (IRequireTransforms cc in Components.Where((cc2) => cc2 is IRequireTransforms)) {
-				var rect = dlc.For(cc as ChartComponent);
-				_trace.Verbose($"transforms {cc} {rect}");
-				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
+				var ctx = ls.RenderFor(cc as ChartComponent, Surface, Components, DataContext);
+				_trace.Verbose($"transforms {cc} {ctx.Area}");
 				cc.Transforms(ctx);
 			}
 		}
 		#endregion
 		#region helpers
-		/// <summary>
-		/// Account for padding.
-		/// </summary>
-		/// <param name="sz">Size.</param>
-		/// <returns>Adjusted rectangle.</returns>
-		protected Rect CalculateInitialRect(Size sz) {
-			return new Rect(Padding.Left, Padding.Top, sz.Width - Padding.Left - Padding.Right, sz.Height - Padding.Top - Padding.Bottom);
-		}
 		/// <summary>
 		/// Common logic for component entering the chart.
 		/// </summary>
@@ -737,17 +782,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="sz">Current size.</param>
 		/// <param name="rrea">Refresh request.</param>
 		protected void ComponentTransforms(LayoutState ls, RefreshRequestEventArgs rrea) {
-			if (ls.Size.Width == 0 || ls.Size.Height == 0) return;
 			if (rrea.Component is IRequireTransforms irt) {
-				var initialRect = CalculateInitialRect(ls.Size);
-				var inner = new Size(initialRect.Width, initialRect.Height);
-				// FOR NOW just re-run this, but it SHOULD be cached (when LastLayout is)
-				var dlc = new DefaultLayoutContext(inner, initialRect);
-				_trace.Verbose($"cr.starting {initialRect}");
-				Phase_Layout(dlc);
-				var rect = dlc.For(rrea.Component);
+				var rect = ls.Layout.For(rrea.Component);
 				_trace.Verbose($"component-render {rrea.Component} {rrea.Axis} {rect}");
-				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
+				var ctx = new DefaultRenderContext(Surface, Components, ls.LayoutDimensions, rect, ls.Layout.RemainingRect, DataContext);
 				irt.Transforms(ctx);
 			}
 		}
@@ -757,29 +795,22 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="sz">Current size.</param>
 		/// <param name="rrea">Refresh request.</param>
 		protected void ComponentRender(LayoutState ls, RefreshRequestEventArgs rrea) {
-			if (ls.Size.Width == 0 || ls.Size.Height == 0) return;
 			if (rrea.Component is IRequireRender irr) {
-				var initialRect = CalculateInitialRect(ls.Size);
-				var inner = new Size(initialRect.Width, initialRect.Height);
-				// FOR NOW just re-run this, but it SHOULD be cached (when LastLayout is)
-				var dlc = new DefaultLayoutContext(inner, initialRect);
-				_trace.Verbose($"cr.starting {initialRect}");
-				Phase_Layout(dlc);
-				var rect = dlc.For(rrea.Component);
+				var rect = ls.Layout.For(rrea.Component);
 				_trace.Verbose($"component-render {rrea.Component} {rrea.Axis} {rect}");
 				if (rrea.Axis != AxisUpdateState.None) {
 					// put axis limits into correct state for IRenderRequest components
 					Phase_ResetAxes();
 					Phase_AxisLimits((cc2) => cc2 is DataSeries && (cc2 is IProvideCategoryExtents || cc2 is IProvideValueExtents));
 				}
-				var ctx = new DefaultRenderContext(Surface, Components, inner, rect, dlc.RemainingRect, DataContext);
+				var ctx = new DefaultRenderContext(Surface, Components, ls.LayoutDimensions, rect, ls.Layout.RemainingRect, DataContext);
 				irr.Render(ctx);
 				if (rrea.Axis != AxisUpdateState.None) {
 					// axes MUST be re-evaluated because this thing changed.
 					Phase_AxisLimits((cc2) => !(cc2 is DataSeries) && (cc2 is IProvideCategoryExtents || cc2 is IProvideValueExtents));
-					Phase_AxesFinalized(dlc, inner);
-					Phase_RenderAxes(dlc, inner);
-					Phase_Transforms(dlc, inner);
+					Phase_AxesFinalized(ls);
+					Phase_RenderAxes(ls);
+					Phase_Transforms(ls);
 				} else {
 					if (rrea.Component is IRequireTransforms irt) {
 						irt.Transforms(ctx);
@@ -792,12 +823,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="sz">Dimensions.</param>
 		protected void TransformsLayout(LayoutState ls) {
-			var initialRect = CalculateInitialRect(ls.Size);
-			var inner = new Size(initialRect.Width, initialRect.Height);
-			var dlc = new DefaultLayoutContext(inner, initialRect);
-			_trace.Verbose($"transforms-only starting {initialRect}");
-			Phase_Layout(dlc);
-			Phase_Transforms(dlc, inner);
+			ls.InitializeLayoutContext(Padding);
+			_trace.Verbose($"transforms-only starting {ls.LayoutRect}");
+			Phase_Layout(ls);
+			Phase_Transforms(ls);
 		}
 		/// <summary>
 		/// Perform a full layout and rendering pass.
@@ -806,35 +835,33 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="sz">Dimensions.</param>
 		protected void FullLayout(LayoutState ls) {
-			var initialRect = CalculateInitialRect(ls.Size);
-			var inner = new Size(initialRect.Width, initialRect.Height);
+			ls.InitializeLayoutContext(Padding);
 			// Phase I: reset axes
 			Phase_ResetAxes();
 			// Phase II: claim space (IRequireLayout)
-			var dlc = new DefaultLayoutContext(inner, initialRect);
-			_trace.Verbose($"full starting {initialRect}");
-			Phase_Layout(dlc);
+			_trace.Verbose($"full starting {ls.LayoutRect}");
+			Phase_Layout(ls);
 			// Phase III: data source rendering pipeline (IDataSourceRenderer)
-			Phase_RenderDataSources(dlc, inner);
+			Phase_RenderDataSources(ls);
 			Phase_AxisLimits((cc2) => cc2 is DataSeries && (cc2 is IProvideCategoryExtents || cc2 is IProvideValueExtents));
 			// Phase IV: render non-axis components (IRequireRender)
-			Phase_RenderComponents(dlc, inner);
+			Phase_RenderComponents(ls);
 			Phase_AxisLimits((cc2) => !(cc2 is DataSeries) && (cc2 is IProvideCategoryExtents || cc2 is IProvideValueExtents));
 			// Phase V: axes finalized
-			Phase_AxesFinalized(dlc, inner);
+			Phase_AxesFinalized(ls);
 			// Phase VI: render axes (IRequireRender)
-			Phase_RenderAxes(dlc, inner);
+			Phase_RenderAxes(ls);
 			// Phase VII: configure all transforms
-			Phase_Transforms(dlc, inner);
+			Phase_Transforms(ls);
 		}
 		/// <summary>
 		/// Determine what kind of render is required, and run it.
 		/// If anything is dirty, full layout, else adjust transforms.
 		/// Once all components are "clean" only the visual transforms are updated; no data traversal is done.
 		/// </summary>
-		/// <param name="sz">The dimensions.</param>
+		/// <param name="ls">The current layout state.</param>
 		protected void RenderComponents(LayoutState ls) {
-			_trace.Verbose($"render-components {ls.Size.Width}x{ls.Size.Height}");
+			_trace.Verbose($"render-components {ls.Dimensions.Width}x{ls.Dimensions.Height}");
 			if (DataSources.Cast<DataSource>().Any((ds) => ds.IsDirty)) {
 				FullLayout(ls);
 			} else {

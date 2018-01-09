@@ -167,7 +167,7 @@
 				<yacc:MarkerSeries DataSourceName="data"
 					ValuePath="Value1" Title="Value 1 Marker"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis"
-					MarkerOffset=".625"  MarkerWidth=".25" PathStyle="{StaticResource Marker_v1}">
+					MarkerOffset=".625" MarkerWidth=".25" PathStyle="{StaticResource Marker_v1}">
 					<yacc:MarkerSeries.MarkerTemplate>
 						<DataTemplate>
 							<!-- Center and RadiusY are calculated based on current size -->
