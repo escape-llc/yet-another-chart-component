@@ -438,6 +438,28 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		protected void Refresh(RefreshRequestType rrt, AxisUpdateState aus) { RefreshRequest?.Invoke(this, new RefreshRequestEventArgs(rrt, aus, this)); }
 		/// <summary>
+		/// Create the projection (P) matrix for the target rectangle.
+		/// Projection maps the rectangle the model coordinate system displays in.
+		/// </summary>
+		/// <param name="area"></param>
+		/// <returns></returns>
+		protected static Matrix ProjectionFor(Rect area) {
+			return new Matrix(area.Width, 0, 0, area.Height, area.Left, area.Top);
+		}
+		/// <summary>
+		/// Create a final (MVP) matrix for [0..1] in X axis, and axis.Range in Y-axis.
+		/// Y-axis is inverted.
+		/// All components are pre-multiplied instead of using <see cref="MatrixHelper.Multiply"/>.
+		/// </summary>
+		/// <param name="area">Target area.</param>
+		/// <param name="axis"></param>
+		/// <returns></returns>
+		protected static Matrix TransformFor(Rect area, IChartAxis axis) {
+			var scaley = area.Height / axis.Range;
+			var matx = new Matrix(area.Width, 0, 0, -scaley, area.Left, area.Top + axis.Maximum * scaley);
+			return matx;
+		}
+		/// <summary>
 		/// Bind cc.Path to the given fe.DP.
 		/// </summary>
 		/// <param name="cc">Source chart component.</param>
@@ -518,6 +540,42 @@ namespace eScapeLLC.UWP.Charts {
 			};
 			SetBinding(EvaluatorProperty, binding);
 			return GetValue(EvaluatorProperty);
+		}
+	}
+	#endregion
+	#region MatrixHelper
+	/// <summary>
+	/// Static helpers for the <see cref="Matrix"/> class.
+	/// In XAML and many other places, coordinate transforms are represented using affine matrices in homogeneous coordinates.
+	/// In XAML, the Matrix struct is the workhorse.  This structure "leaves out" the last column, because its values are fixed at (0 0 1).
+	/// One can use <see cref="TransformGroup"/> to accomplish this, but it requires the UI thread just to do matrix arithmetic!
+	/// What matrix algebra would call M13 and M23, <see cref="Matrix"/> calls OffsetX and OffsetY.
+	/// </summary>
+	public static class MatrixHelper {
+		// these are the affine matrix's third column
+		const double M31 = 0;
+		const double M32 = 0;
+		const double M33 = 1;
+		/// <summary>
+		/// Multiply 3x3 affine matrices, unrolled for <see cref="Matrix"/>.
+		/// </summary>
+		/// <param name="ma">Lefthand matrix.</param>
+		/// <param name="mb">Righthand matrix.</param>
+		/// <returns>New matrix.</returns>
+		public static Matrix Multiply(Matrix ma, Matrix mb) {
+			double c11 = ma.M11 * mb.M11 + ma.M12 * mb.M21 + ma.OffsetX * M31;
+			double c12 = ma.M11 * mb.M12 + ma.M12 * mb.M22 + ma.OffsetX * M32;
+			double c13 = ma.M11 * mb.OffsetX + ma.M12 * mb.OffsetY + ma.OffsetX * M33;
+			double c21 = ma.M21 * mb.M11 + ma.M22 * mb.M21 + ma.OffsetY * M31;
+			double c22 = ma.M21 * mb.M12 + ma.M22 * mb.M22 + ma.OffsetY * M32;
+			double c23 = ma.M21 * mb.OffsetX + ma.M22 * mb.OffsetY + ma.OffsetY * M33;
+			#if false
+			// C31/C32/C33 equal M31/M32/M33 respectively, hence the reason they are not "in the Matrix"!
+			double c31 = M31 * b.M11 + M32 * b.M21 + M33 * M31;
+			double c32 = M31 * b.M12 + M32 * b.M22 + M33 * M32;
+			double c33 = M31 * b.OffsetX + M32 * b.OffsetY + M33 * M33;
+			#endif
+			return new Matrix(c11, c12, c21, c22, c13, c23);
 		}
 	}
 	#endregion

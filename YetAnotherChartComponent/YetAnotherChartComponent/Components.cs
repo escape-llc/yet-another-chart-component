@@ -45,14 +45,6 @@ namespace eScapeLLC.UWP.Charts {
 		#region helpers
 		void DoBindings(IChartEnterLeaveContext icelc) {
 			BindTo(this, "PathStyle", Path, Path.StyleProperty);
-			#if false
-			var bx = GetBindingExpression(GridVisibilityProperty);
-			if (bx != null) {
-				Grid.SetBinding(UIElement.VisibilityProperty, bx.ParentBinding);
-			} else {
-				BindTo(this, "GridVisibility", Grid, Path.VisibilityProperty);
-			}
-			#endif
 		}
 		#endregion
 		#region extensions
@@ -85,7 +77,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icrc">Context.</param>
 		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
-			var matx = new Matrix(icrc.SeriesArea.Width, 0, 0, icrc.SeriesArea.Height, icrc.SeriesArea.Left, icrc.SeriesArea.Top);
+			var matx = ProjectionFor(icrc.SeriesArea);
 			Rectangle.Transform = new MatrixTransform() { Matrix = matx };
 		}
 		#endregion
@@ -239,25 +231,13 @@ namespace eScapeLLC.UWP.Charts {
 			Dirty = false;
 		}
 		/// <summary>
-		/// Propagate axis update for the value.
-		/// </summary>
-		#if false
-		void IRequireAfterRenderComplete.RenderComplete() {
-			if (ValueAxis == null) return;
-			if (ShowOnAxis) {
-				ValueAxis.UpdateLimits(Value);
-			}
-		}
-		#endif
-		/// <summary>
 		/// rule coordinates (x:[0..1], y:axis)
 		/// </summary>
 		/// <param name="icrc">The context.</param>
 		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
 			if (ValueAxis == null) return;
-			var scaley = icrc.SeriesArea.Height / ValueAxis.Range;
-			var matx = new Matrix(icrc.SeriesArea.Width, 0, 0, -scaley, icrc.SeriesArea.Left, icrc.SeriesArea.Top + ValueAxis.Maximum * scaley);
-			_trace.Verbose($"transforms sy:{scaley:F3} matx:{matx} sa:{icrc.SeriesArea}");
+			var matx = TransformFor(icrc.SeriesArea, ValueAxis);
+			_trace.Verbose($"transforms sy:{matx.M22:F3} matx:{matx} sa:{icrc.SeriesArea}");
 			if (ClipToDataRegion) {
 				Path.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
 			}
@@ -492,9 +472,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icrc">The context.</param>
 		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
 			if (ValueAxis == null) return;
-			var scaley = icrc.SeriesArea.Height / ValueAxis.Range;
-			var matx = new Matrix(icrc.SeriesArea.Width, 0, 0, -scaley, icrc.SeriesArea.Left, icrc.SeriesArea.Top + ValueAxis.Maximum * scaley);
-			_trace.Verbose($"transforms sy:{scaley:F3} matx:{matx} sa:{icrc.SeriesArea}");
+			var matx = TransformFor(icrc.SeriesArea, ValueAxis);
+			_trace.Verbose($"transforms sy:{matx.M22:F3} matx:{matx} sa:{icrc.SeriesArea}");
 			if (ClipToDataRegion) {
 				MinimumPath.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
 				MaximumPath.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
@@ -612,8 +591,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icrc"></param>
 		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
 			if (ValueAxis == null) return;
-			var gscaley = icrc.SeriesArea.Height / ValueAxis.Range;
-			var gmatx = new Matrix(icrc.SeriesArea.Width, 0, 0, -gscaley, icrc.SeriesArea.Left, icrc.SeriesArea.Top + ValueAxis.Maximum * gscaley);
+			var gmatx = TransformFor(icrc.SeriesArea, ValueAxis);
 			GridGeometry.Transform = new MatrixTransform() { Matrix = gmatx };
 		}
 		#endregion

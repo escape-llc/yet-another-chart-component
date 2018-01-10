@@ -394,7 +394,6 @@ namespace eScapeLLC.UWP.Charts {
 				var adj = tb.FontSize / 2;
 				var top = icrc.Area.Bottom - (vx - Minimum) * scaley - adj;
 				tb.SetValue(Canvas.TopProperty, top);
-				//tb.SetValue(TextBlock.VisibilityProperty, top >= icrc.Area.Top - adj && top <= icrc.Area.Bottom ? Visibility.Visible : Visibility.Collapsed);
 			}
 		}
 		#endregion
