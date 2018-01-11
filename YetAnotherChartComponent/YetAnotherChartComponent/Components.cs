@@ -343,11 +343,14 @@ namespace eScapeLLC.UWP.Charts {
 			nameof(BandPathStyle), typeof(Style), typeof(HorizontalBand), new PropertyMetadata(null)
 		);
 		/// <summary>
-		/// Value DP.
+		/// <see cref="Value1"/> DP.
 		/// </summary>
 		public static readonly DependencyProperty Value1Property = DependencyProperty.Register(
 			nameof(Value1), typeof(double), typeof(HorizontalBand), new PropertyMetadata(null, new PropertyChangedCallback(ComponentPropertyChanged))
 		);
+		/// <summary>
+		/// <see cref="Value2"/> DP.
+		/// </summary>
 		public static readonly DependencyProperty Value2Property = DependencyProperty.Register(
 			nameof(Value2), typeof(double), typeof(HorizontalBand), new PropertyMetadata(null, new PropertyChangedCallback(ComponentPropertyChanged))
 		);

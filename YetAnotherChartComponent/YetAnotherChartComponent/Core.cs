@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using Windows.Foundation;
 using Windows.UI.Xaml;
-using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Media;
 
@@ -518,97 +517,6 @@ namespace eScapeLLC.UWP.Charts {
 			};
 			SetBinding(EvaluatorProperty, binding);
 			return GetValue(EvaluatorProperty);
-		}
-	}
-	#endregion
-	#region MatrixHelper
-	/// <summary>
-	/// Static helpers for the <see cref="Matrix"/> class.
-	/// In XAML and many other places, coordinate transforms are represented using affine matrices in homogeneous coordinates.
-	/// In XAML, the Matrix struct is the workhorse.  This structure "leaves out" the last column, because its values are fixed at (0 0 1).
-	/// One can use <see cref="TransformGroup"/> to accomplish this, but it requires the UI thread just to do matrix arithmetic!
-	/// What matrix algebra would call M13 and M23, <see cref="Matrix"/> calls OffsetX and OffsetY.
-	/// </summary>
-	public static class MatrixSupport {
-		// these are the affine matrix's third column
-		const double M31 = 0;
-		const double M32 = 0;
-		const double M33 = 1;
-		/// <summary>
-		/// Multiply 3x3 affine matrices, adapted for <see cref="Matrix"/>.
-		/// </summary>
-		/// <param name="ma">Lefthand matrix.</param>
-		/// <param name="mb">Righthand matrix.</param>
-		/// <returns>New matrix.</returns>
-		public static Matrix Multiply(Matrix ma, Matrix mb) {
-			double c11 = ma.M11 * mb.M11 + ma.M12 * mb.M21 + ma.OffsetX * M31;
-			double c12 = ma.M11 * mb.M12 + ma.M12 * mb.M22 + ma.OffsetX * M32;
-			double c13 = ma.M11 * mb.OffsetX + ma.M12 * mb.OffsetY + ma.OffsetX * M33;
-			double c21 = ma.M21 * mb.M11 + ma.M22 * mb.M21 + ma.OffsetY * M31;
-			double c22 = ma.M21 * mb.M12 + ma.M22 * mb.M22 + ma.OffsetY * M32;
-			double c23 = ma.M21 * mb.OffsetX + ma.M22 * mb.OffsetY + ma.OffsetY * M33;
-			#if false
-			// C31/C32/C33 "cancel out" and equal M31/M32/M33 respectively, hence the reason they are not "in the Matrix"!
-			double c31 = M31 * b.M11 + M32 * b.M21 + M33 * M31;
-			double c32 = M31 * b.M12 + M32 * b.M22 + M33 * M32;
-			double c33 = M31 * b.OffsetX + M32 * b.OffsetY + M33 * M33;
-			#endif
-			return new Matrix(c11, c12, c21, c22, c13, c23);
-		}
-		/// <summary>
-		/// Create the projection (P) matrix for the target rectangle.
-		/// Projection maps the rectangle the model coordinate system displays in.
-		/// </summary>
-		/// <param name="area">Target rectangle.</param>
-		/// <returns>New matrix.</returns>
-		public static Matrix ProjectionFor(Rect area) {
-			return new Matrix(area.Width, 0, 0, area.Height, area.Left, area.Top);
-		}
-		/// <summary>
-		/// Create the model (M) matrix for the given axis' extents.
-		/// Uses axis Range and Minimum values.
-		/// Model maps the "cartesian" coordinate system to a normalized basis.
-		/// The basis vectors normalize the axis range.
-		/// The Y scale is reversed because cartesian goes reverse (+up) of device y-axis (+down).
-		/// The translation component compensates for the axis "end".  Note these are also normalized.
-		/// </summary>
-		/// <param name="xaxis">The x-axis.</param>
-		/// <param name="yaxis">The y-axis.</param>
-		/// <returns>New matrix</returns>
-		public static Matrix ModelFor(IChartAxis xaxis, IChartAxis yaxis) {
-			if (xaxis == null) throw new ArgumentNullException(nameof(xaxis));
-			if (yaxis == null) throw new ArgumentNullException(nameof(yaxis));
-			var xrange = xaxis.Range;
-			var yrange = yaxis.Range;
-			var matx = new Matrix(1 / xrange, 0, 0, -1 / yrange, -xaxis.Minimum / xrange, yaxis.Maximum / yrange);
-			return matx;
-		}
-		/// <summary>
-		/// Create a final (MVP) matrix for [0..1] in X axis, and axis.Range in Y-axis.
-		/// Y-axis is inverted.
-		/// All components are pre-multiplied instead of using <see cref="MatrixSupport.Multiply"/>.
-		/// </summary>
-		/// <param name="area">Target area.</param>
-		/// <param name="yaxis">The y-axis.</param>
-		/// <returns>New matrix.</returns>
-		public static Matrix TransformFor(Rect area, IChartAxis yaxis) {
-			if (yaxis == null) throw new ArgumentNullException(nameof(yaxis));
-			var scaley = area.Height / yaxis.Range;
-			var matx = new Matrix(area.Width, 0, 0, -scaley, area.Left, area.Top + yaxis.Maximum * scaley);
-			return matx;
-		}
-		/// <summary>
-		/// Create a final (MVP) matrix for this rectangle and axes.
-		/// It would "normally" be MVP matrix, but for how V == I so we leave it out.
-		/// </summary>
-		/// <param name="area">Target area.</param>
-		/// <param name="xaxis">The x-axis.</param>
-		/// <param name="yaxis">The y-axis.</param>
-		/// <returns></returns>
-		public static Matrix TransformFor(Rect area, IChartAxis xaxis, IChartAxis yaxis) {
-			if (xaxis == null) throw new ArgumentNullException(nameof(xaxis));
-			if (yaxis == null) throw new ArgumentNullException(nameof(yaxis));
-			return MatrixSupport.Multiply(ProjectionFor(area), ModelFor(xaxis, yaxis));
 		}
 	}
 	#endregion
