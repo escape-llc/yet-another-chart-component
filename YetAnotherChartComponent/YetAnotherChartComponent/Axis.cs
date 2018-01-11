@@ -260,6 +260,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// List of active TextBlocks for labels.
 		/// </summary>
 		protected List<TextBlock> TickLabels { get; set; }
+		protected IChartLayer Layer { get; set; }
 		#endregion
 		#region ctor
 		/// <summary>
@@ -288,7 +289,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icelc">The context.</param>
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
-			icelc.Add(Axis);
+			Layer = icelc.CreateLayer(Axis);
 			DoBindings(icelc);
 			if (LabelStyle == null && Resources.ContainsKey("AxisLabelStyle")) {
 				LabelStyle = Resources["AxisLabelStyle"] as Style;
@@ -299,8 +300,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icelc">The context.</param>
 		void IRequireEnterLeave.Leave(IChartEnterLeaveContext icelc) {
-			icelc.Remove(Axis);
-			icelc.Remove(TickLabels);
+			icelc.DeleteLayer(Layer);
+			Layer = null;
 		}
 		/// <summary>
 		/// Claim the space indicated by properties.
@@ -370,8 +371,8 @@ namespace eScapeLLC.UWP.Charts {
 				}
 			}
 			// VT and internal bookkeeping
-			icrc.Remove(tbr.Unused);
-			icrc.Add(tbr.Created);
+			Layer.Remove(tbr.Unused);
+			Layer.Add(tbr.Created);
 			foreach (var tb in tbr.Unused) {
 				TickLabels.Remove(tb);
 			}
@@ -425,6 +426,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// List of active TextBlocks for labels.
 		/// </summary>
 		protected List<TextBlock> TickLabels { get; set; }
+		protected IChartLayer Layer { get; set; }
 		#endregion
 		#region ctor
 		/// <summary>
@@ -471,7 +473,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icelc"></param>
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
-			icelc.Add(Axis);
+			Layer = icelc.CreateLayer(Axis);
 			BindTo(this, "PathStyle", Axis, Path.StyleProperty);
 			if (LabelStyle == null && Resources.ContainsKey("AxisLabelStyle")) {
 				LabelStyle = Resources["AxisLabelStyle"] as Style;
@@ -482,8 +484,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icelc"></param>
 		void IRequireEnterLeave.Leave(IChartEnterLeaveContext icelc) {
-			icelc.Remove(Axis);
-			icelc.Remove(TickLabels);
+			icelc.DeleteLayer(Layer);
+			Layer = null;
 		}
 		/// <summary>
 		/// Claim the space indicated by properties.
@@ -546,8 +548,8 @@ namespace eScapeLLC.UWP.Charts {
 				}
 			}
 			// VT and internal bookkeeping
-			icrc.Remove(tbr.Unused);
-			icrc.Add(tbr.Created);
+			Layer.Remove(tbr.Unused);
+			Layer.Add(tbr.Created);
 			foreach (var tb in tbr.Unused) {
 				TickLabels.Remove(tb);
 			}

@@ -24,6 +24,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// The geometry to use for this component.
 		/// </summary>
 		protected RectangleGeometry Rectangle { get; set; }
+		protected IChartLayer Layer { get; set; }
 		#endregion
 		#region DPs
 		/// <summary>
@@ -53,7 +54,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icelc">Context.</param>
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
-			icelc.Add(Path);
+			Layer = icelc.CreateLayer(Path);
 			DoBindings(icelc);
 		}
 		/// <summary>
@@ -61,7 +62,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icelc">Context.</param>
 		void IRequireEnterLeave.Leave(IChartEnterLeaveContext icelc) {
-			icelc.Remove(Path);
+			icelc.DeleteLayer(Layer);
+			Layer = null;
 		}
 		/// <summary>
 		/// Render the background.
@@ -135,6 +137,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Dereferenced value axis.
 		/// </summary>
 		protected IChartAxis ValueAxis { get; set; }
+		protected IChartLayer Layer { get; set; }
 		#endregion
 		#region DPs
 		/// <summary>
@@ -205,8 +208,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icelc">The context.</param>
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			EnsureAxes(icelc);
+			Layer = icelc.CreateLayer(Path);
 			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis}");
-			icelc.Add(Path);
 			DoBindings(icelc);
 		}
 		/// <summary>
@@ -214,7 +217,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icelc">The context.</param>
 		void IRequireEnterLeave.Leave(IChartEnterLeaveContext icelc) {
-			icelc.Remove(Path);
+			icelc.DeleteLayer(Layer);
+			Layer = null;
 		}
 		/// <summary>
 		/// Rule coordinates:
@@ -328,6 +332,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Dereferenced value axis.
 		/// </summary>
 		protected IChartAxis ValueAxis { get; set; }
+		protected IChartLayer Layer { get; set; }
 		#endregion
 		#region DPs
 		/// <summary>
@@ -434,10 +439,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icelc">The context.</param>
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			EnsureAxes(icelc);
+			Layer = icelc.CreateLayer(BandPath, Value1Path, Value2Path);
 			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis}");
-			icelc.Add(BandPath);
-			icelc.Add(Value1Path);
-			icelc.Add(Value2Path);
 			DoBindings(icelc);
 		}
 		/// <summary>
@@ -445,9 +448,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icelc">The context.</param>
 		void IRequireEnterLeave.Leave(IChartEnterLeaveContext icelc) {
-			icelc.Remove(Value2Path);
-			icelc.Remove(Value1Path);
-			icelc.Remove(BandPath);
+			icelc.DeleteLayer(Layer);
+			Layer = null;
 		}
 		/// <summary>
 		/// Rule coordinates:
@@ -516,6 +518,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Geometry for the grid lines.
 		/// </summary>
 		protected GeometryGroup GridGeometry { get; set; }
+		protected IChartLayer Layer { get; set; }
 		#endregion
 		#region DPs
 		/// <summary>
@@ -561,12 +564,13 @@ namespace eScapeLLC.UWP.Charts {
 		#region extensions
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			EnsureAxes(icelc);
-			icelc.Add(Grid);
+			Layer = icelc.CreateLayer(Grid);
 			DoBindings(icelc);
 		}
 		void IRequireEnterLeave.Leave(IChartEnterLeaveContext icelc) {
 			ValueAxis = null;
-			icelc.Remove(Grid);
+			icelc.DeleteLayer(Layer);
+			Layer = null;
 		}
 		/// <summary>
 		/// Grid coordinates:

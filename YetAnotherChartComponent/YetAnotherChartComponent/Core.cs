@@ -197,16 +197,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="name">Name.</param>
 		/// <returns>Matching component or NULL.</returns>
 		ChartComponent Find(String name);
-		/// <summary>
-		/// Add group of components.
-		/// </summary>
-		/// <param name="fes"></param>
-		void Add(IEnumerable<FrameworkElement> fes);
-		/// <summary>
-		/// Remove group of components.
-		/// </summary>
-		/// <param name="fes"></param>
-		void Remove(IEnumerable<FrameworkElement> fes);
 	}
 	#endregion
 	#region IChartEnterLeaveContext
@@ -215,15 +205,22 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public interface IChartEnterLeaveContext : IChartRenderContext {
 		/// <summary>
-		/// Add content.
+		/// Create a layer.
 		/// </summary>
-		/// <param name="fe">Element to add.</param>
-		void Add(FrameworkElement fe);
+		/// <returns></returns>
+		IChartLayer CreateLayer();
 		/// <summary>
-		/// Remove content.
+		/// Create a layer with given initial components.
 		/// </summary>
-		/// <param name="fe">Element to remove.</param>
-		void Remove(FrameworkElement fe);
+		/// <param name="fes">Initial components.</param>
+		/// <returns></returns>
+		IChartLayer CreateLayer(params FrameworkElement[] fes);
+		/// <summary>
+		/// Delete given layer.
+		/// This in turn deletes all the components within the layer being tracked.
+		/// </summary>
+		/// <param name="icl"></param>
+		void DeleteLayer(IChartLayer icl);
 	}
 	#endregion
 	#region IRequireLayout
@@ -641,6 +638,9 @@ namespace eScapeLLC.UWP.Charts {
 	}
 	#endregion
 	#region IChartLayer
+	/// <summary>
+	/// Represents a container for chart component visual elements.
+	/// </summary>
 	public interface IChartLayer {
 		/// <summary>
 		/// Add content.
@@ -667,6 +667,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="target"></param>
 		void Layout(Rect target);
+		/// <summary>
+		/// Remove all the components this layer knows about.
+		/// </summary>
+		void Clear();
 	}
 	#endregion
 }

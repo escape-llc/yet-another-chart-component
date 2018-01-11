@@ -66,16 +66,6 @@ namespace eScapeLLC.UWP.Charts {
 		public ChartComponent Find(string name) {
 			return Components.SingleOrDefault((cx) => cx.Name == name);
 		}
-		/// <summary>
-		/// Add elements to the surface.
-		/// </summary>
-		/// <param name="fes"></param>
-		public void Add(IEnumerable<FrameworkElement> fes) { foreach (var fe in fes) Surface.Children.Add(fe); }
-		/// <summary>
-		/// Remove elements from the surface.
-		/// </summary>
-		/// <param name="fes"></param>
-		public void Remove(IEnumerable<FrameworkElement> fes) { foreach (var fe in fes) Surface.Children.Remove(fe); }
 	}
 	#endregion
 	#region DefaultDataSourceRenderContext
@@ -102,6 +92,8 @@ namespace eScapeLLC.UWP.Charts {
 	/// Default impl of the enter/leave context.
 	/// </summary>
 	public class DefaultEnterLeaveContext : DefaultRenderContext, IChartEnterLeaveContext {
+		public int NextZIndex { get; set; }
+		protected List<IChartLayer> Layers { get; set; }
 		/// <summary>
 		/// Ctor.
 		/// Initialize.
@@ -112,20 +104,25 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="rc"></param>
 		/// <param name="sa"></param>
 		/// <param name="dc"></param>
-		public DefaultEnterLeaveContext(Canvas surface, ObservableCollection<ChartComponent> components, Size sz, Rect rc, Rect sa, object dc) :base(surface, components, sz, rc, sa, dc) { Surface = surface; }
+		public DefaultEnterLeaveContext(Canvas surface, ObservableCollection<ChartComponent> components, List<IChartLayer> layers, Size sz, Rect rc, Rect sa, object dc) :base(surface, components, sz, rc, sa, dc) { Surface = surface; Layers = layers; }
 		/// <summary>
 		/// Add given element to surface.
 		/// </summary>
 		/// <param name="fe"></param>
-		public void Add(FrameworkElement fe) {
-			Surface.Children.Add(fe);
+		IChartLayer IChartEnterLeaveContext.CreateLayer() {
+			var ccl = new CommonCanvasLayer(Surface, NextZIndex++);
+			Layers.Add(ccl);
+			return ccl;
+			//Surface.Children.Add(fe);
 		}
-		/// <summary>
-		/// Remove given element from surface.
-		/// </summary>
-		/// <param name="fe"></param>
-		public void Remove(FrameworkElement fe) {
-			Surface.Children.Remove(fe);
+		IChartLayer IChartEnterLeaveContext.CreateLayer(params FrameworkElement[] fes) {
+			var icl = (this as IChartEnterLeaveContext).CreateLayer();
+			icl.Add(fes);
+			return icl;
+		}
+		void IChartEnterLeaveContext.DeleteLayer(IChartLayer icl) {
+			icl.Clear();
+			Layers.Remove(icl);
 		}
 	}
 	#endregion
@@ -241,22 +238,97 @@ namespace eScapeLLC.UWP.Charts {
 		}
 	}
 	#endregion
+	#region CommonCanvasLayer
+	/// <summary>
+	/// Layer where all layers share a common canvas.
+	/// </summary>
+	public class CommonCanvasLayer : IChartLayer {
+		#region data
+		readonly Canvas canvas;
+		readonly int zindex;
+		readonly List<FrameworkElement> elements;
+		#endregion
+		#region ctor
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="canvas">Target canvas.</param>
+		/// <param name="zindex">Z-index to assign to elements.</param>
+		public CommonCanvasLayer(Canvas canvas, int zindex) {
+			this.canvas = canvas;
+			this.zindex = zindex;
+			this.elements = new List<FrameworkElement>();
+		}
+		#endregion
+		#region IChartLayer
+		/// <summary>
+		/// Add element with assign z-index.
+		/// </summary>
+		/// <param name="fe"></param>
+		void IChartLayer.Add(FrameworkElement fe) {
+			fe.SetValue(Canvas.ZIndexProperty, zindex);
+			elements.Add(fe);
+			canvas.Children.Add(fe);
+		}
+		/// <summary>
+		/// Add elements with assign z-index.
+		/// </summary>
+		/// <param name="fes"></param>
+		void IChartLayer.Add(IEnumerable<FrameworkElement> fes) {
+			foreach (var fe in fes) {
+				(this as IChartLayer).Add(fe);
+			}
+		}
+		/// <summary>
+		/// Does Not Respond, because one canvas owns everything.
+		/// </summary>
+		/// <param name="target"></param>
+		void IChartLayer.Layout(Rect target) { }
+		void IChartLayer.Remove(FrameworkElement fe) { canvas.Children.Remove(fe); elements.Remove(fe); }
+		void IChartLayer.Remove(IEnumerable<FrameworkElement> fes) { foreach (var fe in fes) { (this as IChartLayer).Remove(fe); } }
+		/// <summary>
+		/// Remove the elements this layer is tracking in the common parent.
+		/// </summary>
+		void IChartLayer.Clear() { foreach (var fe in elements) { canvas.Children.Remove(fe); } elements.Clear(); }
+		#endregion
+	}
+	#endregion
 	#region CanvasLayer
 	/// <summary>
-	/// Layer bound to a Canvas (COULD be IPanel).
+	/// Layer where each layer is bound to a different Canvas (COULD be IPanel).
 	/// </summary>
 	public class CanvasLayer : IChartLayer {
 		#region data
 		readonly Canvas canvas;
+		readonly int zindex;
 		#endregion
 		#region ctor
-		public CanvasLayer(Canvas canvas) {
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="canvas">Target canvas.</param>
+		/// <param name="zindex">Z-index to assign to this canvas.</param>
+		public CanvasLayer(Canvas canvas, int zindex) {
 			this.canvas = canvas;
+			this.zindex = zindex;
+			canvas.SetValue(Canvas.ZIndexProperty, zindex);
 		}
 		#endregion
 		#region IChartLayer
+		/// <summary>
+		/// Add element with assign z-index.
+		/// </summary>
+		/// <param name="fe"></param>
 		void IChartLayer.Add(FrameworkElement fe) { canvas.Children.Add(fe); }
-		void IChartLayer.Add(IEnumerable<FrameworkElement> fes) { foreach (var fe in fes) canvas.Children.Add(fe); }
+		/// <summary>
+		/// Add elements with assign z-index.
+		/// </summary>
+		/// <param name="fes"></param>
+		void IChartLayer.Add(IEnumerable<FrameworkElement> fes) { foreach (var fe in fes) { (this as IChartLayer).Add(fe); } }
+		/// <summary>
+		/// Set Canvas layout properties on the source canvas.
+		/// </summary>
+		/// <param name="target"></param>
 		void IChartLayer.Layout(Rect target) {
 			canvas.SetValue(Canvas.TopProperty, target.Top);
 			canvas.SetValue(Canvas.LeftProperty, target.Left);
@@ -264,7 +336,8 @@ namespace eScapeLLC.UWP.Charts {
 			canvas.SetValue(FrameworkElement.HeightProperty, target.Height);
 		}
 		void IChartLayer.Remove(FrameworkElement fe) { canvas.Children.Remove(fe); }
-		void IChartLayer.Remove(IEnumerable<FrameworkElement> fes) { foreach (var fe in fes) canvas.Children.Remove(fe); }
+		void IChartLayer.Remove(IEnumerable<FrameworkElement> fes) { foreach (var fe in fes) (this as IChartLayer).Remove(fe); }
+		void IChartLayer.Clear() { canvas.Children.Clear(); }
 		#endregion
 	}
 	#endregion
@@ -409,6 +482,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// LayoutUpdated gets called frequently, so it gets debounced.
 		/// </summary>
 		protected LayoutState CurrentLayout { get; set; }
+		/// <summary>
+		/// Current set of layers.
+		/// </summary>
+		protected List<IChartLayer> Layers { get; set; }
 		#endregion
 		#region DPs
 		/// <summary>
@@ -434,6 +511,7 @@ namespace eScapeLLC.UWP.Charts {
 			LayoutUpdated += new EventHandler<object>(Chart_LayoutUpdated);
 			DataContextChanged += Chart_DataContextChanged;
 			CurrentLayout = new LayoutState();
+			Layers = new List<IChartLayer>();
 		}
 		#endregion
 		#region evhs
@@ -518,7 +596,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="sender"></param>
 		/// <param name="e"></param>
 		void Components_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
-			var celc = new DefaultEnterLeaveContext(Surface, Components, CurrentLayout.Dimensions, Rect.Empty, Rect.Empty, DataContext);
+			var celc = new DefaultEnterLeaveContext(Surface, Components, Layers, CurrentLayout.Dimensions, Rect.Empty, Rect.Empty, DataContext);
 			if (e.OldItems != null) {
 				foreach (ChartComponent cc in e.OldItems) {
 					_trace.Verbose($"leave '{cc.Name}' {cc}");
@@ -598,7 +676,7 @@ namespace eScapeLLC.UWP.Charts {
 			try {
 				Surface = GetTemplateChild(PART_Canvas) as Canvas;
 				_trace.Verbose($"OnApplyTemplate ({Width}x{Height}) {Surface} d:{DeferredEnter.Count}");
-				var celc = new DefaultEnterLeaveContext(Surface, Components, CurrentLayout.Dimensions, Rect.Empty, Rect.Empty, DataContext);
+				var celc = new DefaultEnterLeaveContext(Surface, Components, Layers, CurrentLayout.Dimensions, Rect.Empty, Rect.Empty, DataContext);
 				foreach (var cc in DeferredEnter) {
 					EnterComponent(celc, cc);
 				}

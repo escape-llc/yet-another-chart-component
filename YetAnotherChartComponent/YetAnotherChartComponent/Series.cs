@@ -196,6 +196,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// The series geometry.
 		/// </summary>
 		protected PathGeometry Geometry { get; set; }
+		protected IChartLayer Layer { get; set; }
 		#endregion
 		#region DPs
 		/// <summary>
@@ -225,8 +226,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icelc"></param>
 		public void Enter(IChartEnterLeaveContext icelc) {
 			EnsureAxes(icelc);
+			Layer = icelc.CreateLayer(Segments);
 			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis} c:{CategoryAxisName}:{CategoryAxis} d:{DataSourceName}");
-			icelc.Add(Segments);
 			BindTo(this, "PathStyle", Segments, Path.StyleProperty);
 		}
 		/// <summary>
@@ -237,7 +238,8 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"leave");
 			ValueAxis = null;
 			CategoryAxis = null;
-			icelc.Remove(Segments);
+			icelc.DeleteLayer(Layer);
+			Layer = null;
 		}
 		/// <summary>
 		/// Adjust transforms for the various components.
@@ -353,6 +355,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// The series geometry.
 		/// </summary>
 		protected GeometryGroup Geometry { get; set; }
+		protected IChartLayer Layer { get; set; }
 		#endregion
 		#region DPs
 		/// <summary>
@@ -386,8 +389,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icelc"></param>
 		public void Enter(IChartEnterLeaveContext icelc) {
 			EnsureAxes(icelc);
+			Layer = icelc.CreateLayer(Segments);
 			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis} c:{CategoryAxisName}:{CategoryAxis} d:{DataSourceName}");
-			icelc.Add(Segments);
 			BindTo(this, "PathStyle", Segments, Path.StyleProperty);
 		}
 		/// <summary>
@@ -398,7 +401,8 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"leave");
 			ValueAxis = null;
 			CategoryAxis = null;
-			icelc.Remove(Segments);
+			icelc.DeleteLayer(Layer);
+			Layer = null;
 		}
 		/// <summary>
 		/// Adjust transforms for the various components.
@@ -562,6 +566,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Path for the debug graphics.
 		/// </summary>
 		protected Path DebugSegments { get; set; }
+		protected IChartLayer Layer { get; set; }
 		#endregion
 		#region DPs
 		/// <summary>
@@ -592,8 +597,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icelc"></param>
 		public void Enter(IChartEnterLeaveContext icelc) {
 			EnsureAxes(icelc);
+			Layer = icelc.CreateLayer(Segments);
 			_trace.Verbose($"{Name} enter v:{ValueAxisName} {ValueAxis} c:{CategoryAxisName} {CategoryAxis} d:{DataSourceName}");
-			icelc.Add(Segments);
 			if (EnableDebugPaths) {
 				_traceg.Verbose(() => {
 					DebugClip = new GeometryGroup();
@@ -607,7 +612,7 @@ namespace eScapeLLC.UWP.Charts {
 				});
 			}
 			if (DebugSegments != null) {
-				icelc.Add(DebugSegments);
+				Layer.Add(DebugSegments);
 			}
 			BindTo(this, "PathStyle", Segments, Path.StyleProperty);
 		}
@@ -619,10 +624,8 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"{Name} leave");
 			ValueAxis = null;
 			CategoryAxis = null;
-			if(DebugSegments != null) {
-				icelc.Remove(DebugSegments);
-			}
-			icelc.Remove(Segments);
+			icelc.DeleteLayer(Layer);
+			Layer = null;
 		}
 		/// <summary>
 		/// Adjust transforms for the various components.
