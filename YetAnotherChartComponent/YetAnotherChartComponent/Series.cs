@@ -165,30 +165,6 @@ namespace eScapeLLC.UWP.Charts {
 			CategoryMinimum = double.NaN; CategoryMaximum = double.NaN;
 			Dirty = true;
 		}
-		/// <summary>
-		/// Create the combined MP matrix for this rectangle.
-		/// It would "normally" be MVP matrix, but for how V == I so we leave it out.
-		/// </summary>
-		/// <param name="area"></param>
-		/// <returns></returns>
-		protected virtual Matrix TransformFor(Rect area) {
-			return MatrixHelper.Multiply(ProjectionFor(area), ModelFor());
-		}
-		/// <summary>
-		/// Create the model (M) matrix for the data extents.
-		/// Uses current Category/Value axis Range and Minimum values.
-		/// Model maps the "cartesian" coordinate system to a normalized basis.
-		/// The basis vectors normalize the axis range.
-		/// The Y scale is reversed because cartesian goes reverse (+up) of device y-axis (+down).
-		/// The translation component compensates for the axis "end".  Note these are also normalized.
-		/// </summary>
-		/// <returns></returns>
-		protected virtual Matrix ModelFor() {
-			var xrange = CategoryAxis.Range;
-			var yrange = ValueAxis.Range;
-			var matx = new Matrix(1 / xrange, 0, 0, -1 / yrange, -CategoryAxis.Minimum / xrange, ValueAxis.Maximum / yrange);
-			return matx;
-		}
 		#endregion
 	}
 	#endregion
@@ -270,7 +246,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icrc"></param>
 		public void Transforms(IChartRenderContext icrc) {
 			if (CategoryAxis == null || ValueAxis == null) return;
-			var matx = TransformFor(icrc.Area);
+			var matx = MatrixSupport.TransformFor(icrc.Area, CategoryAxis, ValueAxis);
 			_trace.Verbose($"{Name} mat:{matx} clip:{icrc.SeriesArea}");
 			Geometry.Transform = new MatrixTransform() { Matrix = matx };
 			if (ClipToDataRegion) {
@@ -431,7 +407,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icrc"></param>
 		public void Transforms(IChartRenderContext icrc) {
 			if (CategoryAxis == null || ValueAxis == null) return;
-			var matx = TransformFor(icrc.Area);
+			var matx = MatrixSupport.TransformFor(icrc.Area, CategoryAxis, ValueAxis);
 			_trace.Verbose($"{Name} mat:{matx} clip:{icrc.SeriesArea}");
 #if !EXPERIMENTAL_MARKER
 			Geometry.Transform = new MatrixTransform() { Matrix = matx };
@@ -655,7 +631,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icrc"></param>
 		public void Transforms(IChartRenderContext icrc) {
 			if (CategoryAxis == null || ValueAxis == null) return;
-			var matx = TransformFor(icrc.Area);
+			var matx = MatrixSupport.TransformFor(icrc.Area, CategoryAxis, ValueAxis);
 			_trace.Verbose($"{Name} mat:{matx} clip:{icrc.SeriesArea}");
 			if (ClipToDataRegion) {
 				Segments.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };

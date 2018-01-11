@@ -77,7 +77,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icrc">Context.</param>
 		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
-			var matx = ProjectionFor(icrc.SeriesArea);
+			var matx = MatrixSupport.ProjectionFor(icrc.SeriesArea);
 			Rectangle.Transform = new MatrixTransform() { Matrix = matx };
 		}
 		#endregion
@@ -236,7 +236,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icrc">The context.</param>
 		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
 			if (ValueAxis == null) return;
-			var matx = TransformFor(icrc.SeriesArea, ValueAxis);
+			var matx = MatrixSupport.TransformFor(icrc.SeriesArea, ValueAxis);
 			_trace.Verbose($"transforms sy:{matx.M22:F3} matx:{matx} sa:{icrc.SeriesArea}");
 			if (ClipToDataRegion) {
 				Path.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
@@ -270,11 +270,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Binding path to the maximum value axis value.
 		/// </summary>
-		public double ValueMaximum { get { return (double)GetValue(ValueMaximumProperty); } set { SetValue(ValueMaximumProperty, value); } }
+		public double Value1 { get { return (double)GetValue(Value1Property); } set { SetValue(Value1Property, value); } }
 		/// <summary>
 		/// Binding path to the minimum value axis value.
 		/// </summary>
-		public double ValueMinimum { get { return (double)GetValue(ValueMinimumProperty); } set { SetValue(ValueMinimumProperty, value); } }
+		public double Value2 { get { return (double)GetValue(Value2Property); } set { SetValue(Value2Property, value); } }
 		/// <summary>
 		/// Whether to clip geometry to the data region.
 		/// When true, rule will NEVER display outside the data region.
@@ -295,27 +295,27 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Property for IProvideValueExtents.
 		/// </summary>
-		public double Minimum { get { return ValueMinimum; } }
+		public double Minimum { get { return Math.Min(Value1, Value2); } }
 		/// <summary>
 		/// Property for IProvideValueExtents.
 		/// </summary>
-		public double Maximum { get { return ValueMaximum; } }
+		public double Maximum { get { return Math.Max(Value1, Value2); } }
 		/// <summary>
 		/// The path to attach geometry et al.
 		/// </summary>
-		protected Path MinimumPath { get; set; }
+		protected Path Value1Path { get; set; }
 		/// <summary>
 		/// The geometry to use for this component.
 		/// </summary>
-		protected LineGeometry MinimumRule { get; set; }
+		protected LineGeometry Value1Rule { get; set; }
 		/// <summary>
 		/// The path to attach geometry et al.
 		/// </summary>
-		protected Path MaximumPath { get; set; }
+		protected Path Value2Path { get; set; }
 		/// <summary>
 		/// The geometry to use for this component.
 		/// </summary>
-		protected LineGeometry MaximumRule { get; set; }
+		protected LineGeometry Value2Rule { get; set; }
 		/// <summary>
 		/// The path to attach geometry et al.
 		/// </summary>
@@ -334,22 +334,22 @@ namespace eScapeLLC.UWP.Charts {
 		/// Identifies <see cref="PathStyle"/> dependency property.
 		/// </summary>
 		public static readonly DependencyProperty PathStyleProperty = DependencyProperty.Register(
-			"PathStyle", typeof(Style), typeof(HorizontalBand), new PropertyMetadata(null)
+			nameof(PathStyle), typeof(Style), typeof(HorizontalBand), new PropertyMetadata(null)
 		);
 		/// <summary>
 		/// Identifies <see cref="BandPathStyle"/> dependency property.
 		/// </summary>
 		public static readonly DependencyProperty BandPathStyleProperty = DependencyProperty.Register(
-			"BandPathStyle", typeof(Style), typeof(HorizontalBand), new PropertyMetadata(null)
+			nameof(BandPathStyle), typeof(Style), typeof(HorizontalBand), new PropertyMetadata(null)
 		);
 		/// <summary>
 		/// Value DP.
 		/// </summary>
-		public static readonly DependencyProperty ValueMaximumProperty = DependencyProperty.Register(
-			"ValueMaximum", typeof(double), typeof(HorizontalBand), new PropertyMetadata(null, new PropertyChangedCallback(ComponentPropertyChanged))
+		public static readonly DependencyProperty Value1Property = DependencyProperty.Register(
+			nameof(Value1), typeof(double), typeof(HorizontalBand), new PropertyMetadata(null, new PropertyChangedCallback(ComponentPropertyChanged))
 		);
-		public static readonly DependencyProperty ValueMinimumProperty = DependencyProperty.Register(
-			"ValueMinimum", typeof(double), typeof(HorizontalBand), new PropertyMetadata(null, new PropertyChangedCallback(ComponentPropertyChanged))
+		public static readonly DependencyProperty Value2Property = DependencyProperty.Register(
+			nameof(Value2), typeof(double), typeof(HorizontalBand), new PropertyMetadata(null, new PropertyChangedCallback(ComponentPropertyChanged))
 		);
 		/// <summary>
 		/// Generic DP property change handler.
@@ -362,7 +362,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (dpcea.OldValue != dpcea.NewValue) {
 				if (hr.ValueAxis == null) return;
 				var aus = AxisUpdateState.None;
-				if (hr.ValueMaximum > hr.ValueAxis.Maximum || hr.ValueMinimum < hr.ValueAxis.Minimum) {
+				if (hr.Value1 > hr.ValueAxis.Maximum || hr.Value2 < hr.ValueAxis.Minimum) {
 					_trace.Verbose($"{hr.Name} axis-update-required");
 					aus = AxisUpdateState.Value;
 				}
@@ -376,13 +376,13 @@ namespace eScapeLLC.UWP.Charts {
 		/// Ctor.
 		/// </summary>
 		public HorizontalBand() {
-			MinimumRule = new LineGeometry();
-			MinimumPath = new Path() {
-				Data = MinimumRule
+			Value1Rule = new LineGeometry();
+			Value1Path = new Path() {
+				Data = Value1Rule
 			};
-			MaximumRule = new LineGeometry();
-			MaximumPath = new Path() {
-				Data = MaximumRule
+			Value2Rule = new LineGeometry();
+			Value2Path = new Path() {
+				Data = Value2Rule
 			};
 			Band = new RectangleGeometry();
 			BandPath = new Path() {
@@ -392,19 +392,19 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region helpers
 		void DoBindings(IChartEnterLeaveContext icelc) {
-			BindTo(this, "PathStyle", MinimumPath, Path.StyleProperty);
+			BindTo(this, "PathStyle", Value1Path, Path.StyleProperty);
 			var bx = GetBindingExpression(UIElement.VisibilityProperty);
 			if (bx != null) {
-				MinimumPath.SetBinding(UIElement.VisibilityProperty, bx.ParentBinding);
+				Value1Path.SetBinding(UIElement.VisibilityProperty, bx.ParentBinding);
 			} else {
-				BindTo(this, "Visibility", MinimumPath, Path.VisibilityProperty);
+				BindTo(this, "Visibility", Value1Path, Path.VisibilityProperty);
 			}
-			BindTo(this, "PathStyle", MaximumPath, Path.StyleProperty);
+			BindTo(this, "PathStyle", Value2Path, Path.StyleProperty);
 			bx = GetBindingExpression(UIElement.VisibilityProperty);
 			if (bx != null) {
-				MaximumPath.SetBinding(UIElement.VisibilityProperty, bx.ParentBinding);
+				Value2Path.SetBinding(UIElement.VisibilityProperty, bx.ParentBinding);
 			} else {
-				BindTo(this, "Visibility", MaximumPath, Path.VisibilityProperty);
+				BindTo(this, "Visibility", Value2Path, Path.VisibilityProperty);
 			}
 			BindTo(this, BandPathStyle == null ? "PathStyle" : "BandPathStyle", BandPath, Path.StyleProperty);
 			bx = GetBindingExpression(UIElement.VisibilityProperty);
@@ -433,8 +433,8 @@ namespace eScapeLLC.UWP.Charts {
 			EnsureAxes(icelc);
 			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis}");
 			icelc.Add(BandPath);
-			icelc.Add(MinimumPath);
-			icelc.Add(MaximumPath);
+			icelc.Add(Value1Path);
+			icelc.Add(Value2Path);
 			DoBindings(icelc);
 		}
 		/// <summary>
@@ -442,8 +442,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icelc">The context.</param>
 		void IRequireEnterLeave.Leave(IChartEnterLeaveContext icelc) {
-			icelc.Remove(MaximumPath);
-			icelc.Remove(MinimumPath);
+			icelc.Remove(Value2Path);
+			icelc.Remove(Value1Path);
 			icelc.Remove(BandPath);
 		}
 		/// <summary>
@@ -454,16 +454,16 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icrc">The context.</param>
 		void IRequireRender.Render(IChartRenderContext icrc) {
 			if (ValueAxis == null) return;
-			_trace.Verbose($"{Name} max:{ValueMaximum} min:{ValueMinimum}");
-			var vmin = ValueAxis.For(ValueMinimum);
-			var vmax = ValueAxis.For(ValueMaximum);
+			_trace.Verbose($"{Name} max:{Value1} min:{Value2}");
+			var vmin = ValueAxis.For(Value2);
+			var vmax = ValueAxis.For(Value1);
 			var mmin = DoMinMax ? Math.Min(vmin, vmax) : vmin;
 			var mmax = DoMinMax ? Math.Max(vmin, vmax) : vmax;
-			MinimumRule.StartPoint = new Point(0, mmin);
-			MinimumRule.EndPoint = new Point(1, mmin);
-			MaximumRule.StartPoint = new Point(0, mmax);
-			MaximumRule.EndPoint = new Point(1, mmax);
-			Band.Rect = new Rect(MinimumRule.StartPoint, MaximumRule.EndPoint);
+			Value1Rule.StartPoint = new Point(0, mmin);
+			Value1Rule.EndPoint = new Point(1, mmin);
+			Value2Rule.StartPoint = new Point(0, mmax);
+			Value2Rule.EndPoint = new Point(1, mmax);
+			Band.Rect = new Rect(Value1Rule.StartPoint, Value2Rule.EndPoint);
 			Dirty = false;
 		}
 		/// <summary>
@@ -472,15 +472,15 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icrc">The context.</param>
 		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
 			if (ValueAxis == null) return;
-			var matx = TransformFor(icrc.SeriesArea, ValueAxis);
+			var matx = MatrixSupport.TransformFor(icrc.SeriesArea, ValueAxis);
 			_trace.Verbose($"transforms sy:{matx.M22:F3} matx:{matx} sa:{icrc.SeriesArea}");
 			if (ClipToDataRegion) {
-				MinimumPath.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
-				MaximumPath.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
+				Value1Path.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
+				Value2Path.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
 				BandPath.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
 			}
-			MinimumRule.Transform = new MatrixTransform() { Matrix = matx };
-			MaximumRule.Transform = new MatrixTransform() { Matrix = matx };
+			Value1Rule.Transform = new MatrixTransform() { Matrix = matx };
+			Value2Rule.Transform = new MatrixTransform() { Matrix = matx };
 			Band.Transform = new MatrixTransform() { Matrix = matx };
 		}
 		#endregion
@@ -591,7 +591,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icrc"></param>
 		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
 			if (ValueAxis == null) return;
-			var gmatx = TransformFor(icrc.SeriesArea, ValueAxis);
+			var gmatx = MatrixSupport.TransformFor(icrc.SeriesArea, ValueAxis);
 			GridGeometry.Transform = new MatrixTransform() { Matrix = gmatx };
 		}
 		#endregion

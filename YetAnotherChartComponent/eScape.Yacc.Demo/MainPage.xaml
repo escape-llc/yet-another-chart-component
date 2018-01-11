@@ -134,22 +134,19 @@
 		</Style>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-		<VariableSizedWrapGrid x:Name="toolbar" Orientation="Horizontal"
+		<CommandBar x:Name="toolbar"
 			RelativePanel.AlignTopWithPanel="True">
-			<VariableSizedWrapGrid Orientation="Horizontal">
-				<CheckBox x:Name="cb_legend" Style="{StaticResource cbStyle}" Content="Legend" IsChecked="True"/>
-				<CheckBox x:Name="cb_yaxis_grid" Style="{StaticResource cbStyle}" Content="Grid" IsChecked="True"/>
-				<CheckBox x:Name="cb_rule_value1" Style="{StaticResource cbStyle}" Content="V1 Avg" IsChecked="True"/>
-				<CheckBox x:Name="cb_rule_value2" Style="{StaticResource cbStyle}" Content="V2 Avg" IsChecked="True"/>
-				</VariableSizedWrapGrid>
-			<VariableSizedWrapGrid Orientation="Horizontal">
-				<Button x:Name="add_head" Style="{StaticResource btnStyle}" Content="+ Head" Click="add_head_Click"/>
-				<Button x:Name="add_tail" Style="{StaticResource btnStyle}" Content="+ Tail" Click="add_item_Click"/>
-				<Button x:Name="remove_head" Style="{StaticResource btnStyle}" Content="- Head" Click="remove_head_Click"/>
-				<Button x:Name="remove_tail" Style="{StaticResource btnStyle}" Content="- Tail" Click="remove_tail_Click"/>
-				<Button x:Name="add_and_remove_head" Style="{StaticResource btnStyle}" Content="- Head, + Tail" Click="add_and_remove_head_Click"/>
-			</VariableSizedWrapGrid>
-		</VariableSizedWrapGrid>
+			<CommandBar.PrimaryCommands>
+				<AppBarToggleButton IsChecked="True" x:Name="cb_legend" Label="Toggle" Content="Legend"/>
+				<AppBarToggleButton IsChecked="True" x:Name="cb_grid" Label="Toggle" Content="Grid"/>
+				<AppBarToggleButton IsChecked="True" x:Name="cb_band" Label="Toggle" Content="Band"/>
+				<AppBarButton x:Name="add_head" Style="{StaticResource btnStyle}" Content="+[0]" Label="Add Head" Click="add_head_Click"/>
+				<AppBarButton x:Name="add_tail" Style="{StaticResource btnStyle}" Content="+ [N]" Label="Add End" Click="add_item_Click"/>
+				<AppBarButton x:Name="remove_head" Style="{StaticResource btnStyle}" Content="-[0]" Label="Delete Head" Click="remove_head_Click"/>
+				<AppBarButton x:Name="remove_tail" Style="{StaticResource btnStyle}" Content="-[N]" Label="Delete End" Click="remove_tail_Click"/>
+				<AppBarButton x:Name="add_and_remove_head" Style="{StaticResource btnStyle}" Content="-[0]+[N]" Label="Scroll" Click="add_and_remove_head_Click"/>
+			</CommandBar.PrimaryCommands>
+		</CommandBar>
 		<yacc:Chart x:Name="chart" Style="{StaticResource Chart}"
 			RelativePanel.Below="toolbar" RelativePanel.AlignBottomWithPanel="True"
 			RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True">
@@ -190,14 +187,14 @@
 					PathStyle="{StaticResource Rule_v2}"
 					Visibility="{Binding ElementName=cb_rule_value2, Path=IsChecked, Converter={StaticResource b2v}}" />
 					-->
-				<yacc:HorizontalBand ValueAxisName="yaxis" ValueMaximum="{Binding Value2Average}" ValueMinimum="{Binding Value1Average}"
+				<yacc:HorizontalBand ValueAxisName="yaxis" Value1="{Binding Value1Average}" Value2="{Binding Value2Average}"
 					PathStyle="{StaticResource Band_v1v2-rule}" BandPathStyle="{StaticResource Band_v1v2-band}"
-					Visibility="{Binding ElementName=cb_rule_value2, Path=IsChecked, Converter={StaticResource b2v}}"
+					Visibility="{Binding ElementName=cb_band, Path=IsChecked, Converter={StaticResource b2v}}"
 				/>
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}"
 					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="F1" />
 				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource Grid}"
-					Visibility="{Binding ElementName=cb_yaxis_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
+					Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>
 		<TextBlock x:Name="title" Style="{StaticResource Title}" Text="YACC Demonstration Chart"
