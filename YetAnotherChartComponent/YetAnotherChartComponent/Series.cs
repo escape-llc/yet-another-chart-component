@@ -300,7 +300,11 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region IProvideLegend
-		Legend IProvideLegend.Legend() {
+		private Legend _legend;
+		Legend IProvideLegend.Legend {
+			get { if (_legend == null) _legend = Legend(); return _legend; }
+		}
+		Legend Legend() {
 			return new Legend() { Title = Title, Fill = Segments.Stroke, Stroke = Segments.Stroke };
 		}
 		#endregion
@@ -460,7 +464,7 @@ namespace eScapeLLC.UWP.Charts {
 			var proj = MatrixSupport.ProjectionFor(icrc.Area);
 			var world = MatrixSupport.ModelFor(CategoryAxis, ValueAxis);
 			// get the local marker matrix
-			var marker = MatrixSupport.LocalTransform(world, MarkerWidth, icrc.Area, -MarkerOrigin.X, -MarkerOrigin.Y);
+			var marker = MatrixSupport.LocalFor(world, MarkerWidth, icrc.Area, -MarkerOrigin.X, -MarkerOrigin.Y);
 			foreach(var state in MarkerState) {
 				if(state.World == default(Matrix)) {
 				// TODO this can go in axis finalization
@@ -478,7 +482,11 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region IProvideLegend
-		Legend IProvideLegend.Legend() {
+		private Legend _legend;
+		Legend IProvideLegend.Legend {
+			get { if (_legend == null) _legend = Legend(); return _legend; }
+		}
+		Legend Legend() {
 			return new Legend() { Title = Title, Fill = PathStyle.Find<Brush>(Path.FillProperty), Stroke = PathStyle.Find<Brush>(Path.StrokeProperty) };
 		}
 		#endregion
@@ -698,7 +706,11 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region IProvideLegend
-		Legend IProvideLegend.Legend() {
+		private Legend _legend;
+		Legend IProvideLegend.Legend {
+			get { if (_legend == null) _legend = Legend(); return _legend; }
+		}
+		Legend Legend() {
 			return new Legend() { Title = Title, Fill = Segments.Fill, Stroke = Segments.Stroke };
 		}
 		#endregion

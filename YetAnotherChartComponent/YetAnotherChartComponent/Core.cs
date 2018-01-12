@@ -169,6 +169,22 @@ namespace eScapeLLC.UWP.Charts {
 		/// <returns>Allocated and registered rectangle.</returns>
 		Rect ClaimSpace(ChartComponent cc, Side sd, double amt);
 	}
+	public interface IChartLayoutCompleteContext {
+		/// <summary>
+		/// Overall dimensions.
+		/// </summary>
+		Size Dimensions { get; }
+		/// <summary>
+		/// Space remaining after claims.
+		/// This rectangle is passed to all components via IChartRenderContext.SeriesArea.
+		/// </summary>
+		Rect SeriesArea { get; }
+		/// <summary>
+		/// Space for this component.
+		/// If no space was claimed, equal to SeriesArea.
+		/// </summary>
+		Rect Area { get; }
+	}
 	#endregion
 	#region IChartRenderContext
 	/// <summary>
@@ -233,6 +249,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="iclc">The context.</param>
 		void Layout(IChartLayoutContext iclc);
+	}
+	/// <summary>
+	/// Require callback when layout has completed.
+	/// </summary>
+	public interface IRequireLayoutComplete {
+		void LayoutComplete(IChartLayoutCompleteContext iclcc);
 	}
 	#endregion
 	#region IRequireEnterLeave
@@ -307,10 +329,10 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public interface IProvideLegend {
 		/// <summary>
-		/// Create the legend for this item.
+		/// The legend for this item.
+		/// MUST return a stable value.
 		/// </summary>
-		/// <returns></returns>
-		Legend Legend();
+		Legend Legend { get; }
 	}
 	#endregion
 	#region IProvideValueExtents
@@ -560,7 +582,7 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region StyleExtensions
 	/// <summary>
-	/// Extension methods for styles.
+	/// Extension methods for <see cref="Style"/>.
 	/// </summary>
 	public static class StyleExtensions {
 		/// <summary>
@@ -582,7 +604,7 @@ namespace eScapeLLC.UWP.Charts {
 		}
 	}
 	#endregion
-	#region Recycler
+	#region Recycler<T>
 	/// <summary>
 	/// Recycles an input list of instances, then provides new instances.
 	/// Does the bookkeeping to track unused and newly-provided instances.

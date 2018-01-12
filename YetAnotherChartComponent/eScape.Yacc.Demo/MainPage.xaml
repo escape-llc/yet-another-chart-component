@@ -182,9 +182,6 @@
 								<LineGeometry StartPoint=".5,.4" EndPoint=".5,.6" />
 								<LineGeometry StartPoint=".4,.5" EndPoint=".6,.5" />
 							</GeometryGroup>
-							<!--
-							<EllipseGeometry RadiusX=".5" RadiusY=".5" Center=".5,.5" />
-							-->
 						</DataTemplate>
 					</yacc:MarkerSeries.MarkerTemplate>
 				</yacc:MarkerSeries>

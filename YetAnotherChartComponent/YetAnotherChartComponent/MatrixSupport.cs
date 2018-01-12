@@ -5,18 +5,24 @@ using Windows.UI.Xaml.Media;
 namespace eScapeLLC.UWP.Charts {
 	#region MatrixSupport
 	/// <summary>
-	/// Static helpers for the <see cref="Matrix"/> class.
-	/// In XAML and many other places, coordinate transforms are represented using affine matrices in homogeneous coordinates.
-	/// In XAML, the Matrix struct is the workhorse.  This structure "leaves out" the last column, because its values are fixed at (0 0 1).
-	/// One can use <see cref="TransformGroup"/> to accomplish this, but it requires the UI thread just to do matrix arithmetic!
+	/// Static helpers for XAML <see cref="Matrix"/>.
+	/// In graphics programming, coordinate transforms are represented using affine matrices and homogeneous coordinates.
+	/// In XAML, the <see cref="Matrix"/> struct is the workhorse.  This structure "leaves out" the last column, because its values are fixed at (0 0 1).
 	/// What matrix algebra would call M13 and M23, <see cref="Matrix"/> calls OffsetX and OffsetY.
-	/// 
+	/// One can use <see cref="TransformGroup"/> to do matrix algebra, but it requires the UI thread (just to do matrix arithmetic)!
+	///
 	///	WC	world coordinates
 	///	NDC	normalized device coordinates [0..1]
 	///	DC	device coordinates
-	///	
+	///
 	/// Matrix pipeline: WC --> M --> NDC --> P --> DC
+	/// Transforms MAY be multiplied together into a single matrix representing their composite action.
+	///
 	/// Composite model: (Mn * ... * M1) = M where M1 is the "initial" WC matrix that feeds P matrix.
+	/// In composite model, the WC will be in whatever coordinate system the Mn matrix represents (which may be NDC, like a marker).
+	///
+	/// Reverse pipeline: DC --> Inv(P) --> NDC --> Inv(M) --> WC
+	/// MUST use the inverse of (each) matrix to go in the opposite direction.
 	/// </summary>
 	public static class MatrixSupport {
 		// these are the affine matrix's third column
@@ -79,7 +85,7 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		/// <summary>
 		/// Create the projection (P) matrix for the target rectangle.
-		/// Projection maps the rectangle the model coordinate system displays in.
+		/// Projection maps NDC to the display rectangle.
 		/// </summary>
 		/// <param name="area">Target rectangle.</param>
 		/// <returns>New matrix.</returns>
@@ -88,11 +94,11 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		/// <summary>
 		/// Create the model (M) matrix for the given axis' extents.
-		/// Uses axis Range and Minimum values.
-		/// Model maps the "cartesian" coordinate system to a normalized basis.
+		/// Uses axis Range and extent values.
+		/// Model maps world coordinates to NDC.
 		/// The basis vectors normalize the axis range.
 		/// The Y scale is reversed because cartesian goes reverse (+up) of device y-axis (+down).
-		/// The translation component compensates for the axis "end".  Note these are also normalized.
+		/// The translation components compensate for the axis "ends".  Note these are also normalized.
 		/// </summary>
 		/// <param name="xaxis">The x-axis.</param>
 		/// <param name="yaxis">The y-axis.</param>
@@ -106,7 +112,7 @@ namespace eScapeLLC.UWP.Charts {
 			return matx;
 		}
 		/// <summary>
-		/// Create a final (MVP) matrix for [0..1] in X axis, and axis.Range in Y-axis.
+		/// Create a final (MVP) matrix for NDC in X axis, and axis.Range in Y-axis.
 		/// Y-axis is inverted.
 		/// All components are pre-multiplied instead of using <see cref="MatrixSupport.Multiply"/>.
 		/// </summary>
@@ -120,7 +126,7 @@ namespace eScapeLLC.UWP.Charts {
 			return matx;
 		}
 		/// <summary>
-		/// Create a final (MVP) matrix for this rectangle and axes.
+		/// Create a final (MP) matrix for this rectangle and axes.
 		/// It would "normally" be MVP matrix, but for how V == I so we leave it out.
 		/// </summary>
 		/// <param name="area">Target area.</param>
@@ -136,31 +142,30 @@ namespace eScapeLLC.UWP.Charts {
 		/// Translate matrix by given offset.
 		/// </summary>
 		/// <param name="mx">Source matrix.</param>
-		/// <param name="xo">X offset.</param>
-		/// <param name="yo">Y offset.</param>
+		/// <param name="xo">X offset in MX units.</param>
+		/// <param name="yo">Y offset in MX units.</param>
 		/// <returns></returns>
 		public static Matrix Translate(Matrix mx, double xo, double yo) {
 			return new Matrix(mx.M11, mx.M12, mx.M21, mx.M22, mx.OffsetX + xo * mx.M11, mx.OffsetY + yo * mx.M22);
 		}
 		/// <summary>
 		/// Create a transform for a local coordinate system, e.g. a Marker.
-		/// This transform creates a coordinate system of NDC centered at (.5,.5) on whatever point the "outer" transform represents.
-		/// Takes the x-axis as a reference, and cross-calculates the scale for the y-axis to make it "square"
-		/// in PX coordinates.
+		/// This transform creates a coordinate system of NDC centered at (XX,YY) on whatever point the "outer" transform represents.
+		/// Takes the x-axis as a reference, and cross-calculates the scale for the y-axis to make it "square" in DC.
 		/// For example, if MKWIDTH evaluates to 16px on x-axis, a y-axis magnitude is calculated that also represents 16px.
 		/// </summary>
-		/// <param name="mx">Model (M) transform.  Assumed to be translated to the "center" point.</param>
-		/// <param name="mkwidth">Marker width [0..1].  Units is WC.</param>
-		/// <param name="area">The layout area.  Units is DC.</param>
-		/// <param name="xx">Translate local x.  Units is NDC.</param>
-		/// <param name="yy">Translate local y.  Units is NDC.</param>
+		/// <param name="mx">Model (M) transform.  SHOULD be translated to the "center" point that aligns with NDC origin.</param>
+		/// <param name="mkwidth">Marker width [0..1].  Unit is (M) x-axis basis. E.g. Range = 10, Basis = .1, mkwidth = .5; answer = .05 x-axis units.</param>
+		/// <param name="area">The layout area.  Unit is DC.  Provide DC to size the local coordinate system.</param>
+		/// <param name="xx">Translate local x.  Unit is NDC.  Additional offset to align an "origin".</param>
+		/// <param name="yy">Translate local y.  Unit is NDC.  Additional offset to align an "origin".</param>
 		/// <returns>New matrix.</returns>
-		public static Matrix LocalTransform(Matrix mx, double mkwidth, Rect area, double xx, double yy) {
-			// must "walk out" the marker dimensions through P
-			var mkwid_proj = mkwidth * area.Width * mx.M11;
-			// now "walk in" the DC to Y-axis (M)
-			var mkhgt_yaxis = mkwid_proj / area.Height / mx.M22;
-			var marker = new Matrix(mkwidth, 0, 0, mkhgt_yaxis, xx * mkwidth, yy * mkhgt_yaxis);
+		public static Matrix LocalFor(Matrix mx, double mkwidth, Rect area, double xx, double yy) {
+			// "walk out" the x-axis dimension through P (to get DC)
+			var wid_dc = mkwidth * area.Width * mx.M11;
+			// now "walk in" the DC to Y-axis (M) (to get NDC)
+			var hgt_yaxis = wid_dc / area.Height / mx.M22;
+			var marker = new Matrix(mkwidth, 0, 0, hgt_yaxis, xx * mkwidth, yy * hgt_yaxis);
 			return marker;
 		}
 	}

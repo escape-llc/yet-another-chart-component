@@ -11,11 +11,13 @@ using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
 
 namespace eScapeLLC.UWP.Charts {
+	#region context implementations
 	#region DefaultRenderContext
 	/// <summary>
 	/// Default impl for render context.
 	/// </summary>
 	public class DefaultRenderContext : IChartRenderContext {
+		#region properties
 		/// <summary>
 		/// The surface.  SHOULD NOT be null.
 		/// </summary>
@@ -40,16 +42,18 @@ namespace eScapeLLC.UWP.Charts {
 		/// The remaining area for series.
 		/// </summary>
 		public Rect SeriesArea { get; protected set; }
+		#endregion
+		#region ctor
 		/// <summary>
 		/// Ctor.
 		/// Initialize.
 		/// </summary>
-		/// <param name="surface"></param>
-		/// <param name="components"></param>
-		/// <param name="sz"></param>
-		/// <param name="rc"></param>
-		/// <param name="sa"></param>
-		/// <param name="dc"></param>
+		/// <param name="surface">The hosting UI.</param>
+		/// <param name="components">The list of components.</param>
+		/// <param name="sz">Size of chart rectangle.</param>
+		/// <param name="rc">The target rectangle.</param>
+		/// <param name="sa">The series area rectangle.</param>
+		/// <param name="dc">The data context.</param>
 		public DefaultRenderContext(Canvas surface, ObservableCollection<ChartComponent> components, Size sz, Rect rc, Rect sa, object dc) {
 			Surface = surface;
 			Components = components;
@@ -58,6 +62,8 @@ namespace eScapeLLC.UWP.Charts {
 			SeriesArea = sa;
 			DataContext = dc;
 		}
+		#endregion
+		#region public
 		/// <summary>
 		/// Search the components list by name.
 		/// </summary>
@@ -66,6 +72,41 @@ namespace eScapeLLC.UWP.Charts {
 		public ChartComponent Find(string name) {
 			return Components.SingleOrDefault((cx) => cx.Name == name);
 		}
+		#endregion
+	}
+	#endregion
+	#region DefaultLayoutCompleteContext
+	/// <summary>
+	/// Default impl for layout complete context.
+	/// </summary>
+	public class DefaultLayoutCompleteContext : IChartLayoutCompleteContext {
+		#region properties
+		/// <summary>
+		/// The overall size of the chart rectangle.
+		/// </summary>
+		public Size Dimensions { get; protected set; }
+		/// <summary>
+		/// The area for this component.
+		/// </summary>
+		public Rect Area { get; protected set; }
+		/// <summary>
+		/// The remaining area for series.
+		/// </summary>
+		public Rect SeriesArea { get; protected set; }
+		#endregion
+		#region ctor
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="sz">Size of chart rectangle.</param>
+		/// <param name="rc">The target rectangle.</param>
+		/// <param name="sa">The series area rectangle.</param>
+		public DefaultLayoutCompleteContext(Size sz, Rect rc, Rect sa) {
+			Dimensions = sz;
+			Area = rc;
+			SeriesArea = sa;
+		}
+		#endregion
 	}
 	#endregion
 	#region DefaultDataSourceRenderContext
@@ -92,19 +133,31 @@ namespace eScapeLLC.UWP.Charts {
 	/// Default impl of the enter/leave context.
 	/// </summary>
 	public class DefaultEnterLeaveContext : DefaultRenderContext, IChartEnterLeaveContext {
+		#region properties
+		/// <summary>
+		/// The next Z-index to allocate.
+		/// </summary>
 		public int NextZIndex { get; set; }
+		/// <summary>
+		/// The list of layers.
+		/// </summary>
 		protected List<IChartLayer> Layers { get; set; }
+		#endregion
+		#region ctor
 		/// <summary>
 		/// Ctor.
 		/// Initialize.
 		/// </summary>
-		/// <param name="surface"></param>
-		/// <param name="components"></param>
-		/// <param name="sz"></param>
-		/// <param name="rc"></param>
-		/// <param name="sa"></param>
-		/// <param name="dc"></param>
+		/// <param name="surface">The hosting UI.</param>
+		/// <param name="components">The list of components.</param>
+		/// <param name="layers">The list of layers.</param>
+		/// <param name="sz">Size of chart rectangle.</param>
+		/// <param name="rc">The target rectangle.</param>
+		/// <param name="sa">The series area rectangle.</param>
+		/// <param name="dc">The data context.</param>
 		public DefaultEnterLeaveContext(Canvas surface, ObservableCollection<ChartComponent> components, List<IChartLayer> layers, Size sz, Rect rc, Rect sa, object dc) :base(surface, components, sz, rc, sa, dc) { Surface = surface; Layers = layers; }
+		#endregion
+		#region IChartEnterLeaveContext
 		/// <summary>
 		/// Add given element to surface.
 		/// </summary>
@@ -124,6 +177,7 @@ namespace eScapeLLC.UWP.Charts {
 			icl.Clear();
 			Layers.Remove(icl);
 		}
+		#endregion
 	}
 	#endregion
 	#region DefaultLayoutContext
@@ -238,6 +292,8 @@ namespace eScapeLLC.UWP.Charts {
 		}
 	}
 	#endregion
+	#endregion
+	#region layer implementations
 	#region CommonCanvasLayer
 	/// <summary>
 	/// Layer where all layers share a common canvas.
@@ -341,6 +397,7 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 	}
 	#endregion
+	#endregion
 	#region ChartDataSourceCollection
 	/// <summary>
 	/// This is to appease the XAML infrastruction which eschews generic classes as property type.
@@ -358,6 +415,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// Keeps track of layout state between refreshes.
 	/// </summary>
 	public class LayoutState {
+		#region properties
 		/// <summary>
 		/// Current dimensions.
 		/// MUST NOT be (NaN,NaN) or (0,0).
@@ -379,10 +437,14 @@ namespace eScapeLLC.UWP.Charts {
 		/// Initialized by <see cref="InitializeLayoutContext(Thickness)"/>
 		/// </summary>
 		public DefaultLayoutContext Layout { get; set; }
+		#endregion
+		#region data
 		/// <summary>
 		/// Cache for render contexts.
 		/// </summary>
 		Dictionary<ChartComponent, DefaultRenderContext> rendercache = new Dictionary<ChartComponent, DefaultRenderContext>();
+		#endregion
+		#region public
 		/// <summary>
 		/// Whether the given dimensions are different from <see cref="Dimensions"/>
 		/// </summary>
@@ -427,6 +489,7 @@ namespace eScapeLLC.UWP.Charts {
 			rendercache.Add(cc, drc);
 			return drc;
 		}
+		#endregion
 	}
 	#endregion
 	#region Chart
@@ -751,6 +814,12 @@ namespace eScapeLLC.UWP.Charts {
 			// what's left is for the data series area
 			_trace.Verbose($"remaining {ls.Layout.RemainingRect}");
 			ls.Layout.FinalizeRects();
+			foreach (IRequireLayoutComplete cc in Components.Where((cc2) => cc2 is IRequireLayoutComplete)) {
+				_trace.Verbose($"layout-complete {cc}");
+				var rect = ls.Layout.For(cc as ChartComponent);
+				var ctx = new DefaultLayoutCompleteContext(ls.Layout.Dimensions,rect, ls.Layout.RemainingRect);
+				cc.LayoutComplete(ctx);
+			}
 		}
 		protected void Phase_RenderDataSources(LayoutState ls) {
 			var dsctx = new DefaultDataSourceRenderContext(Surface, Components, ls.LayoutDimensions, Rect.Empty, ls.Layout.RemainingRect, DataContext);
@@ -798,6 +867,28 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region helpers
 		/// <summary>
+		/// Bookkeeping for registering IDataSourceRenderer.
+		/// </summary>
+		/// <param name="dsname">Data source name.</param>
+		/// <param name="idsr">Instance to register.</param>
+		protected void Register(String dsname, IDataSourceRenderer idsr) {
+			var source = DataSources.Cast<DataSource>().SingleOrDefault<DataSource>((dds) => dds.Name == dsname);
+			if (source != null) {
+				source.Register(idsr);
+			}
+		}
+		/// <summary>
+		/// Bookkeeping for unregistering IDataSourceRenderer.
+		/// </summary>
+		/// <param name="dsname">Data source name.</param>
+		/// <param name="idsr">Instance to unregister.</param>
+		protected void Unregister(String dsname, IDataSourceRenderer idsr) {
+			var source = DataSources.Cast<DataSource>().SingleOrDefault<DataSource>((dds) => dds.Name == dsname);
+			if (source != null) {
+				source.Unregister(idsr);
+			}
+		}
+		/// <summary>
 		/// Common logic for component entering the chart.
 		/// </summary>
 		/// <param name="icelc">The context.</param>
@@ -813,8 +904,7 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			// for now anything can provide a legend item
 			if(cc is IProvideLegend ipl) {
-				var leg = ipl.Legend();
-				LegendItems.Add(leg);
+				LegendItems.Add(ipl.Legend);
 			}
 			// axis and series are mutually-exclusive
 			if (cc is IChartAxis ica) {
@@ -822,10 +912,9 @@ namespace eScapeLLC.UWP.Charts {
 			} else if (cc is DataSeries ds) {
 				Series.Add(ds);
 				if (ds is IDataSourceRenderer idsr) {
-					var source = DataSources.Cast<DataSource>().SingleOrDefault<DataSource>((dds) => dds.Name == ds.DataSourceName);
-					if (source != null) {
-						source.Register(idsr);
-					}
+					Register(ds.DataSourceName, idsr);
+				} else if(ds is IProvideDataSourceRenderer ipdsr) {
+					Register(ds.DataSourceName, ipdsr.Renderer);
 				}
 			}
 		}
@@ -836,16 +925,15 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="cc"></param>
 		protected void LeaveComponent(IChartEnterLeaveContext icelc, ChartComponent cc) {
 			if(cc is IProvideLegend ipl) {
-			// TODO pull out the legend item from collection.
+				LegendItems.Remove(ipl.Legend);
 			}
 			if (cc is IChartAxis ica) {
 				Axes.Remove(ica);
 			} else if (cc is DataSeries ds) {
 				if (ds is IDataSourceRenderer idsr) {
-					var source = DataSources.Cast<DataSource>().SingleOrDefault<DataSource>((dds) => dds.Name == ds.DataSourceName);
-					if (source != null) {
-						source.Unregister(idsr);
-					}
+					Unregister(ds.DataSourceName, idsr);
+				} else if (ds is IProvideDataSourceRenderer ipdsr) {
+					Unregister(ds.DataSourceName, ipdsr.Renderer);
 				}
 				Series.Remove(ds);
 			}
@@ -862,7 +950,7 @@ namespace eScapeLLC.UWP.Charts {
 		protected void ComponentTransforms(LayoutState ls, RefreshRequestEventArgs rrea) {
 			if (rrea.Component is IRequireTransforms irt) {
 				var rect = ls.Layout.For(rrea.Component);
-				_trace.Verbose($"component-render {rrea.Component} {rrea.Axis} {rect}");
+				_trace.Verbose($"component-transforms {rrea.Component} {rrea.Axis} {rect}");
 				var ctx = new DefaultRenderContext(Surface, Components, ls.LayoutDimensions, rect, ls.Layout.RemainingRect, DataContext);
 				irt.Transforms(ctx);
 			}
@@ -914,10 +1002,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="sz">Dimensions.</param>
 		protected void FullLayout(LayoutState ls) {
 			ls.InitializeLayoutContext(Padding);
+			_trace.Verbose($"full starting {ls.LayoutRect}");
 			// Phase I: reset axes
 			Phase_ResetAxes();
 			// Phase II: claim space (IRequireLayout)
-			_trace.Verbose($"full starting {ls.LayoutRect}");
 			Phase_Layout(ls);
 			// Phase III: data source rendering pipeline (IDataSourceRenderer)
 			Phase_RenderDataSources(ls);

@@ -42,6 +42,18 @@ namespace eScapeLLC.UWP.Charts {
 		void Postamble(object state);
 	}
 	#endregion
+	#region IProvideDataSourceRenderer
+	/// <summary>
+	/// Ability to provide an IDataSourceRenderer interface.
+	/// </summary>
+	public interface IProvideDataSourceRenderer {
+		/// <summary>
+		/// The renderer to use.
+		/// MUST return a stable value.
+		/// </summary>
+		IDataSourceRenderer Renderer { get; }
+	}
+	#endregion
 	#region DataSourceRefreshRequestEventHandler
 	/// <summary>
 	/// Refresh delegate.
