@@ -23,9 +23,9 @@ This is the current demo chart in the solution:
 ![yacc demo screen shot](http://escape-technology-llc.com/mobile/wp-content/gallery/main/yacc-chart-demo-7.png)
 
 # More Info
-Please check out the [Wiki](wiki) to learn more about the guts of YACC and rendering and linear algebra in general!
+Please check out the [Wiki](../../wiki) to learn more about the guts of YACC and rendering and linear algebra in general!
 
-Please consult the [other](issues) [features](projects) of this github repository to find out the current state of affairs, [*or to contribute*](pulls).
+Please consult the [other](../../issues) [features](../../projects) of this github repository to find out the current state of affairs, [*or to contribute*](../../pulls).
 
 # Nuget Releases
 
