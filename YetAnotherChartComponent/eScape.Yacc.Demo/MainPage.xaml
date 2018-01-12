@@ -121,7 +121,7 @@
 			<Setter Property="Fill" Value="{StaticResource green-to-blue}"/>
 		</Style>
 		<Style x:Key="Marker_v1" TargetType="Path">
-			<Setter Property="Stroke" Value="Red"/>
+			<Setter Property="Stroke" Value="Goldenrod"/>
 			<Setter Property="StrokeThickness" Value="1"/>
 			<Setter Property="Fill" Value="Blue"/>
 		</Style>
@@ -177,8 +177,14 @@
 					MarkerOffset=".625" MarkerWidth=".25" PathStyle="{StaticResource Marker_v1}">
 					<yacc:MarkerSeries.MarkerTemplate>
 						<DataTemplate>
-							<!-- Center and RadiusY are calculated based on current size -->
-							<EllipseGeometry RadiusX=".1" RadiusY=".1" />
+							<GeometryGroup>
+								<EllipseGeometry RadiusX=".5" RadiusY=".5" Center=".5,.5" />
+								<LineGeometry StartPoint=".5,.4" EndPoint=".5,.6" />
+								<LineGeometry StartPoint=".4,.5" EndPoint=".6,.5" />
+							</GeometryGroup>
+							<!--
+							<EllipseGeometry RadiusX=".5" RadiusY=".5" Center=".5,.5" />
+							-->
 						</DataTemplate>
 					</yacc:MarkerSeries.MarkerTemplate>
 				</yacc:MarkerSeries>

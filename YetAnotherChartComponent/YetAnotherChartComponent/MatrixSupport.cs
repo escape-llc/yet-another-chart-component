@@ -10,6 +10,13 @@ namespace eScapeLLC.UWP.Charts {
 	/// In XAML, the Matrix struct is the workhorse.  This structure "leaves out" the last column, because its values are fixed at (0 0 1).
 	/// One can use <see cref="TransformGroup"/> to accomplish this, but it requires the UI thread just to do matrix arithmetic!
 	/// What matrix algebra would call M13 and M23, <see cref="Matrix"/> calls OffsetX and OffsetY.
+	/// 
+	///	WC	world coordinates
+	///	NDC	normalized device coordinates [0..1]
+	///	DC	device coordinates
+	///	
+	/// Matrix pipeline: WC --> M --> NDC --> P --> DC
+	/// Composite model: (Mn * ... * M1) = M where M1 is the "initial" WC matrix that feeds P matrix.
 	/// </summary>
 	public static class MatrixSupport {
 		// these are the affine matrix's third column
@@ -143,12 +150,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// For example, if MKWIDTH evaluates to 16px on x-axis, a y-axis magnitude is calculated that also represents 16px.
 		/// </summary>
 		/// <param name="mx">Model (M) transform.  Assumed to be translated to the "center" point.</param>
-		/// <param name="mkwidth">Marker width [0..1].</param>
-		/// <param name="area">The layout area.</param>
-		/// <param name="xx">Translate local x.</param>
-		/// <param name="yy">Translate local y.</param>
+		/// <param name="mkwidth">Marker width [0..1].  Units is WC.</param>
+		/// <param name="area">The layout area.  Units is DC.</param>
+		/// <param name="xx">Translate local x.  Units is NDC.</param>
+		/// <param name="yy">Translate local y.  Units is NDC.</param>
 		/// <returns>New matrix.</returns>
-		public static Matrix MarkerTransform(Matrix mx, double mkwidth, Rect area, double xx, double yy) {
+		public static Matrix LocalTransform(Matrix mx, double mkwidth, Rect area, double xx, double yy) {
 			// must "walk out" the marker dimensions through P
 			var mkwid_proj = mkwidth * area.Width * mx.M11;
 			// now "walk in" the DC to Y-axis (M)

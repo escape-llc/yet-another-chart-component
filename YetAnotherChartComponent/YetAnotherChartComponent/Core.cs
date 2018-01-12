@@ -558,6 +558,30 @@ namespace eScapeLLC.UWP.Charts {
 		}
 	}
 	#endregion
+	#region StyleExtensions
+	/// <summary>
+	/// Extension methods for styles.
+	/// </summary>
+	public static class StyleExtensions {
+		/// <summary>
+		/// Find the setter and get its value.
+		/// </summary>
+		/// <typeparam name="T">Return type.</typeparam>
+		/// <param name="style">Style to search.</param>
+		/// <param name="property">DP to locate.</param>
+		/// <returns>The value or default(T).</returns>
+		public static T Find<T>(this Style style, DependencyProperty property) {
+			foreach (var xx in style.Setters) {
+				if (xx is Setter sx) {
+					if (sx.Property == property) {
+						return (T)sx.Value;
+					}
+				}
+			}
+			return default(T);
+		}
+	}
+	#endregion
 	#region Recycler
 	/// <summary>
 	/// Recycles an input list of instances, then provides new instances.

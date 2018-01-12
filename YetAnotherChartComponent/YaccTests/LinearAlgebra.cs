@@ -229,7 +229,7 @@ namespace Yacc.Tests {
 			// this matrix establishes the local coordinate system for the marker (5x5 pixels based on dimensions)
 			// TODO get the marker center (.5,.5) to "line up" on the "target" point in M-coordinates
 			// TODO get the translation for target M-coordinate
-			var marker = MatrixSupport.MarkerTransform(World1, MK_WIDTH, Bounds, -.5, -.5);
+			var marker = MatrixSupport.LocalTransform(World1, MK_WIDTH, Bounds, -.5, -.5);
 			var model2 = MatrixSupport.Multiply(World1, marker);
 			var modelproj = MatrixSupport.Multiply(Projection, model2);
 			var ul = modelproj.Transform(Origin);
@@ -250,7 +250,7 @@ namespace Yacc.Tests {
 		public void World1_MarkerTransform_ForPoint() {
 			var world1t = MatrixSupport.Translate(World1, TestPoint.X, TestPoint.Y);
 			TestContext.WriteLine($"world1t {world1t}");
-			var marker = MatrixSupport.MarkerTransform(world1t, MK_WIDTH, Bounds, -.5, -.5);
+			var marker = MatrixSupport.LocalTransform(world1t, MK_WIDTH, Bounds, -.5, -.5);
 			var model2 = MatrixSupport.Multiply(world1t, marker);
 			var mkproj = MatrixSupport.Multiply(Projection, model2);
 			var modelproj = MatrixSupport.Multiply(Projection, World1);

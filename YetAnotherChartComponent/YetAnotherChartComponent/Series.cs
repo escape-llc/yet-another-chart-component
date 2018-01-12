@@ -1,6 +1,9 @@
-﻿#undef EXPERIMENTAL_MARKER
+﻿#define EXPERIMENTAL_MARKER
 using eScape.Core;
+using eScapeLLC.UWP.Charts;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Windows.Foundation;
 using Windows.Foundation.Metadata;
 using Windows.UI;
@@ -166,6 +169,46 @@ namespace eScapeLLC.UWP.Charts {
 			Dirty = true;
 		}
 		#endregion
+	}
+	#endregion
+	#region ItemState
+	/// <summary>
+	/// Basic item state.
+	/// This is used when there are multiple paths generated, so they can be re-adjusted in Transforms et al.
+	/// </summary>
+	public class ItemState {
+		/// <summary>
+		/// The generated path.
+		/// </summary>
+		public Path Path { get; set; }
+		/// <summary>
+		/// The x value.
+		/// </summary>
+		public double XValue { get; set; }
+		/// <summary>
+		/// The y value.
+		/// </summary>
+		public double YValue { get; set; }
+	}
+	/// <summary>
+	/// Item state with transformation matrix.
+	/// </summary>
+	public class ItemState_Matrix : ItemState {
+		/// <summary>
+		/// Alternate matrix for the M matrix
+		/// </summary>
+		public Matrix World { get; set; }
+	}
+	/// <summary>
+	/// Item state with matrix and geometry.
+	/// </summary>
+	/// <typeparam name="G">Type of geometry.</typeparam>
+	public class ItemState_MatrixAndGeometry<G> : ItemState_Matrix where G: Geometry {
+		/// <summary>
+		/// The geometry.
+		/// If you can use Path.Data to reference geometry, choose <see cref="ItemState_Matrix"/> or <see cref="ItemState"/> instead.
+		/// </summary>
+		public G Geometry { get; set; }
 	}
 	#endregion
 	#region LineSeries
@@ -340,22 +383,27 @@ namespace eScapeLLC.UWP.Charts {
 		public DataTemplate MarkerTemplate { get { return (DataTemplate)GetValue(MarkerTemplateProperty); } set { SetValue(MarkerTemplateProperty, value); } }
 		/// <summary>
 		/// Marker Offset in Category axis units [0..1].
+		/// This is normalized to the Category axis unit.
 		/// </summary>
 		public double MarkerOffset { get; set; }
 		/// <summary>
+		/// Marker Origin is where the "center" of the marker geometry is (in NDC).
+		/// Default value is (.5,.5)
+		/// </summary>
+		public Point MarkerOrigin { get; set; } = new Point(.5, .5);
+		/// <summary>
 		/// Marker Width/Height in Category axis units [0..1].
-		/// Currently marker is a square with interior coordinates in NDC.
+		/// Marker coordinates form a square in NDC.
 		/// </summary>
 		public double MarkerWidth { get; set; }
 		/// <summary>
-		/// The series drawing attributes etc. on the Canvas.
+		/// The layer we're drawing into.
 		/// </summary>
-		protected Path Segments { get; set; }
-		/// <summary>
-		/// The series geometry.
-		/// </summary>
-		protected GeometryGroup Geometry { get; set; }
 		protected IChartLayer Layer { get; set; }
+		/// <summary>
+		/// Data needed for current markers
+		/// </summary>
+		protected List<MarkerItemState> MarkerState { get; set; }
 		#endregion
 		#region DPs
 		/// <summary>
@@ -376,22 +424,19 @@ namespace eScapeLLC.UWP.Charts {
 		/// Ctor.
 		/// </summary>
 		public MarkerSeries() {
-			Geometry = new GeometryGroup();
-			Segments = new Path() {
-				Data = Geometry
-			};
+			MarkerState = new List<MarkerItemState>();
 		}
 		#endregion
 		#region extensions
+		protected class MarkerItemState : ItemState_Matrix { }
 		/// <summary>
 		/// Initialize after entering VT.
 		/// </summary>
 		/// <param name="icelc"></param>
 		public void Enter(IChartEnterLeaveContext icelc) {
 			EnsureAxes(icelc);
-			Layer = icelc.CreateLayer(Segments);
+			Layer = icelc.CreateLayer();
 			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis} c:{CategoryAxisName}:{CategoryAxis} d:{DataSourceName}");
-			BindTo(this, "PathStyle", Segments, Path.StyleProperty);
 		}
 		/// <summary>
 		/// Undo effects of Enter().
@@ -411,55 +456,30 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icrc"></param>
 		public void Transforms(IChartRenderContext icrc) {
 			if (CategoryAxis == null || ValueAxis == null) return;
-			var matx = MatrixSupport.TransformFor(icrc.Area, CategoryAxis, ValueAxis);
-			_trace.Verbose($"{Name} mat:{matx} clip:{icrc.SeriesArea}");
-#if !EXPERIMENTAL_MARKER
-			Geometry.Transform = new MatrixTransform() { Matrix = matx };
-#endif
-			// TODO must counter-scale (in Y-axis) the markers to preserve aspect ratio
-			foreach (var gx in Geometry.Children) {
-				TransformMarker(gx, matx, icrc.Area);
+			// put the P matrix on everything
+			var proj = MatrixSupport.ProjectionFor(icrc.Area);
+			var world = MatrixSupport.ModelFor(CategoryAxis, ValueAxis);
+			// get the local marker matrix
+			var marker = MatrixSupport.LocalTransform(world, MarkerWidth, icrc.Area, -MarkerOrigin.X, -MarkerOrigin.Y);
+			foreach(var state in MarkerState) {
+				if(state.World == default(Matrix)) {
+				// TODO this can go in axis finalization
+					state.World = MatrixSupport.Translate(world, state.XValue, state.YValue);
+				}
+				// assemble Mk * M * P transform for this path
+				var model = MatrixSupport.Multiply(state.World, marker);
+				var matx = MatrixSupport.Multiply(proj, model);
+				state.Path.Data.Transform = new MatrixTransform() { Matrix = matx };
+				if (ClipToDataRegion) {
+					state.Path.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
+				}
 			}
-			if (ClipToDataRegion) {
-				Segments.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
-			}
-		}
-		/// <summary>
-		/// Counter-scale the marker's Y-axis to preserve aspect ratio.
-		/// </summary>
-		/// <param name="mk">The marker.</param>
-		/// <param name="scalex">X-axis scale.</param>
-		/// <param name="scaley">Y-axis scale.</param>
-		protected void TransformMarker(Geometry mk, Matrix gmatx, Rect area) {
-			if(mk is EllipseGeometry) {
-				var eg = mk as EllipseGeometry;
-				// problem: putting scalex in the factor gets the radius correct, but then Center.Y is off.
-				// problem: attempts to rescale Center.Y have failed; it should just be the same factor.
-				// this factor counter-scales back to unity; which is now the xaxis scale!
-				var gcx = gmatx.Transform(eg.Center);
-				_trace.Verbose($"mk eg:{eg.Center} r:{eg.RadiusX},{eg.RadiusY} gmatx:{gmatx} xform:{gcx} unit:{gmatx.Transform(new Point(1, 1))}");
-#if !EXPERIMENTAL_MARKER
-				var factor = (-1 / gmatx.M22);
-				var matx = new Matrix(1, 0, 0, factor, 0, eg.Center.Y);
-				mk.Transform = new MatrixTransform() { Matrix = matx };
-				// putting this scalex in factor makes RadiusY come out correctly, but then Center.Y is off.
-				var xpx = eg.RadiusX * gmatx.M11;
-				eg.RadiusY = xpx;
-				_trace.Verbose($"mk tg:matx:{matx} xpx:{xpx} c:{eg.Center} r:{eg.RadiusX},{eg.RadiusY} xform:{matx.Transform(eg.Center)}");
-#else
-				var scaley = Math.Abs(gmatx.M22);
-				var factorx = MarkerWidth*gmatx.M11*area.Width;
-				var factory = (factorx*gmatx.M22)/area.Height;
-				var matx = new Matrix(MarkerWidth, 0, 0, factory, gcx.X, gcx.Y);
-				_trace.Verbose($"mk matx:{matx} c:{matx.Transform(eg.Center)} unit:{matx.Transform(new Point(1,1))}");
-				mk.Transform = new MatrixTransform() { Matrix = matx };
-#endif
-			}
+			_trace.Verbose($"{Name} mat:{world} clip:{icrc.SeriesArea}");
 		}
 		#endregion
 		#region IProvideLegend
 		Legend IProvideLegend.Legend() {
-			return new Legend() { Title = Title, Fill = Segments.Fill, Stroke = Segments.Stroke };
+			return new Legend() { Title = Title, Fill = PathStyle.Find<Brush>(Path.FillProperty), Stroke = PathStyle.Find<Brush>(Path.StrokeProperty) };
 		}
 		#endregion
 		#region IDataSourceRenderer
@@ -467,6 +487,13 @@ namespace eScapeLLC.UWP.Charts {
 			internal BindingEvaluator bx;
 			internal BindingEvaluator by;
 			internal BindingEvaluator bl;
+			internal List<MarkerItemState> ms;
+			internal Recycler<Path> recycler;
+			internal IEnumerator<Path> paths;
+			internal Path NextPath() {
+				if (paths.MoveNext()) return paths.Current;
+				else return null;
+			}
 		}
 		/// <summary>
 		/// Initialize the new marker coordinates.
@@ -480,6 +507,15 @@ namespace eScapeLLC.UWP.Charts {
 				eg.Center = new Point(mappedx, mappedy);
 			}
 		}
+		/// <summary>
+		/// Path factory for recycler.
+		/// </summary>
+		/// <returns></returns>
+		Path CreatePath() {
+			var path = new Path();
+			BindTo(this, "PathStyle", path, Path.StyleProperty);
+			return path;
+		}
 		object IDataSourceRenderer.Preamble(IChartRenderContext icrc) {
 			if (ValueAxis == null || CategoryAxis == null) return null;
 			if (String.IsNullOrEmpty(ValuePath)) return null;
@@ -487,11 +523,15 @@ namespace eScapeLLC.UWP.Charts {
 			// TODO report the binding error
 			if (by == null) return null;
 			ResetLimits();
-			Geometry.Children.Clear();
+			var paths = MarkerState.Select(ms => ms.Path);
+			var recycler = new Recycler<Path>(paths, CreatePath);
 			return new State() {
 				bx = !String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
 				bl = !String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null,
-				by = by
+				by = by,
+				ms = new List<MarkerItemState>(),
+				recycler = recycler,
+				paths = recycler.Items().GetEnumerator()
 			};
 		}
 		void IDataSourceRenderer.Render(object state, int index, object item) {
@@ -505,13 +545,21 @@ namespace eScapeLLC.UWP.Charts {
 			mappedx += MarkerOffset;
 			_trace.Verbose($"[{index}] {valuey} ({mappedx},{mappedy})");
 			var mk = MarkerTemplate.LoadContent() as Geometry;
-			InitializeMarker(mappedx, mappedy, mk);
-			Geometry.Children.Add(mk);
+			// no path yet
+			var path = st.NextPath();
+			if(path == null) return;
+			path.Data = mk;
+			st.ms.Add(new MarkerItemState() { XValue = mappedx, YValue = mappedy, Path = path });
 		}
 		void IDataSourceRenderer.RenderComplete(object state) {
 		}
 		void IDataSourceRenderer.Postamble(object state) {
 			var st = state as State;
+			MarkerState = st.ms;
+			#if EXPERIMENTAL_MARKER
+			Layer.Remove(st.recycler.Unused);
+			Layer.Add(st.recycler.Created);
+			#endif
 			Dirty = false;
 		}
 		#endregion
