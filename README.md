@@ -1,11 +1,11 @@
 # eScapeLLC.UWP.Charts
 Yet another chart component.  Also a play on the venerable "yacc" parser-generator tool.  Yes, I've used it, and know all about LR(1) parsers!
 
+## Get It!
 From *Package Manager Console*:
 ```
    PM> Install-Package eScapeLLC.UWP.Charts
 ```
-
 [Package page on nuget.org](https://www.nuget.org/packages/eScapeLLC.UWP.Charts/)
 
 # Before you build
@@ -17,9 +17,8 @@ If you are rebuilding the application and/or test projects (e.g. because you for
 * Follow the instructions to make a new test certificate.
 * Build away!
 
-## Screen Shot
-
-This is the current demo chart in the solution:
+# Screen Shot
+This is the current demo chart in the solution (subject to last-minute tweaking):
 ![yacc demo screen shot](http://escape-technology-llc.com/mobile/wp-content/gallery/main/yacc-chart-demo-7.png)
 
 # More Info
@@ -28,21 +27,21 @@ Please check out the [Wiki](../../wiki) to learn more about the guts of YACC and
 Please consult the [other](../../issues) [features](../../projects) of this github repository to find out the current state of affairs, [*or to contribute*](../../pulls).
 
 # Nuget Releases
-
 ## 1.0.0
 Initial release.
 
 ## 1.1.0
-Some breaking changes, sorry about that!
+Some breaking changes, sorry about that!  As always, consult the demo chart XAML; it's currently the *reference*.
 
-* `PathStyle` et al is the biggest one.
+* For each following item, see the **Demo Chart XAML** for details.
+* `PathStyle` et al is the biggest break.
    * make sure to apply a `Style` to your chart components, or you may get "invisible"!
-   * see the demo chart XAML for details.
 * `HorizontalBand` new decoration.  Tracks two non-series values with a fill in between two horizontal rules.
-   * see the demo chart XAML for details.
-* `MarkerSeries` now uses a normalized coordinate system [0..1] for the marker geometry.
+* `Background` new decoration.  Basic fill/stroke path of data series area.
+* `ValueAxisGrid` is now its own decoration, and not part of the `Axis` component.
+* `MarkerSeries` now uses a normalized coordinate system (0..1, 0..1) for the marker geometry.
    * current the marker must be a `Geometry`.
    * marker center is (.5,.5).
-   * see the...
-* Major fixes to the linear algebra for the graphics.
+* Major fixes to the linear algebra for the graphics, primarily impacting `MarkerSeries`.
 * Lots of internal fixes/improvements you won't notice.
+* Other new properties.  Sorry, rely on auto-complete in VS for now.
