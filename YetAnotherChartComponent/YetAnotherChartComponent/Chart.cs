@@ -161,7 +161,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Add given element to surface.
 		/// </summary>
-		/// <param name="fe"></param>
 		IChartLayer IChartEnterLeaveContext.CreateLayer() {
 			var ccl = new CommonCanvasLayer(Surface, NextZIndex++);
 			Layers.Add(ccl);
@@ -424,17 +423,17 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// The "starting" layout rectangle.
 		/// MAY account for Padding.
-		/// Initialized by <see cref="InitializeLayoutContext(Thickness)"/>
+		/// Initialized by <see cref="InitializeLayoutContext"/>
 		/// </summary>
 		public Rect LayoutRect { get; private set; }
 		/// <summary>
 		/// The size of LayoutRect.
-		/// Initialized by <see cref="InitializeLayoutContext(Thickness)"/>
+		/// Initialized by <see cref="InitializeLayoutContext"/>
 		/// </summary>
 		public Size LayoutDimensions { get; private set; }
 		/// <summary>
 		/// Current layout context.
-		/// Initialized by <see cref="InitializeLayoutContext(Thickness)"/>
+		/// Initialized by <see cref="InitializeLayoutContext"/>
 		/// </summary>
 		public DefaultLayoutContext Layout { get; set; }
 		#endregion
@@ -475,7 +474,7 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		/// <summary>
 		/// Provide a render context for given component.
-		/// Created contexts are cached until <see cref="InitializeLayoutContext(Thickness)"/> is called.
+		/// Created contexts are cached until <see cref="InitializeLayoutContext"/> is called.
 		/// </summary>
 		/// <param name="cc">Component to provide context for.</param>
 		/// <param name="surf">For ctor.</param>
@@ -806,6 +805,11 @@ namespace eScapeLLC.UWP.Charts {
 				}
 			}
 		}
+		/// <summary>
+		/// Phase: Layout.
+		/// IRequireLayout, finalize rects, IRequireLayoutComplete.
+		/// </summary>
+		/// <param name="ls">Layout state.</param>
 		protected void Phase_Layout(LayoutState ls) {
 			foreach (IRequireLayout cc in Components.Where((cc2) => cc2 is IRequireLayout)) {
 				_trace.Verbose($"layout {cc}");
@@ -821,6 +825,10 @@ namespace eScapeLLC.UWP.Charts {
 				cc.LayoutComplete(ctx);
 			}
 		}
+		/// <summary>
+		/// Phase: Data Source Render Pipeline.
+		/// </summary>
+		/// <param name="ls">Layout state.</param>
 		protected void Phase_RenderDataSources(LayoutState ls) {
 			var dsctx = new DefaultDataSourceRenderContext(Surface, Components, ls.LayoutDimensions, Rect.Empty, ls.Layout.RemainingRect, DataContext);
 			foreach (DataSource ds in DataSources) {
@@ -830,8 +838,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Phase: axes have seen all values let them render (IRequireRender)
 		/// </summary>
-		/// <param name="dlc"></param>
-		/// <param name="inner"></param>
+		/// <param name="ls">Layout state.</param>
 		protected void Phase_RenderAxes(LayoutState ls) {
 			foreach (var axis in Axes.Where((cc2) => cc2 is IRequireRender)) {
 				var acc = axis as ChartComponent;
@@ -842,6 +849,10 @@ namespace eScapeLLC.UWP.Charts {
 				}
 			}
 		}
+		/// <summary>
+		/// Phase: after-axes-finalized.
+		/// </summary>
+		/// <param name="ls">Layout state.</param>
 		protected void Phase_AxesFinalized(LayoutState ls) {
 			foreach (var cc in Components.Where((cc2) => cc2 is IRequireAfterAxesFinalized)) {
 				var ctx = ls.RenderFor(cc, Surface, Components, DataContext);
@@ -851,12 +862,20 @@ namespace eScapeLLC.UWP.Charts {
 				}
 			}
 		}
+		/// <summary>
+		/// Phase: render-components.
+		/// </summary>
+		/// <param name="ls">Layout state.</param>
 		protected void Phase_RenderComponents(LayoutState ls) {
 			foreach (IRequireRender cc in Components.Where((cc2) => !(cc2 is IChartAxis) && (cc2 is IRequireRender))) {
 				var ctx = ls.RenderFor(cc as ChartComponent, Surface, Components, DataContext);
 				cc.Render(ctx);
 			}
 		}
+		/// <summary>
+		/// Phase: transforms.
+		/// </summary>
+		/// <param name="ls">Layout state.</param>
 		protected void Phase_Transforms(LayoutState ls) {
 			foreach (IRequireTransforms cc in Components.Where((cc2) => cc2 is IRequireTransforms)) {
 				var ctx = ls.RenderFor(cc as ChartComponent, Surface, Components, DataContext);
@@ -945,7 +964,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Transforms for single component.
 		/// </summary>
-		/// <param name="sz">Current size.</param>
+		/// <param name="ls">Layout state.</param>
 		/// <param name="rrea">Refresh request.</param>
 		protected void ComponentTransforms(LayoutState ls, RefreshRequestEventArgs rrea) {
 			if (rrea.Component is IRequireTransforms irt) {
@@ -958,7 +977,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Render for single component.
 		/// </summary>
-		/// <param name="sz">Current size.</param>
+		/// <param name="ls">Layout state.</param>
 		/// <param name="rrea">Refresh request.</param>
 		protected void ComponentRender(LayoutState ls, RefreshRequestEventArgs rrea) {
 			if (rrea.Component is IRequireRender irr) {
@@ -987,7 +1006,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Adjust layout and transforms based on size change.
 		/// </summary>
-		/// <param name="sz">Dimensions.</param>
+		/// <param name="ls">Layout state.</param>
 		protected void TransformsLayout(LayoutState ls) {
 			ls.InitializeLayoutContext(Padding);
 			_trace.Verbose($"transforms-only starting {ls.LayoutRect}");
@@ -999,7 +1018,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// At least ONE component reported as dirty.
 		/// The full rendering sequence is: axis-reset, layout, render, transforms.
 		/// </summary>
-		/// <param name="sz">Dimensions.</param>
+		/// <param name="ls">Layout state.</param>
 		protected void FullLayout(LayoutState ls) {
 			ls.InitializeLayoutContext(Padding);
 			_trace.Verbose($"full starting {ls.LayoutRect}");

@@ -260,6 +260,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// List of active TextBlocks for labels.
 		/// </summary>
 		protected List<TextBlock> TickLabels { get; set; }
+		/// <summary>
+		/// The layer to manage components.
+		/// </summary>
 		protected IChartLayer Layer { get; set; }
 		#endregion
 		#region ctor
@@ -426,6 +429,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// List of active TextBlocks for labels.
 		/// </summary>
 		protected List<TextBlock> TickLabels { get; set; }
+		/// <summary>
+		/// The layer to manage components.
+		/// </summary>
 		protected IChartLayer Layer { get; set; }
 		#endregion
 		#region ctor

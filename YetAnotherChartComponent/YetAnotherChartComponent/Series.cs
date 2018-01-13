@@ -239,6 +239,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// The series geometry.
 		/// </summary>
 		protected PathGeometry Geometry { get; set; }
+		/// <summary>
+		/// The layer to manage components.
+		/// </summary>
 		protected IChartLayer Layer { get; set; }
 		#endregion
 		#region DPs
@@ -432,6 +435,9 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region extensions
+		/// <summary>
+		/// Shorthand for marker state.
+		/// </summary>
 		protected class MarkerItemState : ItemState_Matrix { }
 		/// <summary>
 		/// Initialize after entering VT.
@@ -622,6 +628,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// Path for the debug graphics.
 		/// </summary>
 		protected Path DebugSegments { get; set; }
+		/// <summary>
+		/// The layer for components.
+		/// </summary>
 		protected IChartLayer Layer { get; set; }
 		#endregion
 		#region DPs

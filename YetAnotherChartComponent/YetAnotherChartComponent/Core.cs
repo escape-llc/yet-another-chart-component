@@ -169,6 +169,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// <returns>Allocated and registered rectangle.</returns>
 		Rect ClaimSpace(ChartComponent cc, Side sd, double amt);
 	}
+	/// <summary>
+	/// Context interface for IRequireLayoutComplete.
+	/// </summary>
 	public interface IChartLayoutCompleteContext {
 		/// <summary>
 		/// Overall dimensions.
@@ -254,6 +257,10 @@ namespace eScapeLLC.UWP.Charts {
 	/// Require callback when layout has completed.
 	/// </summary>
 	public interface IRequireLayoutComplete {
+		/// <summary>
+		/// The layout is complete; here is your info.
+		/// </summary>
+		/// <param name="iclcc">Layout results context.</param>
 		void LayoutComplete(IChartLayoutCompleteContext iclcc);
 	}
 	#endregion
@@ -382,11 +389,13 @@ namespace eScapeLLC.UWP.Charts {
 	#region RefreshRequestEventHandler
 	/// <summary>
 	/// Refresh request type.
+	/// Indicates the relative "severity" of requested update.
+	/// MUST be honest!
 	/// </summary>
 	public enum RefreshRequestType {
 		/// <summary>
 		/// So very dirty...
-		/// Implies ValueDirty and LayoutDirty.
+		/// Implies ValueDirty and TransformsDirty.
 		/// </summary>
 		LayoutDirty,
 		/// <summary>
@@ -399,7 +408,33 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		TransformsDirty
 	};
-	public enum AxisUpdateState {  None, Value, Category, Both, Unknown };
+	/// <summary>
+	/// Axis update information.
+	/// If the refresh request knows that axis extents are "intact" the refresh SHOULD be optimized.
+	/// MUST be honest!
+	/// </summary>
+	public enum AxisUpdateState {
+		/// <summary>
+		/// No axis updates required.
+		/// </summary>
+		None,
+		/// <summary>
+		/// Value axis update required.
+		/// </summary>
+		Value,
+		/// <summary>
+		/// Category axis update required.
+		/// </summary>
+		Category,
+		/// <summary>
+		/// Both axes update required.
+		/// </summary>
+		Both,
+		/// <summary>
+		/// Unknown or expensive to check; treat as "Both" or "risk it".
+		/// </summary>
+		Unknown
+	};
 	/// <summary>
 	/// Refresh request event args.
 	/// </summary>
@@ -407,7 +442,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Initialize.
 		/// </summary>
-		/// <param name="rrt"></param>
+		/// <param name="rrt">The request type.</param>
+		/// <param name="aus">The axis update info.</param>
+		/// <param name="cc">The component.</param>
 		public RefreshRequestEventArgs(RefreshRequestType rrt, AxisUpdateState aus, ChartComponent cc) {
 			this.Request = rrt;
 			this.Component = cc;
@@ -417,13 +454,21 @@ namespace eScapeLLC.UWP.Charts {
 		/// The request type.
 		/// </summary>
 		public RefreshRequestType Request { get; private set; }
+		/// <summary>
+		/// The component requesting refresh.
+		/// </summary>
 		public ChartComponent Component { get; private set; }
+		/// <summary>
+		/// Information about axis state.
+		/// This is used to hopefully optimize the refresh process.
+		/// </summary>
 		public AxisUpdateState Axis { get; private set; }
 	}
 	/// <summary>
 	/// Refresh delegate.
 	/// </summary>
 	/// <param name="cc">Originating component.</param>
+	/// <param name="rrea">Refresh request info.</param>
 	public delegate void RefreshRequestEventHandler(ChartComponent cc, RefreshRequestEventArgs rrea);
 	#endregion
 	#region ChartComponent

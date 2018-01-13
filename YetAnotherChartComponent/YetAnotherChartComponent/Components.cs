@@ -24,6 +24,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// The geometry to use for this component.
 		/// </summary>
 		protected RectangleGeometry Rectangle { get; set; }
+		/// <summary>
+		/// The layer to manage components.
+		/// </summary>
 		protected IChartLayer Layer { get; set; }
 		#endregion
 		#region DPs
@@ -137,6 +140,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// Dereferenced value axis.
 		/// </summary>
 		protected IChartAxis ValueAxis { get; set; }
+		/// <summary>
+		/// The layer for components.
+		/// </summary>
 		protected IChartLayer Layer { get; set; }
 		#endregion
 		#region DPs
@@ -332,6 +338,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// Dereferenced value axis.
 		/// </summary>
 		protected IChartAxis ValueAxis { get; set; }
+		/// <summary>
+		/// The layer for components.
+		/// </summary>
 		protected IChartLayer Layer { get; set; }
 		#endregion
 		#region DPs
@@ -518,6 +527,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// Geometry for the grid lines.
 		/// </summary>
 		protected GeometryGroup GridGeometry { get; set; }
+		/// <summary>
+		/// The layer for components.
+		/// </summary>
 		protected IChartLayer Layer { get; set; }
 		#endregion
 		#region DPs

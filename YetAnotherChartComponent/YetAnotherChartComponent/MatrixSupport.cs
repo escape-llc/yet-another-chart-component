@@ -5,10 +5,10 @@ using Windows.UI.Xaml.Media;
 namespace eScapeLLC.UWP.Charts {
 	#region MatrixSupport
 	/// <summary>
-	/// Static helpers for XAML <see cref="Matrix"/>.
+	/// Static helpers for XAML <see cref="Windows.UI.Xaml.Media.Matrix"/>.
 	/// In graphics programming, coordinate transforms are represented using affine matrices and homogeneous coordinates.
-	/// In XAML, the <see cref="Matrix"/> struct is the workhorse.  This structure "leaves out" the last column, because its values are fixed at (0 0 1).
-	/// What matrix algebra would call M13 and M23, <see cref="Matrix"/> calls OffsetX and OffsetY.
+	/// In XAML, the <see cref="Windows.UI.Xaml.Media.Matrix"/> struct is the workhorse.  This structure "leaves out" the last column, because its values are fixed at (0 0 1).
+	/// What matrix algebra would call M13 and M23, <see cref="Windows.UI.Xaml.Media.Matrix"/> calls OffsetX and OffsetY.
 	/// One can use <see cref="TransformGroup"/> to do matrix algebra, but it requires the UI thread (just to do matrix arithmetic)!
 	///
 	///	WC	world coordinates
@@ -31,7 +31,7 @@ namespace eScapeLLC.UWP.Charts {
 		const double M33 = 1;
 		/// <summary>
 		/// Multiply 3x3 affine matrices.
-		/// Adapted for <see cref="Matrix"/>.
+		/// Adapted for <see cref="Windows.UI.Xaml.Media.Matrix"/>.
 		/// Note parameter order is BACKWARDS from the math: Multiply(m1,m2) is M2 * M1.
 		/// Matrix multiplication is NOT commutative.
 		/// </summary>
@@ -55,7 +55,7 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		/// <summary>
 		/// Calculate inverse of affine matrix using determinant/adjugate method.
-		/// Adapted for <see cref="Matrix"/>.
+		/// Adapted for <see cref="Windows.UI.Xaml.Media.Matrix"/>.
 		/// </summary>
 		/// <param name="mx">Source matrix.</param>
 		/// <returns>New matrix if invertable.</returns>
