@@ -1,0 +1,148 @@
+﻿<Page
+	x:Class="Yacc.Demo.Chart2"
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:yacc="using:eScapeLLC.UWP.Charts"
+	xmlns:local="using:Yacc.Demo"
+	xmlns:core="using:eScape.Core.Convert"
+	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+	mc:Ignorable="d">
+	<Page.Resources>
+		<core:BooleanVisibilityConverter x:Key="b2v"/>
+		<SolidColorBrush x:Key="blue" Color="Blue"/>
+		<LinearGradientBrush x:Key="blue-to-green" StartPoint=".5,0" EndPoint=".5,1">
+			<GradientStop Color="Blue" Offset="0"/>
+			<GradientStop Color="Orange" Offset=".25"/>
+			<GradientStop Color="Yellow" Offset=".75"/>
+			<GradientStop Color="Green" Offset="1"/>
+		</LinearGradientBrush>
+		<LinearGradientBrush x:Key="green-to-blue" StartPoint=".5,0" EndPoint=".5,1">
+			<GradientStop Color="Blue" Offset="1"/>
+			<GradientStop Color="Orange" Offset=".75"/>
+			<GradientStop Color="Yellow" Offset=".25"/>
+			<GradientStop Color="Green" Offset="0"/>
+		</LinearGradientBrush>
+		<LinearGradientBrush x:Key="series-background" StartPoint="0,0" EndPoint="0,1">
+			<GradientStop Color="#88888888" Offset="0"/>
+			<GradientStop Color="#668888aa" Offset=".4"/>
+			<GradientStop Color="#448888cc" Offset=".6"/>
+			<GradientStop Color="Transparent" Offset=".8"/>
+		</LinearGradientBrush>
+		<SolidColorBrush x:Key="band-fill" Color="#44aaccee"/>
+		<DataTemplate x:Key="LegendItem">
+			<Grid Padding="2">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="Auto"/>
+					<ColumnDefinition Width="*"/>
+				</Grid.ColumnDefinitions>
+				<Rectangle Fill="{Binding Fill}" Stroke="{Binding Stroke}" Width="24" />
+				<TextBlock Grid.Column="1" Margin="4,0,0,0" Foreground="White" FontSize="10" Text="{Binding Title}"/>
+			</Grid>
+		</DataTemplate>
+		<Style x:Key="cbStyle" TargetType="CheckBox">
+			<Setter Property="Margin" Value="4,0"/>
+		</Style>
+		<Style x:Key="btnStyle" TargetType="Button">
+			<Setter Property="Margin" Value="4,0"/>
+		</Style>
+		<Style x:Key="Chart" TargetType="yacc:Chart">
+			<Setter Property="Padding" Value="32"/>
+			<Setter Property="Background" Value="Black"/>
+			<Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+			<Setter Property="VerticalContentAlignment" Value="Stretch"/>
+		</Style>
+		<Style x:Key="Legend" TargetType="Border">
+			<Setter Property="Margin" Value="0,8,8,0"/>
+			<Setter Property="Background" Value="DarkGray"/>
+			<Setter Property="BorderBrush" Value="White"/>
+			<Setter Property="BorderThickness" Value="2"/>
+			<Setter Property="CornerRadius" Value="4"/>
+		</Style>
+		<Style x:Key="Logo" TargetType="Image">
+			<Setter Property="Margin" Value="2"/>
+			<Setter Property="Stretch" Value="None"/>
+		</Style>
+		<Style x:Key="Title" TargetType="TextBlock">
+			<Setter Property="Margin" Value="2"/>
+			<Setter Property="Padding" Value="2"/>
+			<Setter Property="Foreground" Value="White"/>
+			<Setter Property="TextAlignment" Value="Center"/>
+		</Style>
+	</Page.Resources>
+	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" MinHeight="480" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+		<CommandBar x:Name="toolbar"
+			RelativePanel.AlignTopWithPanel="True">
+			<CommandBar.PrimaryCommands>
+				<AppBarToggleButton IsChecked="True" x:Name="cb_legend" Label="Toggle" Content="Legend"/>
+				<AppBarToggleButton IsChecked="True" x:Name="cb_grid" Label="Toggle" Content="Grid"/>
+				<AppBarToggleButton IsChecked="True" x:Name="cb_band" Label="Toggle" Content="Band"/>
+				<AppBarButton x:Name="add_head" Style="{StaticResource btnStyle}" Content="+[0]" Label="Add Head" Click="add_head_Click"/>
+				<AppBarButton x:Name="add_tail" Style="{StaticResource btnStyle}" Content="+ [N]" Label="Add End" Click="add_item_Click"/>
+				<AppBarButton x:Name="remove_head" Style="{StaticResource btnStyle}" Content="-[0]" Label="Delete Head" Click="remove_head_Click"/>
+				<AppBarButton x:Name="remove_tail" Style="{StaticResource btnStyle}" Content="-[N]" Label="Delete End" Click="remove_tail_Click"/>
+				<AppBarButton x:Name="add_and_remove_head" Style="{StaticResource btnStyle}" Content="-[0]+[N]" Label="Scroll" Click="add_and_remove_head_Click"/>
+			</CommandBar.PrimaryCommands>
+		</CommandBar>
+		<yacc:Chart x:Name="chart" Style="{StaticResource Chart}"
+			RelativePanel.Below="toolbar" RelativePanel.AlignBottomWithPanel="True"
+			RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True">
+			<yacc:Chart.DataSources>
+				<yacc:DataSource x:Name="data" Items="{Binding Data}"/>
+			</yacc:Chart.DataSources>
+			<yacc:Chart.Components>
+				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" />
+				<!--
+				<yacc:HorizontalRule ValueAxisName="yaxis" Value="{Binding Value1Average}"
+					PathStyle="{StaticResource Rule_v1}"
+					Visibility="{Binding ElementName=cb_rule_value1, Path=IsChecked, Converter={StaticResource b2v}}" />
+					-->
+				<yacc:ColumnSeries x:Name="colv1" DataSourceName="data" ValuePath="Value1" CategoryLabelPath="Label" ClipToDataRegion="True"
+					Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" EnableDebugPaths="True"
+					BarOffset=".25" BarWidth=".25" />
+				<yacc:ColumnSeries x:Name="colv2" DataSourceName="data" ValuePath="Value2"
+					Title="Value 2 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" ClipToDataRegion="True"
+					BarOffset=".5" BarWidth=".25" />
+				<yacc:LineSeries x:Name="linev2" DataSourceName="data" ValuePath="Value2" Title="Value 2 Line"
+					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".375"
+					ClipToDataRegion="False" />
+				<yacc:MarkerSeries DataSourceName="data"
+					ValuePath="Value1" Title="Value 1 Marker"
+					ValueAxisName="yaxis" CategoryAxisName="xaxis"
+					MarkerOffset=".625" MarkerWidth=".25">
+					<yacc:MarkerSeries.MarkerTemplate>
+						<DataTemplate>
+							<GeometryGroup>
+								<EllipseGeometry RadiusX=".5" RadiusY=".5" Center=".5,.5" />
+								<LineGeometry StartPoint=".5,.4" EndPoint=".5,.6" />
+								<LineGeometry StartPoint=".4,.5" EndPoint=".6,.5" />
+							</GeometryGroup>
+						</DataTemplate>
+					</yacc:MarkerSeries.MarkerTemplate>
+				</yacc:MarkerSeries>
+				<!--
+				<yacc:HorizontalRule ValueAxisName="yaxis" Value="{Binding Value2Average}"
+					PathStyle="{StaticResource Rule_v2}"
+					Visibility="{Binding ElementName=cb_rule_value2, Path=IsChecked, Converter={StaticResource b2v}}" />
+					-->
+				<yacc:HorizontalBand ValueAxisName="yaxis" Value1="{Binding Value1Average}" Value2="{Binding Value2Average}"
+					Visibility="{Binding ElementName=cb_band, Path=IsChecked, Converter={StaticResource b2v}}"
+				/>
+				<yacc:ValueAxis x:Name="yaxis" Side="Left" LabelFormatString="F1" />
+				<yacc:ValueAxisGrid ValueAxisName="yaxis"
+					Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
+			</yacc:Chart.Components>
+		</yacc:Chart>
+		<TextBlock x:Name="title" Style="{StaticResource Title}" Text="Default Styles"
+			RelativePanel.AlignTopWith="chart" RelativePanel.AlignHorizontalCenterWithPanel="True"/>
+		<Image Source="ms-appx:/Assets/Square44x44Logo.scale-100.png" Style="{StaticResource Logo}"
+			RelativePanel.LeftOf="title" RelativePanel.AlignVerticalCenterWith="title" />
+		<Border Style="{StaticResource Legend}"
+			Visibility="{Binding ElementName=cb_legend,Path=IsChecked}"
+			RelativePanel.AlignRightWith="chart" RelativePanel.AlignTopWith="chart">
+			<ItemsControl x:Name="legend" Margin="2" Padding="2"
+				ItemsSource="{Binding ElementName=chart,Path=LegendItems}"
+				ItemTemplate="{StaticResource LegendItem}"/>
+		</Border>
+	</RelativePanel>
+</Page>

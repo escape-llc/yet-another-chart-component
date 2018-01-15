@@ -3,6 +3,7 @@
 	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 	xmlns:local="using:eScapeLLC.UWP.Charts"
 >
+	<SolidColorBrush x:Key="band-fill" Color="#44cccccc"/>
 	<Style x:Key="AxisLabel_VERT" TargetType="TextBlock">
 		<Setter Property="Foreground" Value="White"/>
 		<Setter Property="FontSize" Value="10"/>
@@ -17,8 +18,54 @@
 		<Setter Property="VerticalAlignment" Value="Center"/>
 		<Setter Property="HorizontalAlignment" Value="Center"/>
 	</Style>
+	<Style x:Key="Axes" TargetType="Path">
+		<Setter Property="Fill" Value="Gray"/>
+	</Style>
+	<Style x:Key="Line" TargetType="Path">
+		<Setter Property="Stroke" Value="Green"/>
+		<Setter Property="StrokeThickness" Value="3"/>
+		<Setter Property="StrokeLineJoin" Value="Round"/>
+		<Setter Property="StrokeStartLineCap" Value="Round"/>
+		<Setter Property="StrokeEndLineCap" Value="Round"/>
+	</Style>
+	<Style x:Key="Column" TargetType="Path">
+		<Setter Property="Stroke" Value="Gray"/>
+		<Setter Property="StrokeThickness" Value="1"/>
+		<Setter Property="Fill" Value="Blue"/>
+	</Style>
+	<Style x:Key="Marker" TargetType="Path">
+		<Setter Property="Stroke" Value="Gray"/>
+		<Setter Property="StrokeThickness" Value="1"/>
+		<Setter Property="Fill" Value="Orange"/>
+	</Style>
+	<Style x:Key="Grid" TargetType="Path">
+		<Setter Property="Stroke" Value="Gray"/>
+		<Setter Property="StrokeThickness" Value=".5"/>
+		<Setter Property="StrokeDashArray" Value="4,4"/>
+	</Style>
+	<Style x:Key="Rule" TargetType="Path">
+		<Setter Property="Stroke" Value="LightCyan"/>
+		<Setter Property="StrokeThickness" Value="2"/>
+	</Style>
+	<Style x:Key="Band_Fill" TargetType="Path">
+		<Setter Property="Fill" Value="{StaticResource band-fill}"/>
+	</Style>
+	<local:ChartTheme x:Key="DefaultChartTheme" Name="DefaultFromGenericXaml"
+		LabelAxisLeft="{ThemeResource AxisLabel_VERT}"
+		LabelAxisRight="{ThemeResource AxisLabel_VERT}"
+		LabelAxisTop="{ThemeResource AxisLabel_HORZ}"
+		LabelAxisBottom="{ThemeResource AxisLabel_HORZ}"
+		PathAxisCategory="{ThemeResource Axes}"
+		PathAxisValue="{ThemeResource Axes}"
+		PathGridValue="{ThemeResource Grid}"
+		PathLineSeries="{ThemeResource Line}"
+		PathColumnSeries="{ThemeResource Column}"
+		PathMarkerSeries="{ThemeResource Marker}"
+		PathHorizontalRule="{ThemeResource Rule}"
+		PathHorizontalBand="{ThemeResource Band_Fill}"
+	/>
 	<Style TargetType="local:Chart">
-		<Setter Property="AxisLabelStyle" Value="{ThemeResource AxisLabel_VERT}"/>
+		<Setter Property="Theme" Value="{ThemeResource DefaultChartTheme}"/>
 		<Setter Property="Template">
 			<Setter.Value>
 				<ControlTemplate TargetType="local:Chart">

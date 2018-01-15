@@ -215,7 +215,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Data series that generates a Polyline visual.
 	/// </summary>
-	public class LineSeries : DataSeries, IDataSourceRenderer, IProvideLegend, IRequireEnterLeave, IRequireTransforms {
+	public class LineSeries : DataSeries, IDataSourceRenderer, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("LineSeries", LogTools.Level.Error);
 		#region properties
 		/// <summary>
@@ -226,6 +226,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// The style to use for Path geometry.
 		/// </summary>
 		public Style PathStyle { get { return (Style)GetValue(PathStyleProperty); } set { SetValue(PathStyleProperty, value); } }
+		/// <summary>
+		/// Holder for IRequireChartTheme interface.
+		/// </summary>
+		public IChartTheme Theme { get; set; }
 		/// <summary>
 		/// Offset in Category axis offset in [0..1].
 		/// Use with ColumnSeries to get the "points" to align with the column(s) layout in their cells.
@@ -274,6 +278,9 @@ namespace eScapeLLC.UWP.Charts {
 			EnsureAxes(icelc);
 			Layer = icelc.CreateLayer(Segments);
 			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis} c:{CategoryAxisName}:{CategoryAxis} d:{DataSourceName}");
+			if(PathStyle == null && Theme != null) {
+				if (Theme.PathLineSeries != null) PathStyle = Theme.PathLineSeries;
+			}
 			BindTo(this, "PathStyle", Segments, Path.StyleProperty);
 		}
 		/// <summary>
@@ -372,7 +379,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Series that places the given marker at each point.
 	/// </summary>
-	public class MarkerSeries : DataSeries, IDataSourceRenderer, IProvideLegend, IRequireEnterLeave, IRequireTransforms {
+	public class MarkerSeries : DataSeries, IDataSourceRenderer, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("MarkerSeries", LogTools.Level.Error);
 		#region properties
 		/// <summary>
@@ -383,6 +390,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// The style to use for Path geometry.
 		/// </summary>
 		public Style PathStyle { get { return (Style)GetValue(PathStyleProperty); } set { SetValue(PathStyleProperty, value); } }
+		/// <summary>
+		/// Holder for IRequireChartTheme interface.
+		/// </summary>
+		public IChartTheme Theme { get; set; }
 		/// <summary>
 		/// Geometry template for marker.
 		/// Currently MUST be EllipseGeometry.
@@ -447,6 +458,9 @@ namespace eScapeLLC.UWP.Charts {
 			EnsureAxes(icelc);
 			Layer = icelc.CreateLayer();
 			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis} c:{CategoryAxisName}:{CategoryAxis} d:{DataSourceName}");
+			if (PathStyle == null && Theme != null) {
+				if (Theme.PathMarkerSeries != null) PathStyle = Theme.PathMarkerSeries;
+			}
 		}
 		/// <summary>
 		/// Undo effects of Enter().
@@ -480,6 +494,8 @@ namespace eScapeLLC.UWP.Charts {
 				var model = MatrixSupport.Multiply(state.World, marker);
 				var matx = MatrixSupport.Multiply(proj, model);
 				state.Path.Data.Transform = new MatrixTransform() { Matrix = matx };
+				// doesn't work for path
+				//state.Path.RenderTransform = new MatrixTransform() { Matrix = matx };
 				if (ClipToDataRegion) {
 					state.Path.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
 				}
@@ -507,18 +523,6 @@ namespace eScapeLLC.UWP.Charts {
 			internal Path NextPath() {
 				if (paths.MoveNext()) return paths.Current;
 				else return null;
-			}
-		}
-		/// <summary>
-		/// Initialize the new marker coordinates.
-		/// </summary>
-		/// <param name="mappedx"></param>
-		/// <param name="mappedy"></param>
-		/// <param name="mk"></param>
-		void InitializeMarker(double mappedx, double mappedy, Geometry mk) {
-			if (mk is EllipseGeometry) {
-				var eg = mk as EllipseGeometry;
-				eg.Center = new Point(mappedx, mappedy);
 			}
 		}
 		/// <summary>
@@ -585,7 +589,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// If there's no CategoryMemberPath defined (i.e. using data index) this component reserves one "extra" cell on the Category Axis, to present the last column(s).
 	/// Category axis cells start on the left and extend positive-X (in device units).  Each cell is one unit long.
 	/// </summary>
-	public class ColumnSeries : DataSeries, IDataSourceRenderer, IProvideLegend, IRequireEnterLeave, IRequireTransforms {
+	public class ColumnSeries : DataSeries, IDataSourceRenderer, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("ColumnSeries", LogTools.Level.Error);
 		static LogTools.Flag _traceg = LogTools.Add("ColumnSeriesPaths", LogTools.Level.Off);
 		#region properties
@@ -597,6 +601,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// The style to use for Path geometry.
 		/// </summary>
 		public Style PathStyle { get { return (Style)GetValue(PathStyleProperty); } set { SetValue(PathStyleProperty, value); } }
+		/// <summary>
+		/// Holder for IRequireChartTheme interface.
+		/// </summary>
+		public IChartTheme Theme { get; set; }
 		/// <summary>
 		/// Fractional offset into the "cell" of the category axis.
 		/// BarOffset + BarWidth &lt;= 1.0
@@ -678,6 +686,9 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			if (DebugSegments != null) {
 				Layer.Add(DebugSegments);
+			}
+			if (PathStyle == null && Theme != null) {
+				if (Theme.PathColumnSeries != null) PathStyle = Theme.PathColumnSeries;
 			}
 			BindTo(this, "PathStyle", Segments, Path.StyleProperty);
 		}

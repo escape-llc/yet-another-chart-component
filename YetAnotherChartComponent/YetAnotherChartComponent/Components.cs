@@ -1,5 +1,6 @@
 ﻿using eScape.Core;
 using System;
+using System.ComponentModel.DataAnnotations;
 using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media;
@@ -92,13 +93,17 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Represents a horizontal "rule" on the chart, for a value not belonging to any data source value, e.g. a value computed "outside" the series itself (Average).
 	/// </summary>
-	public class HorizontalRule : ChartComponent, IProvideValueExtents, IRequireEnterLeave, IRequireRender, IRequireTransforms/*, IRequireAfterRenderComplete*/ {
+	public class HorizontalRule : ChartComponent, IProvideValueExtents, IRequireChartTheme, IRequireEnterLeave, IRequireRender, IRequireTransforms/*, IRequireAfterRenderComplete*/ {
 		static LogTools.Flag _trace = LogTools.Add("HorizontalRule", LogTools.Level.Error);
 		#region properties
 		/// <summary>
 		/// The style to use for Path geometry.
 		/// </summary>
 		public Style PathStyle { get { return (Style)GetValue(PathStyleProperty); } set { SetValue(PathStyleProperty, value); } }
+		/// <summary>
+		/// Holder for IRequireChartTheme interface.
+		/// </summary>
+		public IChartTheme Theme { get; set; }
 		/// <summary>
 		/// Component name of value axis.
 		/// Referenced component MUST implement IChartAxis.
@@ -189,6 +194,13 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region helpers
 		void DoBindings(IChartEnterLeaveContext icelc) {
+			if (PathStyle == null && Theme != null) {
+				if (Theme.PathHorizontalRule != null) PathStyle = Theme.PathHorizontalRule;
+				else {
+					// TODO report the error
+					ValidationResult vr = new ValidationResult($"{Name}.{nameof(PathStyle)}: Theme.{nameof(Theme.PathHorizontalRule)} is missing", new[] { nameof(PathStyle), nameof(Theme.PathHorizontalRule) });
+				}
+			}
 			BindTo(this, "PathStyle", Path, Path.StyleProperty);
 			var bx = GetBindingExpression(UIElement.VisibilityProperty);
 			if (bx != null) {
@@ -260,7 +272,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Represents a horizontal "rule" on the chart, for a value not belonging to any data source value, e.g. a value computed "outside" the series itself (Average).
 	/// </summary>
-	public class HorizontalBand : ChartComponent, IProvideValueExtents, IRequireEnterLeave, IRequireRender, IRequireTransforms/*, IRequireAfterRenderComplete*/ {
+	public class HorizontalBand : ChartComponent, IProvideValueExtents, IRequireChartTheme, IRequireEnterLeave, IRequireRender, IRequireTransforms/*, IRequireAfterRenderComplete*/ {
 		static LogTools.Flag _trace = LogTools.Add("HorizontalBand", LogTools.Level.Error);
 		#region properties
 		/// <summary>
@@ -272,6 +284,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// If NULL, falls back to <see cref="PathStyle"/>.
 		/// </summary>
 		public Style BandPathStyle { get { return (Style)GetValue(BandPathStyleProperty); } set { SetValue(BandPathStyleProperty, value); } }
+		/// <summary>
+		/// Holder for IRequireChartTheme interface.
+		/// </summary>
+		public IChartTheme Theme { get; set; }
 		/// <summary>
 		/// Component name of value axis.
 		/// Referenced component MUST implement IChartAxis.
@@ -409,6 +425,20 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region helpers
 		void DoBindings(IChartEnterLeaveContext icelc) {
+			if (PathStyle == null && Theme != null) {
+				if (Theme.PathHorizontalRule != null) PathStyle = Theme.PathHorizontalRule;
+				else {
+					// TODO report the error
+					ValidationResult vr = new ValidationResult($"{Name}.{nameof(PathStyle)}: Theme.{nameof(Theme.PathHorizontalRule)} is missing", new[] { nameof(PathStyle), nameof(Theme.PathHorizontalRule) });
+				}
+			}
+			if (BandPathStyle == null && Theme != null) {
+				if (Theme.PathHorizontalBand != null) BandPathStyle = Theme.PathHorizontalBand;
+				else {
+					// TODO report the error
+					ValidationResult vr = new ValidationResult($"{Name}.{nameof(BandPathStyle)}: Theme.{nameof(Theme.PathHorizontalBand)} is missing", new[] { nameof(BandPathStyle), nameof(Theme.PathHorizontalBand) });
+				}
+			}
 			BindTo(this, "PathStyle", Value1Path, Path.StyleProperty);
 			var bx = GetBindingExpression(UIElement.VisibilityProperty);
 			if (bx != null) {
@@ -504,12 +534,16 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Grid lines for the value axis.
 	/// </summary>
-	public class ValueAxisGrid : ChartComponent, IRequireEnterLeave, IRequireRender, IRequireTransforms {
+	public class ValueAxisGrid : ChartComponent, IRequireChartTheme, IRequireEnterLeave, IRequireRender, IRequireTransforms {
 		#region properties
 		/// <summary>
 		/// The style to use for Path geometry.
 		/// </summary>
 		public Style PathStyle { get { return (Style)GetValue(PathStyleProperty); } set { SetValue(PathStyleProperty, value); } }
+		/// <summary>
+		/// Holder for IRequireChartTheme interface.
+		/// </summary>
+		public IChartTheme Theme { get; set; }
 		/// <summary>
 		/// Component name of value axis.
 		/// Referenced component MUST implement IChartAxis.
@@ -564,6 +598,13 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icelc"></param>
 		void DoBindings(IChartEnterLeaveContext icelc) {
+			if (PathStyle == null && Theme != null) {
+				if (Theme.PathGridValue != null) PathStyle = Theme.PathGridValue;
+				else {
+					// TODO report the error
+					ValidationResult vr = new ValidationResult($"{Name}.{nameof(PathStyle)}: Theme.{nameof(Theme.PathGridValue)} is missing", new[] { nameof(PathStyle), nameof(Theme.PathGridValue) });
+				}
+			}
 			BindTo(this, "PathStyle", Grid, Path.StyleProperty);
 			var bx = GetBindingExpression(UIElement.VisibilityProperty);
 			if (bx != null) {

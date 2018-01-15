@@ -139,9 +139,45 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Return the "scale" for this axis.
 		/// </summary>
-		/// <param name="dimension">Overall Dimension.</param>
+		/// <param name="dimension">Overall Dimension (in DC).</param>
 		/// <returns>Dimension / Range.</returns>
 		double ScaleFor(double dimension);
+	}
+	#endregion
+	#region IChartLayer
+	/// <summary>
+	/// Represents a container for chart component visual elements.
+	/// </summary>
+	public interface IChartLayer {
+		/// <summary>
+		/// Add content.
+		/// </summary>
+		/// <param name="fe">Element to add.</param>
+		void Add(FrameworkElement fe);
+		/// <summary>
+		/// Remove content.
+		/// </summary>
+		/// <param name="fe">Element to remove.</param>
+		void Remove(FrameworkElement fe);
+		/// <summary>
+		/// Add group of elements.
+		/// </summary>
+		/// <param name="fes"></param>
+		void Add(IEnumerable<FrameworkElement> fes);
+		/// <summary>
+		/// Remove group of elements.
+		/// </summary>
+		/// <param name="fes"></param>
+		void Remove(IEnumerable<FrameworkElement> fes);
+		/// <summary>
+		/// Position the layer.
+		/// </summary>
+		/// <param name="target"></param>
+		void Layout(Rect target);
+		/// <summary>
+		/// Remove all the components this layer knows about.
+		/// </summary>
+		void Clear();
 	}
 	#endregion
 	#region IChartLayoutContext
@@ -338,6 +374,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// The legend for this item.
 		/// MUST return a stable value.
+		/// MUST NOT be called before <see cref="IRequireEnterLeave.Enter"/>.
 		/// </summary>
 		Legend Legend { get; }
 	}
@@ -631,13 +668,15 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public static class StyleExtensions {
 		/// <summary>
-		/// Find the setter and get its value.
+		/// Find the setter and get its value, ELSE return a default value.
 		/// </summary>
 		/// <typeparam name="T">Return type.</typeparam>
 		/// <param name="style">Style to search.</param>
 		/// <param name="property">DP to locate.</param>
-		/// <returns>The value or default(T).</returns>
-		public static T Find<T>(this Style style, DependencyProperty property) {
+		/// <param name="defv">Default value to return if nothing found OR the style is NULL.</param>
+		/// <returns>The value or DEFV.</returns>
+		public static T Find<T>(this Style style, DependencyProperty property, T defv = default(T)) {
+			if (style == null) return defv;
 			foreach (var xx in style.Setters) {
 				if (xx is Setter sx) {
 					if (sx.Property == property) {
@@ -645,13 +684,13 @@ namespace eScapeLLC.UWP.Charts {
 					}
 				}
 			}
-			return default(T);
+			return defv;
 		}
 	}
 	#endregion
 	#region Recycler<T>
 	/// <summary>
-	/// Recycles an input list of instances, then provides new instances.
+	/// Recycles an input list of instances, then provides new instances after those run out.
 	/// Does the bookkeeping to track unused and newly-provided instances.
 	/// </summary>
 	/// <typeparam name="T">Type of items to recycle.</typeparam>
@@ -726,42 +765,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// The title.
 		/// </summary>
 		public String Title { get; set; }
-	}
-	#endregion
-	#region IChartLayer
-	/// <summary>
-	/// Represents a container for chart component visual elements.
-	/// </summary>
-	public interface IChartLayer {
-		/// <summary>
-		/// Add content.
-		/// </summary>
-		/// <param name="fe">Element to add.</param>
-		void Add(FrameworkElement fe);
-		/// <summary>
-		/// Remove content.
-		/// </summary>
-		/// <param name="fe">Element to remove.</param>
-		void Remove(FrameworkElement fe);
-		/// <summary>
-		/// Add group of elements.
-		/// </summary>
-		/// <param name="fes"></param>
-		void Add(IEnumerable<FrameworkElement> fes);
-		/// <summary>
-		/// Remove group of elements.
-		/// </summary>
-		/// <param name="fes"></param>
-		void Remove(IEnumerable<FrameworkElement> fes);
-		/// <summary>
-		/// Position the layer.
-		/// </summary>
-		/// <param name="target"></param>
-		void Layout(Rect target);
-		/// <summary>
-		/// Remove all the components this layer knows about.
-		/// </summary>
-		void Clear();
 	}
 	#endregion
 }

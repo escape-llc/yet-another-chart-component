@@ -518,11 +518,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public ObservableCollection<Legend> LegendItems { get; private set; }
 		/// <summary>
-		/// The style to use for the axis labels.
-		/// If NULL, attempts to initialize from ChartComponent.Resources.
-		/// If that fails, axis uses hard-coded styling.
+		/// The THEME to use for this chart.
+		/// This MUST be set from GENERIC.XAML.
+		/// If that fails, use hard-coded theme.
 		/// </summary>
-		public Style AxisLabelStyle { get { return (Style)GetValue(AxisLabelStyleProperty); } set { SetValue(AxisLabelStyleProperty, value); } }
+		public ChartTheme Theme { get { return (ChartTheme)GetValue(ThemeProperty); } set { SetValue(ThemeProperty, value); } }
 		/// <summary>
 		/// Obtained from the templated parent.
 		/// </summary>
@@ -551,9 +551,11 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region DPs
 		/// <summary>
-		/// Deendency property for <see cref="AxisLabelStyle"/>.
+		/// Deendency property for <see cref="Theme"/>.
 		/// </summary>
-		public static readonly DependencyProperty AxisLabelStyleProperty = DependencyProperty.Register("AxisLabelStyle", typeof(Style), typeof(Chart), new PropertyMetadata(null));
+		public static readonly DependencyProperty ThemeProperty = DependencyProperty.Register (
+			nameof(Theme), typeof(ChartTheme), typeof(Chart), new PropertyMetadata(null)
+		);
 		#endregion
 		#region ctor
 		/// <summary>
@@ -914,8 +916,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="cc">The component entering chart.</param>
 		protected void EnterComponent(IChartEnterLeaveContext icelc, ChartComponent cc) {
 			// pre-load resources
-			if (AxisLabelStyle != null && !cc.Resources.ContainsKey(nameof(AxisLabelStyle))) {
-				cc.Resources.Add(nameof(AxisLabelStyle), AxisLabelStyle);
+			if (cc is IRequireChartTheme irct) {
+				if (Theme == null) {
+					// TODO this is an error
+				} else {
+					irct.Theme = Theme;
+				}
 			}
 			// invoke IREL
 			if (cc is IRequireEnterLeave irel) {
@@ -959,7 +965,9 @@ namespace eScapeLLC.UWP.Charts {
 			if (cc is IRequireEnterLeave irel) {
 				irel.Leave(icelc);
 			}
-			cc.Resources.Remove(nameof(AxisLabelStyle));
+			if(cc is IRequireChartTheme irct) {
+				irct.Theme = null;
+			}
 		}
 		/// <summary>
 		/// Transforms for single component.
@@ -1047,6 +1055,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="ls">The current layout state.</param>
 		protected void RenderComponents(LayoutState ls) {
 			_trace.Verbose($"render-components {ls.Dimensions.Width}x{ls.Dimensions.Height}");
+			if(ls.Dimensions.Width == 0 || ls.Dimensions.Height == 0) {
+				// MAY need to re-trigger this
+				// TODO go back to the dataseries refresh evh and do it there
+				return;
+			}
 			if (DataSources.Cast<DataSource>().Any((ds) => ds.IsDirty)) {
 				FullLayout(ls);
 			} else {

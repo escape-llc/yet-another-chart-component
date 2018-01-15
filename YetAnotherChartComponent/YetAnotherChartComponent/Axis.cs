@@ -118,7 +118,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// It's possible to have one or both limits "fixed" in this way.
 	/// When limits are fixed, some chart elements may not appear due to clipping.
 	/// </summary>
-	public abstract class AxisCommon : ChartComponent, IChartAxis {
+	public abstract class AxisCommon : ChartComponent, IChartAxis, IRequireChartTheme {
 		static LogTools.Flag _trace = LogTools.Add("AxisCommon", LogTools.Level.Error);
 		#region properties
 		#region axis
@@ -173,6 +173,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public String LabelFormatString { get; set; }
 		/// <summary>
+		/// Receive the theme for axis labels, etc.
+		/// </summary>
+		public IChartTheme Theme { get; set; }
+		/// <summary>
 		/// The style to use for Path geometry.
 		/// </summary>
 		public Style PathStyle { get { return (Style)GetValue(PathStyleProperty); } set { SetValue(PathStyleProperty, value); } }
@@ -203,6 +207,29 @@ namespace eScapeLLC.UWP.Charts {
 			Type = at;
 			Orientation = ao;
 			Side = sd;
+		}
+		#endregion
+		#region helpers
+		/// <summary>
+		/// Initialize the LabelStyle from the Theme, if it is NULL.
+		/// </summary>
+		protected void ApplyLabelStyle() {
+			if (LabelStyle == null && Theme != null) {
+				switch (Side) {
+				case Side.Left:
+					if (Theme.LabelAxisLeft != null) LabelStyle = Theme.LabelAxisLeft;
+					break;
+				case Side.Right:
+					if (Theme.LabelAxisRight != null) LabelStyle = Theme.LabelAxisRight;
+					break;
+				case Side.Top:
+					if (Theme.LabelAxisTop != null) LabelStyle = Theme.LabelAxisTop;
+					break;
+				case Side.Bottom:
+					if (Theme.LabelAxisBottom != null) LabelStyle = Theme.LabelAxisBottom;
+					break;
+				}
+			}
 		}
 		#endregion
 		#region public
@@ -294,8 +321,9 @@ namespace eScapeLLC.UWP.Charts {
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			Layer = icelc.CreateLayer(Axis);
 			DoBindings(icelc);
-			if (LabelStyle == null && Resources.ContainsKey("AxisLabelStyle")) {
-				LabelStyle = Resources["AxisLabelStyle"] as Style;
+			ApplyLabelStyle();
+			if (PathStyle == null && Theme != null) {
+				if (Theme.PathAxisCategory != null) PathStyle = Theme.PathAxisCategory;
 			}
 		}
 		/// <summary>
@@ -481,8 +509,9 @@ namespace eScapeLLC.UWP.Charts {
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			Layer = icelc.CreateLayer(Axis);
 			BindTo(this, "PathStyle", Axis, Path.StyleProperty);
-			if (LabelStyle == null && Resources.ContainsKey("AxisLabelStyle")) {
-				LabelStyle = Resources["AxisLabelStyle"] as Style;
+			ApplyLabelStyle();
+			if (PathStyle == null && Theme != null) {
+				if (Theme.PathAxisCategory != null) PathStyle = Theme.PathAxisCategory;
 			}
 		}
 		/// <summary>
