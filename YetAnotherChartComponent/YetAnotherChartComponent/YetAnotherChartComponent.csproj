@@ -109,20 +109,20 @@
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Axis.cs" />
-    <Compile Include="CategoryAxis.cs" />
+    <Compile Include="Axis\Axis.cs" />
+    <Compile Include="Axis\CategoryAxis.cs" />
     <Compile Include="Chart.cs" />
-    <Compile Include="ColumnSeries.cs" />
+    <Compile Include="Series\ColumnSeries.cs" />
     <Compile Include="Components.cs" />
     <Compile Include="DataSource.cs" />
     <Compile Include="Core.cs" />
-    <Compile Include="LineSeries.cs" />
-    <Compile Include="MarkerSeries.cs" />
+    <Compile Include="Series\LineSeries.cs" />
+    <Compile Include="Series\MarkerSeries.cs" />
     <Compile Include="MatrixSupport.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Series.cs" />
+    <Compile Include="Series\Series.cs" />
     <Compile Include="Theme.cs" />
-    <Compile Include="ValueAxis.cs" />
+    <Compile Include="Axis\ValueAxis.cs" />
     <EmbeddedResource Include="Properties\eScapeLLC.UWP.Charts.rd.xml" />
   </ItemGroup>
   <ItemGroup>
