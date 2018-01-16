@@ -111,9 +111,12 @@
   <ItemGroup>
     <Compile Include="Axis.cs" />
     <Compile Include="Chart.cs" />
+    <Compile Include="ColumnSeries.cs" />
     <Compile Include="Components.cs" />
     <Compile Include="DataSource.cs" />
     <Compile Include="Core.cs" />
+    <Compile Include="LineSeries.cs" />
+    <Compile Include="MarkerSeries.cs" />
     <Compile Include="MatrixSupport.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Series.cs" />

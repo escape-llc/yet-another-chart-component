@@ -164,7 +164,6 @@ namespace Yacc.Demo.VM {
 		public int WindowSize { get; set; } = 30;
 		public bool IsRunning { get; private set; }
 		protected Timer Timer { get; set; }
-		public bool RefreshData { get; set; }
 		public TimedObservationsVM(CoreDispatcher dx) :base(dx) {
 			Data = new List<Observation2>();
 			Toggle = new DelegateCommand((ox) => { if (IsRunning) StopTimer(); else StartTimer(); }, (ox) => true);
