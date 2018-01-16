@@ -1,13 +1,18 @@
-﻿using eScape.Core.VM;
+﻿using eScape.Core.Host;
+using eScape.Core.VM;
+using eScapeLLC.UWP.Charts;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using Windows.UI.Core;
 using Windows.UI.Xaml.Controls;
+using Yacc.Demo.Pages;
 
 namespace Yacc.Demo.VM {
 	#region MainPageVM
@@ -26,11 +31,12 @@ namespace Yacc.Demo.VM {
 	public class MainPageVM : CoreViewModel {
 		public ObservableCollection<PageItem> PageList { get; private set; }
 		public MainPageVM(CoreDispatcher dx) : base(dx) {
-			// build the list
-			var pl = new ObservableCollection<PageItem>();
 			// build offline so we don't trigger events
-			pl.Add(new PageItem() { Symbol = Symbol.Map, Title = "Demo", Description = "The demo chart", PageType = typeof(Chart1) });
-			pl.Add(new PageItem() { Symbol = Symbol.Map, Title = "Default", Description = "Default styles", PageType = typeof(Chart2) });
+			var pl = new ObservableCollection<PageItem> {
+				new PageItem() { Symbol = Symbol.Map, Title = "Demo", Description = "The demo chart (as seen on The Internet).", PageType = typeof(Chart1) },
+				new PageItem() { Symbol = Symbol.Font, Title = "Default", Description = "Default styles in case you forget!", PageType = typeof(Chart2) },
+				new PageItem() { Symbol = Symbol.Clock, Title = "Recycling", Description = "Paths get recycled efficiently as values enter and leave chart.", PageType = typeof(Chart3) }
+			};
 			PageList = pl;
 		}
 	}
@@ -52,12 +58,13 @@ namespace Yacc.Demo.VM {
 	/// </summary>
 	public class ObservationsVM : CoreViewModel {
 		readonly Random rnd = new Random();
-		public int GroupCounter { get; set; }
+		public int GroupCounter { get; private set; }
 		public double Value1Average { get; private set; }
 		public double Value2Average { get; private set; }
 		public ObservableCollection<Observation> Data { get; private set; }
 		public ObservationsVM(CoreDispatcher dx, IEnumerable<Observation> initial): base(dx) {
 			Data = new ObservableCollection<Observation>(initial);
+			GroupCounter = Data.Count;
 			Recalculate();
 		}
 		/// <summary>
@@ -117,6 +124,102 @@ namespace Yacc.Demo.VM {
 			}
 			Changed(nameof(Value1Average));
 			Changed(nameof(Value2Average));
+		}
+	}
+	#endregion
+	#region TimedObservationsVM
+	public class Observation2 : Observation {
+		public double Value3 { get; private set; }
+		public double Value4 { get; private set; }
+		public Observation2(String label, double v1, double v2, double v3, double v4) : base(label, v1, v2) { Value3 = v3; Value4 = v4; }
+	}
+	/// <summary>
+	/// This VM demonstrates how to use a NOT observable collection, to avoid extra "churn" caused by individual add/remove operations.
+	/// This also allows the path recycling to stabilize once chart reaches Window Size elements.
+	/// </summary>
+	public class TimedObservationsVM : CoreViewModel, IRequireRelease {
+		readonly Random rnd = new Random();
+		/// <summary>
+		/// In this VM, the group counter is bound to the DataSource.ExternalRefresh DP.
+		/// Whenever the list is done changing, an <see cref="INotifyPropertyChanged"/> is triggered.
+		/// NOTE that we are in manual control of when that happens (see <see cref="TimerCallback"/>)
+		/// </summary>
+		public int GroupCounter { get; private set; }
+		/// <summary>
+		/// The list of data.
+		/// NOTE this does NOT implement <see cref="INotifyCollectionChanged"/>.
+		/// </summary>
+		public List<Observation2> Data { get; private set; }
+		/// <summary>
+		/// Command to toggle the timer.
+		/// </summary>
+		public ICommand Toggle { get; private set; }
+		/// <summary>
+		/// How fast to add values in MS.
+		/// </summary>
+		public int Speed { get; set; } = 500;
+		/// <summary>
+		/// Size to maintain the collection at.
+		/// </summary>
+		public int WindowSize { get; set; } = 30;
+		public bool IsRunning { get; private set; }
+		protected Timer Timer { get; set; }
+		public bool RefreshData { get; set; }
+		public TimedObservationsVM(CoreDispatcher dx) :base(dx) {
+			Data = new List<Observation2>();
+			Toggle = new DelegateCommand((ox) => { if (IsRunning) StopTimer(); else StartTimer(); }, (ox) => true);
+			GroupCounter = Data.Count;
+		}
+		void StartTimer() {
+			try {
+				if (Timer == null) {
+					Timer = new Timer(TimerCallback, this, Speed, Speed);
+				} else {
+					Timer.Change(Speed, Speed);
+				}
+			}
+			finally {
+				IsRunning = true;
+				Changed(nameof(IsRunning));
+			}
+		}
+		void StopTimer() {
+			try {
+				if (Timer != null) Timer.Change(Timeout.Infinite, Timeout.Infinite);
+			}
+			finally {
+				IsRunning = false;
+				Changed(nameof(IsRunning));
+			}
+		}
+		protected async void TimerCallback(object ox) {
+			await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, ()=> {
+				RemoveHead();
+				AddTail();
+				// Since we're not using ObservableCollection, we MUST trigger a refresh when we're done changing the list
+				Changed(nameof(GroupCounter));
+			});
+		}
+		void AddTail() {
+			GroupCounter++;
+			var v1 =  4 + .5 - rnd.NextDouble();
+			var v2 = 3 + .5 - rnd.NextDouble();
+			var v3 = -2 + .5 - rnd.NextDouble();
+			var v4 = -4 + .5 - rnd.NextDouble();
+			var obs = new Observation2($"[{GroupCounter}]", v1, v2, v3, v4);
+			Data.Add(obs);
+		}
+		void RemoveHead() {
+			if (Data.Count > WindowSize) {
+				Data.RemoveAt(0);
+			}
+		}
+		void IRequireRelease.Release() {
+			try {
+				if(Timer != null) Timer.Dispose();
+			} finally {
+				Timer = null;
+			}
 		}
 	}
 	#endregion

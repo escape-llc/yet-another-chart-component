@@ -93,7 +93,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Represents a horizontal "rule" on the chart, for a value not belonging to any data source value, e.g. a value computed "outside" the series itself (Average).
 	/// </summary>
-	public class HorizontalRule : ChartComponent, IProvideValueExtents, IRequireChartTheme, IRequireEnterLeave, IRequireRender, IRequireTransforms/*, IRequireAfterRenderComplete*/ {
+	public class HorizontalRule : ChartComponent, IProvideValueExtents, IRequireChartTheme, IRequireEnterLeave, IRequireRender, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("HorizontalRule", LogTools.Level.Error);
 		#region properties
 		/// <summary>
@@ -272,7 +272,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Represents a horizontal "rule" on the chart, for a value not belonging to any data source value, e.g. a value computed "outside" the series itself (Average).
 	/// </summary>
-	public class HorizontalBand : ChartComponent, IProvideValueExtents, IRequireChartTheme, IRequireEnterLeave, IRequireRender, IRequireTransforms/*, IRequireAfterRenderComplete*/ {
+	public class HorizontalBand : ChartComponent, IProvideValueExtents, IRequireChartTheme, IRequireEnterLeave, IRequireRender, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("HorizontalBand", LogTools.Level.Error);
 		#region properties
 		/// <summary>
@@ -468,6 +468,9 @@ namespace eScapeLLC.UWP.Charts {
 		protected void EnsureAxes(IChartRenderContext icrc) {
 			if (ValueAxis == null && !String.IsNullOrEmpty(ValueAxisName)) {
 				ValueAxis = icrc.Find(ValueAxisName) as IChartAxis;
+			} else {
+				// TODO report the error
+				ValidationResult vr = new ValidationResult($"{Name}.{nameof(ValueAxis)}: Axis '{ValueAxisName}' is missing or name is empty", new[] { nameof(ValueAxis), nameof(ValueAxisName) });
 			}
 		}
 		#endregion

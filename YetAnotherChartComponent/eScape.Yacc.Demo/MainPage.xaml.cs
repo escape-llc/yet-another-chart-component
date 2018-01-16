@@ -1,4 +1,5 @@
-﻿using Windows.UI.Xaml.Controls;
+﻿using Windows.UI.Xaml;
+using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
 using Yacc.Demo.VM;
 
@@ -22,7 +23,8 @@ namespace Yacc.Demo {
 
 		private void HamburgerMenu_ItemInvoked(object sender, Microsoft.Toolkit.Uwp.UI.Controls.HamburgetMenuItemInvokedEventArgs e) {
 			if(e.InvokedItem is PageItem pi) {
-				Notification.Show($"Opening {pi.Title}", 4000);
+				Notification.Content = pi;
+				Notification.Show();
 				// for now just send in PI
 				MainFrame.Navigate(pi.PageType, pi);
 			}

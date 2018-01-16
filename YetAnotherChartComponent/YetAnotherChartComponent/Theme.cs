@@ -2,6 +2,7 @@
 using Windows.UI.Xaml;
 
 namespace eScapeLLC.UWP.Charts {
+	#region IChartTheme
 	/// <summary>
 	/// Ability to provide default styles.
 	/// </summary>
@@ -29,31 +30,59 @@ namespace eScapeLLC.UWP.Charts {
 		Style LabelAxisBottom { get; }
 		#endregion
 		#region axis paths
+		/// <summary>
+		/// Path style for Category axis.
+		/// </summary>
 		Style PathAxisCategory { get; }
+		/// <summary>
+		/// Path style for Value axis.
+		/// </summary>
 		Style PathAxisValue { get; }
 		#endregion
 		#region decorations
 		//Style PathGridCategory { get; }
+		/// <summary>
+		/// Path style for Value axis Grid.
+		/// </summary>
 		Style PathGridValue { get; }
+		/// <summary>
+		/// Path style for horizontal rule and horizontal band rules.
+		/// </summary>
 		Style PathHorizontalRule { get; }
+		/// <summary>
+		/// Path style for horizonal band fill.
+		/// </summary>
 		Style PathHorizontalBand { get; }
 		#endregion
 		#region series paths
+		/// <summary>
+		/// Path style for line series.
+		/// </summary>
 		Style PathLineSeries { get; }
+		/// <summary>
+		/// Path style for column series.
+		/// </summary>
 		Style PathColumnSeries { get; }
+		/// <summary>
+		/// Path style for marker series.
+		/// </summary>
 		Style PathMarkerSeries { get; }
 		#endregion
 	}
+	#endregion
+	#region IRequireChartTheme
 	/// <summary>
 	/// Requirement for the theme.
-	/// Theme is provided before IRequireEnterLeave.Enter, and revoked after IRequireEnterLeave.Leave.
+	/// Theme is provided before <see cref="IRequireEnterLeave.Enter"/>, and revoked after <see cref="IRequireEnterLeave.Leave"/>.
 	/// </summary>
 	public interface IRequireChartTheme {
 		/// <summary>
-		/// The theme.
+		/// Holder for the theme.
 		/// </summary>
 		IChartTheme Theme { get; set; }
 	}
+	#endregion
+	#region ChartTheme
 	/// <summary>
 	/// This is the "master" set of styles in a chart.
 	/// ALL members MUST be non-NULL!
@@ -84,18 +113,42 @@ namespace eScapeLLC.UWP.Charts {
 		public Style LabelAxisBottom { get { return (Style)GetValue(LabelAxisBottomProperty); } set { SetValue(LabelAxisBottomProperty, value); } }
 		#endregion
 		#region axis paths
+		/// <summary>
+		/// Path style for Category axis.
+		/// </summary>
 		public Style PathAxisCategory { get { return (Style)GetValue(PathAxisCategoryProperty); } set { SetValue(PathAxisCategoryProperty, value); } }
+		/// <summary>
+		/// Path style for Value axis Grid.
+		/// </summary>
 		public Style PathAxisValue { get { return (Style)GetValue(PathAxisValueProperty); } set { SetValue(PathAxisValueProperty, value); } }
 		#endregion
 		#region decorations
 		//Style PathGridCategory { get; }
+		/// <summary>
+		/// Path style for Value axis Grid.
+		/// </summary>
 		public Style PathGridValue { get { return (Style)GetValue(PathGridValueProperty); } set { SetValue(PathGridValueProperty, value); } }
+		/// <summary>
+		/// Path style for horizontal rule and horizontal band rules.
+		/// </summary>
 		public Style PathHorizontalRule { get { return (Style)GetValue(PathHorizontalRuleProperty); } set { SetValue(PathHorizontalRuleProperty, value); } }
+		/// <summary>
+		/// Path style for horizonal band fill.
+		/// </summary>
 		public Style PathHorizontalBand { get { return (Style)GetValue(PathHorizontalBandProperty); } set { SetValue(PathHorizontalBandProperty, value); } }
 		#endregion
 		#region series paths
+		/// <summary>
+		/// Path style for line series.
+		/// </summary>
 		public Style PathLineSeries { get { return (Style)GetValue(PathLineSeriesProperty); } set { SetValue(PathLineSeriesProperty, value); } }
+		/// <summary>
+		/// Path style for column series.
+		/// </summary>
 		public Style PathColumnSeries { get { return (Style)GetValue(PathColumnSeriesProperty); } set { SetValue(PathColumnSeriesProperty, value); } }
+		/// <summary>
+		/// Path style for marker series.
+		/// </summary>
 		public Style PathMarkerSeries { get { return (Style)GetValue(PathMarkerSeriesProperty); } set { SetValue(PathMarkerSeriesProperty, value); } }
 		#endregion
 		#region DPs
@@ -149,4 +202,5 @@ namespace eScapeLLC.UWP.Charts {
 		public static readonly DependencyProperty PathMarkerSeriesProperty = DependencyProperty.Register(nameof(PathMarkerSeries), typeof(Style), typeof(ChartTheme), new PropertyMetadata(null));
 		#endregion
 	}
+	#endregion
 }

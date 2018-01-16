@@ -1,14 +1,35 @@
 ﻿<Page
-	x:Class="Yacc.Demo.Pages.Chart2"
+	x:Class="Yacc.Demo.Pages.Chart3"
 	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:local="using:Yacc.Demo.Pages"
 	xmlns:yacc="using:eScapeLLC.UWP.Charts"
-	xmlns:local="using:Yacc.Demo"
-	xmlns:core="using:eScape.Core.Convert"
 	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 	mc:Ignorable="d">
 	<Page.Resources>
+		<Style x:Key="Column_v1" TargetType="Path">
+			<Setter Property="Stroke" Value="DarkOrchid"/>
+			<Setter Property="StrokeThickness" Value="1"/>
+			<Setter Property="Fill" Value="Blue"/>
+		</Style>
+		<Style x:Key="Column_v2" TargetType="Path">
+			<Setter Property="Stroke" Value="DarkOrchid"/>
+			<Setter Property="StrokeThickness" Value="1"/>
+			<Setter Property="Fill" Value="Green"/>
+		</Style>
+		<Style x:Key="Line_v3" TargetType="Path">
+			<Setter Property="Stroke" Value="Olive"/>
+			<Setter Property="StrokeThickness" Value="5"/>
+			<Setter Property="StrokeLineJoin" Value="Round"/>
+			<Setter Property="StrokeStartLineCap" Value="Round"/>
+			<Setter Property="StrokeEndLineCap" Value="Round"/>
+		</Style>
+		<Style x:Key="Marker_v4" TargetType="Path">
+			<Setter Property="Stroke" Value="Coral"/>
+			<Setter Property="StrokeThickness" Value="1"/>
+			<Setter Property="Fill" Value="CadetBlue"/>
+		</Style>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" MinHeight="480" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 		<CommandBar x:Name="toolbar"
@@ -16,35 +37,31 @@
 			<CommandBar.PrimaryCommands>
 				<AppBarToggleButton IsChecked="True" x:Name="cb_legend" Label="Toggle" Content="Legend"/>
 				<AppBarToggleButton IsChecked="True" x:Name="cb_grid" Label="Toggle" Content="Grid"/>
-				<AppBarToggleButton IsChecked="True" x:Name="cb_band" Label="Toggle" Content="Band"/>
-				<AppBarButton x:Name="add_head" Content="+[0]" Label="Add Head" Click="Add_head_Click"/>
-				<AppBarButton x:Name="add_tail" Content="+ [N]" Label="Add End" Click="Add_item_Click"/>
-				<AppBarButton x:Name="remove_head" Content="-[0]" Label="Delete Head" Click="Remove_head_Click"/>
-				<AppBarButton x:Name="remove_tail" Content="-[N]" Label="Delete End" Click="Remove_tail_Click"/>
-				<AppBarButton x:Name="add_and_remove_head" Content="-[0]+[N]" Label="Scroll" Click="Add_and_remove_head_Click"/>
+				<AppBarButton Content="+-" Label="Toggle" Command="{Binding Toggle}" />
 			</CommandBar.PrimaryCommands>
 		</CommandBar>
 		<yacc:Chart x:Name="chart" Style="{StaticResource Chart}"
 			RelativePanel.Below="toolbar" RelativePanel.AlignBottomWithPanel="True"
 			RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True">
 			<yacc:Chart.DataSources>
-				<yacc:DataSource x:Name="data" Items="{Binding Data}"/>
+				<yacc:DataSource x:Name="data" Items="{Binding Data}" ExternalRefresh="{Binding GroupCounter}"/>
 			</yacc:Chart.DataSources>
 			<yacc:Chart.Components>
-				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" />
-				<yacc:ColumnSeries x:Name="colv1" DataSourceName="data" ValuePath="Value1" CategoryLabelPath="Label" ClipToDataRegion="True"
+				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" PathStyle="{StaticResource Axes}"
+					LabelStyle="{StaticResource CategoryAxisLabel}" />
+				<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}"
+					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="F1" />
+				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource Grid}"
+					Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
+				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value1" CategoryLabelPath="Label" ClipToDataRegion="True"
 					Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" EnableDebugPaths="True"
-					BarOffset=".25" BarWidth=".25" />
-				<yacc:ColumnSeries x:Name="colv2" DataSourceName="data" ValuePath="Value2"
+					PathStyle="{StaticResource Column_v1}" BarOffset=".25" BarWidth=".25" />
+				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value2"
 					Title="Value 2 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" ClipToDataRegion="True"
-					BarOffset=".5" BarWidth=".25" />
-				<yacc:LineSeries x:Name="linev2" DataSourceName="data" ValuePath="Value2" Title="Value 2 Line"
-					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".375"
-					ClipToDataRegion="False" />
-				<yacc:MarkerSeries DataSourceName="data"
-					ValuePath="Value1" Title="Value 1 Marker"
+					PathStyle="{StaticResource Column_v2}" BarOffset=".5" BarWidth=".25" />
+				<yacc:MarkerSeries DataSourceName="data" ValuePath="Value3" Title="Value 3 Marker"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis"
-					MarkerOffset=".625" MarkerWidth=".25">
+					MarkerOffset=".5" MarkerWidth=".5" PathStyle="{StaticResource Marker_v4}">
 					<yacc:MarkerSeries.MarkerTemplate>
 						<DataTemplate>
 							<GeometryGroup>
@@ -55,15 +72,12 @@
 						</DataTemplate>
 					</yacc:MarkerSeries.MarkerTemplate>
 				</yacc:MarkerSeries>
-				<yacc:HorizontalBand ValueAxisName="yaxis" Value1="{Binding Value1Average}" Value2="{Binding Value2Average}"
-					Visibility="{Binding ElementName=cb_band, Path=IsChecked, Converter={StaticResource b2v}}"
-				/>
-				<yacc:ValueAxis x:Name="yaxis" Side="Left" LabelFormatString="F1" />
-				<yacc:ValueAxisGrid ValueAxisName="yaxis"
-					Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
+				<yacc:LineSeries DataSourceName="data" ValuePath="Value4" Title="Value 4 Line"
+					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".375"
+					ClipToDataRegion="False" PathStyle="{StaticResource Line_v3}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>
-		<TextBlock x:Name="title" Style="{StaticResource Title}" Text="Default Styles"
+		<TextBlock x:Name="title" Style="{StaticResource Title}" Text="Time Series Data"
 			RelativePanel.AlignTopWith="chart" RelativePanel.AlignHorizontalCenterWithPanel="True"/>
 		<Image Source="ms-appx:/Assets/Square44x44Logo.scale-100.png" Style="{StaticResource Logo}"
 			RelativePanel.LeftOf="title" RelativePanel.AlignVerticalCenterWith="title" />

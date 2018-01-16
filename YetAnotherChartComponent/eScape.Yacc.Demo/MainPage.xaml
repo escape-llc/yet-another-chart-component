@@ -22,7 +22,7 @@
 		<RelativePanel HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 			<Frame x:Name="MainFrame" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" BorderBrush="Gray" BorderThickness="1"
 				RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True" RelativePanel.AlignTopWithPanel="True"/>
-			<controls:InAppNotification x:Name="Notification" RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignVerticalCenterWithPanel="True"/>
+			<controls:InAppNotification x:Name="Notification" ContentTemplate="{StaticResource PageItem}" RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignVerticalCenterWithPanel="True"/>
 		</RelativePanel>
 	</controls:HamburgerMenu>
 </Page>

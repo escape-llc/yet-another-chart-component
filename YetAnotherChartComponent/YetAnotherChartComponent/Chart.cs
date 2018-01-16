@@ -710,22 +710,21 @@ namespace eScapeLLC.UWP.Charts {
 		private async void ChartComponent_RefreshRequest(ChartComponent cc, RefreshRequestEventArgs rrea) {
 			_trace.Verbose($"refresh-request-cc '{cc.Name}' {cc} r:{rrea.Request} a:{rrea.Axis}");
 			await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => {
-				if (Surface != null) {
-					if (cc is DataSeries) {
-						var ds = DataSources.SingleOrDefault(dds => dds.Name == (cc as DataSeries).DataSourceName);
-						if (ds != null) {
-							ds.IsDirty = true;
-						}
-						RenderComponents(CurrentLayout);
-					} else {
-						// dispatch other kinds of refresh requests
-						if (rrea.Request == RefreshRequestType.LayoutDirty && rrea.Component is IRequireLayout) {
-							ComponentRender(CurrentLayout, rrea);
-						} else if (rrea.Request == RefreshRequestType.ValueDirty && rrea.Component is IRequireRender) {
-							ComponentRender(CurrentLayout, rrea);
-						} else if (rrea.Request == RefreshRequestType.TransformsDirty && cc is IRequireTransforms) {
-							ComponentTransforms(CurrentLayout, rrea);
-						}
+				if (Surface == null) return;
+				if (cc is DataSeries) {
+					var ds = DataSources.SingleOrDefault(dds => dds.Name == (cc as DataSeries).DataSourceName);
+					if (ds != null) {
+						ds.IsDirty = true;
+					}
+					RenderComponents(CurrentLayout);
+				} else {
+					// dispatch other kinds of refresh requests
+					if (rrea.Request == RefreshRequestType.LayoutDirty && rrea.Component is IRequireLayout) {
+						ComponentRender(CurrentLayout, rrea);
+					} else if (rrea.Request == RefreshRequestType.ValueDirty && rrea.Component is IRequireRender) {
+						ComponentRender(CurrentLayout, rrea);
+					} else if (rrea.Request == RefreshRequestType.TransformsDirty && cc is IRequireTransforms) {
+						ComponentTransforms(CurrentLayout, rrea);
 					}
 				}
 			});

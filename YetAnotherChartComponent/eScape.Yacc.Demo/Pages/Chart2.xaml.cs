@@ -3,7 +3,7 @@ using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
 using Yacc.Demo.VM;
 
-namespace Yacc.Demo {
+namespace Yacc.Demo.Pages {
 	/// <summary>
 	/// An empty page that can be used on its own or navigated to within a Frame.
 	/// </summary>
@@ -25,27 +25,26 @@ namespace Yacc.Demo {
 				new Observation("Group 5", 4, -3.75),
 				new Observation("Group 6", -5.25, 0.5)
 			});
-			vm.GroupCounter = vm.Data.Count;
 			DataContext = vm;
 		}
 
-		private void add_item_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e) {
+		private void Add_item_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e) {
 			(DataContext as ObservationsVM).AddTail();
 		}
 
-		private void remove_head_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e) {
+		private void Remove_head_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e) {
 			(DataContext as ObservationsVM).RemoveHead();
 		}
 
-		private void add_and_remove_head_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e) {
+		private void Add_and_remove_head_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e) {
 			(DataContext as ObservationsVM).AddAndRemoveHead();
 		}
 
-		private void remove_tail_Click(object sender, RoutedEventArgs e) {
+		private void Remove_tail_Click(object sender, RoutedEventArgs e) {
 			(DataContext as ObservationsVM).RemoveTail();
 		}
 
-		private void add_head_Click(object sender, RoutedEventArgs e) {
+		private void Add_head_Click(object sender, RoutedEventArgs e) {
 			(DataContext as ObservationsVM).AddHead();
 		}
 	}

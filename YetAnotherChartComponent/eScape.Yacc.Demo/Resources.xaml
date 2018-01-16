@@ -1,0 +1,74 @@
+﻿<ResourceDictionary
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:yacc="using:eScapeLLC.UWP.Charts"
+	xmlns:core="using:eScape.Core.Convert"
+	xmlns:local="using:Yacc.Demo">
+	<core:BooleanVisibilityConverter x:Key="b2v"/>
+	<LinearGradientBrush x:Key="series-background" StartPoint="0,0" EndPoint="0,1">
+		<GradientStop Color="#88888888" Offset="0"/>
+		<GradientStop Color="#668888aa" Offset=".4"/>
+		<GradientStop Color="#448888cc" Offset=".6"/>
+		<GradientStop Color="Transparent" Offset=".8"/>
+	</LinearGradientBrush>
+	<Style x:Key="Chart" TargetType="yacc:Chart">
+		<Setter Property="Padding" Value="32"/>
+		<Setter Property="Background" Value="Black"/>
+		<Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+		<Setter Property="VerticalContentAlignment" Value="Stretch"/>
+	</Style>
+	<Style x:Key="Legend" TargetType="Border">
+		<Setter Property="Margin" Value="0,8,8,0"/>
+		<Setter Property="Background" Value="DarkGray"/>
+		<Setter Property="BorderBrush" Value="White"/>
+		<Setter Property="BorderThickness" Value="2"/>
+		<Setter Property="CornerRadius" Value="4"/>
+	</Style>
+	<Style x:Key="Logo" TargetType="Image">
+		<Setter Property="Margin" Value="2"/>
+		<Setter Property="Stretch" Value="None"/>
+	</Style>
+	<Style x:Key="Title" TargetType="TextBlock">
+		<Setter Property="Margin" Value="2"/>
+		<Setter Property="Padding" Value="2"/>
+		<Setter Property="Foreground" Value="White"/>
+		<Setter Property="TextAlignment" Value="Center"/>
+	</Style>
+	<Style x:Key="ValueAxisLabel" TargetType="TextBlock">
+		<Setter Property="Foreground" Value="White"/>
+		<Setter Property="FontStyle" Value="Italic"/>
+		<Setter Property="FontSize" Value="12"/>
+		<Setter Property="TextAlignment" Value="Right"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+		<Setter Property="HorizontalAlignment" Value="Right"/>
+	</Style>
+	<Style x:Key="CategoryAxisLabel" TargetType="TextBlock">
+		<Setter Property="Foreground" Value="LimeGreen"/>
+		<Setter Property="FontWeight" Value="Bold"/>
+		<Setter Property="FontSize" Value="12"/>
+		<Setter Property="TextAlignment" Value="Center"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+		<Setter Property="HorizontalAlignment" Value="Center"/>
+	</Style>
+	<Style x:Key="Bkg" TargetType="Path">
+		<Setter Property="Fill" Value="{StaticResource series-background}"/>
+	</Style>
+	<Style x:Key="Axes" TargetType="Path">
+		<Setter Property="Fill" Value="Red"/>
+	</Style>
+	<Style x:Key="Grid" TargetType="Path">
+		<Setter Property="Stroke" Value="Gray"/>
+		<Setter Property="StrokeThickness" Value=".5"/>
+		<Setter Property="StrokeDashArray" Value="4,4"/>
+	</Style>
+	<DataTemplate x:Key="LegendItem">
+		<Grid Padding="2">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="Auto"/>
+				<ColumnDefinition Width="*"/>
+			</Grid.ColumnDefinitions>
+			<Rectangle Fill="{Binding Fill}" Stroke="{Binding Stroke}" Width="24" />
+			<TextBlock Grid.Column="1" Margin="4,0,0,0" Foreground="White" FontSize="10" Text="{Binding Title}"/>
+		</Grid>
+	</DataTemplate>
+</ResourceDictionary>

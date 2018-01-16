@@ -1,11 +1,8 @@
-﻿#define EXPERIMENTAL_MARKER
-using eScape.Core;
-using eScapeLLC.UWP.Charts;
+﻿using eScape.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using Windows.Foundation;
-using Windows.Foundation.Metadata;
 using Windows.UI;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media;
@@ -182,6 +179,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public Path Path { get; set; }
 		/// <summary>
+		/// The index of this value from data source.
+		/// </summary>
+		public int Index { get; set; }
+		/// <summary>
 		/// The x value.
 		/// </summary>
 		public double XValue { get; set; }
@@ -213,7 +214,7 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region LineSeries
 	/// <summary>
-	/// Data series that generates a Polyline visual.
+	/// Data series that generates a Polyline path.
 	/// </summary>
 	public class LineSeries : DataSeries, IDataSourceRenderer, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("LineSeries", LogTools.Level.Error);
@@ -563,21 +564,20 @@ namespace eScapeLLC.UWP.Charts {
 			mappedx += MarkerOffset;
 			_trace.Verbose($"[{index}] {valuey} ({mappedx},{mappedy})");
 			var mk = MarkerTemplate.LoadContent() as Geometry;
+			// TODO allow MK to be other things like (Path or Image).
 			// no path yet
 			var path = st.NextPath();
 			if(path == null) return;
 			path.Data = mk;
-			st.ms.Add(new MarkerItemState() { XValue = mappedx, YValue = mappedy, Path = path });
+			st.ms.Add(new MarkerItemState() { Index = index, XValue = mappedx, YValue = mappedy, Path = path });
 		}
 		void IDataSourceRenderer.RenderComplete(object state) {
 		}
 		void IDataSourceRenderer.Postamble(object state) {
 			var st = state as State;
 			MarkerState = st.ms;
-			#if EXPERIMENTAL_MARKER
 			Layer.Remove(st.recycler.Unused);
 			Layer.Add(st.recycler.Created);
-			#endif
 			Dirty = false;
 		}
 		#endregion
