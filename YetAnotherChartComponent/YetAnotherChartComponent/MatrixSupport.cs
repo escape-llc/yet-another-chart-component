@@ -149,10 +149,27 @@ namespace eScapeLLC.UWP.Charts {
 			return new Matrix(mx.M11, mx.M12, mx.M21, mx.M22, mx.OffsetX + xo * mx.M11, mx.OffsetY + yo * mx.M22);
 		}
 		/// <summary>
+		/// Take the given x-axis normalized unit width, and convert to dimensions in each axis.
+		/// Takes the x-axis as a reference, and cross-calculates the scale for the y-axis to make it "square" in DC.
+		/// For example, if WIDTH evaluates to 16px (on x-axis), a y-axis magnitude is calculated that also represents 16px.
+		/// E.g. Range = 10, Basis = .1, width = .5; answer = .05 x-axis units.
+		/// Cannot return a Windows.Foundation.Size type, because Width and Height cannot be negative!
+		/// </summary>
+		/// <param name="mx">Model (M) transform to operate in.</param>
+		/// <param name="width">Width [0..1].  Unit is (M) x-axis basis.  Also return value Point.X.</param>
+		/// <param name="area">The layout area.  Unit is DC.  Provides DC to size the dimensions.</param>
+		/// <returns>Rescaled dimensions.</returns>
+		public static Point Rescale(Matrix mx, double width, Rect area) {
+			// "walk out" the x-axis dimension through P (to get DC)
+			var wid_dc = width * area.Width * mx.M11;
+			// now "walk in" the DC to Y-axis (M) (to get NDC)
+			var hgt_yaxis = wid_dc / area.Height / mx.M22;
+			return new Point(width, hgt_yaxis);
+		}
+		/// <summary>
 		/// Create a transform for a local coordinate system, e.g. a Marker.
 		/// This transform creates a coordinate system of NDC centered at (XX,YY) on whatever point the "outer" transform represents.
-		/// Takes the x-axis as a reference, and cross-calculates the scale for the y-axis to make it "square" in DC.
-		/// For example, if MKWIDTH evaluates to 16px on x-axis, a y-axis magnitude is calculated that also represents 16px.
+		/// See <see cref="Rescale"/> for more information.
 		/// </summary>
 		/// <param name="mx">Model (M) transform.  SHOULD be translated to the "center" point that aligns with NDC origin.</param>
 		/// <param name="mkwidth">Marker width [0..1].  Unit is (M) x-axis basis. E.g. Range = 10, Basis = .1, mkwidth = .5; answer = .05 x-axis units.</param>
@@ -161,11 +178,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="yy">Translate local y.  Unit is NDC.  Additional offset to align an "origin".</param>
 		/// <returns>New matrix.</returns>
 		public static Matrix LocalFor(Matrix mx, double mkwidth, Rect area, double xx, double yy) {
-			// "walk out" the x-axis dimension through P (to get DC)
-			var wid_dc = mkwidth * area.Width * mx.M11;
-			// now "walk in" the DC to Y-axis (M) (to get NDC)
-			var hgt_yaxis = wid_dc / area.Height / mx.M22;
-			var marker = new Matrix(mkwidth, 0, 0, hgt_yaxis, xx * mkwidth, yy * hgt_yaxis);
+			var axes = Rescale(mx, mkwidth, area);
+			var marker = new Matrix(axes.X, 0, 0, axes.Y, xx * axes.X, yy * axes.Y);
 			return marker;
 		}
 	}
