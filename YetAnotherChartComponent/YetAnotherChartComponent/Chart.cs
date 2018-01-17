@@ -646,6 +646,10 @@ namespace eScapeLLC.UWP.Charts {
 			if (e.NewItems != null) {
 				foreach (DataSource ds in e.NewItems) {
 					_trace.Verbose($"enter '{ds.Name}' {ds}");
+					if (ds.Items != null && !ds.IsDirty && ds.Items.GetEnumerator().MoveNext()) {
+						// force this dirty so it refreshes
+						ds.IsDirty = true;
+					}
 					ds.RefreshRequest += DataSource_RefreshRequest;
 					ds.DataContext = DataContext;
 				}

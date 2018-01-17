@@ -156,7 +156,7 @@ namespace eScapeLLC.UWP.Charts {
 			var st = state as State;
 			if (st.bx == null) {
 				// needs one extra "cell"
-				UpdateLimits(st.ix + 1, 0);
+				UpdateLimits(st.ix + 1, double.NaN);
 			}
 		}
 		void IDataSourceRenderer.Postamble(object state) {

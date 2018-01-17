@@ -183,12 +183,11 @@ namespace eScapeLLC.UWP.Charts {
 			var st = state as State;
 			var valuey = (double)st.by.For(item);
 			var valuex = st.bx != null ? (double)st.bx.For(item) : index;
-			UpdateLimits(valuex, valuey);
-			UpdateLimits(valuex, 0);
+			UpdateLimits(valuex, valuey, 0);
 			var y1 = ValueAxis.For(valuey);
 			var y2 = ValueAxis.For(0);
-			var topy = Math.Min(y1, y2);
-			var bottomy = Math.Max(y1, y2);
+			var topy = Math.Max(y1, y2);
+			var bottomy = Math.Min(y1, y2);
 			var leftx = (st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()))) + BarOffset;
 			var rightx = leftx + BarWidth;
 			_trace.Verbose($"{Name}[{index}] {valuey} ({leftx},{topy}) ({rightx},{bottomy})");
@@ -204,7 +203,7 @@ namespace eScapeLLC.UWP.Charts {
 			var st = state as State;
 			if (st.bx == null) {
 				// needs one extra "cell"
-				UpdateLimits(st.ix + 1, 0);
+				UpdateLimits(st.ix + 1, double.NaN);
 			}
 		}
 		void IDataSourceRenderer.Postamble(object state) {

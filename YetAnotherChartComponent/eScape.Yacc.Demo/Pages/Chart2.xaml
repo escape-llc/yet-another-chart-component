@@ -10,7 +10,7 @@
 	mc:Ignorable="d">
 	<Page.Resources>
 	</Page.Resources>
-	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" MinHeight="480" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 		<CommandBar x:Name="toolbar"
 			RelativePanel.AlignTopWithPanel="True">
 			<CommandBar.PrimaryCommands>

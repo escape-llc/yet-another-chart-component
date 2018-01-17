@@ -1,15 +1,16 @@
 ﻿{
 	"TraceSwitches": {
-		"AxisCommon": "Verbose",
-		"CategoryAxis": "Verbose",
+		"AxisCommon": "Error",
+		"CandlestickSeries": "Verbose",
+		"CategoryAxis": "Error",
 		"Chart": "Verbose",
-		"ColumnSeries": "Info",
+		"ColumnSeries": "Error",
 		"ColumnSeriesPaths": "Off",
-		"DataSource": "Info",
-		"HorizontalBand": "Info",
-		"HorizontalRule": "Info",
-		"LineSeries": "Info",
-		"MarkerSeries": "Verbose",
-		"ValueAxis": "Verbose"
+		"DataSource": "Error",
+		"HorizontalBand": "Error",
+		"HorizontalRule": "Error",
+		"LineSeries": "Error",
+		"MarkerSeries": "Error",
+		"ValueAxis": "Error"
 	}
 }

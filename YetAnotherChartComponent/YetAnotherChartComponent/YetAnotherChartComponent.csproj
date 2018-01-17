@@ -112,6 +112,7 @@
     <Compile Include="Axis\Axis.cs" />
     <Compile Include="Axis\CategoryAxis.cs" />
     <Compile Include="Chart.cs" />
+    <Compile Include="Series\CandlestickSeries.cs" />
     <Compile Include="Series\ColumnSeries.cs" />
     <Compile Include="Components.cs" />
     <Compile Include="DataSource.cs" />

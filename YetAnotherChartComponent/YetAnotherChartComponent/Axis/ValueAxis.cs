@@ -51,6 +51,53 @@ namespace eScapeLLC.UWP.Charts {
 		void DoBindings(IChartEnterLeaveContext icelc) {
 			BindTo(this, "PathStyle", Axis, Path.StyleProperty);
 		}
+		void DoTickLabels(IChartRenderContext icrc) {
+			var tc = new TickCalculator(Minimum, Maximum);
+			_trace.Verbose($"grid range:{tc.Range} tintv:{tc.TickInterval}");
+			var padding = AxisLineThickness + 2 * AxisMargin;
+			var tbr = new Recycler<TextBlock>(TickLabels, () => {
+				if (LabelStyle != null) {
+					// let style override everything but what MUST be calculated
+					var tb = new TextBlock() {
+						Width = icrc.Area.Width - padding,
+						Padding = Side == Side.Right ? new Thickness(padding, 0, 0, 0) : new Thickness(0, 0, padding, 0)
+					};
+					tb.Style = LabelStyle;
+					return tb;
+				} else {
+					// SHOULD NOT execute this code, unless default style failed!
+					var tb = new TextBlock() {
+						FontSize = 10,
+						Foreground = Axis.Fill,
+						VerticalAlignment = VerticalAlignment.Center,
+						HorizontalAlignment = Side == Side.Right ? HorizontalAlignment.Left : HorizontalAlignment.Right,
+						Width = icrc.Area.Width - padding,
+						TextAlignment = Side == Side.Right ? TextAlignment.Left : TextAlignment.Right,
+						Padding = Side == Side.Right ? new Thickness(padding, 0, 0, 0) : new Thickness(0, 0, padding, 0)
+					};
+					return tb;
+				}
+			});
+			var tbget = tbr.Items().GetEnumerator();
+			foreach (var tick in tc.GetTicks()) {
+				//_trace.Verbose($"grid vx:{tick}");
+				if (tbget.MoveNext()) {
+					var tb = tbget.Current;
+					tb.Text = tick.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
+					tb.SetValue(Canvas.LeftProperty, icrc.Area.Left);
+					tb.SetValue(Canvas.TopProperty, tick);
+					// cheat: save the grid value so we can rescale the Canvas.Top in Transforms()
+					tb.Tag = tick;
+				}
+			}
+			// VT and internal bookkeeping
+			Layer.Remove(tbr.Unused);
+			Layer.Add(tbr.Created);
+			foreach (var tb in tbr.Unused) {
+				TickLabels.Remove(tb);
+			}
+			TickLabels.AddRange(tbr.Created);
+		}
 		#endregion
 		#region extensions
 		/// <summary>
@@ -98,55 +145,10 @@ namespace eScapeLLC.UWP.Charts {
 			AxisGeometry.Figures.Clear();
 			var pf = PathHelper.Rectangle(Side == Side.Right ? 0 : icrc.Area.Width, Minimum, Side == Side.Right ? AxisLineThickness : icrc.Area.Width - AxisLineThickness, Maximum);
 			AxisGeometry.Figures.Add(pf);
-			// grid lines
-			var tc = new TickCalculator(Minimum, Maximum);
-			_trace.Verbose($"grid range:{tc.Range} tintv:{tc.TickInterval}");
-			//icrc.Remove(TickLabels);
-			// grid lines and tick labels
-			// layout and recycle labels
-			var padding = AxisLineThickness + 2 * AxisMargin;
-			var tbr = new Recycler<TextBlock>(TickLabels, () => {
-				if (LabelStyle != null) {
-					// let style override everything but what MUST be calculated
-					var tb = new TextBlock() {
-						Width = icrc.Area.Width - padding,
-						Padding = Side == Side.Right ? new Thickness(padding, 0, 0, 0) : new Thickness(0, 0, padding, 0)
-					};
-					tb.Style = LabelStyle;
-					return tb;
-				} else {
-					// SHOULD NOT execute this code, unless default style failed!
-					var tb = new TextBlock() {
-						FontSize = 10,
-						Foreground = Axis.Fill,
-						VerticalAlignment = VerticalAlignment.Center,
-						HorizontalAlignment = Side == Side.Right ? HorizontalAlignment.Left : HorizontalAlignment.Right,
-						Width = icrc.Area.Width - padding,
-						TextAlignment = Side == Side.Right ? TextAlignment.Left : TextAlignment.Right,
-						Padding = Side == Side.Right ? new Thickness(padding, 0, 0, 0) : new Thickness(0, 0, padding, 0)
-					};
-					return tb;
-				}
-			});
-			var tbget = tbr.Items().GetEnumerator();
-			foreach (var tick in tc.GetTicks()) {
-				//_trace.Verbose($"grid vx:{tick}");
-				if (tbget.MoveNext()) {
-					var tb = tbget.Current;
-					tb.Text = tick.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
-					tb.SetValue(Canvas.LeftProperty, icrc.Area.Left);
-					tb.SetValue(Canvas.TopProperty, tick);
-					// cheat: save the grid value so we can rescale the Canvas.Top in Transforms()
-					tb.Tag = tick;
-				}
+			if(!double.IsNaN(Minimum) && !double.IsNaN(Maximum)) {
+				// recycle and layout
+				DoTickLabels(icrc);
 			}
-			// VT and internal bookkeeping
-			Layer.Remove(tbr.Unused);
-			Layer.Add(tbr.Created);
-			foreach (var tb in tbr.Unused) {
-				TickLabels.Remove(tb);
-			}
-			TickLabels.AddRange(tbr.Created);
 			Dirty = false;
 		}
 		/// <summary>

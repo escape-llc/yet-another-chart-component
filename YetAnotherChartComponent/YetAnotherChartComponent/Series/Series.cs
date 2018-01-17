@@ -40,7 +40,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="d"></param>
 		/// <param name="dpcea"></param>
-		private static void DataSeriesPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs dpcea) {
+		protected static void DataSeriesPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs dpcea) {
 			DataSeries ds = d as DataSeries;
 			ds.Dirty = true;
 			ds.Refresh(RefreshRequestType.ValueDirty, AxisUpdateState.Unknown);
@@ -142,14 +142,30 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		/// <summary>
 		/// Update value and category limits.
+		/// If a value is NaN, it is effectively ignored because NaN is NOT GT/LT ANY number, even itself.
 		/// </summary>
-		/// <param name="vx">category</param>
-		/// <param name="vy">value</param>
+		/// <param name="vx">Category. MAY be NaN.</param>
+		/// <param name="vy">Value.  MAY be NaN.</param>
 		protected void UpdateLimits(double vx, double vy) {
 			if (double.IsNaN(Minimum) || vy < Minimum) { Minimum = vy; }
 			if (double.IsNaN(Maximum) || vy > Maximum) { Maximum = vy; }
 			if (double.IsNaN(CategoryMinimum) || vx < CategoryMinimum) { CategoryMinimum = vx; }
 			if (double.IsNaN(CategoryMaximum) || vx > CategoryMaximum) { CategoryMaximum = vx; }
+		}
+		/// <summary>
+		/// Update value and category limits.
+		/// Optimized for multiple y-axis values.
+		/// If a value is NaN, it is effectively ignored because NaN is NOT GT/LT ANY number, even itself.
+		/// </summary>
+		/// <param name="vx"></param>
+		/// <param name="vys"></param>
+		protected void UpdateLimits(double vx, params double[] vys) {
+			if (double.IsNaN(CategoryMinimum) || vx < CategoryMinimum) { CategoryMinimum = vx; }
+			if (double.IsNaN(CategoryMaximum) || vx > CategoryMaximum) { CategoryMaximum = vx; }
+			foreach(var vy in vys) {
+				if (double.IsNaN(Minimum) || vy < Minimum) { Minimum = vy; }
+				if (double.IsNaN(Maximum) || vy > Maximum) { Maximum = vy; }
+			}
 		}
 		/// <summary>
 		/// Reset the value and category limits.

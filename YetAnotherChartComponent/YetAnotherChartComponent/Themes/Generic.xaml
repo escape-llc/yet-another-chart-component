@@ -36,7 +36,7 @@
 	<Style x:Key="Marker" TargetType="Path">
 		<Setter Property="Stroke" Value="Gray"/>
 		<Setter Property="StrokeThickness" Value="1"/>
-		<Setter Property="Fill" Value="Orange"/>
+		<Setter Property="Fill" Value="Red"/>
 	</Style>
 	<Style x:Key="Grid" TargetType="Path">
 		<Setter Property="Stroke" Value="Gray"/>

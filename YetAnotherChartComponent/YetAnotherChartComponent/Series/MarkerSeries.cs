@@ -113,6 +113,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icrc"></param>
 		public void Transforms(IChartRenderContext icrc) {
 			if (CategoryAxis == null || ValueAxis == null) return;
+			if (MarkerState.Count == 0) return;
 			// put the P matrix on everything
 			var proj = MatrixSupport.ProjectionFor(icrc.Area);
 			var world = MatrixSupport.ModelFor(CategoryAxis, ValueAxis);
@@ -150,6 +151,7 @@ namespace eScapeLLC.UWP.Charts {
 			internal BindingEvaluator bx;
 			internal BindingEvaluator by;
 			internal BindingEvaluator bl;
+			internal int ix;
 			internal List<MarkerItemState> ms;
 			internal Recycler<Path> recycler;
 			internal IEnumerator<Path> paths;
@@ -194,6 +196,7 @@ namespace eScapeLLC.UWP.Charts {
 			var mappedy = ValueAxis.For(valuey);
 			var mappedx = st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()));
 			mappedx += MarkerOffset;
+			st.ix = index;
 			_trace.Verbose($"[{index}] {valuey} ({mappedx},{mappedy})");
 			var mk = MarkerTemplate.LoadContent() as Geometry;
 			// TODO allow MK to be other things like (Path or Image).
@@ -204,6 +207,11 @@ namespace eScapeLLC.UWP.Charts {
 			st.ms.Add(new MarkerItemState() { Index = index, XValue = mappedx, YValue = mappedy, Path = path });
 		}
 		void IDataSourceRenderer.RenderComplete(object state) {
+			var st = state as State;
+			if (st.bx == null) {
+				// needs one extra "cell"
+				UpdateLimits(st.ix + 1, double.NaN);
+			}
 		}
 		void IDataSourceRenderer.Postamble(object state) {
 			var st = state as State;

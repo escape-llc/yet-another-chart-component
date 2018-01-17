@@ -8,6 +8,32 @@ using Windows.Foundation;
 using Windows.UI.Xaml.Media;
 
 namespace Yacc.Tests {
+	[TestClass]
+	public class UnitTest_Platform {
+		/// <summary>
+		/// Not-a-Number is very special: it does not compare to anything!
+		/// </summary>
+		[TestMethod]
+		public void NotANumber_DoesntCompareToAnything() {
+			Assert.IsFalse(double.NaN < 0, "less-than failed");
+			Assert.IsFalse(double.NaN == 0, "equal failed");
+			Assert.IsFalse(double.NaN > 0, "greater-than failed");
+			Assert.IsTrue(double.NaN != 0, "not-equal failed");
+		}
+		/// <summary>
+		/// Not-a-Number is very special: it does not compare to ITSELF!
+		/// </summary>
+		[TestMethod]
+		public void NotANumber_DoesntCompareToItself() {
+			var nan = double.NaN;
+			Assert.IsFalse(double.NaN < nan, "less-than failed");
+			Assert.IsFalse(double.NaN > nan, "greater-than failed");
+			// equal/not-equal are complements of each other
+			// subtly different from NULL in SQL
+			Assert.IsTrue(double.NaN != nan, "not-equal failed");
+			Assert.IsFalse(double.NaN == nan, "equal failed");
+		}
+	}
 	/// <summary>
 	/// Important: avoid using ZERO and values that are equal to each other (e.g. X/Y, MIN/MAX)!
 	/// These can disguise errors in the underlying calculations.

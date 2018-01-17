@@ -96,6 +96,7 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Pages\BasicPage.cs" />
     <Compile Include="Pages\Chart2.xaml.cs">
       <DependentUpon>Chart2.xaml</DependentUpon>
     </Compile>
@@ -108,6 +109,9 @@
     <Compile Include="Pages\Chart3.xaml.cs">
       <DependentUpon>Chart3.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Pages\Chart4.xaml.cs">
+      <DependentUpon>Chart4.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="VM\ViewModels.cs" />
   </ItemGroup>
@@ -116,6 +120,9 @@
       <SubType>Designer</SubType>
     </AppxManifest>
     <Content Include="Assets\AppConfiguration.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\MSFT.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <None Include="Demo_TemporaryKey.pfx" />
@@ -188,6 +195,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="Pages\Chart3.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Pages\Chart4.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
