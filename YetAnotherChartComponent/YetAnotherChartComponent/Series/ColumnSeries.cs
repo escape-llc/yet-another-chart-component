@@ -183,7 +183,16 @@ namespace eScapeLLC.UWP.Charts {
 			var st = state as State;
 			var valuey = (double)st.by.For(item);
 			var valuex = st.bx != null ? (double)st.bx.For(item) : index;
+			st.ix = index;
 			UpdateLimits(valuex, valuey, 0);
+			// short-circuit if it's NaN
+			if (double.IsNaN(valuey)) {
+				if (st.bl != null) {
+					// still map the X
+					CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()));
+				}
+				return;
+			}
 			var y1 = ValueAxis.For(valuey);
 			var y2 = ValueAxis.For(0);
 			var topy = Math.Max(y1, y2);
@@ -193,7 +202,6 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"{Name}[{index}] {valuey} ({leftx},{topy}) ({rightx},{bottomy})");
 			var pf = PathHelper.Rectangle(leftx, topy, rightx, bottomy);
 			Geometry.Figures.Add(pf);
-			st.ix = index;
 		}
 		/// <summary>
 		/// Have to perform update here and not in Postamble because we are altering axis limits.

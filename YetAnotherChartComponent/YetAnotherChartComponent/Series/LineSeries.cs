@@ -119,6 +119,7 @@ namespace eScapeLLC.UWP.Charts {
 			internal BindingEvaluator by;
 			internal BindingEvaluator bl;
 			internal PathFigure pf;
+			internal bool first = true;
 			internal int ix;
 		}
 		object IDataSourceRenderer.Preamble(IChartRenderContext icrc) {
@@ -141,16 +142,25 @@ namespace eScapeLLC.UWP.Charts {
 			var valuey = (double)st.by.For(item);
 			var valuex = st.bx != null ? (double)st.bx.For(item) : index;
 			valuex += CategoryAxisOffset;
+			st.ix = index;
 			UpdateLimits(valuex, valuey);
+			// short-circuit if it's NaN
+			if (double.IsNaN(valuey)) {
+				if(st.bl != null) {
+					// still map the X
+					CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()));
+				}
+				return;
+			}
 			var mappedy = ValueAxis.For(valuey);
 			var mappedx = st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()));
 			_trace.Verbose($"{Name}[{index}] v:({valuex},{valuey}) m:({mappedx},{mappedy})");
-			if (index == 0) {
+			if (st.first) {
 				st.pf.StartPoint = new Point(mappedx, mappedy);
+				st.first = false;
 			} else {
 				st.pf.Segments.Add(new LineSegment() { Point = new Point(mappedx, mappedy) });
 			}
-			st.ix = index;
 		}
 		void IDataSourceRenderer.RenderComplete(object state) {
 			var st = state as State;

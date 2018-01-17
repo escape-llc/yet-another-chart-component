@@ -1,4 +1,5 @@
 ﻿using eScape.Core.Host;
+using System.Collections.Generic;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
 using Yacc.Demo.VM;
@@ -10,7 +11,10 @@ namespace Yacc.Demo.Pages {
 		}
 		protected override void OnNavigatedTo(NavigationEventArgs e) {
 			base.OnNavigatedTo(e);
-			var vm = new TimedObservationsVM(Dispatcher);
+			// start out with placeholders so chart "appears" empty and "scrolls" to the left
+			var list = new List<Observation2>();
+			for (int ix = 0; ix < 30; ix++) list.Add(Observation2.PLACEHOLDER);
+			var vm = new TimedObservationsVM(Dispatcher, list);
 			DataContext = vm;
 		}
 		protected override void OnNavigatingFrom(NavigatingCancelEventArgs e) {

@@ -133,6 +133,7 @@ namespace Yacc.Demo.VM {
 		public double Value3 { get; private set; }
 		public double Value4 { get; private set; }
 		public Observation2(String label, double v1, double v2, double v3, double v4) : base(label, v1, v2) { Value3 = v3; Value4 = v4; }
+		public static Observation2 PLACEHOLDER = new Observation2("-", double.NaN, double.NaN, double.NaN, double.NaN);
 	}
 	/// <summary>
 	/// This VM demonstrates how to use a NOT observable collection, to avoid extra "churn" caused by individual add/remove operations.

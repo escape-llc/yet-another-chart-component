@@ -192,11 +192,19 @@ namespace eScapeLLC.UWP.Charts {
 			// TODO handle datetime et al values that aren't double
 			var valuey = (double)st.by.For(item);
 			var valuex = st.bx != null ? (double)st.bx.For(item) : index;
+			st.ix = index;
 			UpdateLimits(valuex, valuey);
+			// short-circuit if it's NaN
+			if (double.IsNaN(valuey)) {
+				if (st.bl != null) {
+					// still map the X
+					CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()));
+				}
+				return;
+			}
 			var mappedy = ValueAxis.For(valuey);
 			var mappedx = st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()));
 			mappedx += MarkerOffset;
-			st.ix = index;
 			_trace.Verbose($"[{index}] {valuey} ({mappedx},{mappedy})");
 			var mk = MarkerTemplate.LoadContent() as Geometry;
 			// TODO allow MK to be other things like (Path or Image).

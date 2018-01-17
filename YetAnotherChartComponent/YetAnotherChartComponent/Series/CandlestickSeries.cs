@@ -243,6 +243,14 @@ namespace eScapeLLC.UWP.Charts {
 			var valuex = st.bx != null ? (double)st.bx.For(item) : index;
 			UpdateLimits(valuex, valueO, valueH, valueL, valueC);
 			st.ix = index;
+			// short-circuit if any are NaN
+			if (double.IsNaN(valueO) || double.IsNaN(valueH) || double.IsNaN(valueL) || double.IsNaN(valueC)) {
+				if (st.bl != null) {
+					// still map the X
+					CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()));
+				}
+				return;
+			}
 			// map through axes
 			var y1 = ValueAxis.For(valueO);
 			var y2 = ValueAxis.For(valueC);
