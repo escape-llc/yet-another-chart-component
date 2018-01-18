@@ -1,9 +1,9 @@
-﻿<Page
+﻿<local:BasicPage
 	x:Class="Yacc.Demo.Pages.Chart2"
 	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 	xmlns:yacc="using:eScapeLLC.UWP.Charts"
-	xmlns:local="using:Yacc.Demo"
+	xmlns:local="using:Yacc.Demo.Pages"
 	xmlns:core="using:eScape.Core.Convert"
 	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -75,4 +75,4 @@
 				ItemTemplate="{StaticResource LegendItem}"/>
 		</Border>
 	</RelativePanel>
-</Page>
+</local:BasicPage>

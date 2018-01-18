@@ -13,6 +13,7 @@ namespace Yacc.Demo.Pages {
 			var list = new List<Observation2>();
 			for (int ix = 0; ix < 30; ix++) list.Add(Observation2.PLACEHOLDER);
 			var vm = new TimedObservationsVM(Dispatcher, list) { AutoStart = true };
+			vm.ResetCounter();
 			return vm;
 		}
 #pragma warning restore 1998

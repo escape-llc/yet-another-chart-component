@@ -1,5 +1,7 @@
 ﻿using eScape.Core;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Windows.Foundation;
 using Windows.UI;
 using Windows.UI.Xaml;
@@ -16,6 +18,10 @@ namespace eScapeLLC.UWP.Charts {
 	public class ColumnSeries : DataSeries, IDataSourceRenderer, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("ColumnSeries", LogTools.Level.Error);
 		static LogTools.Flag _traceg = LogTools.Add("ColumnSeriesPaths", LogTools.Level.Off);
+		/// <summary>
+		/// Shorthand for marker state.
+		/// </summary>
+		protected class SeriesItemState : ItemState { }
 		#region properties
 		/// <summary>
 		/// The title for the series.
@@ -45,14 +51,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public bool EnableDebugPaths { get; set; }
 		/// <summary>
-		/// Path for the column bars.
-		/// </summary>
-		protected Path Segments { get; set; }
-		/// <summary>
-		/// Geometry for the column bars.
-		/// </summary>
-		protected PathGeometry Geometry { get; set; }
-		/// <summary>
 		/// Geometry for debug: clip region.
 		/// </summary>
 		protected GeometryGroup DebugClip { get; set; }
@@ -64,6 +62,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// The layer for components.
 		/// </summary>
 		protected IChartLayer Layer { get; set; }
+		/// <summary>
+		/// Data needed for current markers
+		/// </summary>
+		protected List<SeriesItemState> ItemState { get; set; }
 		#endregion
 		#region DPs
 		/// <summary>
@@ -80,11 +82,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Default ctor.
 		/// </summary>
 		public ColumnSeries() {
-			Geometry = new PathGeometry();
-			Segments = new Path() {
-				StrokeThickness = 1,
-				Data = Geometry
-			};
+			ItemState = new List<SeriesItemState>();
 		}
 		#endregion
 		#region extensions
@@ -94,7 +92,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icelc"></param>
 		public void Enter(IChartEnterLeaveContext icelc) {
 			EnsureAxes(icelc);
-			Layer = icelc.CreateLayer(Segments);
+			Layer = icelc.CreateLayer();
 			_trace.Verbose($"{Name} enter v:{ValueAxisName} {ValueAxis} c:{CategoryAxisName} {CategoryAxis} d:{DataSourceName}");
 			if (EnableDebugPaths) {
 				_traceg.Verbose(() => {
@@ -114,7 +112,6 @@ namespace eScapeLLC.UWP.Charts {
 			if (PathStyle == null && Theme != null) {
 				if (Theme.PathColumnSeries != null) PathStyle = Theme.PathColumnSeries;
 			}
-			BindTo(this, "PathStyle", Segments, Path.StyleProperty);
 		}
 		/// <summary>
 		/// Undo effects of Enter().
@@ -134,13 +131,17 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icrc"></param>
 		public void Transforms(IChartRenderContext icrc) {
 			if (CategoryAxis == null || ValueAxis == null) return;
+			if (ItemState.Count == 0) return;
 			var matx = MatrixSupport.TransformFor(icrc.Area, CategoryAxis, ValueAxis);
 			_trace.Verbose($"{Name} mat:{matx} clip:{icrc.SeriesArea}");
-			if (ClipToDataRegion) {
-				Segments.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
-			}
 			var mt = new MatrixTransform() { Matrix = matx };
-			Geometry.Transform = mt;
+			foreach(var ss in ItemState) {
+				ss.Path.Data.Transform = mt;
+				if (ClipToDataRegion) {
+					var cg = new RectangleGeometry() { Rect = icrc.SeriesArea };
+					ss.Path.Clip = cg;
+				}
+			}
 			if (DebugClip != null) {
 				DebugClip.Children.Clear();
 				//DebugClip.Children.Add(new RectangleGeometry() { Rect = clip });
@@ -155,7 +156,7 @@ namespace eScapeLLC.UWP.Charts {
 			get { if (_legend == null) _legend = Legend(); return _legend; }
 		}
 		Legend Legend() {
-			return new Legend() { Title = Title, Fill = Segments.Fill, Stroke = Segments.Stroke };
+			return new Legend() { Title = Title, Fill = PathStyle.Find<Brush>(Path.FillProperty), Stroke = PathStyle.Find<Brush>(Path.StrokeProperty) };
 		}
 		#endregion
 		#region IDataSourceRenderer
@@ -164,6 +165,22 @@ namespace eScapeLLC.UWP.Charts {
 			internal BindingEvaluator by;
 			internal BindingEvaluator bl;
 			internal int ix;
+			internal List<SeriesItemState> ms;
+			internal Recycler<Path> recycler;
+			internal IEnumerator<Path> paths;
+			internal Path NextPath() {
+				if (paths.MoveNext()) return paths.Current;
+				else return null;
+			}
+		}
+		/// <summary>
+		/// Path factory for recycler.
+		/// </summary>
+		/// <returns></returns>
+		Path CreatePath() {
+			var path = new Path();
+			BindTo(this, "PathStyle", path, Path.StyleProperty);
+			return path;
 		}
 		object IDataSourceRenderer.Preamble(IChartRenderContext icrc) {
 			if (ValueAxis == null || CategoryAxis == null) return null;
@@ -172,11 +189,15 @@ namespace eScapeLLC.UWP.Charts {
 			// TODO report the binding error
 			if (by == null) return null;
 			ResetLimits();
-			Geometry.Figures.Clear();
+			var paths = ItemState.Select(ms => ms.Path);
+			var recycler = new Recycler<Path>(paths, CreatePath);
 			return new State() {
 				bx = !String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
 				bl = !String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null,
-				by = by
+				by = by,
+				ms = new List<SeriesItemState>(),
+				recycler = recycler,
+				paths = recycler.Items().GetEnumerator()
 			};
 		}
 		void IDataSourceRenderer.Render(object state, int index, object item) {
@@ -201,7 +222,12 @@ namespace eScapeLLC.UWP.Charts {
 			var rightx = leftx + BarWidth;
 			_trace.Verbose($"{Name}[{index}] {valuey} ({leftx},{topy}) ({rightx},{bottomy})");
 			var pf = PathHelper.Rectangle(leftx, topy, rightx, bottomy);
-			Geometry.Figures.Add(pf);
+			var path = st.NextPath();
+			if (path == null) return;
+			var pg = new PathGeometry();
+			pg.Figures.Add(pf);
+			path.Data = pg;
+			st.ms.Add(new SeriesItemState() { Index = index, XValue = leftx, YValue = y1, Path = path });
 		}
 		/// <summary>
 		/// Have to perform update here and not in Postamble because we are altering axis limits.
@@ -215,6 +241,10 @@ namespace eScapeLLC.UWP.Charts {
 			}
 		}
 		void IDataSourceRenderer.Postamble(object state) {
+			var st = state as State;
+			ItemState = st.ms;
+			Layer.Remove(st.recycler.Unused);
+			Layer.Add(st.recycler.Created);
 			Dirty = false;
 		}
 		#endregion

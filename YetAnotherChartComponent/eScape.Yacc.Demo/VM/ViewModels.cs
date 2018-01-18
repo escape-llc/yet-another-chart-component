@@ -170,6 +170,7 @@ namespace Yacc.Demo.VM {
 			Toggle = new DelegateCommand((ox) => { if (IsRunning) StopTimer(); else StartTimer(); }, (ox) => true);
 			GroupCounter = Data.Count;
 		}
+		public void ResetCounter() { GroupCounter = 0; }
 		void StartTimer() {
 			try {
 				if (Timer == null) {

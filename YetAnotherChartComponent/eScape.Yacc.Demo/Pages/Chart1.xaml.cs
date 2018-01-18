@@ -1,19 +1,16 @@
-﻿using Windows.UI.Xaml;
+﻿using System.Threading.Tasks;
+using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
 using Yacc.Demo.VM;
 
 namespace Yacc.Demo.Pages {
-	public sealed partial class Chart1 : Page {
+	public sealed partial class Chart1 : BasicPage {
 		public Chart1() {
 			this.InitializeComponent();
 		}
-		/// <summary>
-		/// Initialize VM and set the DataContext.
-		/// </summary>
-		/// <param name="e"></param>
-		protected override void OnNavigatedTo(NavigationEventArgs e) {
-			base.OnNavigatedTo(e);
+#pragma warning disable 1998
+		protected override async Task<object> InitializeDataContextAsync() {
 			var vm = new ObservationsVM(Dispatcher, new[] {
 				new Observation("Group 1", -0.5, 1),
 				new Observation("Group 2", 3, 10),
@@ -22,8 +19,9 @@ namespace Yacc.Demo.Pages {
 				new Observation("Group 5", 4, -3.75),
 				new Observation("Group 6", -5.25, 0.5)
 			});
-			DataContext = vm;
+			return vm;
 		}
+#pragma warning restore 1998
 
 		private void Add_item_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e) {
 			(DataContext as ObservationsVM).AddTail();
