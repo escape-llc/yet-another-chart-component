@@ -112,9 +112,12 @@
     <Compile Include="Axis\Axis.cs" />
     <Compile Include="Axis\CategoryAxis.cs" />
     <Compile Include="Chart.cs" />
+    <Compile Include="Decorations\Background.cs" />
+    <Compile Include="Decorations\HorizontalBand.cs" />
+    <Compile Include="Decorations\HorizontalRule.cs" />
+    <Compile Include="Decorations\ValueAxisGrid.cs" />
     <Compile Include="Series\CandlestickSeries.cs" />
     <Compile Include="Series\ColumnSeries.cs" />
-    <Compile Include="Components.cs" />
     <Compile Include="DataSource.cs" />
     <Compile Include="Core.cs" />
     <Compile Include="Series\LineSeries.cs" />

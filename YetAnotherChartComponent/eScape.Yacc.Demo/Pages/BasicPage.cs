@@ -11,7 +11,15 @@ namespace Yacc.Demo.Pages {
 	/// </summary>
 	public abstract class BasicPage : Page {
 		static LogTools.Flag _trace = LogTools.Add("BasicPage", LogTools.Level.Error);
+		/// <summary>
+		/// Create and initialize the view model.
+		/// </summary>
+		/// <returns></returns>
 		protected abstract Task<object> InitializeDataContextAsync();
+		/// <summary>
+		/// Create the VM and call down IRequireRefresh if necessary.
+		/// </summary>
+		/// <param name="e"></param>
 		protected override async void OnNavigatedTo(NavigationEventArgs e) {
 			base.OnNavigatedTo(e);
 			try {
@@ -26,6 +34,10 @@ namespace Yacc.Demo.Pages {
 				_trace.Error($"OnNavigatedTo.unhandled ${ex}");
 			}
 		}
+		/// <summary>
+		/// Call down IRequireReleaseAsync/IRequireRelease if necessary.
+		/// </summary>
+		/// <param name="e"></param>
 		protected override async void OnNavigatingFrom(NavigatingCancelEventArgs e) {
 			try {
 				if (DataContext is IRequireReleaseAsync irra) {

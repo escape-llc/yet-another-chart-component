@@ -1,12 +1,9 @@
 ﻿using eScape.Core.Host;
 using eScape.Core.VM;
-using eScapeLLC.UWP.Charts;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -139,7 +136,7 @@ namespace Yacc.Demo.VM {
 	/// This VM demonstrates how to use a NOT observable collection, to avoid extra "churn" caused by individual add/remove operations.
 	/// This also allows the path recycling to stabilize once chart reaches Window Size elements.
 	/// </summary>
-	public class TimedObservationsVM : CoreViewModel, IRequireRelease {
+	public class TimedObservationsVM : CoreViewModel, IRequireRefresh, IRequireRelease {
 		readonly Random rnd = new Random();
 		/// <summary>
 		/// In this VM, the group counter is bound to the DataSource.ExternalRefresh DP.
@@ -165,6 +162,7 @@ namespace Yacc.Demo.VM {
 		/// </summary>
 		public int WindowSize { get; set; } = 30;
 		public bool IsRunning { get; private set; }
+		public bool AutoStart { get; set; }
 		protected Timer Timer { get; set; }
 		public TimedObservationsVM(CoreDispatcher dx) :this(dx, new List<Observation2>()) {}
 		public TimedObservationsVM(CoreDispatcher dx, List<Observation2> data) :base(dx) {
@@ -214,6 +212,12 @@ namespace Yacc.Demo.VM {
 		void RemoveHead() {
 			if (Data.Count > WindowSize) {
 				Data.RemoveAt(0);
+			}
+		}
+		async Task IRequireRefresh.RefreshAsync() {
+			if (AutoStart) {
+				await Task.Delay(1000);
+				StartTimer();
 			}
 		}
 		void IRequireRelease.Release() {
