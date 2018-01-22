@@ -164,20 +164,16 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region helpers
 		void DoBindings(IChartEnterLeaveContext icelc) {
-			if (PathStyle == null && Theme != null) {
-				if (Theme.PathHorizontalRule != null) PathStyle = Theme.PathHorizontalRule;
-				else {
-					// TODO report the error
-					ValidationResult vr = new ValidationResult($"{Name}.{nameof(PathStyle)}: Theme.{nameof(Theme.PathHorizontalRule)} is missing", new[] { nameof(PathStyle), nameof(Theme.PathHorizontalRule) });
-				}
-			}
-			if (BandPathStyle == null && Theme != null) {
-				if (Theme.PathHorizontalBand != null) BandPathStyle = Theme.PathHorizontalBand;
-				else {
-					// TODO report the error
-					ValidationResult vr = new ValidationResult($"{Name}.{nameof(BandPathStyle)}: Theme.{nameof(Theme.PathHorizontalBand)} is missing", new[] { nameof(BandPathStyle), nameof(Theme.PathHorizontalBand) });
-				}
-			}
+			AssignFromSource(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathHorizontalRule),
+				PathStyle == null && Theme != null,
+				Theme.PathHorizontalRule != null,
+				() => PathStyle = Theme.PathHorizontalRule
+			);
+			AssignFromSource(icelc as IChartErrorInfo, NameOrType(), nameof(BandPathStyle), nameof(Theme.PathHorizontalBand),
+				BandPathStyle == null && Theme != null,
+				Theme.PathHorizontalBand != null,
+				() => BandPathStyle = Theme.PathHorizontalBand
+			);
 			BindTo(this, "PathStyle", Value1Path, Path.StyleProperty);
 			var bx = GetBindingExpression(UIElement.VisibilityProperty);
 			if (bx != null) {

@@ -209,8 +209,10 @@ namespace eScapeLLC.UWP.Charts {
 		#region helpers
 		/// <summary>
 		/// Initialize the LabelStyle from the Theme, if it is NULL.
+		/// Provide error reporting.
 		/// </summary>
-		protected void ApplyLabelStyle() {
+		/// <param name="icei">For error reporting.</param>
+		protected void ApplyLabelStyle(IChartErrorInfo icei) {
 			if (LabelStyle == null && Theme != null) {
 				switch (Side) {
 				case Side.Left:
@@ -225,6 +227,17 @@ namespace eScapeLLC.UWP.Charts {
 				case Side.Bottom:
 					if (Theme.LabelAxisBottom != null) LabelStyle = Theme.LabelAxisBottom;
 					break;
+				}
+				if(LabelStyle == null) {
+					if (icei != null) {
+						var sidex = $"LabelAxis{Side}";
+						icei.Report(new ChartValidationResult(NameOrType(), $"{nameof(LabelStyle)} not found and {sidex} not found", new[] { nameof(LabelStyle), sidex }));
+					}
+				}
+			} else {
+				if (icei != null) {
+					var sidex = $"LabelAxis{Side}";
+					icei.Report(new ChartValidationResult(NameOrType(), $"{nameof(LabelStyle)} not found and no Theme was found for {sidex}", new[] { nameof(LabelStyle), sidex }));
 				}
 			}
 		}

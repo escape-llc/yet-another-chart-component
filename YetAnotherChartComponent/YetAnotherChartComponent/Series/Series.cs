@@ -136,8 +136,17 @@ namespace eScapeLLC.UWP.Charts {
 			if (ValueAxis == null && !String.IsNullOrEmpty(ValueAxisName)) {
 				ValueAxis = icrc.Find(ValueAxisName) as IChartAxis;
 			}
+			else {
+				if(icrc is IChartErrorInfo icei) {
+					icei.Report(new ChartValidationResult(NameOrType(), $"Value axis '{ValueAxisName}' was not found", new[] { nameof(ValueAxis), nameof(ValueAxisName) }));
+				}
+			}
 			if (CategoryAxis == null && !String.IsNullOrEmpty(CategoryAxisName)) {
 				CategoryAxis = icrc.Find(CategoryAxisName) as IChartAxis;
+			} else {
+				if (icrc is IChartErrorInfo icei) {
+					icei.Report(new ChartValidationResult(NameOrType(), $"Category axis '{CategoryAxisName}' was not found", new[] { nameof(CategoryAxis), nameof(CategoryAxisName) }));
+				}
 			}
 		}
 		/// <summary>

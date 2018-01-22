@@ -77,7 +77,7 @@
 				<AppBarButton x:Name="add_and_remove_head" Content="-[0]+[N]" Label="Scroll" Click="Add_and_remove_head_Click"/>
 			</CommandBar.PrimaryCommands>
 		</CommandBar>
-		<yacc:Chart x:Name="chart" Style="{StaticResource Chart}"
+		<yacc:Chart x:Name="chart" Style="{StaticResource Chart}" ChartError="Chart_ChartError"
 			RelativePanel.Below="toolbar" RelativePanel.AlignBottomWithPanel="True"
 			RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True">
 			<yacc:Chart.DataSources>

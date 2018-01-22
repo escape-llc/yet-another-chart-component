@@ -67,6 +67,10 @@ namespace eScapeLLC.UWP.Charts {
 		void EnsureAxes(IChartRenderContext icrc) {
 			if (ValueAxis == null && !String.IsNullOrEmpty(ValueAxisName)) {
 				ValueAxis = icrc.Find(ValueAxisName) as IChartAxis;
+			} else {
+				if (icrc is IChartErrorInfo icei) {
+					icei.Report(new ChartValidationResult(NameOrType(), $"Value axis '{ValueAxisName}' was not found", new[] { nameof(ValueAxis), nameof(ValueAxisName) }));
+				}
 			}
 		}
 		/// <summary>
@@ -74,13 +78,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icelc"></param>
 		void DoBindings(IChartEnterLeaveContext icelc) {
-			if (PathStyle == null && Theme != null) {
-				if (Theme.PathGridValue != null) PathStyle = Theme.PathGridValue;
-				else {
-					// TODO report the error
-					ValidationResult vr = new ValidationResult($"{Name}.{nameof(PathStyle)}: Theme.{nameof(Theme.PathGridValue)} is missing", new[] { nameof(PathStyle), nameof(Theme.PathGridValue) });
-				}
-			}
+			AssignFromSource(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathGridValue),
+				PathStyle == null && Theme != null,
+				Theme.PathGridValue != null,
+				() => PathStyle = Theme.PathGridValue
+			);
 			BindTo(this, "PathStyle", Grid, Path.StyleProperty);
 			var bx = GetBindingExpression(UIElement.VisibilityProperty);
 			if (bx != null) {

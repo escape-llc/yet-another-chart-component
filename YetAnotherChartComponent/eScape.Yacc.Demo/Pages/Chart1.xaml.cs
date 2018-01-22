@@ -1,7 +1,8 @@
-﻿using System.Threading.Tasks;
+﻿using eScapeLLC.UWP.Charts;
+using System;
+using System.Diagnostics;
+using System.Threading.Tasks;
 using Windows.UI.Xaml;
-using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Navigation;
 using Yacc.Demo.VM;
 
 namespace Yacc.Demo.Pages {
@@ -41,6 +42,12 @@ namespace Yacc.Demo.Pages {
 
 		private void Add_head_Click(object sender, RoutedEventArgs e) {
 			(DataContext as ObservationsVM).AddHead();
+		}
+
+		private void Chart_ChartError(Chart sender, ChartErrorEventArgs args) {
+			foreach(var ev in args.Results) {
+				Debug.WriteLine($"chart error {ev.Source}\t{String.Join(",", ev.MemberNames)}: {ev.ErrorMessage}");
+			}
 		}
 	}
 }

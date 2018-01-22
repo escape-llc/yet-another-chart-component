@@ -1,6 +1,7 @@
 ﻿using eScape.Core;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
@@ -16,6 +17,18 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public class CategoryAxis : AxisCommon, IRequireLayout, IRequireRender, IRequireTransforms, IRequireEnterLeave {
 		static LogTools.Flag _trace = LogTools.Add("CategoryAxis", LogTools.Level.Error);
+		/// <summary>
+		/// The item state for this component.
+		/// </summary>
+		protected class ItemState {
+			internal TextBlock tb;
+			internal String label;
+			internal double value;
+			internal void SetLocation(double left, double top) {
+				tb.SetValue(Canvas.LeftProperty, left);
+				tb.SetValue(Canvas.TopProperty, top);
+			}
+		}
 		#region properties
 		/// <summary>
 		/// Path for axis "bar".
@@ -32,7 +45,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// List of active TextBlocks for labels.
 		/// </summary>
-		protected List<TextBlock> TickLabels { get; set; }
+		protected List<ItemState> TickLabels { get; set; }
 		/// <summary>
 		/// The layer to manage components.
 		/// </summary>
@@ -46,7 +59,7 @@ namespace eScapeLLC.UWP.Charts {
 			CommonInit();
 		}
 		private void CommonInit() {
-			TickLabels = new List<TextBlock>();
+			TickLabels = new List<ItemState>();
 			Axis = new Path();
 			AxisGeometry = new PathGeometry();
 			Axis.Data = AxisGeometry;
@@ -83,11 +96,13 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icelc"></param>
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			Layer = icelc.CreateLayer(Axis);
+			ApplyLabelStyle(icelc as IChartErrorInfo);
+			AssignFromSource(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathAxisCategory),
+				PathStyle == null && Theme != null,
+				Theme.PathAxisCategory != null,
+				() => PathStyle = Theme.PathAxisCategory
+			);
 			BindTo(this, "PathStyle", Axis, Path.StyleProperty);
-			ApplyLabelStyle();
-			if (PathStyle == null && Theme != null) {
-				if (Theme.PathAxisCategory != null) PathStyle = Theme.PathAxisCategory;
-			}
 		}
 		/// <summary>
 		/// Reverse effect of Enter.
@@ -120,7 +135,7 @@ namespace eScapeLLC.UWP.Charts {
 			var i2 = (int)Maximum;
 			var scalex = icrc.Area.Width / Range;
 			// recycle and lay out tick labels
-			var tbr = new Recycler<TextBlock>(TickLabels, () => {
+			var tbr = new Recycler<TextBlock>(TickLabels.Select(tl => tl.tb), () => {
 				if (LabelStyle != null) {
 					// let style override everything but what MUST be calculated
 					var tb = new TextBlock() {
@@ -130,6 +145,9 @@ namespace eScapeLLC.UWP.Charts {
 					return tb;
 				} else {
 					// SHOULD NOT execute this code, unless default style failed!
+					if(icrc is IChartErrorInfo icei) {
+						icei.Report(new ChartValidationResult(NameOrType(), $"{nameof(LabelStyle)} from theme failed; Recycler had to make hard-coded style."));
+					}
 					var tb = new TextBlock() {
 						FontSize = 10,
 						Foreground = Axis.Fill,
@@ -141,6 +159,7 @@ namespace eScapeLLC.UWP.Charts {
 					return tb;
 				}
 			});
+			var itemstate = new List<ItemState>();
 			var tbget = tbr.Items().GetEnumerator();
 			for (var ix = i1; ix <= i2; ix++) {
 				if (LabelMap.ContainsKey(ix)) {
@@ -149,21 +168,17 @@ namespace eScapeLLC.UWP.Charts {
 					_trace.Verbose($"key {ix} label {tpx.Item2}");
 					if (tbget.MoveNext()) {
 						var tb = tbget.Current;
-						tb.SetValue(Canvas.LeftProperty, icrc.Area.Left + ix * scalex);
-						tb.SetValue(Canvas.TopProperty, icrc.Area.Top + AxisLineThickness + 2 * AxisMargin);
-						// cheat: save the grid value so we can rescale the Left in Transforms()
-						tb.Tag = tpx;
-						tb.Text = tpx.Item2;
+						var state = new ItemState() { tb = tb, value = tpx.Item1, label = tpx.Item2 };
+						tb.Text = state.label;
+						state.SetLocation(icrc.Area.Left + ix * scalex, icrc.Area.Top + AxisLineThickness + 2 * AxisMargin);
+						itemstate.Add(state);
 					}
 				}
 			}
 			// VT and internal bookkeeping
 			Layer.Remove(tbr.Unused);
 			Layer.Add(tbr.Created);
-			foreach (var tb in tbr.Unused) {
-				TickLabels.Remove(tb);
-			}
-			TickLabels.AddRange(tbr.Created);
+			TickLabels = itemstate;
 			Dirty = false;
 		}
 		/// <summary>
@@ -177,11 +192,9 @@ namespace eScapeLLC.UWP.Charts {
 			var matx = new Matrix(scalex, 0, 0, 1, icrc.Area.Left, icrc.Area.Top + AxisMargin);
 			AxisGeometry.Transform = new MatrixTransform() { Matrix = matx };
 			_trace.Verbose($"transforms sx:{scalex:F3} matx:{matx} a:{icrc.Area}");
-			foreach (var tb in TickLabels) {
-				var vx = (Tuple<double, String>)tb.Tag;
-				tb.SetValue(Canvas.LeftProperty, icrc.Area.Left + vx.Item1 * scalex);
-				tb.SetValue(Canvas.TopProperty, icrc.Area.Top + AxisLineThickness + 2 * AxisMargin);
-				tb.Width = scalex;
+			foreach (var state in TickLabels) {
+				state.SetLocation(icrc.Area.Left + state.value * scalex, icrc.Area.Top + AxisLineThickness + 2 * AxisMargin);
+				state.tb.Width = scalex;
 			}
 		}
 		#endregion

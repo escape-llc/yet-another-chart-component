@@ -91,9 +91,11 @@ namespace eScapeLLC.UWP.Charts {
 			EnsureAxes(icelc);
 			Layer = icelc.CreateLayer();
 			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis} c:{CategoryAxisName}:{CategoryAxis} d:{DataSourceName}");
-			if (PathStyle == null && Theme != null) {
-				if (Theme.PathMarkerSeries != null) PathStyle = Theme.PathMarkerSeries;
-			}
+			AssignFromSource(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathMarkerSeries),
+				PathStyle == null && Theme != null,
+				Theme.PathMarkerSeries != null,
+				() => PathStyle = Theme.PathMarkerSeries
+			);
 		}
 		/// <summary>
 		/// Undo effects of Enter().

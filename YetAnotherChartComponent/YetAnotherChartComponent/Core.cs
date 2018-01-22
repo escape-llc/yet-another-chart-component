@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Data;
@@ -223,6 +224,43 @@ namespace eScapeLLC.UWP.Charts {
 		/// If no space was claimed, equal to SeriesArea.
 		/// </summary>
 		Rect Area { get; }
+	}
+	#endregion
+	#region ChartValidationResult
+	/// <summary>
+	/// Use internall to report errors to the chart "owner".
+	/// </summary>
+	public class ChartValidationResult :ValidationResult {
+		/// <summary>
+		/// Source of the error: chart, series, axis, etc.
+		/// MAY be the name of a component.
+		/// </summary>
+		public String Source { get; private set; }
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="source"></param>
+		/// <param name="errorMessage"></param>
+		public ChartValidationResult(string source, string errorMessage) :base(errorMessage) { Source = source; }
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="source"></param>
+		/// <param name="errorMessage"></param>
+		/// <param name="memberNames"></param>
+		public ChartValidationResult(string source, string errorMessage, IEnumerable<string> memberNames) :base(errorMessage, memberNames) { Source = source; }
+	}
+	#endregion
+	#region IChartErrorInfo
+	/// <summary>
+	/// Ability to accept (and forward) error reports.
+	/// </summary>
+	public interface IChartErrorInfo {
+		/// <summary>
+		/// Report an error, to aid configuration troubleshooting.
+		/// </summary>
+		/// <param name="cvr">The error.</param>
+		void Report(ChartValidationResult cvr);
 	}
 	#endregion
 	#region IChartRenderContext
@@ -534,6 +572,13 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region helpers
 		/// <summary>
+		/// Return the name if set, otherwise the type.
+		/// </summary>
+		/// <returns>Name or type.</returns>
+		public String NameOrType() {
+			return String.IsNullOrEmpty(Name) ? GetType().Name : Name;
+		}
+		/// <summary>
 		/// Invoke the RefreshRequest event.
 		/// </summary>
 		protected void Refresh(RefreshRequestType rrt, AxisUpdateState aus) { RefreshRequest?.Invoke(this, new RefreshRequestEventArgs(rrt, aus, this)); }
@@ -551,6 +596,32 @@ namespace eScapeLLC.UWP.Charts {
 				Mode = BindingMode.OneWay
 			};
 			fe.SetBinding(dp, bx);
+		}
+		/// <summary>
+		/// Boilerplate for assigning a "local" property from the "theme".
+		/// Mostly for applying the error reporting.
+		/// </summary>
+		/// <param name="icei">For error reporting; MAY be NULL.</param>
+		/// <param name="source">Appears in error reports.</param>
+		/// <param name="style">Appears in error reports.</param>
+		/// <param name="theme">Appears in error reports.</param>
+		/// <param name="check">The top-level check; True to proceed.</param>
+		/// <param name="themecheck">The "theme" check; True to proceed.</param>
+		/// <param name="doit">Execute if everything returned True.</param>
+		protected static void AssignFromSource(IChartErrorInfo icei, String source, String style, String theme, bool check, bool themecheck, Action doit) {
+			if (check) {
+				if (themecheck)
+					doit();
+				else {
+					if (icei != null) {
+						icei.Report(new ChartValidationResult(source, $"{style} not found and {theme} not found", new[] { style, theme }));
+					}
+				}
+			} else {
+				if (icei != null) {
+					icei.Report(new ChartValidationResult(source, $"{style} not found and no Theme was found", new[] { style, theme }));
+				}
+			}
 		}
 		#endregion
 	}

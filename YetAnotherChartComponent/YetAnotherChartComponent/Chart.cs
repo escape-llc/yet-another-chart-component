@@ -491,6 +491,22 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 	}
 	#endregion
+	#region ChartErrorEventArgs
+	/// <summary>
+	/// Represents the error event args.
+	/// </summary>
+	public class ChartErrorEventArgs : EventArgs {
+		/// <summary>
+		/// The validation results array.
+		/// </summary>
+		public ChartValidationResult[] Results { get; private set; }
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="cvr"></param>
+		public ChartErrorEventArgs(params ChartValidationResult[] cvr) { Results = cvr; }
+	}
+	#endregion
 	#region Chart
 	/// <summary>
 	/// The chart.
@@ -548,6 +564,13 @@ namespace eScapeLLC.UWP.Charts {
 		/// Current set of layers.
 		/// </summary>
 		protected List<IChartLayer> Layers { get; set; }
+		#endregion
+		#region events
+		/// <summary>
+		/// Event to receive notification of error info.
+		/// This can help detect configuration or other runtime chart processing errors.
+		/// </summary>
+		public event TypedEventHandler<Chart, ChartErrorEventArgs> ChartError;
 		#endregion
 		#region DPs
 		/// <summary>
@@ -891,6 +914,13 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region helpers
 		/// <summary>
+		/// Report event(s).
+		/// </summary>
+		/// <param name="cvr">The event(s) to report.</param>
+		protected void Report(params ChartValidationResult[] cvr) {
+			ChartError?.Invoke(this, new ChartErrorEventArgs(cvr));
+		}
+		/// <summary>
 		/// Bookkeeping for registering IDataSourceRenderer.
 		/// </summary>
 		/// <param name="dsname">Data source name.</param>
@@ -921,7 +951,7 @@ namespace eScapeLLC.UWP.Charts {
 			// pre-load resources
 			if (cc is IRequireChartTheme irct) {
 				if (Theme == null) {
-					// TODO this is an error
+					Report(new ChartValidationResult("Chart", "The Theme property is NULL, paths may not be visible", new[] { cc.NameOrType(), "Theme" }));
 				} else {
 					irct.Theme = Theme;
 				}

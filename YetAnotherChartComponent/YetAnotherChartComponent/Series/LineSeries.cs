@@ -73,9 +73,11 @@ namespace eScapeLLC.UWP.Charts {
 			EnsureAxes(icelc);
 			Layer = icelc.CreateLayer(Segments);
 			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis} c:{CategoryAxisName}:{CategoryAxis} d:{DataSourceName}");
-			if (PathStyle == null && Theme != null) {
-				if (Theme.PathLineSeries != null) PathStyle = Theme.PathLineSeries;
-			}
+			AssignFromSource(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathLineSeries),
+				PathStyle == null && Theme != null,
+				Theme.PathLineSeries != null,
+				() => PathStyle = Theme.PathLineSeries
+			);
 			BindTo(this, "PathStyle", Segments, Path.StyleProperty);
 		}
 		/// <summary>

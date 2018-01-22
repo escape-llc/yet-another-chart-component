@@ -1,6 +1,7 @@
 ﻿using eScape.Core;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
@@ -13,6 +14,17 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public class ValueAxis : AxisCommon, IRequireLayout, IRequireRender, IRequireTransforms, IRequireEnterLeave {
 		static LogTools.Flag _trace = LogTools.Add("ValueAxis", LogTools.Level.Error);
+		/// <summary>
+		/// The item state for this component.
+		/// </summary>
+		protected class ItemState {
+			internal TextBlock tb;
+			internal double value;
+			internal void SetLocation(double left, double top) {
+				tb.SetValue(Canvas.LeftProperty, left);
+				tb.SetValue(Canvas.TopProperty, top);
+			}
+		}
 		#region properties
 		/// <summary>
 		/// Path for the axis "bar".
@@ -25,7 +37,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// List of active TextBlocks for labels.
 		/// </summary>
-		protected List<TextBlock> TickLabels { get; set; }
+		protected List<ItemState> TickLabels { get; set; }
 		/// <summary>
 		/// The layer to manage components.
 		/// </summary>
@@ -42,7 +54,7 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region helpers
 		private void CommonInit() {
-			TickLabels = new List<TextBlock>();
+			TickLabels = new List<ItemState>();
 			Axis = new Path();
 			AxisGeometry = new PathGeometry();
 			Axis.Data = AxisGeometry;
@@ -55,7 +67,7 @@ namespace eScapeLLC.UWP.Charts {
 			var tc = new TickCalculator(Minimum, Maximum);
 			_trace.Verbose($"grid range:{tc.Range} tintv:{tc.TickInterval}");
 			var padding = AxisLineThickness + 2 * AxisMargin;
-			var tbr = new Recycler<TextBlock>(TickLabels, () => {
+			var tbr = new Recycler<TextBlock>(TickLabels.Select(tl => tl.tb), () => {
 				if (LabelStyle != null) {
 					// let style override everything but what MUST be calculated
 					var tb = new TextBlock() {
@@ -66,6 +78,9 @@ namespace eScapeLLC.UWP.Charts {
 					return tb;
 				} else {
 					// SHOULD NOT execute this code, unless default style failed!
+					if (icrc is IChartErrorInfo icei) {
+						icei.Report(new ChartValidationResult(NameOrType(), $"{nameof(LabelStyle)} from theme failed; Recycler had to make hard-coded style."));
+					}
 					var tb = new TextBlock() {
 						FontSize = 10,
 						Foreground = Axis.Fill,
@@ -78,25 +93,22 @@ namespace eScapeLLC.UWP.Charts {
 					return tb;
 				}
 			});
+			var itemstate = new List<ItemState>();
 			var tbget = tbr.Items().GetEnumerator();
 			foreach (var tick in tc.GetTicks()) {
 				//_trace.Verbose($"grid vx:{tick}");
 				if (tbget.MoveNext()) {
 					var tb = tbget.Current;
 					tb.Text = tick.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
-					tb.SetValue(Canvas.LeftProperty, icrc.Area.Left);
-					tb.SetValue(Canvas.TopProperty, tick);
-					// cheat: save the grid value so we can rescale the Canvas.Top in Transforms()
-					tb.Tag = tick;
+					var state = new ItemState() { tb = tb, value = tick };
+					state.SetLocation(icrc.Area.Left, tick);
+					itemstate.Add(state);
 				}
 			}
 			// VT and internal bookkeeping
 			Layer.Remove(tbr.Unused);
 			Layer.Add(tbr.Created);
-			foreach (var tb in tbr.Unused) {
-				TickLabels.Remove(tb);
-			}
-			TickLabels.AddRange(tbr.Created);
+			TickLabels = itemstate;
 		}
 		#endregion
 		#region extensions
@@ -106,11 +118,13 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icelc">The context.</param>
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			Layer = icelc.CreateLayer(Axis);
+			ApplyLabelStyle(icelc as IChartErrorInfo);
+			AssignFromSource(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathAxisValue),
+				PathStyle == null && Theme != null,
+				Theme.PathAxisValue != null,
+				() => PathStyle = Theme.PathAxisValue
+			);
 			DoBindings(icelc);
-			ApplyLabelStyle();
-			if (PathStyle == null && Theme != null) {
-				if (Theme.PathAxisCategory != null) PathStyle = Theme.PathAxisCategory;
-			}
 		}
 		/// <summary>
 		/// Reverse effect of Enter.
@@ -161,12 +175,10 @@ namespace eScapeLLC.UWP.Charts {
 			var matx = new Matrix(1, 0, 0, -scaley, icrc.Area.Left + AxisMargin * (Side == Side.Right ? 1 : -1), icrc.Area.Top + Maximum * scaley);
 			AxisGeometry.Transform = new MatrixTransform() { Matrix = matx };
 			_trace.Verbose($"transforms sy:{scaley:F3} matx:{matx} a:{icrc.Area} sa:{icrc.SeriesArea}");
-			foreach (var tb in TickLabels) {
-				var vx = (double)tb.Tag;
-				tb.SetValue(Canvas.LeftProperty, icrc.Area.Left);
-				var adj = tb.FontSize / 2;
-				var top = icrc.Area.Bottom - (vx - Minimum) * scaley - adj;
-				tb.SetValue(Canvas.TopProperty, top);
+			foreach (var state in TickLabels) {
+				var adj = state.tb.FontSize / 2;
+				var top = icrc.Area.Bottom - (state.value - Minimum) * scaley - adj;
+				state.SetLocation(icrc.Area.Left, top);
 			}
 		}
 		#endregion

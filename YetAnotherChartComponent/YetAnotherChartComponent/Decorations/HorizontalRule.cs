@@ -112,13 +112,11 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region helpers
 		void DoBindings(IChartEnterLeaveContext icelc) {
-			if (PathStyle == null && Theme != null) {
-				if (Theme.PathHorizontalRule != null) PathStyle = Theme.PathHorizontalRule;
-				else {
-					// TODO report the error
-					ValidationResult vr = new ValidationResult($"{Name}.{nameof(PathStyle)}: Theme.{nameof(Theme.PathHorizontalRule)} is missing", new[] { nameof(PathStyle), nameof(Theme.PathHorizontalRule) });
-				}
-			}
+			AssignFromSource(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathHorizontalRule),
+				PathStyle == null && Theme != null,
+				Theme.PathHorizontalRule != null,
+				() => PathStyle = Theme.PathHorizontalRule
+			);
 			BindTo(this, "PathStyle", Path, Path.StyleProperty);
 			var bx = GetBindingExpression(UIElement.VisibilityProperty);
 			if (bx != null) {
