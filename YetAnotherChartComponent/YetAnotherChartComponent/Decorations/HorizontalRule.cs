@@ -128,10 +128,14 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Resolve axis references.
 		/// </summary>
-		/// <param name="icrc">The context.</param>
-		protected void EnsureAxes(IChartRenderContext icrc) {
+		/// <param name="iccc">The context.</param>
+		protected void EnsureAxes(IChartComponentContext iccc) {
 			if (ValueAxis == null && !String.IsNullOrEmpty(ValueAxisName)) {
-				ValueAxis = icrc.Find(ValueAxisName) as IChartAxis;
+				ValueAxis = iccc.Find(ValueAxisName) as IChartAxis;
+			} else {
+				if (iccc is IChartErrorInfo icei) {
+					icei.Report(new ChartValidationResult(NameOrType(), $"Value axis '{ValueAxisName}' was not found", new[] { nameof(ValueAxis), nameof(ValueAxisName) }));
+				}
 			}
 		}
 		#endregion
@@ -141,7 +145,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icelc">The context.</param>
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
-			EnsureAxes(icelc);
+			EnsureAxes(icelc as IChartComponentContext);
 			Layer = icelc.CreateLayer(Path);
 			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis}");
 			DoBindings(icelc);

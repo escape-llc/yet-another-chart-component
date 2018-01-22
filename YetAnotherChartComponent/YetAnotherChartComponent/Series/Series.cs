@@ -132,7 +132,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Resolve axis references.
 		/// </summary>
 		/// <param name="icrc">The context.</param>
-		protected void EnsureAxes(IChartRenderContext icrc) {
+		protected void EnsureAxes(IChartComponentContext icrc) {
 			if (ValueAxis == null && !String.IsNullOrEmpty(ValueAxisName)) {
 				ValueAxis = icrc.Find(ValueAxisName) as IChartAxis;
 			}

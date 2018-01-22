@@ -12,28 +12,58 @@ using Windows.UI.Xaml.Media;
 
 namespace eScapeLLC.UWP.Charts {
 	#region context implementations
+	#region DefaultComponentContext
+	/// <summary>
+	/// Default impl for component context.
+	/// </summary>
+	public class DefaultComponentContext : IChartComponentContext {
+		#region properties
+		/// <summary>
+		/// The list of components to search for Find().
+		/// </summary>
+		protected ObservableCollection<ChartComponent> Components { get; set; }
+		/// <summary>
+		/// The data context in effect.
+		/// </summary>
+		public object DataContext { get; protected set; }
+		#endregion
+		#region ctor
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="components">The list of components.</param>
+		/// <param name="dc">The data context.</param>
+		public DefaultComponentContext(ObservableCollection<ChartComponent> components, object dc) {
+			Components = components;
+			DataContext = dc;
+		}
+		#endregion
+		#region public
+		/// <summary>
+		/// Search the components list by name.
+		/// </summary>
+		/// <param name="name"></param>
+		/// <returns>!NULL: found; NULL: not found.</returns>
+		public ChartComponent Find(string name) {
+			return Components.SingleOrDefault((cx) => cx.Name == name);
+		}
+		#endregion
+	}
+	#endregion
 	#region DefaultRenderContext
 	/// <summary>
 	/// Default impl for render context.
 	/// </summary>
-	public class DefaultRenderContext : IChartRenderContext {
+	public class DefaultRenderContext : DefaultComponentContext, IChartRenderContext {
 		#region properties
 		/// <summary>
 		/// The surface.  SHOULD NOT be null.
 		/// </summary>
 		protected Canvas Surface { get; set; }
 		/// <summary>
-		/// The list of components to search for Find().
-		/// </summary>
-		ObservableCollection<ChartComponent> Components { get; set; }
-		/// <summary>
 		/// The overall size of the chart rectangle.
 		/// </summary>
 		public Size Dimensions { get; protected set; }
-		/// <summary>
-		/// The data context in effect.
-		/// </summary>
-		public object DataContext { get; protected set; }
 		/// <summary>
 		/// The area for this component.
 		/// </summary>
@@ -54,23 +84,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="rc">The target rectangle.</param>
 		/// <param name="sa">The series area rectangle.</param>
 		/// <param name="dc">The data context.</param>
-		public DefaultRenderContext(Canvas surface, ObservableCollection<ChartComponent> components, Size sz, Rect rc, Rect sa, object dc) {
+		public DefaultRenderContext(Canvas surface, ObservableCollection<ChartComponent> components, Size sz, Rect rc, Rect sa, object dc) :base(components, dc) {
 			Surface = surface;
-			Components = components;
 			Dimensions = sz;
 			Area = rc;
 			SeriesArea = sa;
-			DataContext = dc;
-		}
-		#endregion
-		#region public
-		/// <summary>
-		/// Search the components list by name.
-		/// </summary>
-		/// <param name="name"></param>
-		/// <returns>!NULL: found; NULL: not found.</returns>
-		public ChartComponent Find(string name) {
-			return Components.SingleOrDefault((cx) => cx.Name == name);
 		}
 		#endregion
 	}
@@ -132,7 +150,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Default impl of the enter/leave context.
 	/// </summary>
-	public class DefaultEnterLeaveContext : DefaultRenderContext, IChartEnterLeaveContext {
+	public class DefaultEnterLeaveContext : DefaultComponentContext, IChartEnterLeaveContext, IChartErrorInfo {
 		#region properties
 		/// <summary>
 		/// The next Z-index to allocate.
@@ -142,6 +160,14 @@ namespace eScapeLLC.UWP.Charts {
 		/// The list of layers.
 		/// </summary>
 		protected List<IChartLayer> Layers { get; set; }
+		/// <summary>
+		/// The surface.  SHOULD NOT be null.
+		/// </summary>
+		protected Canvas Surface { get; set; }
+		/// <summary>
+		/// List of collected errors from IChartErrorInfo.
+		/// </summary>
+		public List<ChartValidationResult> Errors { get; protected set; }
 		#endregion
 		#region ctor
 		/// <summary>
@@ -151,11 +177,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="surface">The hosting UI.</param>
 		/// <param name="components">The list of components.</param>
 		/// <param name="layers">The list of layers.</param>
-		/// <param name="sz">Size of chart rectangle.</param>
-		/// <param name="rc">The target rectangle.</param>
-		/// <param name="sa">The series area rectangle.</param>
 		/// <param name="dc">The data context.</param>
-		public DefaultEnterLeaveContext(Canvas surface, ObservableCollection<ChartComponent> components, List<IChartLayer> layers, Size sz, Rect rc, Rect sa, object dc) :base(surface, components, sz, rc, sa, dc) { Surface = surface; Layers = layers; }
+		public DefaultEnterLeaveContext(Canvas surface, ObservableCollection<ChartComponent> components, List<IChartLayer> layers, object dc) :base(components, dc) {
+			Surface = surface;
+			Layers = layers;
+			Errors = new List<ChartValidationResult>();
+		}
 		#endregion
 		#region IChartEnterLeaveContext
 		/// <summary>
@@ -165,7 +192,6 @@ namespace eScapeLLC.UWP.Charts {
 			var ccl = new CommonCanvasLayer(Surface, NextZIndex++);
 			Layers.Add(ccl);
 			return ccl;
-			//Surface.Children.Add(fe);
 		}
 		IChartLayer IChartEnterLeaveContext.CreateLayer(params FrameworkElement[] fes) {
 			var icl = (this as IChartEnterLeaveContext).CreateLayer();
@@ -175,6 +201,11 @@ namespace eScapeLLC.UWP.Charts {
 		void IChartEnterLeaveContext.DeleteLayer(IChartLayer icl) {
 			icl.Clear();
 			Layers.Remove(icl);
+		}
+		#endregion
+		#region IChartErrorInfo
+		void IChartErrorInfo.Report(ChartValidationResult cvr) {
+			Errors.Add(cvr);
 		}
 		#endregion
 	}
@@ -687,7 +718,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="sender"></param>
 		/// <param name="e"></param>
 		void Components_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
-			var celc = new DefaultEnterLeaveContext(Surface, Components, Layers, CurrentLayout.Dimensions, Rect.Empty, Rect.Empty, DataContext);
+			var celc = new DefaultEnterLeaveContext(Surface, Components, Layers, DataContext);
 			if (e.OldItems != null) {
 				foreach (ChartComponent cc in e.OldItems) {
 					_trace.Verbose($"leave '{cc.Name}' {cc}");
@@ -707,6 +738,9 @@ namespace eScapeLLC.UWP.Charts {
 						DeferredEnter.Add(cc);
 					}
 				}
+			}
+			if(celc.Errors.Count > 0) {
+				Report(celc.Errors.ToArray());
 			}
 			if (Surface != null) {
 				InvalidateArrange();
@@ -766,11 +800,14 @@ namespace eScapeLLC.UWP.Charts {
 			try {
 				Surface = GetTemplateChild(PART_Canvas) as Canvas;
 				_trace.Verbose($"OnApplyTemplate ({Width}x{Height}) {Surface} d:{DeferredEnter.Count}");
-				var celc = new DefaultEnterLeaveContext(Surface, Components, Layers, CurrentLayout.Dimensions, Rect.Empty, Rect.Empty, DataContext);
+				var celc = new DefaultEnterLeaveContext(Surface, Components, Layers, DataContext);
 				foreach (var cc in DeferredEnter) {
 					EnterComponent(celc, cc);
 				}
 				DeferredEnter.Clear();
+				if (celc.Errors.Count > 0) {
+					Report(celc.Errors.ToArray());
+				}
 			} finally {
 				base.OnApplyTemplate();
 			}
@@ -969,10 +1006,10 @@ namespace eScapeLLC.UWP.Charts {
 				Axes.Add(ica);
 			} else if (cc is DataSeries ds) {
 				Series.Add(ds);
-				if (ds is IDataSourceRenderer idsr) {
-					Register(ds.DataSourceName, idsr);
-				} else if(ds is IProvideDataSourceRenderer ipdsr) {
+				if (ds is IProvideDataSourceRenderer ipdsr) {
 					Register(ds.DataSourceName, ipdsr.Renderer);
+				} else if (ds is IDataSourceRenderer idsr) {
+					Register(ds.DataSourceName, idsr);
 				}
 			}
 		}
@@ -988,10 +1025,11 @@ namespace eScapeLLC.UWP.Charts {
 			if (cc is IChartAxis ica) {
 				Axes.Remove(ica);
 			} else if (cc is DataSeries ds) {
-				if (ds is IDataSourceRenderer idsr) {
-					Unregister(ds.DataSourceName, idsr);
-				} else if (ds is IProvideDataSourceRenderer ipdsr) {
+				if (ds is IProvideDataSourceRenderer ipdsr) {
 					Unregister(ds.DataSourceName, ipdsr.Renderer);
+				}
+				else if (ds is IDataSourceRenderer idsr) {
+					Unregister(ds.DataSourceName, idsr);
 				}
 				Series.Remove(ds);
 			}

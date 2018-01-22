@@ -280,6 +280,13 @@ namespace eScapeLLC.UWP.Charts {
 		/// The area where series are displayed.
 		/// </summary>
 		Rect SeriesArea { get; }
+	}
+	#endregion
+	#region IChartComponentContext
+	/// <summary>
+	/// General component context.
+	/// </summary>
+	public interface IChartComponentContext {
 		/// <summary>
 		/// The data context object.
 		/// </summary>
@@ -296,7 +303,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// The context for IRequireEnterLeave interface.
 	/// </summary>
-	public interface IChartEnterLeaveContext : IChartRenderContext {
+	public interface IChartEnterLeaveContext {
 		/// <summary>
 		/// Create a layer.
 		/// </summary>

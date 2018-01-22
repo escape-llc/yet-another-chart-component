@@ -63,12 +63,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Dereference the ValueAxisName.
 		/// </summary>
-		/// <param name="icrc"></param>
-		void EnsureAxes(IChartRenderContext icrc) {
+		/// <param name="iccc"></param>
+		void EnsureAxes(IChartComponentContext iccc) {
 			if (ValueAxis == null && !String.IsNullOrEmpty(ValueAxisName)) {
-				ValueAxis = icrc.Find(ValueAxisName) as IChartAxis;
+				ValueAxis = iccc.Find(ValueAxisName) as IChartAxis;
 			} else {
-				if (icrc is IChartErrorInfo icei) {
+				if (iccc is IChartErrorInfo icei) {
 					icei.Report(new ChartValidationResult(NameOrType(), $"Value axis '{ValueAxisName}' was not found", new[] { nameof(ValueAxis), nameof(ValueAxisName) }));
 				}
 			}
@@ -94,7 +94,7 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region extensions
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
-			EnsureAxes(icelc);
+			EnsureAxes(icelc as IChartComponentContext);
 			Layer = icelc.CreateLayer(Grid);
 			DoBindings(icelc);
 		}

@@ -1,7 +1,7 @@
 ﻿{
 	"TraceSwitches": {
 		"AxisCommon": "Error",
-		"CandlestickSeries": "Verbose",
+		"CandlestickSeries": "Error",
 		"CategoryAxis": "Error",
 		"Chart": "Verbose",
 		"ColumnSeries": "Error",
