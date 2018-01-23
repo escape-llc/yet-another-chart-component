@@ -1033,7 +1033,9 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			// for now anything can provide a legend item
 			if(cc is IProvideLegend ipl) {
-				LegendItems.Add(ipl.Legend);
+				foreach (var li in ipl.LegendItems) {
+					LegendItems.Add(li);
+				}
 			}
 			// axis and series are mutually-exclusive
 			if (cc is IChartAxis ica) {
@@ -1054,7 +1056,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="cc">The component leaving chart.</param>
 		protected void LeaveComponent(IChartEnterLeaveContext icelc, ChartComponent cc) {
 			if(cc is IProvideLegend ipl) {
-				LegendItems.Remove(ipl.Legend);
+				foreach (var li in ipl.LegendItems) {
+					LegendItems.Remove(li);
+				}
 			}
 			if (cc is IChartAxis ica) {
 				Axes.Remove(ica);

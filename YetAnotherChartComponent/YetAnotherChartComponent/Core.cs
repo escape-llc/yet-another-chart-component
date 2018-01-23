@@ -417,11 +417,11 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public interface IProvideLegend {
 		/// <summary>
-		/// The legend for this item.
-		/// MUST return a stable value.
+		/// The legend item(s) for this component.
+		/// MUST return a stable enumeration (same values).
 		/// MUST NOT be called before <see cref="IRequireEnterLeave.Enter"/>.
 		/// </summary>
-		Legend Legend { get; }
+		IEnumerable<Legend> LegendItems { get; }
 	}
 	#endregion
 	#region IProvideValueExtents

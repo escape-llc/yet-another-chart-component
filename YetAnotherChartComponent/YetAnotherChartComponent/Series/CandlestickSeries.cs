@@ -122,8 +122,8 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region IProvideLegend
 		private Legend _legend;
-		Legend IProvideLegend.Legend {
-			get { if (_legend == null) _legend = Legend(); return _legend; }
+		IEnumerable<Legend> IProvideLegend.LegendItems {
+			get { if (_legend == null) _legend = Legend(); return new[] { _legend }; }
 		}
 		Legend Legend() {
 			return new Legend() { Title = Title, Fill = PathStyle.Find<Brush>(Path.FillProperty), Stroke = PathStyle.Find<Brush>(Path.StrokeProperty) };

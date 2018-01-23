@@ -1,5 +1,6 @@
 ﻿using eScape.Core;
 using System;
+using System.Collections.Generic;
 using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media;
@@ -108,8 +109,8 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region IProvideLegend
 		private Legend _legend;
-		Legend IProvideLegend.Legend {
-			get { if (_legend == null) _legend = Legend(); return _legend; }
+		IEnumerable<Legend> IProvideLegend.LegendItems {
+			get { if (_legend == null) _legend = Legend(); return new[] { _legend }; }
 		}
 		Legend Legend() {
 			return new Legend() { Title = Title, Fill = Segments.Stroke, Stroke = Segments.Stroke };
