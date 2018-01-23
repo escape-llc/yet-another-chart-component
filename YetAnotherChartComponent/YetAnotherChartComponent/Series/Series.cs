@@ -7,6 +7,7 @@ namespace eScapeLLC.UWP.Charts {
 	#region DataSeries
 	/// <summary>
 	/// Base class of components that represent a data series.
+	/// This class commits to a Data source, Category axis, Value axis, but no values.
 	/// </summary>
 	public abstract class DataSeries : ChartComponent, IProvideValueExtents, IProvideCategoryExtents {
 		#region DPs
@@ -15,12 +16,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public static readonly DependencyProperty DataSourceNameProperty = DependencyProperty.Register(
 			"DataSourceName", typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
-		);
-		/// <summary>
-		/// ValuePath DP.
-		/// </summary>
-		public static readonly DependencyProperty ValuePathProperty = DependencyProperty.Register(
-			"ValuePath", typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
 		);
 		/// <summary>
 		/// CategoryPath DP.
@@ -42,7 +37,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="dpcea"></param>
 		protected static void DataSeriesPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs dpcea) {
 			DataSeries ds = d as DataSeries;
-			ds.Dirty = true;
 			ds.Refresh(RefreshRequestType.ValueDirty, AxisUpdateState.Unknown);
 		}
 		#endregion
@@ -63,10 +57,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// MAY be NULL, in which case no labels are used on category axis.
 		/// </summary>
 		public String CategoryLabelPath { get { return (String)GetValue(CategoryLabelPathProperty); } set { SetValue(CategoryLabelPathProperty, value); } }
-		/// <summary>
-		/// Binding path to the value axis value.
-		/// </summary>
-		public String ValuePath { get { return (String)GetValue(ValuePathProperty); } set { SetValue(ValuePathProperty, value); } }
 		/// <summary>
 		/// Component name of value axis.
 		/// Referenced component MUST implement IChartAxis.
@@ -122,8 +112,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="dp"></param>
 		/// <returns></returns>
 		protected virtual String DPName(DependencyProperty dp) {
-			if (dp == ValuePathProperty) return "ValuePath";
-			else if (dp == CategoryPathProperty) return "CategoryPath";
+			if (dp == CategoryPathProperty) return "CategoryPath";
 			else if (dp == CategoryLabelPathProperty) return "CategoryLabelPath";
 			else if (dp == DataSourceNameProperty) return "DataSourceName";
 			return dp.ToString();
@@ -188,17 +177,67 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 	}
 	#endregion
+	#region DataSeriesWithValue
+	/// <summary>
+	/// Derive from this series type when the series has a single value binding, e.g. Line, Column, Marker.
+	/// This class commits to the ValuePath and PathStyle of those elements.
+	/// Series type with multiple value bindings SHOULD use <see cref="DataSeries"/> instead.
+	/// </summary>
+	public abstract class DataSeriesWithValue : DataSeries {
+		#region DPs
+		/// <summary>
+		/// ValuePath DP.
+		/// </summary>
+		public static readonly DependencyProperty ValuePathProperty = DependencyProperty.Register(
+			nameof(ValuePath), typeof(string), typeof(DataSeriesWithValue), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
+		);
+		/// <summary>
+		/// Identifies <see cref="PathStyle"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty PathStyleProperty = DependencyProperty.Register(
+			nameof(PathStyle), typeof(Style), typeof(DataSeriesWithValue), new PropertyMetadata(null)
+		);
+		/// <summary>
+		/// Identifies <see cref="Title"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty TitleProperty = DependencyProperty.Register(
+			nameof(Title), typeof(String), typeof(DataSeriesWithValue), new PropertyMetadata("Title")
+		);
+		#endregion
+		#region properties
+		/// <summary>
+		/// The title for the values.
+		/// </summary>
+		public String Title { get { return (String)GetValue(TitleProperty); } set { SetValue(TitleProperty, value); } }
+		/// <summary>
+		/// The style to use for Path geometry.
+		/// </summary>
+		public Style PathStyle { get { return (Style)GetValue(PathStyleProperty); } set { SetValue(PathStyleProperty, value); } }
+		/// <summary>
+		/// Binding path to the value axis value.
+		/// </summary>
+		public String ValuePath { get { return (String)GetValue(ValuePathProperty); } set { SetValue(ValuePathProperty, value); } }
+		#endregion
+		#region extensions
+		/// <summary>
+		/// Provide a readable name for DP update diagnostics.
+		/// </summary>
+		/// <param name="dp"></param>
+		/// <returns></returns>
+		protected override String DPName(DependencyProperty dp) {
+			if (dp == ValuePathProperty) return "ValuePath";
+			else if (dp == PathStyleProperty) return "PathStyle";
+			else if (dp == TitleProperty) return "Title";
+			else return base.DPName(dp);
+		}
+		#endregion
+	}
+	#endregion
 	#region ItemState<E>
 	/// <summary>
-	/// Basic item state.
-	/// This is used when elements-per-item is generated, so they can be re-adjusted in Transforms et al.
+	/// Simplest item state to start from.
 	/// </summary>
-	/// <typeparam name="E">The element type.</typeparam>
-	public class ItemState<E> where E: FrameworkElement {
-		/// <summary>
-		/// The generated element.
-		/// </summary>
-		public E Element { get; set; }
+	public class ItemStateCore {
 		/// <summary>
 		/// The index of this value from data source.
 		/// </summary>
@@ -207,6 +246,17 @@ namespace eScapeLLC.UWP.Charts {
 		/// The x value.
 		/// </summary>
 		public double XValue { get; set; }
+	}
+	/// <summary>
+	/// Item state for single value.
+	/// This is used when one element-per-item is generated, so it can be re-adjusted in Transforms et al.
+	/// </summary>
+	/// <typeparam name="E">The element type.</typeparam>
+	public class ItemState<E> : ItemStateCore where E: FrameworkElement {
+		/// <summary>
+		/// The generated element.
+		/// </summary>
+		public E Element { get; set; }
 		/// <summary>
 		/// The y value.
 		/// </summary>

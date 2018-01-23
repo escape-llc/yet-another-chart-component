@@ -584,7 +584,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// True: visuals require re-computing.
 		/// </summary>
-		public bool Dirty { get; set; }
+		public bool Dirty { get; protected set; }
 		#endregion
 		#region helpers
 		/// <summary>
@@ -599,21 +599,21 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="rrt">Request type.</param>
 		/// <param name="aus">Axis update status.</param>
-		protected void Refresh(RefreshRequestType rrt, AxisUpdateState aus) { RefreshRequest?.Invoke(this, new RefreshRequestEventArgs(rrt, aus, this)); }
+		protected void Refresh(RefreshRequestType rrt, AxisUpdateState aus) { Dirty = true; RefreshRequest?.Invoke(this, new RefreshRequestEventArgs(rrt, aus, this)); }
 		/// <summary>
-		/// Bind cc.Path to the given fe.DP.
+		/// Bind source.Path to the target.DP.
 		/// </summary>
-		/// <param name="cc">Source chart component.</param>
+		/// <param name="source">Source element.</param>
 		/// <param name="path">Component's (source) property path.</param>
-		/// <param name="fe">Target framework element.</param>
+		/// <param name="target">Target framework element.</param>
 		/// <param name="dp">FE's (target) DP.</param>
-		protected static void BindTo(ChartComponent cc, String path, FrameworkElement fe, DependencyProperty dp) {
+		protected static void BindTo(FrameworkElement source, String path, FrameworkElement target, DependencyProperty dp) {
 			Binding bx = new Binding() {
 				Path = new PropertyPath(path),
-				Source = cc,
+				Source = source,
 				Mode = BindingMode.OneWay
 			};
-			fe.SetBinding(dp, bx);
+			target.SetBinding(dp, bx);
 		}
 		/// <summary>
 		/// Boilerplate for assigning a "local property" from a "reference value" while applying the error reporting.

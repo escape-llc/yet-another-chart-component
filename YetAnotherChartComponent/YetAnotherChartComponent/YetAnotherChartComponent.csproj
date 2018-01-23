@@ -125,6 +125,7 @@
     <Compile Include="MatrixSupport.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Series\Series.cs" />
+    <Compile Include="Series\StackedColumnSeries.cs" />
     <Compile Include="Theme.cs" />
     <Compile Include="Axis\ValueAxis.cs" />
     <EmbeddedResource Include="Properties\eScapeLLC.UWP.Charts.rd.xml" />

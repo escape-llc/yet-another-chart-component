@@ -15,7 +15,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// If there's no CategoryMemberPath defined (i.e. using data index) this component reserves one "extra" cell on the Category Axis, to present the last column(s).
 	/// Category axis cells start on the left and extend positive-X (in device units).  Each cell is one unit long.
 	/// </summary>
-	public class ColumnSeries : DataSeries, IDataSourceRenderer, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
+	public class ColumnSeries : DataSeriesWithValue, IDataSourceRenderer, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("ColumnSeries", LogTools.Level.Error);
 		static LogTools.Flag _traceg = LogTools.Add("ColumnSeriesPaths", LogTools.Level.Off);
 		/// <summary>
@@ -23,14 +23,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		protected class SeriesItemState : ItemState<Path> { }
 		#region properties
-		/// <summary>
-		/// The title for the series.
-		/// </summary>
-		public String Title { get { return (String)GetValue(TitleProperty); } set { SetValue(TitleProperty, value); } }
-		/// <summary>
-		/// The style to use for Path geometry.
-		/// </summary>
-		public Style PathStyle { get { return (Style)GetValue(PathStyleProperty); } set { SetValue(PathStyleProperty, value); } }
 		/// <summary>
 		/// Holder for IRequireChartTheme interface.
 		/// </summary>
@@ -68,14 +60,6 @@ namespace eScapeLLC.UWP.Charts {
 		protected List<SeriesItemState> ItemState { get; set; }
 		#endregion
 		#region DPs
-		/// <summary>
-		/// Identifies <see cref="PathStyle"/> dependency property.
-		/// </summary>
-		public static readonly DependencyProperty PathStyleProperty = DependencyProperty.Register("PathStyle", typeof(Style), typeof(ColumnSeries), new PropertyMetadata(null));
-		/// <summary>
-		/// Identifies <see cref="Title"/> dependency property.
-		/// </summary>
-		public static readonly DependencyProperty TitleProperty = DependencyProperty.Register("Title", typeof(String), typeof(ColumnSeries), new PropertyMetadata("Title"));
 		#endregion
 		#region ctor
 		/// <summary>

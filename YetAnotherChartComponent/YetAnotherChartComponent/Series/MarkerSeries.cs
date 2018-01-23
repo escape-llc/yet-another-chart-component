@@ -12,17 +12,9 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Series that places the given marker at each point.
 	/// </summary>
-	public class MarkerSeries : DataSeries, IDataSourceRenderer, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
+	public class MarkerSeries : DataSeriesWithValue, IDataSourceRenderer, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("MarkerSeries", LogTools.Level.Error);
 		#region properties
-		/// <summary>
-		/// The title for the series.
-		/// </summary>
-		public String Title { get { return (String)GetValue(TitleProperty); } set { SetValue(TitleProperty, value); } }
-		/// <summary>
-		/// The style to use for Path geometry.
-		/// </summary>
-		public Style PathStyle { get { return (Style)GetValue(PathStyleProperty); } set { SetValue(PathStyleProperty, value); } }
 		/// <summary>
 		/// Holder for IRequireChartTheme interface.
 		/// </summary>
@@ -58,17 +50,11 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region DPs
 		/// <summary>
-		/// Identifies <see cref="PathStyle"/> dependency property.
-		/// </summary>
-		public static readonly DependencyProperty PathStyleProperty = DependencyProperty.Register("PathStyle", typeof(Style), typeof(MarkerSeries), new PropertyMetadata(null));
-		/// <summary>
-		/// Identifies <see cref="Title"/> dependency property.
-		/// </summary>
-		public static readonly DependencyProperty TitleProperty = DependencyProperty.Register("Title", typeof(String), typeof(MarkerSeries), new PropertyMetadata("Title"));
-		/// <summary>
 		/// Identifies <see cref="MarkerTemplate"/> dependency property.
 		/// </summary>
-		public static readonly DependencyProperty MarkerTemplateProperty = DependencyProperty.Register("MarkerTemplate", typeof(DataTemplate), typeof(MarkerSeries), new PropertyMetadata(null));
+		public static readonly DependencyProperty MarkerTemplateProperty = DependencyProperty.Register(
+			nameof(MarkerTemplate), typeof(DataTemplate), typeof(MarkerSeries), new PropertyMetadata(null)
+		);
 		#endregion
 		#region ctor
 		/// <summary>

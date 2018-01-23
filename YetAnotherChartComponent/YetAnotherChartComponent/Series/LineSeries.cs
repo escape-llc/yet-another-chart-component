@@ -11,17 +11,9 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Data series that generates a Polyline path.
 	/// </summary>
-	public class LineSeries : DataSeries, IDataSourceRenderer, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
+	public class LineSeries : DataSeriesWithValue, IDataSourceRenderer, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("LineSeries", LogTools.Level.Error);
 		#region properties
-		/// <summary>
-		/// The title for the series.
-		/// </summary>
-		public String Title { get { return (String)GetValue(TitleProperty); } set { SetValue(TitleProperty, value); } }
-		/// <summary>
-		/// The style to use for Path geometry.
-		/// </summary>
-		public Style PathStyle { get { return (Style)GetValue(PathStyleProperty); } set { SetValue(PathStyleProperty, value); } }
 		/// <summary>
 		/// Holder for IRequireChartTheme interface.
 		/// </summary>
@@ -45,14 +37,6 @@ namespace eScapeLLC.UWP.Charts {
 		protected IChartLayer Layer { get; set; }
 		#endregion
 		#region DPs
-		/// <summary>
-		/// Identifies <see cref="PathStyle"/> dependency property.
-		/// </summary>
-		public static readonly DependencyProperty PathStyleProperty = DependencyProperty.Register("PathStyle", typeof(Style), typeof(LineSeries), new PropertyMetadata(null));
-		/// <summary>
-		/// Identifies <see cref="Title"/> dependency property.
-		/// </summary>
-		public static readonly DependencyProperty TitleProperty = DependencyProperty.Register("Title", typeof(String), typeof(LineSeries), new PropertyMetadata("Title"));
 		#endregion
 		#region ctor
 		/// <summary>

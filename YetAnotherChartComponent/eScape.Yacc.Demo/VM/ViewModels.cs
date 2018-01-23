@@ -33,7 +33,8 @@ namespace Yacc.Demo.VM {
 				new PageItem() { Symbol = Symbol.Map, Title = "Demo", Description = "The demo chart (as seen on The Internet).", PageType = typeof(Chart1) },
 				new PageItem() { Symbol = Symbol.Font, Title = "Default", Description = "Default styles in case you forget!", PageType = typeof(Chart2) },
 				new PageItem() { Symbol = Symbol.Clock, Title = "Recycling", Description = "Paths get recycled efficiently as values enter and leave chart.", PageType = typeof(Chart3) },
-				new PageItem() { Symbol = Symbol.Account, Title = "Candlestick", Description = "Cached real data (to avoid permissions) for your enjoyment.", PageType = typeof(Chart4) }
+				new PageItem() { Symbol = Symbol.Account, Title = "Candlestick", Description = "Cached real data (to avoid permissions) for your enjoyment.", PageType = typeof(Chart4) },
+				new PageItem() { Symbol = Symbol.CalendarWeek, Title = "Stacked", Description = "Stacked column chart.", PageType = typeof(Chart5) }
 			};
 			PageList = pl;
 		}
