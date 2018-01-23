@@ -69,6 +69,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public class StackedColumnSeries :DataSeries, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IDataSourceRenderer, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("StackedColumnSeries", LogTools.Level.Error);
+		#region SeriesItemState
 		/// <summary>
 		/// Item state.
 		/// </summary>
@@ -95,6 +96,7 @@ namespace eScapeLLC.UWP.Charts {
 				if (vx > Max) Max = vx;
 			}
 		}
+		#endregion
 		#region properties
 		/// <summary>
 		/// Holder for IRequireChartTheme interface.
