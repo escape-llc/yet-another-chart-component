@@ -138,12 +138,12 @@ namespace eScapeLLC.UWP.Charts {
 			EnsureAxes(icelc as IChartComponentContext);
 			Layer = icelc.CreateLayer();
 			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis} c:{CategoryAxisName}:{CategoryAxis} d:{DataSourceName}");
-			AssignFromSource(icelc as IChartErrorInfo,NameOrType(), nameof(PathStyle), nameof(Theme.PathMarkerSeries),
+			AssignFromRef(icelc as IChartErrorInfo,NameOrType(), nameof(PathStyle), nameof(Theme.PathMarkerSeries),
 				PathStyle == null && Theme != null,
 				Theme.PathMarkerSeries != null,
 				() => PathStyle = Theme.PathMarkerSeries
 			);
-			AssignFromSource(icelc as IChartErrorInfo, NameOrType(), nameof(ReversePathStyle), nameof(PathStyle),
+			AssignFromRef(icelc as IChartErrorInfo, NameOrType(), nameof(ReversePathStyle), nameof(PathStyle),
 				ReversePathStyle == null,
 				PathStyle != null,
 				() => ReversePathStyle = PathStyle

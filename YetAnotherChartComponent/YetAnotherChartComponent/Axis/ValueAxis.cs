@@ -119,7 +119,7 @@ namespace eScapeLLC.UWP.Charts {
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			Layer = icelc.CreateLayer(Axis);
 			ApplyLabelStyle(icelc as IChartErrorInfo);
-			AssignFromSource(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathAxisValue),
+			AssignFromRef(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathAxisValue),
 				PathStyle == null && Theme != null,
 				Theme.PathAxisValue != null,
 				() => PathStyle = Theme.PathAxisValue

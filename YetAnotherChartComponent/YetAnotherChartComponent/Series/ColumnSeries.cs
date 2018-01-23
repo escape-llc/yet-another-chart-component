@@ -109,7 +109,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (DebugSegments != null) {
 				Layer.Add(DebugSegments);
 			}
-			AssignFromSource(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathColumnSeries),
+			AssignFromRef(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathColumnSeries),
 				PathStyle == null && Theme != null,
 				Theme.PathColumnSeries != null,
 				() => PathStyle = Theme.PathColumnSeries

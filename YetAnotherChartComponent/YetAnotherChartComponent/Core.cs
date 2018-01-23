@@ -183,7 +183,7 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region IChartLayoutContext
 	/// <summary>
-	/// The context for IRequireLayout interface.
+	/// The context for <see cref="IRequireLayout"/> interface.
 	/// </summary>
 	public interface IChartLayoutContext {
 		/// <summary>
@@ -192,7 +192,7 @@ namespace eScapeLLC.UWP.Charts {
 		Size Dimensions { get; }
 		/// <summary>
 		/// Space remaining after claims.
-		/// This rectangle is passed to all components via IChartRenderContext.SeriesArea.
+		/// This rectangle is passed to all components via <see cref="IChartRenderContext.SeriesArea"/>.
 		/// </summary>
 		Rect RemainingRect { get; }
 		/// <summary>
@@ -206,8 +206,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// <returns>Allocated and registered rectangle.</returns>
 		Rect ClaimSpace(ChartComponent cc, Side sd, double amt);
 	}
+	#endregion
+	#region IChartLayoutCompleteContext
 	/// <summary>
-	/// Context interface for IRequireLayoutComplete.
+	/// Context interface for <see cref="IRequireLayoutComplete"/>.
 	/// </summary>
 	public interface IChartLayoutCompleteContext {
 		/// <summary>
@@ -216,24 +218,25 @@ namespace eScapeLLC.UWP.Charts {
 		Size Dimensions { get; }
 		/// <summary>
 		/// Space remaining after claims.
-		/// This rectangle is passed to all components via IChartRenderContext.SeriesArea.
+		/// This rectangle is passed to all components via <see cref="IChartRenderContext.SeriesArea"/>.
 		/// </summary>
 		Rect SeriesArea { get; }
 		/// <summary>
 		/// Space for this component.
-		/// If no space was claimed, equal to SeriesArea.
+		/// If no space was claimed, equal to <see cref="SeriesArea"/>.
 		/// </summary>
 		Rect Area { get; }
 	}
 	#endregion
 	#region ChartValidationResult
 	/// <summary>
-	/// Use internall to report errors to the chart "owner".
+	/// Use internally to report errors to the chart "owner".
 	/// </summary>
 	public class ChartValidationResult :ValidationResult {
 		/// <summary>
 		/// Source of the error: chart, series, axis, etc.
 		/// MAY be the name of a component.
+		/// MAY be the Type of an unnamed component.
 		/// </summary>
 		public String Source { get; private set; }
 		/// <summary>
@@ -254,6 +257,7 @@ namespace eScapeLLC.UWP.Charts {
 	#region IChartErrorInfo
 	/// <summary>
 	/// Ability to accept (and forward) error reports.
+	/// Reports MAY be buffered by the context for later delivery.
 	/// </summary>
 	public interface IChartErrorInfo {
 		/// <summary>
@@ -261,25 +265,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="cvr">The error.</param>
 		void Report(ChartValidationResult cvr);
-	}
-	#endregion
-	#region IChartRenderContext
-	/// <summary>
-	/// The context for IRequireRender and IRequireTransforms interfaces.
-	/// </summary>
-	public interface IChartRenderContext {
-		/// <summary>
-		/// Current overall dimensions.
-		/// </summary>
-		Size Dimensions { get; }
-		/// <summary>
-		/// The area to render this component in.
-		/// </summary>
-		Rect Area { get; }
-		/// <summary>
-		/// The area where series are displayed.
-		/// </summary>
-		Rect SeriesArea { get; }
 	}
 	#endregion
 	#region IChartComponentContext
@@ -299,9 +284,32 @@ namespace eScapeLLC.UWP.Charts {
 		ChartComponent Find(String name);
 	}
 	#endregion
+	#region IChartRenderContext
+	/// <summary>
+	/// The context for <see cref="IRequireRender"/> and <see cref="IRequireTransforms"/> interfaces.
+	/// MAY also implement <see cref="IChartErrorInfo"/>.
+	/// MAY also implement <see cref="IChartComponentContext"/>.
+	/// </summary>
+	public interface IChartRenderContext {
+		/// <summary>
+		/// Current overall dimensions.
+		/// </summary>
+		Size Dimensions { get; }
+		/// <summary>
+		/// The area to render this component in.
+		/// </summary>
+		Rect Area { get; }
+		/// <summary>
+		/// The area where series are displayed.
+		/// </summary>
+		Rect SeriesArea { get; }
+	}
+	#endregion
 	#region IChartEnterLeaveContext
 	/// <summary>
-	/// The context for IRequireEnterLeave interface.
+	/// The context for <see cref="IRequireEnterLeave"/> interface.
+	/// SHOULD also implement <see cref="IChartErrorInfo"/>.
+	/// SHOULD also implement <see cref="IChartComponentContext"/>.
 	/// </summary>
 	public interface IChartEnterLeaveContext {
 		/// <summary>
@@ -370,15 +378,15 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Require rendering pass.
 	/// Generate coordinates that DO NOT depend on axis limits being finalized.
-	/// Use this interface if NOT using <see cref="IDataSourceRenderer"/>.
+	/// MUST use this interface if NOT using <see cref="IDataSourceRenderer"/> or <see cref="IProvideDataSourceRenderer"/>.
 	/// MAY also implement <see cref="IRequireAfterAxesFinalized"/>
 	/// SHOULD also implement <see cref="IRequireTransforms"/>.
 	/// </summary>
 	public interface IRequireRender {
 		/// <summary>
 		/// Render the component.
-		/// This is where data SHOULD be processed and Geometry etc. built.
-		/// Non-geomerty drawing attributes MAY be configured here, but SHOULD have been arranged in ChartComponent.Enter.
+		/// This is where data MUST be processed and Geometry etc. built.
+		/// Non-geomerty drawing attributes MAY be configured here, but SHOULD have been arranged in Enter.
 		/// Geometry coordinates MUST be represented in layout-invariant coordinates!
 		/// This means when the layout rectangle size changes, only the GeometryTransform is adjusted (in ChartComponent.Transforms); no data is re-calculated.
 		/// </summary>
@@ -389,6 +397,7 @@ namespace eScapeLLC.UWP.Charts {
 	#region IRequireAfterAxesFinalized
 	/// <summary>
 	/// Requirement for callback after axis limits are finalized.
+	/// This is the earliest opportunity to access the <see cref="IChartAxis"/> Minimum/Maximum/Range properties with valid values.
 	/// </summary>
 	public interface IRequireAfterAxesFinalized {
 		/// <summary>
@@ -401,7 +410,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Require Transforms pass.
 	/// MAY also implement <see cref="IRequireAfterAxesFinalized"/>
-	/// SHOULD also implement one of <see cref="IRequireRender"/> or <see cref="IDataSourceRenderer"/>.
+	/// SHOULD also implement one of <see cref="IRequireRender"/>, <see cref="IDataSourceRenderer"/> or <see cref="IProvideDataSourceRenderer"/>.
 	/// </summary>
 	public interface IRequireTransforms {
 		/// <summary>
@@ -492,7 +501,7 @@ namespace eScapeLLC.UWP.Charts {
 	};
 	/// <summary>
 	/// Axis update information.
-	/// If the refresh request knows that axis extents are "intact" the refresh SHOULD be optimized.
+	/// If the refresh request indicates axis extents are "intact" the refresh SHOULD be optimized.
 	/// MUST be honest!
 	/// </summary>
 	public enum AxisUpdateState {
@@ -588,6 +597,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Invoke the RefreshRequest event.
 		/// </summary>
+		/// <param name="rrt">Request type.</param>
+		/// <param name="aus">Axis update status.</param>
 		protected void Refresh(RefreshRequestType rrt, AxisUpdateState aus) { RefreshRequest?.Invoke(this, new RefreshRequestEventArgs(rrt, aus, this)); }
 		/// <summary>
 		/// Bind cc.Path to the given fe.DP.
@@ -605,28 +616,27 @@ namespace eScapeLLC.UWP.Charts {
 			fe.SetBinding(dp, bx);
 		}
 		/// <summary>
-		/// Boilerplate for assigning a "local" property from the "theme".
-		/// Mostly for applying the error reporting.
+		/// Boilerplate for assigning a "local property" from a "reference value" while applying the error reporting.
 		/// </summary>
 		/// <param name="icei">For error reporting; MAY be NULL.</param>
-		/// <param name="source">Appears in error reports.</param>
-		/// <param name="style">Appears in error reports.</param>
-		/// <param name="theme">Appears in error reports.</param>
-		/// <param name="check">The top-level check; True to proceed.</param>
-		/// <param name="themecheck">The "theme" check; True to proceed.</param>
-		/// <param name="doit">Execute if everything returned True.</param>
-		protected static void AssignFromSource(IChartErrorInfo icei, String source, String style, String theme, bool check, bool themecheck, Action doit) {
-			if (check) {
-				if (themecheck)
-					doit();
+		/// <param name="vsource">Validation source in error reports.</param>
+		/// <param name="localprop">Local property in error reports.</param>
+		/// <param name="refprop">Reference property in error reports.</param>
+		/// <param name="localcheck">The local check; True to proceed to refcheck.</param>
+		/// <param name="refcheck">The reference check; True to proceed to action.</param>
+		/// <param name="applyvalue">Execute if everything returned True.</param>
+		protected static void AssignFromRef(IChartErrorInfo icei, String vsource, String localprop, String refprop, bool localcheck, bool refcheck, Action applyvalue) {
+			if (localcheck) {
+				if (refcheck)
+					applyvalue();
 				else {
 					if (icei != null) {
-						icei.Report(new ChartValidationResult(source, $"{style} not found and {theme} not found", new[] { style, theme }));
+						icei.Report(new ChartValidationResult(vsource, $"{localprop} not found and {refprop} not found", new[] { localprop, refprop }));
 					}
 				}
 			} else {
 				if (icei != null) {
-					icei.Report(new ChartValidationResult(source, $"{style} not found and no Theme was found", new[] { style, theme }));
+					icei.Report(new ChartValidationResult(vsource, $"{localprop} not found and no Theme was found", new[] { localprop, refprop }));
 				}
 			}
 		}
@@ -671,7 +681,8 @@ namespace eScapeLLC.UWP.Charts {
 	public class BindingEvaluator : FrameworkElement {
 		private readonly PropertyPath _pp;
 		/// <summary>
-		/// Created binding evaluator and set path to the property which's value should be evaluated.
+		/// Ctor.
+		/// Initializes <see cref="_pp"/>.
 		/// </summary>
 		/// <param name="path">Path to the property.</param>
 		public BindingEvaluator(string path) {
@@ -682,13 +693,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public static readonly DependencyProperty EvaluatorProperty = DependencyProperty.Register("Evaluator", typeof(object), typeof(BindingEvaluator), null);
 		/// <summary>
-		/// Returns value of property on provided object.
+		/// Returns value of binding on provided object.
 		/// </summary>
-		/// <param name="source">Object to evaluate property for.</param>
-		/// <returns>Value of the property.</returns>
+		/// <param name="source">Object to evaluate binding against.</param>
+		/// <returns>Value of the binding.</returns>
 		public object For(object source) {
-			// ClearValue() is not needed
-			//ClearValue(EvaluatorProperty);
 			var binding = new Binding {
 				Path = _pp,
 				Mode = BindingMode.OneTime,
@@ -701,7 +710,7 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region PathHelper
 	/// <summary>
-	/// Static methods for creating PathFigures.
+	/// Static methods for creating <see cref="PathFigure"/> instances.
 	/// </summary>
 	public static class PathHelper {
 		/// <summary>
