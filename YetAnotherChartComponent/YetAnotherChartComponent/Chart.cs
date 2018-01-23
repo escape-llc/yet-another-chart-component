@@ -84,11 +84,44 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="rc">The target rectangle.</param>
 		/// <param name="sa">The series area rectangle.</param>
 		/// <param name="dc">The data context.</param>
-		public DefaultRenderContext(Canvas surface, ObservableCollection<ChartComponent> components, Size sz, Rect rc, Rect sa, object dc) :base(components, dc) {
+		public DefaultRenderContext(Canvas surface, ObservableCollection<ChartComponent> components, Size sz, Rect rc, Rect sa, object dc) : base(components, dc) {
 			Surface = surface;
 			Dimensions = sz;
 			Area = rc;
 			SeriesArea = sa;
+		}
+		#endregion
+	}
+	#endregion
+	#region RenderContextWithErrorInfo
+	/// <summary>
+	/// Render context version with IChartErrorInfo.
+	/// </summary>
+	public class RenderContextWithErrorInfo : DefaultRenderContext, IChartErrorInfo {
+		#region properties
+		/// <summary>
+		/// List of collected errors from IChartErrorInfo.
+		/// </summary>
+		public List<ChartValidationResult> Errors { get; protected set; }
+		#endregion
+		#region ctor
+		/// <summary>
+		/// Ctor.
+		/// Initialize.
+		/// </summary>
+		/// <param name="surface">The hosting UI.</param>
+		/// <param name="components">The list of components.</param>
+		/// <param name="sz">Size of chart rectangle.</param>
+		/// <param name="rc">The target rectangle.</param>
+		/// <param name="sa">The series area rectangle.</param>
+		/// <param name="dc">The data context.</param>
+		public RenderContextWithErrorInfo(Canvas surface, ObservableCollection<ChartComponent> components, Size sz, Rect rc, Rect sa, object dc) : base(surface, components, sz, rc, sa, dc) {
+			Errors = new List<ChartValidationResult>();
+		}
+		#endregion
+		#region IChartErrorInfo
+		void IChartErrorInfo.Report(ChartValidationResult cvr) {
+			Errors.Add(cvr);
 		}
 		#endregion
 	}
@@ -149,6 +182,7 @@ namespace eScapeLLC.UWP.Charts {
 	#region DefaultEnterLeaveContext
 	/// <summary>
 	/// Default impl of the enter/leave context.
+	/// Also implements IChartErrorInfo.
 	/// </summary>
 	public class DefaultEnterLeaveContext : DefaultComponentContext, IChartEnterLeaveContext, IChartErrorInfo {
 		#region properties
@@ -980,7 +1014,7 @@ namespace eScapeLLC.UWP.Charts {
 			}
 		}
 		/// <summary>
-		/// Common logic for component entering the chart.
+		/// Common logic for entering the chart.
 		/// </summary>
 		/// <param name="icelc">The context.</param>
 		/// <param name="cc">The component entering chart.</param>
@@ -1016,8 +1050,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Common logic for leaving the chart.
 		/// </summary>
-		/// <param name="icelc"></param>
-		/// <param name="cc"></param>
+		/// <param name="icelc">The context.</param>
+		/// <param name="cc">The component leaving chart.</param>
 		protected void LeaveComponent(IChartEnterLeaveContext icelc, ChartComponent cc) {
 			if(cc is IProvideLegend ipl) {
 				LegendItems.Remove(ipl.Legend);
