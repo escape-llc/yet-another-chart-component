@@ -21,7 +21,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Shorthand for marker state.
 		/// </summary>
-		protected class SeriesItemState : ItemState { }
+		protected class SeriesItemState : ItemState<Path> { }
 		#region properties
 		/// <summary>
 		/// The title for the series.
@@ -138,10 +138,10 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"{Name} mat:{matx} clip:{icrc.SeriesArea}");
 			var mt = new MatrixTransform() { Matrix = matx };
 			foreach(var ss in ItemState) {
-				ss.Path.Data.Transform = mt;
+				ss.Element.Data.Transform = mt;
 				if (ClipToDataRegion) {
 					var cg = new RectangleGeometry() { Rect = icrc.SeriesArea };
-					ss.Path.Clip = cg;
+					ss.Element.Clip = cg;
 				}
 			}
 			if (DebugClip != null) {
@@ -191,7 +191,7 @@ namespace eScapeLLC.UWP.Charts {
 			// TODO report the binding error
 			if (by == null) return null;
 			ResetLimits();
-			var paths = ItemState.Select(ms => ms.Path);
+			var paths = ItemState.Select(ms => ms.Element);
 			var recycler = new Recycler<Path>(paths, CreatePath);
 			return new State() {
 				bx = !String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
@@ -229,7 +229,7 @@ namespace eScapeLLC.UWP.Charts {
 			var pg = new PathGeometry();
 			pg.Figures.Add(pf);
 			path.Data = pg;
-			st.ms.Add(new SeriesItemState() { Index = index, XValue = leftx, YValue = y1, Path = path });
+			st.ms.Add(new SeriesItemState() { Index = index, XValue = leftx, YValue = y1, Element = path });
 		}
 		/// <summary>
 		/// Have to perform update here and not in Postamble because we are altering axis limits.

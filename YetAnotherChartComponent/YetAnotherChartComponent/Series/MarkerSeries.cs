@@ -82,7 +82,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Shorthand for marker state.
 		/// </summary>
-		protected class MarkerItemState : ItemState_Matrix { }
+		protected class MarkerItemState : ItemState_Matrix<Path> { }
 		/// <summary>
 		/// Initialize after entering VT.
 		/// </summary>
@@ -129,11 +129,11 @@ namespace eScapeLLC.UWP.Charts {
 				// assemble Mk * M * P transform for this path
 				var model = MatrixSupport.Multiply(state.World, marker);
 				var matx = MatrixSupport.Multiply(proj, model);
-				state.Path.Data.Transform = new MatrixTransform() { Matrix = matx };
+				state.Element.Data.Transform = new MatrixTransform() { Matrix = matx };
 				// doesn't work for path
 				//state.Path.RenderTransform = new MatrixTransform() { Matrix = matx };
 				if (ClipToDataRegion) {
-					state.Path.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
+					state.Element.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
 				}
 			}
 			_trace.Verbose($"{Name} mat:{world} clip:{icrc.SeriesArea}");
@@ -178,7 +178,7 @@ namespace eScapeLLC.UWP.Charts {
 			// TODO report the binding error
 			if (by == null) return null;
 			ResetLimits();
-			var paths = MarkerState.Select(ms => ms.Path);
+			var paths = MarkerState.Select(ms => ms.Element);
 			var recycler = new Recycler<Path>(paths, CreatePath);
 			return new State() {
 				bx = !String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
@@ -214,7 +214,7 @@ namespace eScapeLLC.UWP.Charts {
 			var path = st.NextPath();
 			if (path == null) return;
 			path.Data = mk;
-			st.ms.Add(new MarkerItemState() { Index = index, XValue = mappedx, YValue = mappedy, Path = path });
+			st.ms.Add(new MarkerItemState() { Index = index, XValue = mappedx, YValue = mappedy, Element = path });
 		}
 		void IDataSourceRenderer.RenderComplete(object state) {
 			var st = state as State;

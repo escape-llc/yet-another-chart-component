@@ -15,7 +15,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Shorthand for marker state.
 		/// </summary>
-		protected class PathItemState : ItemState_Matrix { }
+		protected class PathItemState : ItemState_Matrix<Path> { }
 		#region properties
 		/// <summary>
 		/// The title for the series.
@@ -173,9 +173,9 @@ namespace eScapeLLC.UWP.Charts {
 			var matx = MatrixSupport.TransformFor(icrc.SeriesArea, CategoryAxis, ValueAxis);
 			var mt = new MatrixTransform() { Matrix = matx };
 			foreach (var state in PathState) {
-				state.Path.Data.Transform = mt;
+				state.Element.Data.Transform = mt;
 				if (ClipToDataRegion) {
-					state.Path.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
+					state.Element.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
 				}
 			}
 			_trace.Verbose($"{Name} mat:{matx} clip:{icrc.SeriesArea}");
@@ -222,7 +222,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (blow == null) return null;
 			if (bclose == null) return null;
 			ResetLimits();
-			var paths = PathState.Select(ms => ms.Path);
+			var paths = PathState.Select(ms => ms.Element);
 			var recycler = new Recycler<Path>(paths, CreatePath);
 			return new State() {
 				bx = !String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
@@ -284,7 +284,7 @@ namespace eScapeLLC.UWP.Charts {
 			path.Data = pg;
 			// establish the style for "forward" or "reverse" polarity
 			BindTo(this, valueO < valueC ? nameof(PathStyle) : nameof(ReversePathStyle), path, Path.StyleProperty);
-			st.ms.Add(new PathItemState() { Index = index, XValue = leftx, YValue = y1, Path = path });
+			st.ms.Add(new PathItemState() { Index = index, XValue = leftx, YValue = y1, Element = path });
 		}
 		void IDataSourceRenderer.RenderComplete(object state) {
 			var st = state as State;

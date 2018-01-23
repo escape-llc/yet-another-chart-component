@@ -3,7 +3,7 @@
 		"AxisCommon": "Error",
 		"CandlestickSeries": "Error",
 		"CategoryAxis": "Error",
-		"Chart": "Verbose",
+		"Chart": "Error",
 		"ColumnSeries": "Error",
 		"ColumnSeriesPaths": "Off",
 		"DataSource": "Error",

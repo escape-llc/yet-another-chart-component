@@ -188,16 +188,17 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 	}
 	#endregion
-	#region ItemState
+	#region ItemState<E>
 	/// <summary>
 	/// Basic item state.
-	/// This is used when there are multiple paths generated, so they can be re-adjusted in Transforms et al.
+	/// This is used when elements-per-item is generated, so they can be re-adjusted in Transforms et al.
 	/// </summary>
-	public class ItemState {
+	/// <typeparam name="E">The element type.</typeparam>
+	public class ItemState<E> where E: FrameworkElement {
 		/// <summary>
-		/// The generated path.
+		/// The generated element.
 		/// </summary>
-		public Path Path { get; set; }
+		public E Element { get; set; }
 		/// <summary>
 		/// The index of this value from data source.
 		/// </summary>
@@ -214,20 +215,22 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Item state with transformation matrix.
 	/// </summary>
-	public class ItemState_Matrix : ItemState {
+	/// <typeparam name="E">The Element type.</typeparam>
+	public class ItemState_Matrix<E> : ItemState<E> where E: FrameworkElement {
 		/// <summary>
-		/// Alternate matrix for the M matrix
+		/// Alternate matrix for the M matrix.
+		/// Used when establishing a local transform for <see cref="ItemState{E}.Element"/>.
 		/// </summary>
 		public Matrix World { get; set; }
 	}
 	/// <summary>
-	/// Item state with matrix and geometry.
+	/// Item with <see cref="Path"/> element, local matrix and geometry.
 	/// </summary>
 	/// <typeparam name="G">Type of geometry.</typeparam>
-	public class ItemState_MatrixAndGeometry<G> : ItemState_Matrix where G: Geometry {
+	public class ItemState_MatrixAndGeometry<G> : ItemState_Matrix<Path> where G : Geometry {
 		/// <summary>
 		/// The geometry.
-		/// If you can use Path.Data to reference geometry, choose <see cref="ItemState_Matrix"/> or <see cref="ItemState"/> instead.
+		/// If you are using Path.Data to reference geometry, choose <see cref="ItemState_Matrix{E}"/> or <see cref="ItemState{E}"/> instead.
 		/// </summary>
 		public G Geometry { get; set; }
 	}
