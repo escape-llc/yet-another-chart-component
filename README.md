@@ -9,7 +9,7 @@ From *Package Manager Console*:
 [Package page on nuget.org](https://www.nuget.org/packages/eScapeLLC.UWP.Charts/)
 
 # Before you build
-If you are rebuilding the application and/or test projects (e.g. because you forked or cloned it), you must re-generate the PFX file, because it is excluded from repository by `.gitignore`.
+If you are rebuilding the demo application and/or test projects (e.g. because you forked or cloned it), you must re-generate the PFX file, because it is excluded from repository by `.gitignore`.
 
 * In *Solution Explorer*, double-click the app manifest file.
 * In the *Manifest Designer*, go to the *Packaging* tab.
@@ -20,6 +20,9 @@ If you are rebuilding the application and/or test projects (e.g. because you for
 # Screen Shot
 This is the current demo chart in the solution (subject to last-minute tweaking):
 ![yacc demo screen shot](http://escape-technology-llc.com/mobile/wp-content/gallery/main/yacc-chart-demo-8.png)
+
+# Demo Application
+This is coming to Windows Store; watch for a link here when the submission process is complete.
 
 # More Info
 Please check out the [Wiki](../../wiki) to learn more about the guts of YACC and rendering and linear algebra in general!
@@ -48,3 +51,5 @@ Some breaking changes, sorry about that!  As always, consult the demo chart XAML
 
 ## 1.2.0
 More features and fixes.
+
+Since we were more organized this release, plesae see the [Milestone page](https://github.com/escape-llc/yet-another-chart-component/milestone/3?closed=1) for a list of included items.
