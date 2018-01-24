@@ -19,7 +19,7 @@ If you are rebuilding the application and/or test projects (e.g. because you for
 
 # Screen Shot
 This is the current demo chart in the solution (subject to last-minute tweaking):
-![yacc demo screen shot](http://escape-technology-llc.com/mobile/wp-content/gallery/main/yacc-chart-demo-7.png)
+![yacc demo screen shot](http://escape-technology-llc.com/mobile/wp-content/gallery/main/yacc-chart-demo-8.png)
 
 # More Info
 Please check out the [Wiki](../../wiki) to learn more about the guts of YACC and rendering and linear algebra in general!
@@ -45,3 +45,6 @@ Some breaking changes, sorry about that!  As always, consult the demo chart XAML
 * Major fixes to the linear algebra for the graphics, primarily impacting `MarkerSeries`.
 * Lots of internal fixes/improvements you won't notice.
 * Other new properties.  Sorry, rely on auto-complete in VS for now.
+
+## 1.2.0
+More features and fixes.
