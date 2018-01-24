@@ -34,7 +34,8 @@ namespace Yacc.Demo.Pages {
 				var high = ohlcv.GetNamedString("2. high");
 				var low = ohlcv.GetNamedString("3. low");
 				var close = ohlcv.GetNamedString("4. close");
-				var obs = new Observation2(date, double.Parse(open), double.Parse(high), double.Parse(low), double.Parse(close));
+				var volume = ohlcv.GetNamedString("5. volume");
+				var obs = new Observation2(date, double.Parse(open), double.Parse(high), double.Parse(low), double.Parse(close), int.Parse(volume));
 				list.Add(obs);
 			}
 			// since it's a Map we need to sort things based on the "date" keys

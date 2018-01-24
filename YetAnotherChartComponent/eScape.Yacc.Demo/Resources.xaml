@@ -42,6 +42,14 @@
 		<Setter Property="VerticalAlignment" Value="Center"/>
 		<Setter Property="HorizontalAlignment" Value="Right"/>
 	</Style>
+	<Style x:Key="ValueAxisLabelRight" TargetType="TextBlock">
+		<Setter Property="Foreground" Value="White"/>
+		<Setter Property="FontStyle" Value="Italic"/>
+		<Setter Property="FontSize" Value="12"/>
+		<Setter Property="TextAlignment" Value="Left"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+		<Setter Property="HorizontalAlignment" Value="Left"/>
+	</Style>
 	<Style x:Key="CategoryAxisLabel" TargetType="TextBlock">
 		<Setter Property="Foreground" Value="LimeGreen"/>
 		<Setter Property="FontWeight" Value="Bold"/>
@@ -50,14 +58,25 @@
 		<Setter Property="VerticalAlignment" Value="Center"/>
 		<Setter Property="HorizontalAlignment" Value="Center"/>
 	</Style>
+	<Style x:Key="CategoryAxisLabelWrap" BasedOn="{StaticResource CategoryAxisLabel}" TargetType="TextBlock">
+		<Setter Property="TextWrapping" Value="Wrap"/>
+	</Style>
 	<Style x:Key="Bkg" TargetType="Path">
 		<Setter Property="Fill" Value="{StaticResource series-background}"/>
 	</Style>
 	<Style x:Key="Axes" TargetType="Path">
 		<Setter Property="Fill" Value="Red"/>
 	</Style>
+	<Style x:Key="SecondAxis" TargetType="Path">
+		<Setter Property="Fill" Value="Blue"/>
+	</Style>
 	<Style x:Key="Grid" TargetType="Path">
 		<Setter Property="Stroke" Value="Gray"/>
+		<Setter Property="StrokeThickness" Value=".5"/>
+		<Setter Property="StrokeDashArray" Value="4,4"/>
+	</Style>
+	<Style x:Key="SecondGrid" TargetType="Path">
+		<Setter Property="Stroke" Value="LightBlue"/>
 		<Setter Property="StrokeThickness" Value=".5"/>
 		<Setter Property="StrokeDashArray" Value="4,4"/>
 	</Style>

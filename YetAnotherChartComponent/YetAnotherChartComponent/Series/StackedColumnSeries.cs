@@ -235,7 +235,7 @@ namespace eScapeLLC.UWP.Charts {
 			var rightx = leftx + BarWidth;
 			var sis = new SeriesItemState() { Index = index, XValue = leftx };
 			for (int ix = 0; ix < st.bys.Length; ix++) {
-				var valuey = (double)st.bys[ix].For(item);
+				var valuey = CoerceValue(item, st.bys[ix]);
 				if (double.IsNaN(valuey)) {
 					if (st.bl != null) {
 						// still map the X

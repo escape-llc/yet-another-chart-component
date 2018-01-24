@@ -18,17 +18,10 @@
 			<Setter Property="StrokeThickness" Value="2"/>
 			<Setter Property="Fill" Value="Red"/>
 		</Style>
-		<Style x:Key="Line_v3" TargetType="Path">
-			<Setter Property="Stroke" Value="Olive"/>
-			<Setter Property="StrokeThickness" Value="5"/>
-			<Setter Property="StrokeLineJoin" Value="Round"/>
-			<Setter Property="StrokeStartLineCap" Value="Round"/>
-			<Setter Property="StrokeEndLineCap" Value="Round"/>
-		</Style>
-		<Style x:Key="Marker_v4" TargetType="Path">
-			<Setter Property="Stroke" Value="Coral"/>
+		<Style x:Key="Column_volume" TargetType="Path">
+			<Setter Property="Stroke" Value="Gray"/>
 			<Setter Property="StrokeThickness" Value="1"/>
-			<Setter Property="Fill" Value="CadetBlue"/>
+			<Setter Property="Fill" Value="Blue"/>
 		</Style>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
@@ -47,17 +40,24 @@
 			</yacc:Chart.DataSources>
 			<yacc:Chart.Components>
 				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" PathStyle="{StaticResource Axes}"
-					LabelStyle="{StaticResource CategoryAxisLabel}" />
+					LabelStyle="{StaticResource CategoryAxisLabelWrap}" />
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}"
-					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="F1" />
+					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="C0" />
+				<yacc:ValueAxis x:Name="volume" Side="Right" PathStyle="{StaticResource SecondAxis}" MinWidth="80"
+					LabelStyle="{StaticResource ValueAxisLabelRight}" LabelFormatString="N0" />
+				<yacc:ValueAxisGrid ValueAxisName="volume" PathStyle="{StaticResource SecondGrid}"
+					Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
+				<yacc:ColumnSeries x:Name="colv2" DataSourceName="data" ValuePath="Value5"
+					Title="Volume" ValueAxisName="volume" CategoryAxisName="xaxis" ClipToDataRegion="True"
+					PathStyle="{StaticResource Column_volume}" BarOffset=".25" BarWidth=".5" />
 				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource Grid}"
 					Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
 				<yacc:CandlestickSeries x:Name="candle" DataSourceName="data" OpenValuePath="Value1" HighValuePath="Value2" LowValuePath="Value3" CloseValuePath="Value4"
-					CategoryLabelPath="Label" ClipToDataRegion="True" Title="MFST ohlc" ValueAxisName="yaxis" CategoryAxisName="xaxis"
-					PathStyle="{StaticResource Column_v1}" ReversePathStyle="{StaticResource Column_v2}" BarOffset=".25" BarWidth=".25" />
+					CategoryLabelPath="Label" ClipToDataRegion="True" Title="Price" ValueAxisName="yaxis" CategoryAxisName="xaxis"
+					PathStyle="{StaticResource Column_v1}" ReversePathStyle="{StaticResource Column_v2}" BarOffset=".375" BarWidth=".25" />
 			</yacc:Chart.Components>
 		</yacc:Chart>
-		<TextBlock x:Name="title" Style="{StaticResource Title}" Text="Stock Market Data"
+		<TextBlock x:Name="title" Style="{StaticResource Title}" Text="MSFT Market Data"
 			RelativePanel.AlignTopWith="chart" RelativePanel.AlignHorizontalCenterWithPanel="True"/>
 		<Image Source="ms-appx:/Assets/Square44x44Logo.scale-100.png" Style="{StaticResource Logo}"
 			RelativePanel.LeftOf="title" RelativePanel.AlignVerticalCenterWith="title" />

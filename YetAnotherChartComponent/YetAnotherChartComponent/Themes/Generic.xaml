@@ -4,12 +4,19 @@
 	xmlns:local="using:eScapeLLC.UWP.Charts"
 >
 	<SolidColorBrush x:Key="band-fill" Color="#44cccccc"/>
-	<Style x:Key="AxisLabel_VERT" TargetType="TextBlock">
+	<Style x:Key="AxisLabel_LEFT" TargetType="TextBlock">
 		<Setter Property="Foreground" Value="White"/>
 		<Setter Property="FontSize" Value="10"/>
 		<Setter Property="TextAlignment" Value="Right"/>
 		<Setter Property="VerticalAlignment" Value="Center"/>
 		<Setter Property="HorizontalAlignment" Value="Right"/>
+	</Style>
+	<Style x:Key="AxisLabel_RIGHT" TargetType="TextBlock">
+		<Setter Property="Foreground" Value="White"/>
+		<Setter Property="FontSize" Value="10"/>
+		<Setter Property="TextAlignment" Value="Left"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+		<Setter Property="HorizontalAlignment" Value="Left"/>
 	</Style>
 	<Style x:Key="AxisLabel_HORZ" TargetType="TextBlock">
 		<Setter Property="Foreground" Value="White"/>
@@ -52,8 +59,8 @@
 		<Setter Property="Fill" Value="{StaticResource band-fill}"/>
 	</Style>
 	<local:ChartTheme x:Key="DefaultChartTheme" Name="DefaultFromGenericXaml"
-		LabelAxisLeft="{ThemeResource AxisLabel_VERT}"
-		LabelAxisRight="{ThemeResource AxisLabel_VERT}"
+		LabelAxisLeft="{ThemeResource AxisLabel_LEFT}"
+		LabelAxisRight="{ThemeResource AxisLabel_RIGHT}"
 		LabelAxisTop="{ThemeResource AxisLabel_HORZ}"
 		LabelAxisBottom="{ThemeResource AxisLabel_HORZ}"
 		PathAxisCategory="{ThemeResource Axes}"

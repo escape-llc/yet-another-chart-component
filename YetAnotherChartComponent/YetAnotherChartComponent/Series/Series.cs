@@ -174,6 +174,21 @@ namespace eScapeLLC.UWP.Charts {
 			CategoryMinimum = double.NaN; CategoryMaximum = double.NaN;
 			Dirty = true;
 		}
+		/// <summary>
+		/// Take the actual value from the source and coerce it to the double type, until we get full polymorphism on the y-value.
+		/// Currently handles <see cref="double"/>, <see cref="int"/>, <see cref="short"/>, and <see cref="DateTime"/> types.
+		/// </summary>
+		/// <param name="item"></param>
+		/// <param name="be"></param>
+		/// <returns></returns>
+		protected static double CoerceValue(object item, BindingEvaluator be) {
+			var ox = be.For(item);
+			if (ox is short sx) return (double)sx;
+			if (ox is int ix) return (double)ix;
+			if (ox is long lx) return (double)lx;
+			if (ox is DateTime dt) return (double)dt.Ticks;
+			return (double)ox;
+		}
 		#endregion
 	}
 	#endregion

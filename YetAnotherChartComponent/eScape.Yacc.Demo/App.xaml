@@ -8,6 +8,23 @@
 			<ResourceDictionary.MergedDictionaries>
 				<ResourceDictionary Source="Resources.xaml"/>
 			</ResourceDictionary.MergedDictionaries>
+			<ResourceDictionary.ThemeDictionaries>
+				<ResourceDictionary x:Key="Default">
+					<Color x:Key="AppBarToggleButtonForegroundChecked">White</Color>
+					<Color x:Key="AppBarToggleButtonForegroundCheckedPointerOver">White</Color>
+					<Color x:Key="AppBarToggleButtonForegroundCheckedPressed">White</Color>
+				</ResourceDictionary>
+				<ResourceDictionary x:Key="Dark">
+					<Color x:Key="AppBarToggleButtonForegroundChecked">White</Color>
+					<Color x:Key="AppBarToggleButtonForegroundCheckedPointerOver">White</Color>
+					<Color x:Key="AppBarToggleButtonForegroundCheckedPressed">White</Color>
+				</ResourceDictionary>
+				<ResourceDictionary x:Key="Light">
+					<Color x:Key="AppBarToggleButtonForegroundChecked">White</Color>
+					<Color x:Key="AppBarToggleButtonForegroundCheckedPointerOver">White</Color>
+					<Color x:Key="AppBarToggleButtonForegroundCheckedPressed">White</Color>
+				</ResourceDictionary>
+			</ResourceDictionary.ThemeDictionaries>
 		</ResourceDictionary>
 	</Application.Resources>
 </Application>

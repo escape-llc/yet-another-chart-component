@@ -33,7 +33,7 @@ namespace Yacc.Demo.VM {
 				new PageItem() { Symbol = Symbol.Map, Title = "Demo", Description = "The demo chart (as seen on The Internet).", PageType = typeof(Chart1) },
 				new PageItem() { Symbol = Symbol.Font, Title = "Default", Description = "Default styles in case you forget!", PageType = typeof(Chart2) },
 				new PageItem() { Symbol = Symbol.Clock, Title = "Recycling", Description = "Paths get recycled efficiently as values enter and leave chart.", PageType = typeof(Chart3) },
-				new PageItem() { Symbol = Symbol.Account, Title = "Candlestick", Description = "Cached real data (to avoid permissions) for your enjoyment.", PageType = typeof(Chart4) },
+				new PageItem() { Symbol = Symbol.Account, Title = "Stock Chart", Description = "Cached real data (to avoid permissions) and multiple Y-axis.", PageType = typeof(Chart4) },
 				new PageItem() { Symbol = Symbol.CalendarWeek, Title = "Stacked", Description = "Stacked column chart.", PageType = typeof(Chart5) }
 			};
 			PageList = pl;
@@ -130,8 +130,9 @@ namespace Yacc.Demo.VM {
 	public class Observation2 : Observation {
 		public double Value3 { get; private set; }
 		public double Value4 { get; private set; }
-		public Observation2(String label, double v1, double v2, double v3, double v4) : base(label, v1, v2) { Value3 = v3; Value4 = v4; }
-		public static Observation2 PLACEHOLDER = new Observation2("-", double.NaN, double.NaN, double.NaN, double.NaN);
+		public int Value5 { get; private set; }
+		public Observation2(String label, double v1, double v2, double v3, double v4,int v5 = 0) : base(label, v1, v2) { Value3 = v3; Value4 = v4; Value5 = v5; }
+		public static Observation2 PLACEHOLDER = new Observation2("-", double.NaN, double.NaN, double.NaN, double.NaN, 0);
 	}
 	/// <summary>
 	/// This VM demonstrates how to use a NOT observable collection, to avoid extra "churn" caused by individual add/remove operations.
@@ -208,7 +209,8 @@ namespace Yacc.Demo.VM {
 			var v2 = 3 + .5 - rnd.NextDouble();
 			var v3 = -2 + .5 - rnd.NextDouble();
 			var v4 = -4 + .5 - rnd.NextDouble();
-			var obs = new Observation2($"[{GroupCounter}]", v1, v2, v3, v4);
+			var v5 = 10 * rnd.NextDouble();
+			var obs = new Observation2($"[{GroupCounter}]", v1, v2, v3, v4, (int)v5);
 			Data.Add(obs);
 		}
 		void RemoveHead() {

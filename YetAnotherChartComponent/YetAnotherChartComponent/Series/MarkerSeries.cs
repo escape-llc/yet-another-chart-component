@@ -177,8 +177,7 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		void IDataSourceRenderer.Render(object state, int index, object item) {
 			var st = state as State;
-			// TODO handle datetime et al values that aren't double
-			var valuey = (double)st.by.For(item);
+			var valuey = CoerceValue(item, st.by);
 			var valuex = st.bx != null ? (double)st.bx.For(item) : index;
 			st.ix = index;
 			UpdateLimits(valuex, valuey);
