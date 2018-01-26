@@ -11,352 +11,6 @@ using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
 
 namespace eScapeLLC.UWP.Charts {
-	#region context implementations
-	#region DefaultComponentContext
-	/// <summary>
-	/// Default impl for component context.
-	/// </summary>
-	public class DefaultComponentContext : IChartComponentContext {
-		#region properties
-		/// <summary>
-		/// The list of components to search for Find().
-		/// </summary>
-		protected ObservableCollection<ChartComponent> Components { get; set; }
-		/// <summary>
-		/// The data context in effect.
-		/// </summary>
-		public object DataContext { get; protected set; }
-		#endregion
-		#region ctor
-		/// <summary>
-		/// Ctor.
-		/// </summary>
-		/// <param name="components">The list of components.</param>
-		/// <param name="dc">The data context.</param>
-		public DefaultComponentContext(ObservableCollection<ChartComponent> components, object dc) {
-			Components = components;
-			DataContext = dc;
-		}
-		#endregion
-		#region public
-		/// <summary>
-		/// Search the components list by name.
-		/// </summary>
-		/// <param name="name"></param>
-		/// <returns>!NULL: found; NULL: not found.</returns>
-		public ChartComponent Find(string name) {
-			return Components.SingleOrDefault((cx) => cx.Name == name);
-		}
-		#endregion
-	}
-	#endregion
-	#region DefaultRenderContext
-	/// <summary>
-	/// Default impl for render context.
-	/// </summary>
-	public class DefaultRenderContext : DefaultComponentContext, IChartRenderContext {
-		#region properties
-		/// <summary>
-		/// The surface.  SHOULD NOT be null.
-		/// </summary>
-		protected Canvas Surface { get; set; }
-		/// <summary>
-		/// The overall size of the chart rectangle.
-		/// </summary>
-		public Size Dimensions { get; protected set; }
-		/// <summary>
-		/// The area for this component.
-		/// </summary>
-		public Rect Area { get; protected set; }
-		/// <summary>
-		/// The remaining area for series.
-		/// </summary>
-		public Rect SeriesArea { get; protected set; }
-		#endregion
-		#region ctor
-		/// <summary>
-		/// Ctor.
-		/// Initialize.
-		/// </summary>
-		/// <param name="surface">The hosting UI.</param>
-		/// <param name="components">The list of components.</param>
-		/// <param name="sz">Size of chart rectangle.</param>
-		/// <param name="rc">The target rectangle.</param>
-		/// <param name="sa">The series area rectangle.</param>
-		/// <param name="dc">The data context.</param>
-		public DefaultRenderContext(Canvas surface, ObservableCollection<ChartComponent> components, Size sz, Rect rc, Rect sa, object dc) : base(components, dc) {
-			Surface = surface;
-			Dimensions = sz;
-			Area = rc;
-			SeriesArea = sa;
-		}
-		#endregion
-	}
-	#endregion
-	#region RenderContextWithErrorInfo
-	/// <summary>
-	/// Render context version with IChartErrorInfo.
-	/// </summary>
-	public class RenderContextWithErrorInfo : DefaultRenderContext, IChartErrorInfo {
-		#region properties
-		/// <summary>
-		/// List of collected errors from IChartErrorInfo.
-		/// </summary>
-		public List<ChartValidationResult> Errors { get; protected set; }
-		#endregion
-		#region ctor
-		/// <summary>
-		/// Ctor.
-		/// Initialize.
-		/// </summary>
-		/// <param name="surface">The hosting UI.</param>
-		/// <param name="components">The list of components.</param>
-		/// <param name="sz">Size of chart rectangle.</param>
-		/// <param name="rc">The target rectangle.</param>
-		/// <param name="sa">The series area rectangle.</param>
-		/// <param name="dc">The data context.</param>
-		public RenderContextWithErrorInfo(Canvas surface, ObservableCollection<ChartComponent> components, Size sz, Rect rc, Rect sa, object dc) : base(surface, components, sz, rc, sa, dc) {
-			Errors = new List<ChartValidationResult>();
-		}
-		#endregion
-		#region IChartErrorInfo
-		void IChartErrorInfo.Report(ChartValidationResult cvr) {
-			Errors.Add(cvr);
-		}
-		#endregion
-	}
-	#endregion
-	#region DefaultLayoutCompleteContext
-	/// <summary>
-	/// Default impl for layout complete context.
-	/// </summary>
-	public class DefaultLayoutCompleteContext : IChartLayoutCompleteContext {
-		#region properties
-		/// <summary>
-		/// The overall size of the chart rectangle.
-		/// </summary>
-		public Size Dimensions { get; protected set; }
-		/// <summary>
-		/// The area for this component.
-		/// </summary>
-		public Rect Area { get; protected set; }
-		/// <summary>
-		/// The remaining area for series.
-		/// </summary>
-		public Rect SeriesArea { get; protected set; }
-		#endregion
-		#region ctor
-		/// <summary>
-		/// Ctor.
-		/// </summary>
-		/// <param name="sz">Size of chart rectangle.</param>
-		/// <param name="rc">The target rectangle.</param>
-		/// <param name="sa">The series area rectangle.</param>
-		public DefaultLayoutCompleteContext(Size sz, Rect rc, Rect sa) {
-			Dimensions = sz;
-			Area = rc;
-			SeriesArea = sa;
-		}
-		#endregion
-	}
-	#endregion
-	#region DefaultDataSourceRenderContext
-	/// <summary>
-	/// Default implementation for IDataSourceRenderContext.
-	/// </summary>
-	public class DefaultDataSourceRenderContext : DefaultRenderContext, IDataSourceRenderContext {
-		/// <summary>
-		/// Ctor.
-		/// </summary>
-		/// <param name="surface"></param>
-		/// <param name="components"></param>
-		/// <param name="sz"></param>
-		/// <param name="rc"></param>
-		/// <param name="sa"></param>
-		/// <param name="dc"></param>
-		public DefaultDataSourceRenderContext(Canvas surface, ObservableCollection<ChartComponent> components, Size sz, Rect rc, Rect sa, object dc)
-		:base(surface, components, sz, rc, sa, dc) {
-		}
-	}
-	#endregion
-	#region DefaultEnterLeaveContext
-	/// <summary>
-	/// Default impl of the enter/leave context.
-	/// Also implements IChartErrorInfo.
-	/// </summary>
-	public class DefaultEnterLeaveContext : DefaultComponentContext, IChartEnterLeaveContext, IChartErrorInfo {
-		#region properties
-		/// <summary>
-		/// The next Z-index to allocate.
-		/// </summary>
-		public int NextZIndex { get; set; }
-		/// <summary>
-		/// The list of layers.
-		/// </summary>
-		protected List<IChartLayer> Layers { get; set; }
-		/// <summary>
-		/// The surface.  SHOULD NOT be null.
-		/// </summary>
-		protected Canvas Surface { get; set; }
-		/// <summary>
-		/// List of collected errors from IChartErrorInfo.
-		/// </summary>
-		public List<ChartValidationResult> Errors { get; protected set; }
-		#endregion
-		#region ctor
-		/// <summary>
-		/// Ctor.
-		/// Initialize.
-		/// </summary>
-		/// <param name="surface">The hosting UI.</param>
-		/// <param name="components">The list of components.</param>
-		/// <param name="layers">The list of layers.</param>
-		/// <param name="dc">The data context.</param>
-		public DefaultEnterLeaveContext(Canvas surface, ObservableCollection<ChartComponent> components, List<IChartLayer> layers, object dc) :base(components, dc) {
-			Surface = surface;
-			Layers = layers;
-			Errors = new List<ChartValidationResult>();
-		}
-		#endregion
-		#region IChartEnterLeaveContext
-		/// <summary>
-		/// Add given element to surface.
-		/// </summary>
-		IChartLayer IChartEnterLeaveContext.CreateLayer() {
-			var ccl = new CommonCanvasLayer(Surface, NextZIndex++);
-			Layers.Add(ccl);
-			return ccl;
-		}
-		IChartLayer IChartEnterLeaveContext.CreateLayer(params FrameworkElement[] fes) {
-			var icl = (this as IChartEnterLeaveContext).CreateLayer();
-			icl.Add(fes);
-			return icl;
-		}
-		void IChartEnterLeaveContext.DeleteLayer(IChartLayer icl) {
-			icl.Clear();
-			Layers.Remove(icl);
-		}
-		#endregion
-		#region IChartErrorInfo
-		void IChartErrorInfo.Report(ChartValidationResult cvr) {
-			Errors.Add(cvr);
-		}
-		#endregion
-	}
-	#endregion
-	#region DefaultLayoutContext
-	/// <summary>
-	/// Default impl of layout context.
-	/// </summary>
-	public class DefaultLayoutContext : IChartLayoutContext {
-		/// <summary>
-		/// Overall size of chart rectangle.
-		/// </summary>
-		public Size Dimensions { get; protected set; }
-		/// <summary>
-		/// Amount of space remaining after claims.
-		/// Gets adjusted after each call to Claim().
-		/// </summary>
-		public Rect RemainingRect { get; protected set; }
-		/// <summary>
-		/// Ctor.
-		/// </summary>
-		/// <param name="sz"></param>
-		/// <param name="rc"></param>
-		public DefaultLayoutContext(Size sz, Rect rc) { Dimensions = sz; RemainingRect = rc; }
-		IDictionary<ChartComponent, Rect> ClaimedRects { get; set; } = new Dictionary<ChartComponent, Rect>();
-		/// <summary>
-		/// Return the rect mapped to this component, else RemainingRect.
-		/// </summary>
-		/// <param name="cc"></param>
-		/// <returns></returns>
-		public Rect For(ChartComponent cc) { return ClaimedRects.ContainsKey(cc) ? ClaimedRects[cc] : RemainingRect; }
-		/// <summary>
-		/// Trim axis rectangles to be "flush" with the RemainingRect.
-		/// </summary>
-		public void FinalizeRects() {
-			var tx = new Dictionary<ChartComponent, Rect>();
-			foreach(var kv in ClaimedRects) {
-				if(kv.Key is IChartAxis) {
-					var ica = kv.Key as IChartAxis;
-					switch (ica.Orientation) {
-					case AxisOrientation.Horizontal:
-						switch (ica.Side) {
-						case Side.Bottom:
-							tx.Add(kv.Key, new Rect(RemainingRect.Left, kv.Value.Top, RemainingRect.Width, kv.Value.Height));
-							break;
-						case Side.Top:
-							// TODO fix
-							tx.Add(kv.Key, new Rect(RemainingRect.Left, kv.Value.Top, RemainingRect.Width, kv.Value.Height));
-							break;
-						}
-						break;
-					case AxisOrientation.Vertical:
-						switch (ica.Side) {
-						case Side.Right:
-							tx.Add(kv.Key, new Rect(kv.Value.Left, kv.Value.Top, kv.Value.Width, RemainingRect.Height));
-							break;
-						case Side.Left:
-							// TODO fix
-							tx.Add(kv.Key, new Rect(kv.Value.Left, kv.Value.Top, kv.Value.Width, RemainingRect.Height));
-							break;
-						}
-						break;
-					}
-				}
-			}
-			// apply dictionary updates
-			foreach(var kv in tx) {
-				ClaimedRects[kv.Key] = kv.Value;
-			}
-		}
-		/// <summary>
-		/// Claim the indicated space for given component.
-		/// </summary>
-		/// <param name="cc"></param>
-		/// <param name="sd"></param>
-		/// <param name="amt"></param>
-		/// <returns></returns>
-		public Rect ClaimSpace(ChartComponent cc, Side sd, double amt) {
-			var ul = new Point();
-			var sz = new Size();
-			switch(sd) {
-			case Side.Top:
-				ul.X = RemainingRect.Left;
-				ul.Y = RemainingRect.Top;
-				sz.Width = Dimensions.Width;
-				sz.Height = amt;
-				RemainingRect = new Rect(RemainingRect.Left, RemainingRect.Top + amt, RemainingRect.Width, RemainingRect.Height - amt);
-				break;
-			case Side.Right:
-				ul.X = RemainingRect.Right - amt;
-				ul.Y = RemainingRect.Top;
-				sz.Width = amt;
-				sz.Height = Dimensions.Height;
-				RemainingRect = new Rect(RemainingRect.Left, RemainingRect.Top, RemainingRect.Width - amt, RemainingRect.Height);
-				break;
-			case Side.Bottom:
-				ul.X = RemainingRect.Left;
-				ul.Y = RemainingRect.Bottom - amt;
-				sz.Width = Dimensions.Width;
-				sz.Height = amt;
-				RemainingRect = new Rect(RemainingRect.Left, RemainingRect.Top, RemainingRect.Width, RemainingRect.Height - amt);
-				break;
-			case Side.Left:
-				ul.X = RemainingRect.Left;
-				ul.Y = RemainingRect.Top;
-				sz.Width = amt;
-				sz.Height = Dimensions.Height;
-				RemainingRect = new Rect(RemainingRect.Left + amt, RemainingRect.Top, RemainingRect.Width - amt, RemainingRect.Height);
-				break;
-			}
-			var rect = new Rect(ul, sz);
-			ClaimedRects.Add(cc, rect);
-			return rect;
-		}
-	}
-	#endregion
-	#endregion
 	#region layer implementations
 	#region CommonCanvasLayer
 	/// <summary>
@@ -613,10 +267,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		protected List<IChartAxis> Axes { get; set; }
 		/// <summary>
-		/// Components that are DataSeries.
-		/// </summary>
-		protected List<DataSeries> Series { get; set; }
-		/// <summary>
 		/// Components that entered before the Surface was ready (via XAML).
 		/// </summary>
 		protected List<ChartComponent> DeferredEnter{ get; set; }
@@ -658,7 +308,6 @@ namespace eScapeLLC.UWP.Charts {
 			Components = new ChartComponentCollection();
 			Components.CollectionChanged += new NotifyCollectionChangedEventHandler(Components_CollectionChanged);
 			Axes = new List<IChartAxis>();
-			Series = new List<DataSeries>();
 			DeferredEnter = new List<ChartComponent>();
 			LayoutUpdated += new EventHandler<object>(Chart_LayoutUpdated);
 			DataContextChanged += Chart_DataContextChanged;
@@ -806,8 +455,9 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"refresh-request-cc '{cc.Name}' {cc} r:{rrea.Request} a:{rrea.Axis}");
 			await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => {
 				if (Surface == null) return;
-				if (cc is DataSeries) {
-					var ds = DataSources.SingleOrDefault(dds => dds.Name == (cc as DataSeries).DataSourceName);
+				if (cc is IDataSourceRenderer idsr) {
+					// TODO account for IProvideDataSourceRenderer
+					var ds = DataSources.SingleOrDefault(dds => dds.Name == idsr.DataSourceName);
 					if (ds != null) {
 						ds.IsDirty = true;
 					}
@@ -994,10 +644,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Bookkeeping for registering IDataSourceRenderer.
 		/// </summary>
-		/// <param name="dsname">Data source name.</param>
 		/// <param name="idsr">Instance to register.</param>
-		protected void Register(String dsname, IDataSourceRenderer idsr) {
-			var source = DataSources.Cast<DataSource>().SingleOrDefault<DataSource>((dds) => dds.Name == dsname);
+		protected void Register(IDataSourceRenderer idsr) {
+			var source = DataSources.Cast<DataSource>().SingleOrDefault<DataSource>((dds) => dds.Name == idsr.DataSourceName);
 			if (source != null) {
 				source.Register(idsr);
 			}
@@ -1005,10 +654,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Bookkeeping for unregistering IDataSourceRenderer.
 		/// </summary>
-		/// <param name="dsname">Data source name.</param>
 		/// <param name="idsr">Instance to unregister.</param>
-		protected void Unregister(String dsname, IDataSourceRenderer idsr) {
-			var source = DataSources.Cast<DataSource>().SingleOrDefault<DataSource>((dds) => dds.Name == dsname);
+		protected void Unregister(IDataSourceRenderer idsr) {
+			var source = DataSources.Cast<DataSource>().SingleOrDefault<DataSource>((dds) => dds.Name == idsr.DataSourceName);
 			if (source != null) {
 				source.Unregister(idsr);
 			}
@@ -1032,21 +680,18 @@ namespace eScapeLLC.UWP.Charts {
 				irel.Enter(icelc);
 			}
 			// for now anything can provide a legend item
-			if(cc is IProvideLegend ipl) {
+			if (cc is IProvideLegend ipl) {
 				foreach (var li in ipl.LegendItems) {
 					LegendItems.Add(li);
 				}
 			}
-			// axis and series are mutually-exclusive
+			// axis and DSRP are mutually-exclusive
 			if (cc is IChartAxis ica) {
 				Axes.Add(ica);
-			} else if (cc is DataSeries ds) {
-				Series.Add(ds);
-				if (ds is IProvideDataSourceRenderer ipdsr) {
-					Register(ds.DataSourceName, ipdsr.Renderer);
-				} else if (ds is IDataSourceRenderer idsr) {
-					Register(ds.DataSourceName, idsr);
-				}
+			} else if (cc is IProvideDataSourceRenderer ipdsr) {
+				Register(ipdsr.Renderer);
+			} else if (cc is IDataSourceRenderer idsr) {
+				Register(idsr);
 			}
 		}
 		/// <summary>
@@ -1062,14 +707,10 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			if (cc is IChartAxis ica) {
 				Axes.Remove(ica);
-			} else if (cc is DataSeries ds) {
-				if (ds is IProvideDataSourceRenderer ipdsr) {
-					Unregister(ds.DataSourceName, ipdsr.Renderer);
-				}
-				else if (ds is IDataSourceRenderer idsr) {
-					Unregister(ds.DataSourceName, idsr);
-				}
-				Series.Remove(ds);
+			} else if (cc is IProvideDataSourceRenderer ipdsr) {
+				Unregister(ipdsr.Renderer);
+			} else if (cc is IDataSourceRenderer idsr) {
+				Unregister(idsr);
 			}
 			if (cc is IRequireEnterLeave irel) {
 				irel.Leave(icelc);

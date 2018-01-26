@@ -5,17 +5,16 @@ using System.Linq;
 using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Media;
 
 namespace eScapeLLC.UWP.Charts {
 	/// <summary>
-	/// Series that creates value labels.
+	/// Component that creates series value labels.
 	/// </summary>
-	public class ValueLabelSeries : DataSeriesWithValue, IDataSourceRenderer, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
-		static LogTools.Flag _trace = LogTools.Add("ValueLabelSeries", LogTools.Level.Error);
+	public class SeriesValueLabels : ChartComponent, IDataSourceRenderer, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
+		static LogTools.Flag _trace = LogTools.Add("SeriesValueLabels", LogTools.Level.Error);
 		#region SeriesItemState
 		/// <summary>
-		/// Shorthand for label state.
+		/// Shorthand for item state.
 		/// </summary>
 		protected class SeriesItemState : ItemState<TextBlock> { }
 		#endregion
@@ -24,6 +23,29 @@ namespace eScapeLLC.UWP.Charts {
 		/// Holder for IRequireChartTheme interface.
 		/// </summary>
 		public IChartTheme Theme { get; set; }
+		/// <summary>
+		/// The name of the data source in the DataSources collection.
+		/// </summary>
+		public String DataSourceName { get { return (String)GetValue(DataSourceNameProperty); } set { SetValue(DataSourceNameProperty, value); } }
+		/// <summary>
+		/// Component name of value axis.
+		/// Referenced component MUST implement IChartAxis.
+		/// </summary>
+		public String ValueAxisName { get; set; }
+		/// <summary>
+		/// Component name of category axis.
+		/// Referenced component MUST implement IChartAxis.
+		/// </summary>
+		public String CategoryAxisName { get; set; }
+		/// <summary>
+		/// Binding path to the category axis value.
+		/// MAY be NULL, in which case the data-index is used instead.
+		/// </summary>
+		public String CategoryPath { get { return (String)GetValue(CategoryPathProperty); } set { SetValue(CategoryPathProperty, value); } }
+		/// <summary>
+		/// Binding path to the value axis value.
+		/// </summary>
+		public String ValuePath { get { return (String)GetValue(ValuePathProperty); } set { SetValue(ValuePathProperty, value); } }
 		/// <summary>
 		/// The style to apply to labels.
 		/// </summary>
@@ -44,6 +66,14 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public Point LabelOffset { get; set; } = new Point(0, 0);
 		/// <summary>
+		/// Dereferenced value axis.
+		/// </summary>
+		protected IChartAxis ValueAxis { get; set; }
+		/// <summary>
+		/// Dereferenced category axis.
+		/// </summary>
+		protected IChartAxis CategoryAxis { get; set; }
+		/// <summary>
 		/// The layer for components.
 		/// </summary>
 		protected IChartLayer Layer { get; set; }
@@ -54,16 +84,58 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region DPs
 		/// <summary>
+		/// CategoryPath DP.
+		/// </summary>
+		public static readonly DependencyProperty CategoryPathProperty = DependencyProperty.Register(
+			nameof(CategoryPath), typeof(string), typeof(SeriesValueLabels), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
+		);
+		/// <summary>
+		/// DataSourceName DP.
+		/// </summary>
+		public static readonly DependencyProperty DataSourceNameProperty = DependencyProperty.Register(
+			nameof(DataSourceName), typeof(string), typeof(SeriesValueLabels), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
+		);
+		/// <summary>
 		/// Identifies <see cref="LabelStyle"/> dependency property.
 		/// </summary>
-		public static readonly DependencyProperty LabelStyleProperty = DependencyProperty.Register(nameof(LabelStyle), typeof(Style), typeof(ValueLabelSeries), new PropertyMetadata(null));
+		public static readonly DependencyProperty LabelStyleProperty = DependencyProperty.Register(
+			nameof(LabelStyle), typeof(Style), typeof(SeriesValueLabels), new PropertyMetadata(null)
+		);
+		/// <summary>
+		/// ValuePath DP.
+		/// </summary>
+		public static readonly DependencyProperty ValuePathProperty = DependencyProperty.Register(
+			nameof(ValuePath), typeof(string), typeof(SeriesValueLabels), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
+		);
 		#endregion
 		#region ctor
 		/// <summary>
 		/// Ctor.
 		/// </summary>
-		public ValueLabelSeries() {
+		public SeriesValueLabels() {
 			ItemState = new List<SeriesItemState>();
+		}
+		#endregion
+		#region helpers
+		/// <summary>
+		/// Resolve axis references.
+		/// </summary>
+		/// <param name="icrc">The context.</param>
+		protected void EnsureAxes(IChartComponentContext icrc) {
+			if (ValueAxis == null && !String.IsNullOrEmpty(ValueAxisName)) {
+				ValueAxis = icrc.Find(ValueAxisName) as IChartAxis;
+			} else {
+				if (icrc is IChartErrorInfo icei) {
+					icei.Report(new ChartValidationResult(NameOrType(), $"Value axis '{ValueAxisName}' was not found", new[] { nameof(ValueAxis), nameof(ValueAxisName) }));
+				}
+			}
+			if (CategoryAxis == null && !String.IsNullOrEmpty(CategoryAxisName)) {
+				CategoryAxis = icrc.Find(CategoryAxisName) as IChartAxis;
+			} else {
+				if (icrc is IChartErrorInfo icei) {
+					icei.Report(new ChartValidationResult(NameOrType(), $"Category axis '{CategoryAxisName}' was not found", new[] { nameof(CategoryAxis), nameof(CategoryAxisName) }));
+				}
+			}
 		}
 		#endregion
 		#region IRequireEnterLeave
@@ -103,12 +175,14 @@ namespace eScapeLLC.UWP.Charts {
 				var hh = state.Element.ActualHeight / 2;
 				state.Element.SetValue(Canvas.LeftProperty, dcc.X - hw + state.Element.ActualWidth*LabelOffset.X);
 				state.Element.SetValue(Canvas.TopProperty, dcc.Y - hh + state.Element.ActualHeight*LabelOffset.Y);
+#if false
 				if (ClipToDataRegion) {
 					// TODO this does not work "correctly" the TB gets clipped no matter what
 					// this is because the clip coordinate system is for "inside" the text block (gotta verify this)
 					// must find intersection of the TB bounds and the icrc.SeriesArea, and make that the clip.
 					//state.Element.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
 				}
+#endif
 				_trace.Verbose($"{Name} matx:{matx} pt:({state.XValue},{state.YValue}) dcc:{dcc} tbsz:{state.Element.ActualWidth},{state.Element.ActualHeight}");
 			}
 		}
@@ -132,7 +206,7 @@ namespace eScapeLLC.UWP.Charts {
 			var by = new BindingEvaluator(ValuePath);
 			// TODO report the binding error
 			if (by == null) return null;
-			ResetLimits();
+			//ResetLimits();
 			var elements = ItemState.Select(ms => ms.Element);
 			var recycler = new Recycler<TextBlock>(elements, CreateElement);
 			return new State() {
@@ -145,11 +219,11 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		void IDataSourceRenderer.Render(object state, int index, object item) {
 			var st = state as State;
-			var valuey = CoerceValue(item, st.by);
+			var valuey = DataSeries.CoerceValue(item, st.by);
 			var valuex = st.bx != null ? (double)st.bx.For(item) : index;
 			valuex += CategoryAxisOffset;
 			st.ix = index;
-			UpdateLimits(valuex, valuey);
+			//UpdateLimits(valuex, valuey);
 			// short-circuit if it's NaN
 			if (double.IsNaN(valuey)) {
 				return;
@@ -167,7 +241,7 @@ namespace eScapeLLC.UWP.Charts {
 			var st = state as State;
 			if (st.bx == null) {
 				// needs one extra "cell"
-				UpdateLimits(st.ix + 1, double.NaN);
+				//UpdateLimits(st.ix + 1, double.NaN);
 			}
 		}
 		void IDataSourceRenderer.Postamble(object state) {

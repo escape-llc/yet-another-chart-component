@@ -12,6 +12,10 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public interface IDataSourceRenderer {
 		/// <summary>
+		/// The name of the data source this renderer is bound to.
+		/// </summary>
+		String DataSourceName { get; }
+		/// <summary>
 		/// Return a state object that gets passed back on subsequent calls.
 		/// Includes limit initialization.
 		/// </summary>

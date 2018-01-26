@@ -16,28 +16,28 @@ namespace eScapeLLC.UWP.Charts {
 		/// DataSourceName DP.
 		/// </summary>
 		public static readonly DependencyProperty DataSourceNameProperty = DependencyProperty.Register(
-			"DataSourceName", typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
+			nameof(DataSourceName), typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
 		);
 		/// <summary>
 		/// CategoryPath DP.
 		/// </summary>
 		public static readonly DependencyProperty CategoryPathProperty = DependencyProperty.Register(
-			"CategoryPath", typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
+			nameof(CategoryPath), typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
 		);
 		/// <summary>
 		/// CategoryLabelPath DP.
 		/// </summary>
 		public static readonly DependencyProperty CategoryLabelPathProperty = DependencyProperty.Register(
-			"CategoryLabelPath", typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
+			nameof(CategoryLabelPath), typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
 		);
 		/// <summary>
 		/// Generic DP property change handler.
 		/// Calls DataSeries.ProcessData().
 		/// </summary>
-		/// <param name="d"></param>
+		/// <param name="ddo"></param>
 		/// <param name="dpcea"></param>
-		protected static void DataSeriesPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs dpcea) {
-			DataSeries ds = d as DataSeries;
+		protected static void DataSeriesPropertyChanged(DependencyObject ddo, DependencyPropertyChangedEventArgs dpcea) {
+			DataSeries ds = ddo as DataSeries;
 			ds.Refresh(RefreshRequestType.ValueDirty, AxisUpdateState.Unknown);
 		}
 		#endregion
@@ -181,7 +181,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="item"></param>
 		/// <param name="be"></param>
 		/// <returns></returns>
-		protected static double CoerceValue(object item, BindingEvaluator be) {
+		public static double CoerceValue(object item, BindingEvaluator be) {
 			var ox = be.For(item);
 			if (ox is short sx) return (double)sx;
 			if (ox is int ix) return (double)ix;

@@ -73,10 +73,10 @@
 				<yacc:LineSeries DataSourceName="data" ValuePath="Value4" Title="Value 4 Line"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".375"
 					ClipToDataRegion="False" PathStyle="{StaticResource Line_v3}" />
-				<yacc:ValueLabelSeries DataSourceName="data" ValuePath="Value3" ValueAxisName="yaxis" CategoryAxisName="xaxis" LabelFormatString="F2"
-					CategoryAxisOffset=".5" LabelOffset="0,0" ClipToDataRegion="False" LabelStyle="{StaticResource Labels}" />
-				<yacc:ValueLabelSeries DataSourceName="data" ValuePath="Value4" ValueAxisName="yaxis" CategoryAxisName="xaxis" LabelFormatString="F2"
-					CategoryAxisOffset=".375" LabelOffset="0,-1" ClipToDataRegion="False" LabelStyle="{StaticResource Labels}" />
+				<yacc:SeriesValueLabels DataSourceName="data" ValuePath="Value3" ValueAxisName="yaxis" CategoryAxisName="xaxis" LabelFormatString="F2"
+					CategoryAxisOffset=".5" LabelOffset="0,0" LabelStyle="{StaticResource Labels}" />
+				<yacc:SeriesValueLabels DataSourceName="data" ValuePath="Value4" ValueAxisName="yaxis" CategoryAxisName="xaxis" LabelFormatString="F2"
+					CategoryAxisOffset=".375" LabelOffset="0,-1" LabelStyle="{StaticResource Labels}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>
 		<TextBlock x:Name="title" Style="{StaticResource Title}" Text="Time Series Data"

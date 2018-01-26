@@ -588,6 +588,16 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region helpers
 		/// <summary>
+		/// Generic DP property change handler.
+		/// Calls ChartComponent.Refresh(ValueDirty, Unknown).
+		/// </summary>
+		/// <param name="ddo"></param>
+		/// <param name="dpcea"></param>
+		protected static void PropertyChanged_ValueDirty(DependencyObject ddo, DependencyPropertyChangedEventArgs dpcea) {
+			var cc = ddo as ChartComponent;
+			cc.Refresh(RefreshRequestType.ValueDirty, AxisUpdateState.Unknown);
+		}
+		/// <summary>
 		/// Return the name if set, otherwise the type.
 		/// </summary>
 		/// <returns>Name or type.</returns>
