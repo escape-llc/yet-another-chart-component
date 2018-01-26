@@ -109,10 +109,16 @@ namespace eScapeLLC.UWP.Charts {
 			// VT and internal bookkeeping
 			Layer.Remove(tbr.Unused);
 			Layer.Add(tbr.Created);
+			foreach (var xx in tbr.Created) {
+				if (xx.DesiredSize.Width == 0 || xx.DesiredSize.Height == 0) {
+					// force it to measure; needed for Transforms
+					xx.Measure(icrc.Dimensions);
+				}
+			}
 			TickLabels = itemstate;
 		}
 		#endregion
-		#region extensions
+		#region IRequireEnterLeave
 		/// <summary>
 		/// Add elements and attach bindings.
 		/// </summary>
@@ -135,6 +141,8 @@ namespace eScapeLLC.UWP.Charts {
 			icelc.DeleteLayer(Layer);
 			Layer = null;
 		}
+		#endregion
+		#region IRequireLayout
 		/// <summary>
 		/// Claim the space indicated by properties.
 		/// </summary>
@@ -143,6 +151,8 @@ namespace eScapeLLC.UWP.Charts {
 			var space = AxisMargin + AxisLineThickness + MinWidth;
 			iclc.ClaimSpace(this, Side, space);
 		}
+		#endregion
+		#region IRequireRender
 		/// <summary>
 		/// Layout axis components (bar, grid, labels).
 		/// Each component has a corresponding transform (applied in Transforms()).  Right and Left are DUALs of each other wrt to horizontal axis.
@@ -166,6 +176,8 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			Dirty = false;
 		}
+		#endregion
+		#region IRequireTransforms
 		/// <summary>
 		/// X-coordinates	"px"
 		/// Y-coordinates	[0..1]
@@ -177,7 +189,7 @@ namespace eScapeLLC.UWP.Charts {
 			AxisGeometry.Transform = new MatrixTransform() { Matrix = matx };
 			_trace.Verbose($"transforms sy:{scaley:F3} matx:{matx} a:{icrc.Area} sa:{icrc.SeriesArea}");
 			foreach (var state in TickLabels) {
-				var adj = state.tb.FontSize / 2;
+				var adj = state.tb.ActualHeight / 2;
 				var top = icrc.Area.Bottom - (state.value - Minimum) * scaley - adj;
 				state.SetLocation(icrc.Area.Left, top);
 			}

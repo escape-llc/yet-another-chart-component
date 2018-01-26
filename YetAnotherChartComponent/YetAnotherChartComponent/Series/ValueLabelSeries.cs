@@ -11,13 +11,13 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Series that creates value labels.
 	/// </summary>
-	public class ValueLabelSeries : DataSeriesWithValue, IDataSourceRenderer, IRequireChartTheme, IRequireEnterLeave, IRequireAfterAxesFinalized, IRequireTransforms {
+	public class ValueLabelSeries : DataSeriesWithValue, IDataSourceRenderer, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("ValueLabelSeries", LogTools.Level.Error);
 		#region SeriesItemState
 		/// <summary>
 		/// Shorthand for label state.
 		/// </summary>
-		protected class SeriesItemState : ItemState_Matrix<TextBlock> { }
+		protected class SeriesItemState : ItemState<TextBlock> { }
 		#endregion
 		#region properties
 		/// <summary>
@@ -87,28 +87,18 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region IRequireTransforms
 		/// <summary>
-		/// Adjust transforms for the various components.
-		/// Geometry: scaled to actual values in cartesian coordinates as indicated by axes.
+		/// Adjust transforms for the current element state.
 		/// </summary>
 		/// <param name="icrc"></param>
 		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			if (ItemState.Count == 0) return;
-			// put the P matrix on everything
 			_trace.Verbose($"{Name} transforms a:{icrc.Area} rx:{CategoryAxis.Range} ry:{ValueAxis.Range}");
-			var proj = MatrixSupport.ProjectionFor(icrc.Area);
-			var world = MatrixSupport.ModelFor(CategoryAxis, ValueAxis);
-			// get the local marker matrix
-			var marker = MatrixSupport.LocalFor(world, 1, icrc.Area, 0, 0);
+			var matx = MatrixSupport.TransformFor(icrc.Area, CategoryAxis, ValueAxis);
 			foreach (var state in ItemState) {
-				// assemble Mk * M * P transform for this element
-				// TODO use simpler M*P and normalize the SIS.xy and run that matrix
-				// won't require the sandwich transform
-				var model = MatrixSupport.Multiply(state.World, marker);
-				var matx = MatrixSupport.Multiply(proj, model);
-				// set Canvas Left/Top based on MATX
-				var dcc = matx.Transform(new Point(0, 0));
+				var dcc = matx.Transform(new Point(state.XValue, state.YValue));
 				// get half-dimensions of the TextBlock
+				// IST elements must have had measure-pass before we get to here!
 				var hw = state.Element.ActualWidth / 2;
 				var hh = state.Element.ActualHeight / 2;
 				state.Element.SetValue(Canvas.LeftProperty, dcc.X - hw + state.Element.ActualWidth*LabelOffset.X);
@@ -119,17 +109,7 @@ namespace eScapeLLC.UWP.Charts {
 					// must find intersection of the TB bounds and the icrc.SeriesArea, and make that the clip.
 					//state.Element.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
 				}
-				_trace.Verbose($"{Name} matx:{matx} pt:({state.XValue},{state.YValue}) dcc:{dcc} tbsz:{state.Element.ActualWidth}x{state.Element.ActualHeight}");
-			}
-		}
-		#endregion
-		#region IRequireAfterAxesFinalized
-		void IRequireAfterAxesFinalized.AxesFinalized(IChartRenderContext icrc) {
-			if (CategoryAxis == null || ValueAxis == null) return;
-			if (ItemState.Count == 0) return;
-			var world = MatrixSupport.ModelFor(CategoryAxis, ValueAxis);
-			foreach (var state in ItemState) {
-				state.World = MatrixSupport.Translate(world, state.XValue, state.YValue);
+				_trace.Verbose($"{Name} matx:{matx} pt:({state.XValue},{state.YValue}) dcc:{dcc} tbsz:{state.Element.ActualWidth},{state.Element.ActualHeight}");
 			}
 		}
 		#endregion
@@ -172,7 +152,6 @@ namespace eScapeLLC.UWP.Charts {
 			UpdateLimits(valuex, valuey);
 			// short-circuit if it's NaN
 			if (double.IsNaN(valuey)) {
-				//CategoryAxis.For(valuex);
 				return;
 			}
 			var mappedy = ValueAxis.For(valuey);
@@ -196,8 +175,12 @@ namespace eScapeLLC.UWP.Charts {
 			ItemState = st.itemstate;
 			Layer.Remove(st.recycler.Unused);
 			Layer.Add(st.recycler.Created);
+			var sz = new Size(1024, 1024);
 			foreach(var xx in st.recycler.Created) {
-				xx.InvalidateMeasure();
+				if (xx.DesiredSize.Width == 0 || xx.DesiredSize.Height == 0) {
+					// force it to measure; needed for Transforms
+					xx.Measure(sz);
+				}
 			}
 			Dirty = false;
 		}

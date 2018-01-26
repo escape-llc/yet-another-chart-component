@@ -178,6 +178,12 @@ namespace eScapeLLC.UWP.Charts {
 			// VT and internal bookkeeping
 			Layer.Remove(tbr.Unused);
 			Layer.Add(tbr.Created);
+			foreach (var xx in tbr.Created) {
+				if (xx.DesiredSize.Width == 0 || xx.DesiredSize.Height == 0) {
+					// force it to measure; needed for Transforms
+					xx.Measure(icrc.Dimensions);
+				}
+			}
 			TickLabels = itemstate;
 			Dirty = false;
 		}
