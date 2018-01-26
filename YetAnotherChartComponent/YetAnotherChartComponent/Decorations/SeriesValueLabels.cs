@@ -62,7 +62,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// LabelOffset is translation from the "center" of the TextBlock.
 		/// Units are Half-dimension based on TextBlock size.
-		/// Default value is (0,0)
+		/// Default value is (0,0).
 		/// </summary>
 		public Point LabelOffset { get; set; } = new Point(0, 0);
 		/// <summary>
@@ -78,19 +78,19 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		protected IChartLayer Layer { get; set; }
 		/// <summary>
-		/// Data needed for current markers
+		/// Current item state.
 		/// </summary>
 		protected List<SeriesItemState> ItemState { get; set; }
 		#endregion
 		#region DPs
 		/// <summary>
-		/// CategoryPath DP.
+		/// Identifies <see cref="CategoryPath"/> dependency property.
 		/// </summary>
 		public static readonly DependencyProperty CategoryPathProperty = DependencyProperty.Register(
 			nameof(CategoryPath), typeof(string), typeof(SeriesValueLabels), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
 		);
 		/// <summary>
-		/// DataSourceName DP.
+		/// Identifies <see cref="DataSourceName"/> dependency property.
 		/// </summary>
 		public static readonly DependencyProperty DataSourceNameProperty = DependencyProperty.Register(
 			nameof(DataSourceName), typeof(string), typeof(SeriesValueLabels), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
@@ -102,7 +102,7 @@ namespace eScapeLLC.UWP.Charts {
 			nameof(LabelStyle), typeof(Style), typeof(SeriesValueLabels), new PropertyMetadata(null)
 		);
 		/// <summary>
-		/// ValuePath DP.
+		/// Identifies <see cref="ValuePath"/> dependency property.
 		/// </summary>
 		public static readonly DependencyProperty ValuePathProperty = DependencyProperty.Register(
 			nameof(ValuePath), typeof(string), typeof(SeriesValueLabels), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))

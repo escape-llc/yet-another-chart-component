@@ -91,25 +91,25 @@ namespace eScapeLLC.UWP.Charts {
 		/// Identifies <see cref="OpenValuePath"/> dependency property.
 		/// </summary>
 		public static readonly DependencyProperty OpenValuePathProperty = DependencyProperty.Register(
-			nameof(OpenValuePath), typeof(string), typeof(CandlestickSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
+			nameof(OpenValuePath), typeof(string), typeof(CandlestickSeries), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
 		);
 		/// <summary>
 		/// Identifies <see cref="HighValuePath"/> dependency property.
 		/// </summary>
 		public static readonly DependencyProperty HighValuePathProperty = DependencyProperty.Register(
-			nameof(HighValuePath), typeof(string), typeof(CandlestickSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
+			nameof(HighValuePath), typeof(string), typeof(CandlestickSeries), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
 		);
 		/// <summary>
 		/// Identifies <see cref="LowValuePath"/> dependency property.
 		/// </summary>
 		public static readonly DependencyProperty LowValuePathProperty = DependencyProperty.Register(
-			nameof(LowValuePath), typeof(string), typeof(CandlestickSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
+			nameof(LowValuePath), typeof(string), typeof(CandlestickSeries), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
 		);
 		/// <summary>
 		/// Identifies <see cref="CloseValuePath"/> dependency property.
 		/// </summary>
 		public static readonly DependencyProperty CloseValuePathProperty = DependencyProperty.Register(
-			nameof(CloseValuePath), typeof(string), typeof(CandlestickSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
+			nameof(CloseValuePath), typeof(string), typeof(CandlestickSeries), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
 		);
 		#endregion
 		#region ctor

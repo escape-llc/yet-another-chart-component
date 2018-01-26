@@ -13,33 +13,23 @@ namespace eScapeLLC.UWP.Charts {
 	public abstract class DataSeries : ChartComponent, IProvideValueExtents, IProvideCategoryExtents {
 		#region DPs
 		/// <summary>
-		/// DataSourceName DP.
+		/// Identifies <see cref="DataSourceName"/> dependency property.
 		/// </summary>
 		public static readonly DependencyProperty DataSourceNameProperty = DependencyProperty.Register(
-			nameof(DataSourceName), typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
+			nameof(DataSourceName), typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
 		);
 		/// <summary>
-		/// CategoryPath DP.
+		/// Identifies <see cref="CategoryPath"/> dependency property.
 		/// </summary>
 		public static readonly DependencyProperty CategoryPathProperty = DependencyProperty.Register(
-			nameof(CategoryPath), typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
+			nameof(CategoryPath), typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
 		);
 		/// <summary>
-		/// CategoryLabelPath DP.
+		/// Identifies <see cref="CategoryLabelPath"/> dependency property.
 		/// </summary>
 		public static readonly DependencyProperty CategoryLabelPathProperty = DependencyProperty.Register(
-			nameof(CategoryLabelPath), typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
+			nameof(CategoryLabelPath), typeof(string), typeof(DataSeries), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
 		);
-		/// <summary>
-		/// Generic DP property change handler.
-		/// Calls DataSeries.ProcessData().
-		/// </summary>
-		/// <param name="ddo"></param>
-		/// <param name="dpcea"></param>
-		protected static void DataSeriesPropertyChanged(DependencyObject ddo, DependencyPropertyChangedEventArgs dpcea) {
-			DataSeries ds = ddo as DataSeries;
-			ds.Refresh(RefreshRequestType.ValueDirty, AxisUpdateState.Unknown);
-		}
 		#endregion
 		#region properties
 		/// <summary>
@@ -204,7 +194,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// ValuePath DP.
 		/// </summary>
 		public static readonly DependencyProperty ValuePathProperty = DependencyProperty.Register(
-			nameof(ValuePath), typeof(string), typeof(DataSeriesWithValue), new PropertyMetadata(null, new PropertyChangedCallback(DataSeriesPropertyChanged))
+			nameof(ValuePath), typeof(string), typeof(DataSeriesWithValue), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
 		);
 		/// <summary>
 		/// Identifies <see cref="PathStyle"/> dependency property.

@@ -605,7 +605,7 @@ namespace eScapeLLC.UWP.Charts {
 			return String.IsNullOrEmpty(Name) ? GetType().Name : Name;
 		}
 		/// <summary>
-		/// Invoke the RefreshRequest event.
+		/// Mark self as dirty and invoke the RefreshRequest event.
 		/// </summary>
 		/// <param name="rrt">Request type.</param>
 		/// <param name="aus">Axis update status.</param>
@@ -626,7 +626,7 @@ namespace eScapeLLC.UWP.Charts {
 			target.SetBinding(dp, bx);
 		}
 		/// <summary>
-		/// Boilerplate for assigning a "local property" from a "reference value" while applying the error reporting.
+		/// Boilerplate for assigning a "local property" from a "reference value" while applying <see cref="IChartErrorInfo"/>.
 		/// </summary>
 		/// <param name="icei">For error reporting; MAY be NULL.</param>
 		/// <param name="vsource">Validation source in error reports.</param>
