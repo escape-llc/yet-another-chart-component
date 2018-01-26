@@ -61,6 +61,14 @@
 	<Style x:Key="CategoryAxisLabelWrap" BasedOn="{StaticResource CategoryAxisLabel}" TargetType="TextBlock">
 		<Setter Property="TextWrapping" Value="Wrap"/>
 	</Style>
+	<Style x:Key="Labels" TargetType="TextBlock">
+		<Setter Property="Foreground" Value="White"/>
+		<Setter Property="FontWeight" Value="Bold"/>
+		<Setter Property="TextAlignment" Value="Center"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+		<Setter Property="HorizontalAlignment" Value="Center"/>
+		<Setter Property="FontSize" Value="12"/>
+	</Style>
 	<Style x:Key="Bkg" TargetType="Path">
 		<Setter Property="Fill" Value="{StaticResource series-background}"/>
 	</Style>

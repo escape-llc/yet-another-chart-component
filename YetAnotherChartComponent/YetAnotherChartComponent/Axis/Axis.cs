@@ -187,11 +187,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Identifies <see cref="PathStyle"/> dependency property.
 		/// </summary>
-		public static readonly DependencyProperty PathStyleProperty = DependencyProperty.Register("PathStyle", typeof(Style), typeof(AxisCommon), new PropertyMetadata(null));
+		public static readonly DependencyProperty PathStyleProperty = DependencyProperty.Register(nameof(PathStyle), typeof(Style), typeof(AxisCommon), new PropertyMetadata(null));
 		/// <summary>
 		/// Identifies <see cref="LabelStyle"/> dependency property.
 		/// </summary>
-		public static readonly DependencyProperty LabelStyleProperty = DependencyProperty.Register("LabelStyle", typeof(Style), typeof(AxisCommon), new PropertyMetadata(null));
+		public static readonly DependencyProperty LabelStyleProperty = DependencyProperty.Register(nameof(LabelStyle), typeof(Style), typeof(AxisCommon), new PropertyMetadata(null));
 		#endregion
 		#region ctor
 		/// <summary>

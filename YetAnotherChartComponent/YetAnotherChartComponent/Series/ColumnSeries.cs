@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Windows.Foundation;
 using Windows.UI;
-using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
 
@@ -146,19 +145,7 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region IDataSourceRenderer
-		class State {
-			internal BindingEvaluator bx;
-			internal BindingEvaluator by;
-			internal BindingEvaluator bl;
-			internal int ix;
-			internal List<SeriesItemState> ms;
-			internal Recycler<Path> recycler;
-			internal IEnumerator<Path> paths;
-			internal Path NextPath() {
-				if (paths.MoveNext()) return paths.Current;
-				else return null;
-			}
-		}
+		class State : RenderState_ValueAndLabel<SeriesItemState, Path> { }
 		/// <summary>
 		/// Path factory for recycler.
 		/// </summary>
@@ -181,9 +168,9 @@ namespace eScapeLLC.UWP.Charts {
 				bx = !String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
 				bl = !String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null,
 				by = by,
-				ms = new List<SeriesItemState>(),
+				itemstate = new List<SeriesItemState>(),
 				recycler = recycler,
-				paths = recycler.Items().GetEnumerator()
+				elements = recycler.Items().GetEnumerator()
 			};
 		}
 		void IDataSourceRenderer.Render(object state, int index, object item) {
@@ -208,12 +195,12 @@ namespace eScapeLLC.UWP.Charts {
 			var rightx = leftx + BarWidth;
 			_trace.Verbose($"{Name}[{index}] {valuey} ({leftx},{topy}) ({rightx},{bottomy})");
 			var pf = PathHelper.Rectangle(leftx, topy, rightx, bottomy);
-			var path = st.NextPath();
+			var path = st.NextElement();
 			if (path == null) return;
 			var pg = new PathGeometry();
 			pg.Figures.Add(pf);
 			path.Data = pg;
-			st.ms.Add(new SeriesItemState() { Index = index, XValue = leftx, YValue = y1, Element = path });
+			st.itemstate.Add(new SeriesItemState() { Index = index, XValue = leftx, YValue = y1, Element = path });
 		}
 		/// <summary>
 		/// Have to perform update here and not in Postamble because we are altering axis limits.
@@ -228,7 +215,7 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		void IDataSourceRenderer.Postamble(object state) {
 			var st = state as State;
-			ItemState = st.ms;
+			ItemState = st.itemstate;
 			Layer.Remove(st.recycler.Unused);
 			Layer.Add(st.recycler.Created);
 			Dirty = false;

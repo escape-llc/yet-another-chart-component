@@ -15,7 +15,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Shorthand for marker state.
 		/// </summary>
-		protected class PathItemState : ItemState_Matrix<Path> { }
+		protected class SeriesItemState : ItemState_Matrix<Path> { }
 		#region properties
 		/// <summary>
 		/// The title for the series.
@@ -66,7 +66,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Data needed for current markers
 		/// </summary>
-		protected List<PathItemState> PathState { get; set; }
+		protected List<SeriesItemState> ItemState { get; set; }
 		#endregion
 		#region DPs
 		/// <summary>
@@ -117,7 +117,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Ctor.
 		/// </summary>
 		public CandlestickSeries()  {
-			PathState = new List<PathItemState>();
+			ItemState = new List<SeriesItemState>();
 		}
 		#endregion
 		#region IProvideLegend
@@ -169,10 +169,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icrc"></param>
 		public void Transforms(IChartRenderContext icrc) {
 			if (CategoryAxis == null || ValueAxis == null) return;
-			if (PathState.Count == 0) return;
+			if (ItemState.Count == 0) return;
 			var matx = MatrixSupport.TransformFor(icrc.SeriesArea, CategoryAxis, ValueAxis);
 			var mt = new MatrixTransform() { Matrix = matx };
-			foreach (var state in PathState) {
+			foreach (var state in ItemState) {
 				state.Element.Data.Transform = mt;
 				if (ClipToDataRegion) {
 					state.Element.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
@@ -182,21 +182,13 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region IDataSourceRenderer
-		class State {
+		class State : RenderStateCore<SeriesItemState, Path> {
 			internal BindingEvaluator bx;
+			internal BindingEvaluator bl;
 			internal BindingEvaluator bopen;
 			internal BindingEvaluator bhigh;
 			internal BindingEvaluator blow;
 			internal BindingEvaluator bclose;
-			internal BindingEvaluator bl;
-			internal int ix;
-			internal List<PathItemState> ms;
-			internal Recycler<Path> recycler;
-			internal IEnumerator<Path> paths;
-			internal Path NextPath() {
-				if (paths.MoveNext()) return paths.Current;
-				else return null;
-			}
 		}
 		/// <summary>
 		/// Path factory for recycler.
@@ -222,7 +214,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (blow == null) return null;
 			if (bclose == null) return null;
 			ResetLimits();
-			var paths = PathState.Select(ms => ms.Element);
+			var paths = ItemState.Select(ms => ms.Element);
 			var recycler = new Recycler<Path>(paths, CreatePath);
 			return new State() {
 				bx = !String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
@@ -231,9 +223,9 @@ namespace eScapeLLC.UWP.Charts {
 				bhigh = bhigh,
 				blow = blow,
 				bclose = bclose,
-				ms = new List<PathItemState>(),
+				itemstate = new List<SeriesItemState>(),
 				recycler = recycler,
-				paths = recycler.Items().GetEnumerator()
+				elements = recycler.Items().GetEnumerator()
 			};
 		}
 		void IDataSourceRenderer.Render(object state, int index, object item) {
@@ -268,7 +260,7 @@ namespace eScapeLLC.UWP.Charts {
 			var lowy = Math.Min(y3, y4);
 			_trace.Verbose($"{Name}[{index}] {valueO}/{valueH}/{valueL}/{valueC} ({leftx},{topy}) ({rightx},{bottomy})");
 			// create geometry
-			var path = st.NextPath();
+			var path = st.NextElement();
 			if (path == null) return;
 			var pg = new PathGeometry();
 			// body (open/close)
@@ -284,7 +276,7 @@ namespace eScapeLLC.UWP.Charts {
 			path.Data = pg;
 			// establish the style for "forward" or "reverse" polarity
 			BindTo(this, valueO < valueC ? nameof(PathStyle) : nameof(ReversePathStyle), path, Path.StyleProperty);
-			st.ms.Add(new PathItemState() { Index = index, XValue = leftx, YValue = y1, Element = path });
+			st.itemstate.Add(new SeriesItemState() { Index = index, XValue = leftx, YValue = y1, Element = path });
 		}
 		void IDataSourceRenderer.RenderComplete(object state) {
 			var st = state as State;
@@ -295,7 +287,7 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		void IDataSourceRenderer.Postamble(object state) {
 			var st = state as State;
-			PathState = st.ms;
+			ItemState = st.itemstate;
 			Layer.Remove(st.recycler.Unused);
 			Layer.Add(st.recycler.Created);
 			Dirty = false;

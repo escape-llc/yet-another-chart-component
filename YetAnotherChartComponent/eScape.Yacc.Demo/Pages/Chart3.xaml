@@ -28,7 +28,7 @@
 		<Style x:Key="Marker_v4" TargetType="Path">
 			<Setter Property="Stroke" Value="Coral"/>
 			<Setter Property="StrokeThickness" Value="1"/>
-			<Setter Property="Fill" Value="CadetBlue"/>
+			<Setter Property="Fill" Value="Blue"/>
 		</Style>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
@@ -66,8 +66,6 @@
 						<DataTemplate>
 							<GeometryGroup>
 								<EllipseGeometry RadiusX=".5" RadiusY=".5" Center=".5,.5" />
-								<LineGeometry StartPoint=".5,.4" EndPoint=".5,.6" />
-								<LineGeometry StartPoint=".4,.5" EndPoint=".6,.5" />
 							</GeometryGroup>
 						</DataTemplate>
 					</yacc:MarkerSeries.MarkerTemplate>
@@ -75,6 +73,10 @@
 				<yacc:LineSeries DataSourceName="data" ValuePath="Value4" Title="Value 4 Line"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".375"
 					ClipToDataRegion="False" PathStyle="{StaticResource Line_v3}" />
+				<yacc:ValueLabelSeries DataSourceName="data" ValuePath="Value3" ValueAxisName="yaxis" CategoryAxisName="xaxis" LabelFormatString="F2"
+					CategoryAxisOffset=".5" LabelOffset="0,0" ClipToDataRegion="False" LabelStyle="{StaticResource Labels}" />
+				<yacc:ValueLabelSeries DataSourceName="data" ValuePath="Value4" ValueAxisName="yaxis" CategoryAxisName="xaxis" LabelFormatString="F2"
+					CategoryAxisOffset=".375" LabelOffset="0,-1" ClipToDataRegion="False" LabelStyle="{StaticResource Labels}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>
 		<TextBlock x:Name="title" Style="{StaticResource Title}" Text="Time Series Data"

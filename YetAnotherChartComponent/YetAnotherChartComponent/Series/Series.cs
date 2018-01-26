@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
@@ -124,9 +125,8 @@ namespace eScapeLLC.UWP.Charts {
 		protected void EnsureAxes(IChartComponentContext icrc) {
 			if (ValueAxis == null && !String.IsNullOrEmpty(ValueAxisName)) {
 				ValueAxis = icrc.Find(ValueAxisName) as IChartAxis;
-			}
-			else {
-				if(icrc is IChartErrorInfo icei) {
+			} else {
+				if (icrc is IChartErrorInfo icei) {
 					icei.Report(new ChartValidationResult(NameOrType(), $"Value axis '{ValueAxisName}' was not found", new[] { nameof(ValueAxis), nameof(ValueAxisName) }));
 				}
 			}
@@ -160,7 +160,7 @@ namespace eScapeLLC.UWP.Charts {
 		protected void UpdateLimits(double vx, params double[] vys) {
 			if (double.IsNaN(CategoryMinimum) || vx < CategoryMinimum) { CategoryMinimum = vx; }
 			if (double.IsNaN(CategoryMaximum) || vx > CategoryMaximum) { CategoryMaximum = vx; }
-			foreach(var vy in vys) {
+			foreach (var vy in vys) {
 				if (double.IsNaN(Minimum) || vy < Minimum) { Minimum = vy; }
 				if (double.IsNaN(Maximum) || vy > Maximum) { Maximum = vy; }
 			}
@@ -267,7 +267,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// This is used when one element-per-item is generated, so it can be re-adjusted in Transforms et al.
 	/// </summary>
 	/// <typeparam name="E">The element type.</typeparam>
-	public class ItemState<E> : ItemStateCore where E: FrameworkElement {
+	public class ItemState<E> : ItemStateCore where E : FrameworkElement {
 		/// <summary>
 		/// The generated element.
 		/// </summary>
@@ -281,7 +281,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// Item state with transformation matrix.
 	/// </summary>
 	/// <typeparam name="E">The Element type.</typeparam>
-	public class ItemState_Matrix<E> : ItemState<E> where E: FrameworkElement {
+	public class ItemState_Matrix<E> : ItemState<E> where E : FrameworkElement {
 		/// <summary>
 		/// Alternate matrix for the M matrix.
 		/// Used when establishing a local transform for <see cref="ItemState{E}.Element"/>.
@@ -298,6 +298,59 @@ namespace eScapeLLC.UWP.Charts {
 		/// If you are using Path.Data to reference geometry, choose <see cref="ItemState_Matrix{E}"/> or <see cref="ItemState{E}"/> instead.
 		/// </summary>
 		public G Geometry { get; set; }
+	}
+	#endregion
+	#region RenderStateCore
+	/// <summary>
+	/// Common state for implementations of <see cref="IDataSourceRenderer"/>.
+	/// Contains no references to any values on either axis, just core bookkeeping.
+	/// </summary>
+	/// <typeparam name="SIS">Series item state type.</typeparam>
+	/// <typeparam name="EL">Recycled element type.</typeparam>
+	internal class RenderStateCore<SIS, EL> where SIS: class where EL: FrameworkElement {
+		/// <summary>
+		/// Tracks the index from Render().
+		/// </summary>
+		internal int ix;
+		/// <summary>
+		/// Collects the item states created in Render().
+		/// </summary>
+		internal List<SIS> itemstate;
+		/// <summary>
+		/// Recycles the elements.
+		/// </summary>
+		internal Recycler<EL> recycler;
+		/// <summary>
+		/// The recycler's iterator to generate the elements.
+		/// </summary>
+		internal IEnumerator<EL> elements;
+		/// <summary>
+		/// Call for the next element from the recycler's iterator.
+		/// </summary>
+		/// <returns>Next element or NULL.</returns>
+		internal EL NextElement() {
+			if (elements.MoveNext()) return elements.Current;
+			else return null;
+		}
+	}
+	/// <summary>
+	/// Extended state for common case of single value with category label.
+	/// </summary>
+	/// <typeparam name="SIS">Series item state type.</typeparam>
+	/// <typeparam name="EL">Recycled element type.</typeparam>
+	internal class RenderState_ValueAndLabel<SIS,EL> : RenderStateCore<SIS,EL> where SIS : class where EL : FrameworkElement {
+		/// <summary>
+		/// Binds x-value.
+		/// </summary>
+		internal BindingEvaluator bx;
+		/// <summary>
+		/// Binds y-value.
+		/// </summary>
+		internal BindingEvaluator by;
+		/// <summary>
+		/// Binds label; MAY be NULL.
+		/// </summary>
+		internal BindingEvaluator bl;
 	}
 	#endregion
 }

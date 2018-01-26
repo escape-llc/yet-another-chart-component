@@ -182,18 +182,10 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region IDataSourceRenderer
-		class State {
+		class State : RenderStateCore<SeriesItemState, Path> {
 			internal BindingEvaluator bx;
 			internal BindingEvaluator[] bys;
 			internal BindingEvaluator bl;
-			internal int ix;
-			internal List<SeriesItemState> ms;
-			internal Recycler<Path> recycler;
-			internal IEnumerator<Path> paths;
-			internal Path NextPath() {
-				if (paths.MoveNext()) return paths.Current;
-				else return null;
-			}
 		}
 		/// <summary>
 		/// Path factory for recycler.
@@ -221,9 +213,9 @@ namespace eScapeLLC.UWP.Charts {
 				bx = !String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
 				bl = !String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null,
 				bys = bys,
-				ms = new List<SeriesItemState>(),
+				itemstate = new List<SeriesItemState>(),
 				recycler = recycler,
-				paths = recycler.Items().GetEnumerator()
+				elements = recycler.Items().GetEnumerator()
 			};
 		}
 
@@ -253,7 +245,7 @@ namespace eScapeLLC.UWP.Charts {
 				sis.UpdateLimits(y1);
 				_trace.Verbose($"{Name}[{index},{ix}] {valuey} ({leftx},{topy}) ({rightx},{bottomy}) sis ({sis.Min},{sis.Max})");
 				var pf = PathHelper.Rectangle(leftx, topy, rightx, bottomy);
-				var path = st.NextPath();
+				var path = st.NextElement();
 				if (path == null) return;
 				var pg = new PathGeometry();
 				pg.Figures.Add(pf);
@@ -262,7 +254,7 @@ namespace eScapeLLC.UWP.Charts {
 				UpdateLimits(valuex, sis.Min, sis.Max);
 				sis.Elements.Add(new Tuple<double, Path>(y1, path));
 			}
-			st.ms.Add(sis);
+			st.itemstate.Add(sis);
 		}
 
 		void IDataSourceRenderer.RenderComplete(object state) {
@@ -275,7 +267,7 @@ namespace eScapeLLC.UWP.Charts {
 
 		void IDataSourceRenderer.Postamble(object state) {
 			var st = state as State;
-			ItemState = st.ms;
+			ItemState = st.itemstate;
 			Layer.Remove(st.recycler.Unused);
 			Layer.Add(st.recycler.Created);
 			Dirty = false;

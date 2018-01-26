@@ -12,6 +12,7 @@
 		"LineSeries": "Error",
 		"MarkerSeries": "Error",
 		"StackedColumnSeries": "Error",
-		"ValueAxis": "Error"
+		"ValueAxis": "Error",
+		"ValueLabelSeries": "Verbose"
 	}
 }

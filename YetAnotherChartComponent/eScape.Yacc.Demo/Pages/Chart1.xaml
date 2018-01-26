@@ -34,7 +34,7 @@
 			<Setter Property="StrokeThickness" Value="3"/>
 		</Style>
 		<Style x:Key="Band_v1v2-rule" TargetType="Path">
-			<Setter Property="Stroke" Value="AliceBlue"/>
+			<Setter Property="Stroke" Value="DarkGoldenrod"/>
 			<Setter Property="StrokeThickness" Value="3"/>
 		</Style>
 		<Style x:Key="Band_v1v2-band" TargetType="Path">
@@ -62,6 +62,10 @@
 			<Setter Property="StrokeStartLineCap" Value="Round"/>
 			<Setter Property="StrokeEndLineCap" Value="Round"/>
 		</Style>
+		<Style x:Key="BigLabels" BasedOn="{StaticResource Labels}" TargetType="TextBlock">
+			<Setter Property="FontSize" Value="16"/>
+			<Setter Property="Foreground" Value="Azure"/>
+		</Style>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 		<CommandBar x:Name="toolbar"
@@ -87,11 +91,6 @@
 				<yacc:Background PathStyle="{StaticResource Bkg}"/>
 				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" PathStyle="{StaticResource Axes}"
 					LabelStyle="{StaticResource CategoryAxisLabel}" />
-				<!--
-				<yacc:HorizontalRule ValueAxisName="yaxis" Value="{Binding Value1Average}"
-					PathStyle="{StaticResource Rule_v1}"
-					Visibility="{Binding ElementName=cb_rule_value1, Path=IsChecked, Converter={StaticResource b2v}}" />
-					-->
 				<yacc:ColumnSeries x:Name="colv1" DataSourceName="data" ValuePath="Value1" CategoryLabelPath="Label" ClipToDataRegion="True"
 					Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" EnableDebugPaths="True"
 					PathStyle="{StaticResource Column_v1}" BarOffset=".25" BarWidth=".25" />
@@ -115,11 +114,6 @@
 						</DataTemplate>
 					</yacc:MarkerSeries.MarkerTemplate>
 				</yacc:MarkerSeries>
-				<!--
-				<yacc:HorizontalRule ValueAxisName="yaxis" Value="{Binding Value2Average}"
-					PathStyle="{StaticResource Rule_v2}"
-					Visibility="{Binding ElementName=cb_rule_value2, Path=IsChecked, Converter={StaticResource b2v}}" />
-					-->
 				<yacc:HorizontalBand ValueAxisName="yaxis" Value1="{Binding Value1Average}" Value2="{Binding Value2Average}"
 					PathStyle="{StaticResource Band_v1v2-rule}" BandPathStyle="{StaticResource Band_v1v2-band}"
 					Visibility="{Binding ElementName=cb_band, Path=IsChecked, Converter={StaticResource b2v}}"
@@ -128,6 +122,8 @@
 					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="F1" />
 				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource Grid}"
 					Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
+				<yacc:ValueLabelSeries DataSourceName="data" ValuePath="Value2" ValueAxisName="yaxis" CategoryAxisName="xaxis" LabelFormatString="F2"
+					CategoryAxisOffset=".625" LabelOffset="0,0" ClipToDataRegion="False" LabelStyle="{StaticResource BigLabels}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>
 		<TextBlock x:Name="title" Style="{StaticResource Title}" Text="YACC Demonstration Chart"

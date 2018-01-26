@@ -12,8 +12,14 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Series that places the given marker at each point.
 	/// </summary>
-	public class MarkerSeries : DataSeriesWithValue, IDataSourceRenderer, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
+	public class MarkerSeries : DataSeriesWithValue, IDataSourceRenderer, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireAfterAxesFinalized, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("MarkerSeries", LogTools.Level.Error);
+		#region SeriesItemState
+		/// <summary>
+		/// Shorthand for marker state.
+		/// </summary>
+		protected class SeriesItemState : ItemState_Matrix<Path> { }
+		#endregion
 		#region properties
 		/// <summary>
 		/// Holder for IRequireChartTheme interface.
@@ -46,7 +52,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Data needed for current markers
 		/// </summary>
-		protected List<MarkerItemState> MarkerState { get; set; }
+		protected List<SeriesItemState> ItemState { get; set; }
 		#endregion
 		#region DPs
 		/// <summary>
@@ -61,19 +67,15 @@ namespace eScapeLLC.UWP.Charts {
 		/// Ctor.
 		/// </summary>
 		public MarkerSeries() {
-			MarkerState = new List<MarkerItemState>();
+			ItemState = new List<SeriesItemState>();
 		}
 		#endregion
-		#region extensions
-		/// <summary>
-		/// Shorthand for marker state.
-		/// </summary>
-		protected class MarkerItemState : ItemState_Matrix<Path> { }
+		#region IRequireEnterLeave
 		/// <summary>
 		/// Initialize after entering VT.
 		/// </summary>
 		/// <param name="icelc"></param>
-		public void Enter(IChartEnterLeaveContext icelc) {
+		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			EnsureAxes(icelc as IChartComponentContext);
 			Layer = icelc.CreateLayer();
 			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis} c:{CategoryAxisName}:{CategoryAxis} d:{DataSourceName}");
@@ -87,31 +89,48 @@ namespace eScapeLLC.UWP.Charts {
 		/// Undo effects of Enter().
 		/// </summary>
 		/// <param name="icelc"></param>
-		public void Leave(IChartEnterLeaveContext icelc) {
+		void IRequireEnterLeave.Leave(IChartEnterLeaveContext icelc) {
 			_trace.Verbose($"leave");
 			ValueAxis = null;
 			CategoryAxis = null;
 			icelc.DeleteLayer(Layer);
 			Layer = null;
 		}
+		#endregion
+		#region IProvideLegend
+		private Legend _legend;
+		IEnumerable<Legend> IProvideLegend.LegendItems {
+			get { if (_legend == null) _legend = Legend(); return new[] { _legend }; }
+		}
+		Legend Legend() {
+			return new Legend() { Title = Title, Fill = PathStyle.Find<Brush>(Path.FillProperty), Stroke = PathStyle.Find<Brush>(Path.StrokeProperty) };
+		}
+		#endregion
+		#region IRequireAfterAxesFinalized
+		void IRequireAfterAxesFinalized.AxesFinalized(IChartRenderContext icrc) {
+			if (CategoryAxis == null || ValueAxis == null) return;
+			if (ItemState.Count == 0) return;
+			var world = MatrixSupport.ModelFor(CategoryAxis, ValueAxis);
+			foreach (var state in ItemState) {
+				state.World = MatrixSupport.Translate(world, state.XValue, state.YValue);
+			}
+		}
+		#endregion
+		#region IRequireTransforms
 		/// <summary>
 		/// Adjust transforms for the various components.
 		/// Geometry: scaled to actual values in cartesian coordinates as indicated by axes.
 		/// </summary>
 		/// <param name="icrc"></param>
-		public void Transforms(IChartRenderContext icrc) {
+		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
 			if (CategoryAxis == null || ValueAxis == null) return;
-			if (MarkerState.Count == 0) return;
+			if (ItemState.Count == 0) return;
 			// put the P matrix on everything
 			var proj = MatrixSupport.ProjectionFor(icrc.Area);
 			var world = MatrixSupport.ModelFor(CategoryAxis, ValueAxis);
 			// get the local marker matrix
 			var marker = MatrixSupport.LocalFor(world, MarkerWidth, icrc.Area, -MarkerOrigin.X, -MarkerOrigin.Y);
-			foreach (var state in MarkerState) {
-				if (state.World == default(Matrix)) {
-					// TODO this can go in axis finalization
-					state.World = MatrixSupport.Translate(world, state.XValue, state.YValue);
-				}
+			foreach (var state in ItemState) {
 				// assemble Mk * M * P transform for this path
 				var model = MatrixSupport.Multiply(state.World, marker);
 				var matx = MatrixSupport.Multiply(proj, model);
@@ -125,29 +144,8 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"{Name} mat:{world} clip:{icrc.SeriesArea}");
 		}
 		#endregion
-		#region IProvideLegend
-		private Legend _legend;
-		IEnumerable<Legend> IProvideLegend.LegendItems {
-			get { if (_legend == null) _legend = Legend(); return new[] { _legend }; }
-		}
-		Legend Legend() {
-			return new Legend() { Title = Title, Fill = PathStyle.Find<Brush>(Path.FillProperty), Stroke = PathStyle.Find<Brush>(Path.StrokeProperty) };
-		}
-		#endregion
 		#region IDataSourceRenderer
-		class State {
-			internal BindingEvaluator bx;
-			internal BindingEvaluator by;
-			internal BindingEvaluator bl;
-			internal int ix;
-			internal List<MarkerItemState> ms;
-			internal Recycler<Path> recycler;
-			internal IEnumerator<Path> paths;
-			internal Path NextPath() {
-				if (paths.MoveNext()) return paths.Current;
-				else return null;
-			}
-		}
+		class State : RenderState_ValueAndLabel<SeriesItemState, Path> { }
 		/// <summary>
 		/// Path factory for recycler.
 		/// </summary>
@@ -164,15 +162,15 @@ namespace eScapeLLC.UWP.Charts {
 			// TODO report the binding error
 			if (by == null) return null;
 			ResetLimits();
-			var paths = MarkerState.Select(ms => ms.Element);
+			var paths = ItemState.Select(ms => ms.Element);
 			var recycler = new Recycler<Path>(paths, CreatePath);
 			return new State() {
 				bx = !String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
 				bl = !String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null,
 				by = by,
-				ms = new List<MarkerItemState>(),
+				itemstate = new List<SeriesItemState>(),
 				recycler = recycler,
-				paths = recycler.Items().GetEnumerator()
+				elements = recycler.Items().GetEnumerator()
 			};
 		}
 		void IDataSourceRenderer.Render(object state, int index, object item) {
@@ -196,10 +194,10 @@ namespace eScapeLLC.UWP.Charts {
 			var mk = MarkerTemplate.LoadContent() as Geometry;
 			// TODO allow MK to be other things like (Path or Image).
 			// no path yet
-			var path = st.NextPath();
+			var path = st.NextElement();
 			if (path == null) return;
 			path.Data = mk;
-			st.ms.Add(new MarkerItemState() { Index = index, XValue = mappedx, YValue = mappedy, Element = path });
+			st.itemstate.Add(new SeriesItemState() { Index = index, XValue = mappedx, YValue = mappedy, Element = path });
 		}
 		void IDataSourceRenderer.RenderComplete(object state) {
 			var st = state as State;
@@ -210,7 +208,7 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		void IDataSourceRenderer.Postamble(object state) {
 			var st = state as State;
-			MarkerState = st.ms;
+			ItemState = st.itemstate;
 			Layer.Remove(st.recycler.Unused);
 			Layer.Add(st.recycler.Created);
 			Dirty = false;

@@ -74,7 +74,8 @@ namespace eScapeLLC.UWP.Charts {
 						Width = icrc.Area.Width - padding,
 						Padding = Side == Side.Right ? new Thickness(padding, 0, 0, 0) : new Thickness(0, 0, padding, 0)
 					};
-					tb.Style = LabelStyle;
+					BindTo(this, "LabelStyle", tb, TextBlock.StyleProperty);
+					//tb.Style = LabelStyle;
 					return tb;
 				} else {
 					// SHOULD NOT execute this code, unless default style failed!
