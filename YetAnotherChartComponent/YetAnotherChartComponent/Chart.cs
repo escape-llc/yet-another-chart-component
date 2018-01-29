@@ -679,7 +679,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (cc is IRequireEnterLeave irel) {
 				irel.Enter(icelc);
 			}
-			// for now anything can provide a legend item
+			// for now anything can provide legend items
 			if (cc is IProvideLegend ipl) {
 				foreach (var li in ipl.LegendItems) {
 					LegendItems.Add(li);
@@ -742,7 +742,7 @@ namespace eScapeLLC.UWP.Charts {
 				var rect = ls.Layout.For(rrea.Component);
 				_trace.Verbose($"component-render {rrea.Component} {rrea.Axis} {rect}");
 				if (rrea.Axis != AxisUpdateState.None) {
-					// put axis limits into correct state for IRenderRequest components
+					// put axis limits into correct state for IRequireRender components
 					Phase_ResetAxes();
 					Phase_AxisLimits((cc2) => cc2 is DataSeries && (cc2 is IProvideCategoryExtents || cc2 is IProvideValueExtents));
 				}

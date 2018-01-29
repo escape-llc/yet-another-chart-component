@@ -238,11 +238,59 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 	}
 	#endregion
-	#region ItemState<E>
+	#region item state interfaces
+	/// <summary>
+	/// Entry point to series item data.
+	/// </summary>
+	public interface ISeriesItem {
+		/// <summary>
+		/// The index.
+		/// </summary>
+		int Index { get; }
+		/// <summary>
+		/// The category axis value.
+		/// </summary>
+		double XValue { get; }
+	}
+	/// <summary>
+	/// Item tracking a single value.
+	/// </summary>
+	public interface ISeriesItemValue {
+		/// <summary>
+		/// Value axis value.
+		/// </summary>
+		double YValue { get; }
+		/// <summary>
+		/// What "channel" this value is tracking.
+		/// Value is host-dependent if tracking multiple values.
+		/// </summary>
+		int Channel { get; }
+	}
+	/// <summary>
+	/// Item tracking multiple values.
+	/// </summary>
+	public interface ISeriesItemvalues {
+		/// <summary>
+		/// Enumerator to traverse the values.
+		/// Order SHOULD be by channel.
+		/// </summary>
+		IEnumerable<ISeriesItemValue> YValues { get; }
+	}
+	/// <summary>
+	/// Ability to provide access to the computed series item state.
+	/// </summary>
+	public interface IProvideSeriesItemValues {
+		/// <summary>
+		/// Enumerator to traverse the item values.
+		/// </summary>
+		IEnumerable<ISeriesItem> SeriesItemValues { get; }
+	}
+	#endregion
+	#region ItemState implementations
 	/// <summary>
 	/// Simplest item state to start from.
 	/// </summary>
-	public class ItemStateCore {
+	public class ItemStateCore : ISeriesItem {
 		/// <summary>
 		/// The index of this value from data source.
 		/// </summary>
@@ -257,7 +305,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// This is used when one element-per-item is generated, so it can be re-adjusted in Transforms et al.
 	/// </summary>
 	/// <typeparam name="E">The element type.</typeparam>
-	public class ItemState<E> : ItemStateCore where E : FrameworkElement {
+	public class ItemState<E> : ItemStateCore, ISeriesItem, ISeriesItemValue where E : FrameworkElement {
 		/// <summary>
 		/// The generated element.
 		/// </summary>
@@ -266,6 +314,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// The y value.
 		/// </summary>
 		public double YValue { get; set; }
+		/// <summary>
+		/// Lock the channel on zero.
+		/// </summary>
+		public int Channel { get; } = 0;
 	}
 	/// <summary>
 	/// Item state with transformation matrix.
@@ -305,15 +357,25 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Collects the item states created in Render().
 		/// </summary>
-		internal List<SIS> itemstate;
+		internal readonly List<SIS> itemstate;
 		/// <summary>
 		/// Recycles the elements.
 		/// </summary>
-		internal Recycler<EL> recycler;
+		internal readonly Recycler<EL> recycler;
 		/// <summary>
 		/// The recycler's iterator to generate the elements.
 		/// </summary>
-		internal IEnumerator<EL> elements;
+		internal readonly IEnumerator<EL> elements;
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="state"></param>
+		/// <param name="rc"></param>
+		internal RenderStateCore(List<SIS> state, Recycler<EL> rc) {
+			itemstate = state;
+			recycler = rc;
+			elements = recycler.Items().GetEnumerator();
+		}
 		/// <summary>
 		/// Call for the next element from the recycler's iterator.
 		/// </summary>
@@ -332,15 +394,28 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Binds x-value.
 		/// </summary>
-		internal BindingEvaluator bx;
+		internal readonly BindingEvaluator bx;
 		/// <summary>
 		/// Binds y-value.
 		/// </summary>
-		internal BindingEvaluator by;
+		internal readonly BindingEvaluator by;
 		/// <summary>
 		/// Binds label; MAY be NULL.
 		/// </summary>
-		internal BindingEvaluator bl;
+		internal readonly BindingEvaluator bl;
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="state"></param>
+		/// <param name="rc"></param>
+		/// <param name="bx"></param>
+		/// <param name="bl"></param>
+		/// <param name="by"></param>
+		internal RenderState_ValueAndLabel(List<SIS> state, Recycler<EL> rc, BindingEvaluator bx, BindingEvaluator bl, BindingEvaluator by) :base(state, rc) {
+			this.bx = bx;
+			this.by = by;
+			this.bl = bl;
+		}
 	}
 	#endregion
 }

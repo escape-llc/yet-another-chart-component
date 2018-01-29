@@ -145,7 +145,6 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region IDataSourceRenderer
-		class State : RenderState_ValueAndLabel<SeriesItemState, Path> { }
 		/// <summary>
 		/// Path factory for recycler.
 		/// </summary>
@@ -164,17 +163,14 @@ namespace eScapeLLC.UWP.Charts {
 			ResetLimits();
 			var paths = ItemState.Select(ms => ms.Element);
 			var recycler = new Recycler<Path>(paths, CreatePath);
-			return new State() {
-				bx = !String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
-				bl = !String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null,
-				by = by,
-				itemstate = new List<SeriesItemState>(),
-				recycler = recycler,
-				elements = recycler.Items().GetEnumerator()
-			};
+			return new RenderState_ValueAndLabel<SeriesItemState, Path>(new List<SeriesItemState>(), recycler,
+				!String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
+				!String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null,
+				by
+			);
 		}
 		void IDataSourceRenderer.Render(object state, int index, object item) {
-			var st = state as State;
+			var st = state as RenderState_ValueAndLabel<SeriesItemState, Path>;
 			var valuey = CoerceValue(item, st.by);
 			var valuex = st.bx != null ? (double)st.bx.For(item) : index;
 			st.ix = index;
@@ -207,14 +203,14 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="state"></param>
 		void IDataSourceRenderer.RenderComplete(object state) {
-			var st = state as State;
+			var st = state as RenderState_ValueAndLabel<SeriesItemState, Path>;
 			if (st.bx == null) {
 				// needs one extra "cell"
 				UpdateLimits(st.ix + 1, double.NaN);
 			}
 		}
 		void IDataSourceRenderer.Postamble(object state) {
-			var st = state as State;
+			var st = state as RenderState_ValueAndLabel<SeriesItemState, Path>;
 			ItemState = st.itemstate;
 			Layer.Remove(st.recycler.Unused);
 			Layer.Add(st.recycler.Created);
