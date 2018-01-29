@@ -273,7 +273,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Item tracking multiple values.
 	/// </summary>
-	public interface ISeriesItemvalues {
+	public interface ISeriesItemValues {
 		/// <summary>
 		/// Enumerator to traverse the values.
 		/// Order SHOULD be by channel.

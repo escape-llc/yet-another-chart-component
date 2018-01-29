@@ -8,16 +8,16 @@ using Windows.UI.Xaml.Controls;
 
 namespace eScapeLLC.UWP.Charts {
 	/// <summary>
-	/// Component that creates series value labels.
+	/// Decoration that creates series value labels.
 	/// </summary>
-	public class SeriesValueLabels : ChartComponent, IDataSourceRenderer, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
+	public class SeriesValueLabels : ChartComponent, IRequireChartTheme, IRequireEnterLeave, IRequireRender, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("SeriesValueLabels", LogTools.Level.Error);
 		#region SeriesItemState
 		/// <summary>
 		/// Shorthand for item state.
 		/// </summary>
 		protected class SeriesItemState : ItemState<TextBlock> {
-			internal SeriesItemState(int idx, double xv, double yv, TextBlock ele) : base(idx, xv, yv, ele, 0) { }
+			internal SeriesItemState(int idx, double xv, double yv, TextBlock ele, int ch) : base(idx, xv, yv, ele, ch) { }
 		}
 		#endregion
 		#region properties
@@ -26,28 +26,14 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public IChartTheme Theme { get; set; }
 		/// <summary>
-		/// The name of the data source in the DataSources collection.
+		/// The name of the series in the Components collection.
+		/// The axes are obtained from this series.
 		/// </summary>
-		public String DataSourceName { get { return (String)GetValue(DataSourceNameProperty); } set { SetValue(DataSourceNameProperty, value); } }
+		public String SeriesName { get { return (String)GetValue(SeriesNameProperty); } set { SetValue(SeriesNameProperty, value); } }
 		/// <summary>
-		/// Component name of value axis.
-		/// Referenced component MUST implement IChartAxis.
+		/// The value channel to display values for.
 		/// </summary>
-		public String ValueAxisName { get; set; }
-		/// <summary>
-		/// Component name of category axis.
-		/// Referenced component MUST implement IChartAxis.
-		/// </summary>
-		public String CategoryAxisName { get; set; }
-		/// <summary>
-		/// Binding path to the category axis value.
-		/// MAY be NULL, in which case the data-index is used instead.
-		/// </summary>
-		public String CategoryPath { get { return (String)GetValue(CategoryPathProperty); } set { SetValue(CategoryPathProperty, value); } }
-		/// <summary>
-		/// Binding path to the value axis value.
-		/// </summary>
-		public String ValuePath { get { return (String)GetValue(ValuePathProperty); } set { SetValue(ValuePathProperty, value); } }
+		public int ValueChannel { get { return (int)GetValue(ValueChannelProperty); } set { SetValue(ValueChannelProperty, value); } }
 		/// <summary>
 		/// The style to apply to labels.
 		/// </summary>
@@ -76,6 +62,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		protected IChartAxis CategoryAxis { get; set; }
 		/// <summary>
+		/// Dereferenced data series to interrogate for values.
+		/// </summary>
+		protected DataSeries Source { get; set; }
+		/// <summary>
 		/// The layer for components.
 		/// </summary>
 		protected IChartLayer Layer { get; set; }
@@ -86,28 +76,22 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region DPs
 		/// <summary>
-		/// Identifies <see cref="CategoryPath"/> dependency property.
+		/// Identifies <see cref="ValueChannel"/> dependency property.
 		/// </summary>
-		public static readonly DependencyProperty CategoryPathProperty = DependencyProperty.Register(
-			nameof(CategoryPath), typeof(string), typeof(SeriesValueLabels), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
+		public static readonly DependencyProperty ValueChannelProperty = DependencyProperty.Register(
+			nameof(ValueChannel), typeof(int), typeof(SeriesValueLabels), new PropertyMetadata(0, new PropertyChangedCallback(PropertyChanged_ValueDirty))
 		);
 		/// <summary>
-		/// Identifies <see cref="DataSourceName"/> dependency property.
+		/// Identifies <see cref="SeriesName"/> dependency property.
 		/// </summary>
-		public static readonly DependencyProperty DataSourceNameProperty = DependencyProperty.Register(
-			nameof(DataSourceName), typeof(string), typeof(SeriesValueLabels), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
+		public static readonly DependencyProperty SeriesNameProperty = DependencyProperty.Register(
+			nameof(SeriesName), typeof(string), typeof(SeriesValueLabels), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
 		);
 		/// <summary>
 		/// Identifies <see cref="LabelStyle"/> dependency property.
 		/// </summary>
 		public static readonly DependencyProperty LabelStyleProperty = DependencyProperty.Register(
 			nameof(LabelStyle), typeof(Style), typeof(SeriesValueLabels), new PropertyMetadata(null)
-		);
-		/// <summary>
-		/// Identifies <see cref="ValuePath"/> dependency property.
-		/// </summary>
-		public static readonly DependencyProperty ValuePathProperty = DependencyProperty.Register(
-			nameof(ValuePath), typeof(string), typeof(SeriesValueLabels), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
 		);
 		#endregion
 		#region ctor
@@ -120,43 +104,129 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region helpers
 		/// <summary>
-		/// Resolve axis references.
+		/// Resolve series and axis references.
 		/// </summary>
 		/// <param name="icrc">The context.</param>
-		protected void EnsureAxes(IChartComponentContext icrc) {
-			if (ValueAxis == null && !String.IsNullOrEmpty(ValueAxisName)) {
-				ValueAxis = icrc.Find(ValueAxisName) as IChartAxis;
+		protected void EnsureComponents(IChartComponentContext icrc) {
+			if(Source == null && !String.IsNullOrEmpty(SeriesName)) {
+				Source = icrc.Find(SeriesName) as DataSeries;
 			} else {
 				if (icrc is IChartErrorInfo icei) {
-					icei.Report(new ChartValidationResult(NameOrType(), $"Value axis '{ValueAxisName}' was not found", new[] { nameof(ValueAxis), nameof(ValueAxisName) }));
+					icei.Report(new ChartValidationResult(NameOrType(), $"Series '{SeriesName}' was not found", new[] { nameof(Source), nameof(SeriesName) }));
 				}
 			}
-			if (CategoryAxis == null && !String.IsNullOrEmpty(CategoryAxisName)) {
-				CategoryAxis = icrc.Find(CategoryAxisName) as IChartAxis;
+			if (Source == null) {
+				if (icrc is IChartErrorInfo icei) {
+					icei.Report(new ChartValidationResult(NameOrType(), $"Series lookup failed; no other components can resolve", new[] { nameof(Source), nameof(SeriesName) }));
+				}
+				return;
+			}
+			else {
+				if(!(Source is IProvideSeriesItemValues)) {
+					if (icrc is IChartErrorInfo icei) {
+						icei.Report(new ChartValidationResult(Source.NameOrType(), $"Series does not provide values; no labels will generate", new[] { nameof(Source), nameof(SeriesName) }));
+					}
+					return;
+				}
+			}
+			if (ValueAxis == null && !String.IsNullOrEmpty(Source.ValueAxisName)) {
+				ValueAxis = icrc.Find(Source.ValueAxisName) as IChartAxis;
 			} else {
 				if (icrc is IChartErrorInfo icei) {
-					icei.Report(new ChartValidationResult(NameOrType(), $"Category axis '{CategoryAxisName}' was not found", new[] { nameof(CategoryAxis), nameof(CategoryAxisName) }));
+					icei.Report(new ChartValidationResult(Source.NameOrType(), $"Value axis '{Source.ValueAxisName}' was not found", new[] { nameof(ValueAxis), nameof(Source.ValueAxisName) }));
 				}
 			}
+			if (CategoryAxis == null && !String.IsNullOrEmpty(Source.CategoryAxisName)) {
+				CategoryAxis = icrc.Find(Source.CategoryAxisName) as IChartAxis;
+			} else {
+				if (icrc is IChartErrorInfo icei) {
+					icei.Report(new ChartValidationResult(Source.NameOrType(), $"Category axis '{Source.CategoryAxisName}' was not found", new[] { nameof(CategoryAxis), nameof(Source.CategoryAxisName) }));
+				}
+			}
+		}
+		/// <summary>
+		/// Element factory for recycler.
+		/// TODO should come from a <see cref="DataTemplate"/>.
+		/// </summary>
+		/// <returns></returns>
+		TextBlock CreateElement() {
+			var tb = new TextBlock();
+			if (LabelStyle != null) {
+				tb.Style = LabelStyle;
+			}
+			return tb;
+		}
+		/// <summary>
+		/// Advance the recycler's iterator.
+		/// </summary>
+		/// <param name="elements"></param>
+		/// <returns></returns>
+		TextBlock NextElement(IEnumerator<TextBlock> elements) {
+			if (elements.MoveNext()) return elements.Current;
+			else return null;
 		}
 		#endregion
 		#region IRequireEnterLeave
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
-			EnsureAxes(icelc as IChartComponentContext);
+			EnsureComponents(icelc as IChartComponentContext);
 			Layer = icelc.CreateLayer();
 			AssignFromRef(icelc as IChartErrorInfo, NameOrType(), nameof(LabelStyle), nameof(Theme.LabelAxisTop),
 				LabelStyle == null && Theme != null,
 				Theme.LabelAxisTop != null,
 				() => LabelStyle = Theme.LabelAxisTop
 			);
-			_trace.Verbose($"{Name} enter v:{ValueAxisName} {ValueAxis} c:{CategoryAxisName} {CategoryAxis} d:{DataSourceName}");
+			_trace.Verbose($"{Name} enter s:{SeriesName} {Source} v:{ValueAxis} c:{CategoryAxis}");
 		}
 		void IRequireEnterLeave.Leave(IChartEnterLeaveContext icelc) {
 			_trace.Verbose($"{Name} leave");
 			ValueAxis = null;
 			CategoryAxis = null;
+			Source = null;
 			icelc.DeleteLayer(Layer);
 			Layer = null;
+		}
+		#endregion
+		#region IRequireRender
+		void IRequireRender.Render(IChartRenderContext icrc) {
+			if (Source == null || ValueAxis == null || CategoryAxis == null) return;
+			if(Source is IProvideSeriesItemValues ipsiv) {
+				// preamble
+				var elements = ItemState.Select(ms => ms.Element);
+				var recycler = new Recycler<TextBlock>(elements, CreateElement);
+				var itemstate = new List<SeriesItemState>();
+				var elenum = recycler.Items().GetEnumerator();
+				// render
+				foreach (var siv in ipsiv.SeriesItemValues) {
+					ISeriesItemValue target = null;
+					if (siv is ISeriesItemValue isiv) {
+						if (isiv.Channel == ValueChannel) {
+							target = isiv;
+						}
+					}
+					else if(siv is ISeriesItemValues isivs) {
+						target = isivs.YValues.SingleOrDefault((yv) => yv.Channel == ValueChannel);
+					}
+					if(target != null && !double.IsNaN(target.YValue)) {
+						var tb = NextElement(elenum);
+						if (tb == null) continue;
+						tb.Text = target.YValue.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
+						var mappedx = CategoryAxis.For(siv.Index);
+						var sis = new SeriesItemState(siv.Index, mappedx + CategoryAxisOffset, target.YValue, tb, target.Channel);
+						itemstate.Add(sis);
+					}
+				}
+				// postamble
+				ItemState = itemstate;
+				Layer.Remove(recycler.Unused);
+				Layer.Add(recycler.Created);
+				foreach (var xx in recycler.Created) {
+					if (xx.DesiredSize.Width == 0 || xx.DesiredSize.Height == 0) {
+						// force it to measure; needed for Transforms
+						xx.Measure(icrc.Dimensions);
+					}
+				}
+				Dirty = false;
+			}
 		}
 		#endregion
 		#region IRequireTransforms
@@ -187,74 +257,6 @@ namespace eScapeLLC.UWP.Charts {
 #endif
 				_trace.Verbose($"{Name} matx:{matx} pt:({state.XValue},{state.YValue}) dcc:{dcc} tbsz:{state.Element.ActualWidth},{state.Element.ActualHeight}");
 			}
-		}
-		#endregion
-		#region IDataSourceRenderer
-		/// <summary>
-		/// Element factory for recycler.
-		/// </summary>
-		/// <returns></returns>
-		TextBlock CreateElement() {
-			var tb = new TextBlock();
-			if (LabelStyle != null) {
-				tb.Style = LabelStyle;
-			}
-			return tb;
-		}
-		object IDataSourceRenderer.Preamble(IChartRenderContext icrc) {
-			if (ValueAxis == null || CategoryAxis == null) return null;
-			if (String.IsNullOrEmpty(ValuePath)) return null;
-			var by = new BindingEvaluator(ValuePath);
-			// TODO report the binding error
-			if (by == null) return null;
-			//ResetLimits();
-			var elements = ItemState.Select(ms => ms.Element);
-			var recycler = new Recycler<TextBlock>(elements, CreateElement);
-			return new RenderState_ValueAndLabel<SeriesItemState, TextBlock>(new List<SeriesItemState>(), recycler,
-				!String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
-				null, by
-			);
-		}
-		void IDataSourceRenderer.Render(object state, int index, object item) {
-			var st = state as RenderState_ValueAndLabel<SeriesItemState, TextBlock>;
-			var valuey = DataSeries.CoerceValue(item, st.by);
-			var valuex = st.bx != null ? (double)st.bx.For(item) : index;
-			valuex += CategoryAxisOffset;
-			st.ix = index;
-			//UpdateLimits(valuex, valuey);
-			// short-circuit if it's NaN
-			if (double.IsNaN(valuey)) {
-				return;
-			}
-			var mappedy = ValueAxis.For(valuey);
-			var mappedx = CategoryAxis.For(valuex);
-			// finish up
-			var tb = st.NextElement();
-			if (tb == null) return;
-			tb.Text = valuey.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
-			var sis = new SeriesItemState(index, mappedx, mappedy, tb);
-			st.itemstate.Add(sis);
-		}
-		void IDataSourceRenderer.RenderComplete(object state) {
-			var st = state as RenderState_ValueAndLabel<SeriesItemState, TextBlock>;
-			if (st.bx == null) {
-				// needs one extra "cell"
-				//UpdateLimits(st.ix + 1, double.NaN);
-			}
-		}
-		void IDataSourceRenderer.Postamble(object state) {
-			var st = state as RenderState_ValueAndLabel<SeriesItemState, TextBlock>;
-			ItemState = st.itemstate;
-			Layer.Remove(st.recycler.Unused);
-			Layer.Add(st.recycler.Created);
-			var sz = new Size(1024, 1024);
-			foreach(var xx in st.recycler.Created) {
-				if (xx.DesiredSize.Width == 0 || xx.DesiredSize.Height == 0) {
-					// force it to measure; needed for Transforms
-					xx.Measure(sz);
-				}
-			}
-			Dirty = false;
 		}
 		#endregion
 	}

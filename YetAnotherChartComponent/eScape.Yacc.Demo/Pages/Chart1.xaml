@@ -122,7 +122,7 @@
 					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="F1" />
 				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource Grid}"
 					Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
-				<yacc:SeriesValueLabels DataSourceName="data" ValuePath="Value2" ValueAxisName="yaxis" CategoryAxisName="xaxis" LabelFormatString="F2"
+				<yacc:SeriesValueLabels SeriesName="colv2" LabelFormatString="F2"
 					CategoryAxisOffset=".625" LabelOffset="0,0" LabelStyle="{StaticResource BigLabels}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>

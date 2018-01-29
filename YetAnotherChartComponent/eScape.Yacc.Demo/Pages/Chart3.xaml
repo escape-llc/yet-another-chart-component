@@ -59,7 +59,7 @@
 				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value2"
 					Title="Value 2 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" ClipToDataRegion="True"
 					PathStyle="{StaticResource Column_v2}" BarOffset=".5" BarWidth=".25" />
-				<yacc:MarkerSeries DataSourceName="data" ValuePath="Value3" Title="Value 3 Marker"
+				<yacc:MarkerSeries x:Name="v3" DataSourceName="data" ValuePath="Value3" Title="Value 3 Marker"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					MarkerOffset=".5" MarkerWidth=".5" PathStyle="{StaticResource Marker_v4}">
 					<yacc:MarkerSeries.MarkerTemplate>
@@ -70,12 +70,12 @@
 						</DataTemplate>
 					</yacc:MarkerSeries.MarkerTemplate>
 				</yacc:MarkerSeries>
-				<yacc:LineSeries DataSourceName="data" ValuePath="Value4" Title="Value 4 Line"
+				<yacc:LineSeries x:Name="v4" DataSourceName="data" ValuePath="Value4" Title="Value 4 Line"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".375"
 					ClipToDataRegion="False" PathStyle="{StaticResource Line_v3}" />
-				<yacc:SeriesValueLabels DataSourceName="data" ValuePath="Value3" ValueAxisName="yaxis" CategoryAxisName="xaxis" LabelFormatString="F2"
+				<yacc:SeriesValueLabels SeriesName="v3" LabelFormatString="F2"
 					CategoryAxisOffset=".5" LabelOffset="0,0" LabelStyle="{StaticResource Labels}" />
-				<yacc:SeriesValueLabels DataSourceName="data" ValuePath="Value4" ValueAxisName="yaxis" CategoryAxisName="xaxis" LabelFormatString="F2"
+				<yacc:SeriesValueLabels SeriesName="v4" LabelFormatString="F2"
 					CategoryAxisOffset=".375" LabelOffset="0,-1" LabelStyle="{StaticResource Labels}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>
