@@ -188,7 +188,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// This class commits to the ValuePath and PathStyle of those elements.
 	/// Series type with multiple value bindings SHOULD use <see cref="DataSeries"/> instead.
 	/// </summary>
-	public abstract class DataSeriesWithValue : DataSeries {
+	public abstract class DataSeriesWithValue : DataSeries, IProvideSeriesItemValues {
 		#region DPs
 		/// <summary>
 		/// ValuePath DP.
@@ -222,6 +222,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// Binding path to the value axis value.
 		/// </summary>
 		public String ValuePath { get { return (String)GetValue(ValuePathProperty); } set { SetValue(ValuePathProperty, value); } }
+		/// <summary>
+		/// Force an override of IProvideSeriesItemValues property.
+		/// </summary>
+		public abstract IEnumerable<ISeriesItem> SeriesItemValues { get; }
 		#endregion
 		#region extensions
 		/// <summary>
@@ -294,11 +298,17 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// The index of this value from data source.
 		/// </summary>
-		public int Index { get; set; }
+		public int Index { get; private set; }
 		/// <summary>
 		/// The x value.
 		/// </summary>
-		public double XValue { get; set; }
+		public double XValue { get; private set; }
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="idx"></param>
+		/// <param name="xv"></param>
+		public ItemStateCore(int idx, double xv) { Index = idx; XValue = xv; }
 	}
 	/// <summary>
 	/// Item state for single value.
@@ -309,21 +319,43 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// The generated element.
 		/// </summary>
-		public E Element { get; set; }
+		public E Element { get; private set; }
 		/// <summary>
 		/// The y value.
 		/// </summary>
-		public double YValue { get; set; }
+		public double YValue { get; private set; }
 		/// <summary>
 		/// Lock the channel on zero.
 		/// </summary>
-		public int Channel { get; } = 0;
+		public int Channel { get; private set; }
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="idx"></param>
+		/// <param name="xv"></param>
+		/// <param name="yv"></param>
+		/// <param name="ele"></param>
+		/// <param name="ch">Channel; default to zero.</param>
+		public ItemState(int idx, double xv, double yv, E ele, int ch = 0) :base(idx, xv) {
+			YValue = yv;
+			Element = ele;
+			Channel = ch;
+		}
 	}
 	/// <summary>
 	/// Item state with transformation matrix.
 	/// </summary>
 	/// <typeparam name="E">The Element type.</typeparam>
 	public class ItemState_Matrix<E> : ItemState<E> where E : FrameworkElement {
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="idx"></param>
+		/// <param name="xv"></param>
+		/// <param name="yv"></param>
+		/// <param name="ele"></param>
+		/// <param name="ch"></param>
+		public ItemState_Matrix(int idx, double xv, double yv, E ele, int ch = 0) : base(idx, xv, yv, ele, ch) { }
 		/// <summary>
 		/// Alternate matrix for the M matrix.
 		/// Used when establishing a local transform for <see cref="ItemState{E}.Element"/>.
@@ -340,6 +372,15 @@ namespace eScapeLLC.UWP.Charts {
 		/// If you are using Path.Data to reference geometry, choose <see cref="ItemState_Matrix{E}"/> or <see cref="ItemState{E}"/> instead.
 		/// </summary>
 		public G Geometry { get; set; }
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="idx"></param>
+		/// <param name="xv"></param>
+		/// <param name="yv"></param>
+		/// <param name="ele"></param>
+		/// <param name="ch"></param>
+		public ItemState_MatrixAndGeometry(int idx, double xv, double yv, Path ele, int ch = 0) : base(idx, xv, yv, ele, ch) { }
 	}
 	#endregion
 	#region RenderStateCore
@@ -356,6 +397,7 @@ namespace eScapeLLC.UWP.Charts {
 		internal int ix;
 		/// <summary>
 		/// Collects the item states created in Render().
+		/// Transfer to host in Postamble().
 		/// </summary>
 		internal readonly List<SIS> itemstate;
 		/// <summary>
@@ -369,8 +411,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Ctor.
 		/// </summary>
-		/// <param name="state"></param>
-		/// <param name="rc"></param>
+		/// <param name="state">Starting state; SHOULD be empty.</param>
+		/// <param name="rc">The recycler.</param>
 		internal RenderStateCore(List<SIS> state, Recycler<EL> rc) {
 			itemstate = state;
 			recycler = rc;
@@ -406,11 +448,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Ctor.
 		/// </summary>
-		/// <param name="state"></param>
-		/// <param name="rc"></param>
-		/// <param name="bx"></param>
-		/// <param name="bl"></param>
-		/// <param name="by"></param>
+		/// <param name="state">Starting state; SHOULD be empty.</param>
+		/// <param name="rc">The recycler.</param>
+		/// <param name="bx">Evaluate x-value.</param>
+		/// <param name="bl">Evaluate label MAY be NULL.</param>
+		/// <param name="by">Evaluate y-value.</param>
 		internal RenderState_ValueAndLabel(List<SIS> state, Recycler<EL> rc, BindingEvaluator bx, BindingEvaluator bl, BindingEvaluator by) :base(state, rc) {
 			this.bx = bx;
 			this.by = by;

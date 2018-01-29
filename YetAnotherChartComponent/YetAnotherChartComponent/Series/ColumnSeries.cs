@@ -20,8 +20,14 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Shorthand for marker state.
 		/// </summary>
-		protected class SeriesItemState : ItemState<Path> { }
+		protected class SeriesItemState : ItemState<Path> {
+			internal SeriesItemState(int idx, double xv, double yv, Path ele) : base(idx, xv, yv, ele, 0) { }
+		}
 		#region properties
+		/// <summary>
+		/// Return current state as read-only.
+		/// </summary>
+		public override IEnumerable<ISeriesItem> SeriesItemValues { get{ return ItemState.AsReadOnly(); } }
 		/// <summary>
 		/// Holder for IRequireChartTheme interface.
 		/// </summary>
@@ -196,7 +202,7 @@ namespace eScapeLLC.UWP.Charts {
 			var pg = new PathGeometry();
 			pg.Figures.Add(pf);
 			path.Data = pg;
-			st.itemstate.Add(new SeriesItemState() { Index = index, XValue = leftx, YValue = y1, Element = path });
+			st.itemstate.Add(new SeriesItemState(index, leftx, y1, path));
 		}
 		/// <summary>
 		/// Have to perform update here and not in Postamble because we are altering axis limits.

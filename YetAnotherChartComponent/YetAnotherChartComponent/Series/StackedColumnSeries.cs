@@ -95,6 +95,12 @@ namespace eScapeLLC.UWP.Charts {
 				if (vx < Min) Min = vx;
 				if (vx > Max) Max = vx;
 			}
+			/// <summary>
+			/// Ctor.
+			/// </summary>
+			/// <param name="idx"></param>
+			/// <param name="xv"></param>
+			public SeriesItemState(int idx, double xv) :base(idx, xv){ }
 		}
 		#endregion
 		#region properties
@@ -227,7 +233,7 @@ namespace eScapeLLC.UWP.Charts {
 			st.ix = index;
 			var leftx = (st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()))) + BarOffset;
 			var rightx = leftx + BarWidth;
-			var sis = new SeriesItemState() { Index = index, XValue = leftx };
+			var sis = new SeriesItemState(index, leftx);
 			for (int ix = 0; ix < st.bys.Length; ix++) {
 				var valuey = CoerceValue(item, st.bys[ix]);
 				if (double.IsNaN(valuey)) {

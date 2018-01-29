@@ -13,7 +13,18 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public class LineSeries : DataSeriesWithValue, IDataSourceRenderer, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("LineSeries", LogTools.Level.Error);
+		/// <summary>
+		/// Shorthand for item state.
+		/// There's only one path in this series; all elements point to it.
+		/// </summary>
+		protected class SeriesItemState : ItemState<Path> {
+			internal SeriesItemState(int idx, double xv, double yv, Path ele) : base(idx, xv, yv, ele, 0) { }
+		}
 		#region properties
+		/// <summary>
+		/// Not currently implemented.
+		/// </summary>
+		public override IEnumerable<ISeriesItem> SeriesItemValues { get { return ItemState.AsReadOnly(); } }
 		/// <summary>
 		/// Holder for IRequireChartTheme interface.
 		/// </summary>
@@ -35,6 +46,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// The layer to manage components.
 		/// </summary>
 		protected IChartLayer Layer { get; set; }
+		/// <summary>
+		/// Data needed for current markers
+		/// </summary>
+		protected List<SeriesItemState> ItemState { get; set; }
 		#endregion
 		#region DPs
 		#endregion
@@ -47,6 +62,7 @@ namespace eScapeLLC.UWP.Charts {
 			Segments = new Path() {
 				Data = Geometry
 			};
+			ItemState = new List<SeriesItemState>();
 		}
 		#endregion
 		#region extensions
@@ -105,6 +121,7 @@ namespace eScapeLLC.UWP.Charts {
 			internal BindingEvaluator bx;
 			internal BindingEvaluator by;
 			internal BindingEvaluator bl;
+			internal List<SeriesItemState> itemstate;
 			internal PathFigure pf;
 			internal bool first = true;
 			internal int ix;
@@ -120,7 +137,8 @@ namespace eScapeLLC.UWP.Charts {
 				bx = !String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
 				bl = !String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null,
 				by = by,
-				pf = new PathFigure()
+				pf = new PathFigure(),
+				itemstate = new List<SeriesItemState>()
 			};
 		}
 		void IDataSourceRenderer.Render(object state, int index, object item) {
@@ -142,11 +160,14 @@ namespace eScapeLLC.UWP.Charts {
 			var mappedx = st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()));
 			_trace.Verbose($"{Name}[{index}] v:({valuex},{valuey}) m:({mappedx},{mappedy})");
 			if (st.first) {
+				// TODO handle multiple-sample "gaps", e.g. successive NaN values.
+				// TODO handle multiple start-points.
 				st.pf.StartPoint = new Point(mappedx, mappedy);
 				st.first = false;
 			} else {
 				st.pf.Segments.Add(new LineSegment() { Point = new Point(mappedx, mappedy) });
 			}
+			st.itemstate.Add(new SeriesItemState(index, mappedx, mappedy, Segments));
 		}
 		void IDataSourceRenderer.RenderComplete(object state) {
 			var st = state as State;
@@ -161,6 +182,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (st.pf.Segments.Count > 0) {
 				Geometry.Figures.Add(st.pf);
 			}
+			ItemState = st.itemstate;
 			Dirty = false;
 		}
 		#endregion

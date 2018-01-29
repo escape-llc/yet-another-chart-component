@@ -16,13 +16,15 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Shorthand for item state.
 		/// </summary>
-		protected class SeriesItemState : ItemState<TextBlock> { }
+		protected class SeriesItemState : ItemState<TextBlock> {
+			internal SeriesItemState(int idx, double xv, double yv, TextBlock ele) : base(idx, xv, yv, ele, 0) { }
+		}
 		#endregion
-		#region properties
-		/// <summary>
-		/// Holder for IRequireChartTheme interface.
-		/// </summary>
-		public IChartTheme Theme { get; set; }
+			#region properties
+			/// <summary>
+			/// Holder for IRequireChartTheme interface.
+			/// </summary>
+			public IChartTheme Theme { get; set; }
 		/// <summary>
 		/// The name of the data source in the DataSources collection.
 		/// </summary>
@@ -230,7 +232,7 @@ namespace eScapeLLC.UWP.Charts {
 			var tb = st.NextElement();
 			if (tb == null) return;
 			tb.Text = valuey.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
-			var sis = new SeriesItemState() { Element = tb, YValue = mappedy, XValue = mappedx, Index = index };
+			var sis = new SeriesItemState(index, mappedx, mappedy, tb);
 			st.itemstate.Add(sis);
 		}
 		void IDataSourceRenderer.RenderComplete(object state) {

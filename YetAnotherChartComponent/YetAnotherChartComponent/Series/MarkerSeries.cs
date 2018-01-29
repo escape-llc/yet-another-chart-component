@@ -18,9 +18,15 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Shorthand for marker state.
 		/// </summary>
-		protected class SeriesItemState : ItemState_Matrix<Path> { }
+		protected class SeriesItemState : ItemState_Matrix<Path> {
+			internal SeriesItemState(int idx, double xv, double yv, Path ele) : base(idx, xv, yv, ele, 0) { }
+		}
 		#endregion
 		#region properties
+		/// <summary>
+		/// Return current state as read-only.
+		/// </summary>
+		public override IEnumerable<ISeriesItem> SeriesItemValues { get { return ItemState.AsReadOnly(); } }
 		/// <summary>
 		/// Holder for IRequireChartTheme interface.
 		/// </summary>
@@ -193,7 +199,7 @@ namespace eScapeLLC.UWP.Charts {
 			var path = st.NextElement();
 			if (path == null) return;
 			path.Data = mk;
-			st.itemstate.Add(new SeriesItemState() { Index = index, XValue = mappedx, YValue = mappedy, Element = path });
+			st.itemstate.Add(new SeriesItemState(index, mappedx, mappedy, path));
 		}
 		void IDataSourceRenderer.RenderComplete(object state) {
 			var st = state as RenderState_ValueAndLabel<SeriesItemState, Path>;

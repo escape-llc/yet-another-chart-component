@@ -15,7 +15,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Shorthand for marker state.
 		/// </summary>
-		protected class SeriesItemState : ItemState_Matrix<Path> { }
+		protected class SeriesItemState : ItemState_Matrix<Path> {
+			internal SeriesItemState(int idx, double xv, double yv, Path ele) : base(idx, xv, yv, ele, 0) { }
+		}
 		#region properties
 		/// <summary>
 		/// The title for the series.
@@ -277,7 +279,7 @@ namespace eScapeLLC.UWP.Charts {
 			path.Data = pg;
 			// establish the style for "forward" or "reverse" polarity
 			BindTo(this, valueO < valueC ? nameof(PathStyle) : nameof(ReversePathStyle), path, Path.StyleProperty);
-			st.itemstate.Add(new SeriesItemState() { Index = index, XValue = leftx, YValue = y1, Element = path });
+			st.itemstate.Add(new SeriesItemState(index, leftx, y1, path));
 		}
 		void IDataSourceRenderer.RenderComplete(object state) {
 			var st = state as State;

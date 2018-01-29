@@ -4,6 +4,8 @@ using Windows.UI.Xaml.Media;
 
 namespace eScapeLLC.UWP.Charts {
 	#region MatrixSupport
+// this pragma is wanted because The System gets confused about Matrix, even though it's FQTN'd!
+#pragma warning disable CS0419
 	/// <summary>
 	/// Static helpers for XAML <see cref="Windows.UI.Xaml.Media.Matrix"/>.
 	/// In graphics programming, coordinate transforms are represented using affine matrices and homogeneous coordinates.
@@ -136,7 +138,7 @@ namespace eScapeLLC.UWP.Charts {
 		public static Matrix TransformFor(Rect area, IChartAxis xaxis, IChartAxis yaxis) {
 			if (xaxis == null) throw new ArgumentNullException(nameof(xaxis));
 			if (yaxis == null) throw new ArgumentNullException(nameof(yaxis));
-			return MatrixSupport.Multiply(ProjectionFor(area), ModelFor(xaxis, yaxis));
+			return Multiply(ProjectionFor(area), ModelFor(xaxis, yaxis));
 		}
 		/// <summary>
 		/// Translate matrix by given offset.
@@ -183,5 +185,6 @@ namespace eScapeLLC.UWP.Charts {
 			return marker;
 		}
 	}
+#pragma warning restore CS0419
 	#endregion
 }
