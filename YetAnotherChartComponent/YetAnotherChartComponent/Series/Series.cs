@@ -383,7 +383,7 @@ namespace eScapeLLC.UWP.Charts {
 		public ItemState_MatrixAndGeometry(int idx, double xv, double yv, Path ele, int ch = 0) : base(idx, xv, yv, ele, ch) { }
 	}
 	#endregion
-	#region RenderStateCore
+	#region RenderState implementations
 	/// <summary>
 	/// Common state for implementations of <see cref="IDataSourceRenderer"/>.
 	/// Contains no references to any values on either axis, just core bookkeeping.

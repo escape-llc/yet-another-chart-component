@@ -30,7 +30,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Identifies <see cref="PathStyle"/> dependency property.
 		/// </summary>
-		public static readonly DependencyProperty PathStyleProperty = DependencyProperty.Register("PathStyle", typeof(Style), typeof(Background), new PropertyMetadata(null));
+		public static readonly DependencyProperty PathStyleProperty = DependencyProperty.Register(nameof(PathStyle), typeof(Style), typeof(Background), new PropertyMetadata(null));
 		#endregion
 		#region ctor
 		/// <summary>

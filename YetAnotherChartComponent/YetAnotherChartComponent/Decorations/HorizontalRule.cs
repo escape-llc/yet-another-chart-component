@@ -72,12 +72,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Identifies <see cref="PathStyle"/> dependency property.
 		/// </summary>
-		public static readonly DependencyProperty PathStyleProperty = DependencyProperty.Register("PathStyle", typeof(Style), typeof(HorizontalRule), new PropertyMetadata(null));
+		public static readonly DependencyProperty PathStyleProperty = DependencyProperty.Register(nameof(PathStyle), typeof(Style), typeof(HorizontalRule), new PropertyMetadata(null));
 		/// <summary>
 		/// Value DP.
 		/// </summary>
 		public static readonly DependencyProperty ValueProperty = DependencyProperty.Register(
-			"Value", typeof(double), typeof(HorizontalRule), new PropertyMetadata(null, new PropertyChangedCallback(ComponentPropertyChanged))
+			nameof(Value), typeof(double), typeof(HorizontalRule), new PropertyMetadata(null, new PropertyChangedCallback(ComponentPropertyChanged))
 		);
 		/// <summary>
 		/// Generic DP property change handler.

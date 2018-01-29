@@ -20,11 +20,11 @@ namespace eScapeLLC.UWP.Charts {
 			internal SeriesItemState(int idx, double xv, double yv, TextBlock ele) : base(idx, xv, yv, ele, 0) { }
 		}
 		#endregion
-			#region properties
-			/// <summary>
-			/// Holder for IRequireChartTheme interface.
-			/// </summary>
-			public IChartTheme Theme { get; set; }
+		#region properties
+		/// <summary>
+		/// Holder for IRequireChartTheme interface.
+		/// </summary>
+		public IChartTheme Theme { get; set; }
 		/// <summary>
 		/// The name of the data source in the DataSources collection.
 		/// </summary>

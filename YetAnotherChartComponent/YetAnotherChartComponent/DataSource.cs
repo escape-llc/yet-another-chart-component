@@ -92,13 +92,13 @@ namespace eScapeLLC.UWP.Charts {
 		/// Identifies <see cref="Items"/> DP.
 		/// </summary>
 		public static readonly DependencyProperty ItemsProperty = DependencyProperty.Register(
-			"Items", typeof(System.Collections.IEnumerable), typeof(DataSource), new PropertyMetadata(null, new PropertyChangedCallback(ItemsPropertyChanged))
+			nameof(Items), typeof(System.Collections.IEnumerable), typeof(DataSource), new PropertyMetadata(null, new PropertyChangedCallback(ItemsPropertyChanged))
 		);
 		/// <summary>
 		/// Identifies <see cref="ExternalRefresh"/> DP.
 		/// </summary>
 		public static readonly DependencyProperty ExternalRefreshProperty = DependencyProperty.Register(
-			"ExternalRefresh", typeof(int), typeof(DataSource), new PropertyMetadata(null, new PropertyChangedCallback(ExternalRefreshPropertyChanged))
+			nameof(ExternalRefresh), typeof(int), typeof(DataSource), new PropertyMetadata(null, new PropertyChangedCallback(ExternalRefreshPropertyChanged))
 		);
 		/// <summary>
 		/// Trigger a refresh when the value changes.
