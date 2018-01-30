@@ -67,7 +67,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// Stacked column series.
 	/// Plots multiple series values on a stacked arrangement.
 	/// </summary>
-	public class StackedColumnSeries :DataSeries, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IDataSourceRenderer, IRequireTransforms {
+	public class StackedColumnSeries :DataSeries, IProvideLegend, IProvideSeriesItemValues, IRequireChartTheme, IRequireEnterLeave, IDataSourceRenderer, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("StackedColumnSeries", LogTools.Level.Error);
 		#region SeriesItemState
 		/// <summary>
@@ -123,6 +123,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public double BarWidth { get; set; } = 0.5;
 		/// <summary>
+		/// Provide item values.
+		/// </summary>
+		public IEnumerable<ISeriesItem> SeriesItemValues => UnwrapItemState(ItemState.AsReadOnly());
+		/// <summary>
 		/// The layer for components.
 		/// </summary>
 		protected IChartLayer Layer { get; set; }
@@ -140,6 +144,18 @@ namespace eScapeLLC.UWP.Charts {
 		public StackedColumnSeries() {
 			ColumnStack = new ColumnStackItemCollection();
 			ItemState = new List<SeriesItemState>();
+		}
+		#endregion
+		#region helpers
+		IEnumerable<ISeriesItem> UnwrapItemState(IEnumerable<SeriesItemState> siss) {
+			foreach (var sis in siss) {
+				var sis2 = new ISeriesItem[sis.Elements.Count];
+				for (int idx = 0; idx < sis.Elements.Count; idx++) {
+					sis2[idx] = new ItemState<Path>(sis.Index, sis.XValue, sis.Elements[idx].Item1, sis.Elements[idx].Item2, idx);
+				}
+				var sivc = new ItemStateMultiChannelCore(sis.Index, sis.XValue, sis2);
+				yield return sivc;
+			}
 		}
 		#endregion
 		#region IProvideLegend

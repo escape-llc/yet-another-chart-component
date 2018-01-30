@@ -314,12 +314,12 @@ namespace eScapeLLC.UWP.Charts {
 	/// Item state for single value.
 	/// This is used when one element-per-item is generated, so it can be re-adjusted in Transforms et al.
 	/// </summary>
-	/// <typeparam name="E">The element type.</typeparam>
-	public class ItemState<E> : ItemStateCore, ISeriesItem, ISeriesItemValue where E : FrameworkElement {
+	/// <typeparam name="EL">The element type.</typeparam>
+	public class ItemState<EL> : ItemStateCore, ISeriesItem, ISeriesItemValue where EL : DependencyObject {
 		/// <summary>
 		/// The generated element.
 		/// </summary>
-		public E Element { get; private set; }
+		public EL Element { get; private set; }
 		/// <summary>
 		/// The y value.
 		/// </summary>
@@ -336,17 +336,34 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="yv"></param>
 		/// <param name="ele"></param>
 		/// <param name="ch">Channel; default to zero.</param>
-		public ItemState(int idx, double xv, double yv, E ele, int ch = 0) :base(idx, xv) {
+		public ItemState(int idx, double xv, double yv, EL ele, int ch = 0) :base(idx, xv) {
 			YValue = yv;
 			Element = ele;
 			Channel = ch;
 		}
 	}
 	/// <summary>
+	/// Multi-channel version for IProvideSeriesItemValues.
+	/// </summary>
+	public class ItemStateMultiChannelCore : ItemStateCore, IProvideSeriesItemValues {
+		/// <summary>
+		/// Return all the channels.
+		/// </summary>
+		public IEnumerable<ISeriesItem> SeriesItemValues { get; private set; }
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="idx">Index.</param>
+		/// <param name="xv">X-value.</param>
+		/// <param name="isis">Channel details.</param>
+		public ItemStateMultiChannelCore(int idx, double xv, ISeriesItem[] isis) : base(idx, xv) { SeriesItemValues = isis; }
+	}
+
+	/// <summary>
 	/// Item state with transformation matrix.
 	/// </summary>
-	/// <typeparam name="E">The Element type.</typeparam>
-	public class ItemState_Matrix<E> : ItemState<E> where E : FrameworkElement {
+	/// <typeparam name="EL">The Element type.</typeparam>
+	public class ItemState_Matrix<EL> : ItemState<EL> where EL : FrameworkElement {
 		/// <summary>
 		/// Ctor.
 		/// </summary>
@@ -355,7 +372,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="yv"></param>
 		/// <param name="ele"></param>
 		/// <param name="ch"></param>
-		public ItemState_Matrix(int idx, double xv, double yv, E ele, int ch = 0) : base(idx, xv, yv, ele, ch) { }
+		public ItemState_Matrix(int idx, double xv, double yv, EL ele, int ch = 0) : base(idx, xv, yv, ele, ch) { }
 		/// <summary>
 		/// Alternate matrix for the M matrix.
 		/// Used when establishing a local transform for <see cref="ItemState{E}.Element"/>.

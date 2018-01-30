@@ -10,13 +10,17 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Render a "candle stick" series, typically used for OHLC data.
 	/// </summary>
-	public class CandlestickSeries : DataSeries, IDataSourceRenderer, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
+	public class CandlestickSeries : DataSeries, IDataSourceRenderer, IProvideLegend, IProvideSeriesItemValues, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("CandlestickSeries", LogTools.Level.Error);
 		/// <summary>
 		/// Shorthand for marker state.
 		/// </summary>
 		protected class SeriesItemState : ItemState_Matrix<Path> {
-			internal SeriesItemState(int idx, double xv, double yv, Path ele) : base(idx, xv, yv, ele, 0) { }
+			/// <summary>
+			/// The list of paths created for the figure.
+			/// </summary>
+			internal Tuple<double, PathFigure>[] Elements { get; private set; }
+			internal SeriesItemState(int idx, double xv, double yv, Path ele, Tuple<double, PathFigure>[] figs) : base(idx, xv, yv, ele, 0) { Elements = figs; }
 		}
 		#region properties
 		/// <summary>
@@ -61,6 +65,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// Binding path for the Close value.
 		/// </summary>
 		public String CloseValuePath { get { return (String)GetValue(CloseValuePathProperty); } set { SetValue(CloseValuePathProperty, value); } }
+		/// <summary>
+		/// Provide item values.
+		/// </summary>
+		public IEnumerable<ISeriesItem> SeriesItemValues => UnwrapItemState(ItemState.AsReadOnly());
 		/// <summary>
 		/// The layer for components.
 		/// </summary>
@@ -120,6 +128,18 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public CandlestickSeries()  {
 			ItemState = new List<SeriesItemState>();
+		}
+		#endregion
+		#region helpers
+		IEnumerable<ISeriesItem> UnwrapItemState(IEnumerable<SeriesItemState> siss) {
+			foreach (var sis in siss) {
+				var sis2 = new ISeriesItem[sis.Elements.Length];
+				for (int idx = 0; idx < sis.Elements.Length; idx++) {
+					sis2[idx] = new ItemState<PathFigure>(sis.Index, sis.XValue, sis.Elements[idx].Item1, sis.Elements[idx].Item2, idx);
+				}
+				var sivc = new ItemStateMultiChannelCore(sis.Index, sis.XValue, sis2);
+				yield return sivc;
+			}
 		}
 		#endregion
 		#region IProvideLegend
@@ -279,7 +299,12 @@ namespace eScapeLLC.UWP.Charts {
 			path.Data = pg;
 			// establish the style for "forward" or "reverse" polarity
 			BindTo(this, valueO < valueC ? nameof(PathStyle) : nameof(ReversePathStyle), path, Path.StyleProperty);
-			st.itemstate.Add(new SeriesItemState(index, leftx, y1, path));
+			var figs = new Tuple<double, PathFigure>[4];
+			figs[0] = new Tuple<double, PathFigure>(y1, pf);
+			figs[1] = new Tuple<double, PathFigure>(y2, pf);
+			figs[2] = new Tuple<double, PathFigure>(y3, upper);
+			figs[3] = new Tuple<double, PathFigure>(y4, lower);
+			st.itemstate.Add(new SeriesItemState(index, leftx, y1, path, figs));
 		}
 		void IDataSourceRenderer.RenderComplete(object state) {
 			var st = state as State;
