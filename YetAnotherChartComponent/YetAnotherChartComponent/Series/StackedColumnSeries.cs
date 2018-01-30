@@ -111,7 +111,7 @@ namespace eScapeLLC.UWP.Charts {
 			/// Extract the rectangle geometry and create placement.
 			/// </summary>
 			/// <returns></returns>
-			protected override Placement CreatePlacement() { return new RectanglePlacement((Element.Data as RectangleGeometry).Rect); }
+			protected override Placement CreatePlacement() { return new RectanglePlacement(YValue >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, (Element.Data as RectangleGeometry).Rect); }
 			internal ChannelItemState(int idx, double xv, double yv, Path ele, int ch) : base(idx, xv, yv, ele, ch) { }
 		}
 		#endregion
@@ -161,7 +161,7 @@ namespace eScapeLLC.UWP.Charts {
 		#region helpers
 		IEnumerable<ISeriesItem> UnwrapItemState(IEnumerable<SeriesItemState> siss) {
 			foreach (var sis in siss) {
-				var sis2 = new ISeriesItem[sis.Elements.Count];
+				var sis2 = new ISeriesItemValue[sis.Elements.Count];
 				for (int idx = 0; idx < sis.Elements.Count; idx++) {
 					sis2[idx] = new ChannelItemState(sis.Index, sis.XValue, sis.Elements[idx].Item1, sis.Elements[idx].Item2, idx);
 				}

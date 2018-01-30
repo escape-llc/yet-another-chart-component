@@ -28,6 +28,10 @@
 			<Setter Property="StrokeThickness" Value="2"/>
 			<Setter Property="Fill" Value="CadetBlue"/>
 		</Style>
+		<Style x:Key="BigLabels" BasedOn="{StaticResource Labels}" TargetType="TextBlock">
+			<Setter Property="FontSize" Value="16"/>
+			<Setter Property="Foreground" Value="Azure"/>
+		</Style>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 		<CommandBar x:Name="toolbar"
@@ -37,7 +41,7 @@
 				<AppBarToggleButton IsChecked="True" x:Name="cb_grid" Label="Toggle" Content="Grid"/>
 			</CommandBar.PrimaryCommands>
 		</CommandBar>
-		<yacc:Chart x:Name="chart" Style="{StaticResource Chart}"
+		<yacc:Chart x:Name="chart" Style="{StaticResource Chart}" ChartError="chart_ChartError"
 			RelativePanel.Below="toolbar" RelativePanel.AlignBottomWithPanel="True"
 			RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True">
 			<yacc:Chart.DataSources>
@@ -59,6 +63,14 @@
 						<yacc:ColumnStackItem Title="Value 4" ValuePath="Value4" PathStyle="{StaticResource Column_v4}"/>
 					</yacc:StackedColumnSeries.ColumnStack>
 				</yacc:StackedColumnSeries>
+				<yacc:SeriesValueLabels SeriesName="stack" LabelFormatString="F1"
+					CategoryAxisOffset=".375" LabelStyle="{StaticResource BigLabels}" />
+				<yacc:SeriesValueLabels SeriesName="stack" ValueChannel="1" LabelFormatString="F1"
+					CategoryAxisOffset=".375" LabelStyle="{StaticResource BigLabels}" />
+				<yacc:SeriesValueLabels SeriesName="stack" ValueChannel="2" LabelFormatString="F1"
+					CategoryAxisOffset=".375" LabelStyle="{StaticResource BigLabels}" />
+				<yacc:SeriesValueLabels SeriesName="stack" ValueChannel="3" LabelFormatString="F1"
+					CategoryAxisOffset=".375" LabelStyle="{StaticResource BigLabels}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>
 		<TextBlock x:Name="title" Style="{StaticResource Title}" Text="Stacked Columns"

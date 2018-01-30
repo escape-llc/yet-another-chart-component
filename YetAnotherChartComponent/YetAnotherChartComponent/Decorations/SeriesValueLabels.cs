@@ -17,6 +17,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Shorthand for item state.
 		/// </summary>
 		protected class SeriesItemState : ItemState<TextBlock> {
+			internal Point Direction { get; set; }
 			internal SeriesItemState(int idx, double xv, double yv, TextBlock ele, int ch) : base(idx, xv, yv, ele, ch) { }
 		}
 		#endregion
@@ -49,10 +50,18 @@ namespace eScapeLLC.UWP.Charts {
 		public double CategoryAxisOffset { get; set; }
 		/// <summary>
 		/// LabelOffset is translation from the "center" of the TextBlock.
-		/// Units are Half-dimension based on TextBlock size.
+		/// Units are PX coordinates, in Half-dimension based on TextBlock size.
+		/// Y-up is negative.
 		/// Default value is (0,0).
 		/// </summary>
 		public Point LabelOffset { get; set; } = new Point(0, 0);
+		/// <summary>
+		/// Placment offset is translation from "center" of a region.
+		/// Units are WORLD coordinates.
+		/// Y-up is positive.
+		/// Default value is (0,0).
+		/// </summary>
+		public Point PlacementOffset { get; set; } = new Point(0, 0);
 		/// <summary>
 		/// Dereferenced value axis.
 		/// </summary>
@@ -208,32 +217,32 @@ namespace eScapeLLC.UWP.Charts {
 					if(target != null && !double.IsNaN(target.YValue)) {
 						var tb = NextElement(elenum);
 						if (tb == null) continue;
-						var pmt = (target as IProvidePlacement)?.Placement;
-						if(pmt != null) {
-							// provide customized placement according to info
-							switch(pmt) {
-							case RectanglePlacement rp:
-								// TODO come from new property PlacementOffset
-								var pt = rp.Transform(new Point(0, 1));
-								_trace.Verbose($"rp c:{rp.Center} d:{rp.Direction} hd:{rp.HalfDimension} pt:{pt}");
-								break;
-							}
-						}
 						tb.Text = target.YValue.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
 						var mappedx = CategoryAxis.For(siv.Index);
-						var sis = new SeriesItemState(siv.Index, mappedx + CategoryAxisOffset, target.YValue, tb, target.Channel);
-						itemstate.Add(sis);
+						var pmt = (target as IProvidePlacement)?.Placement;
+						// provide customized placement according to info
+						switch(pmt) {
+						case RectanglePlacement rp:
+							// use the PlacementOffset
+							var pt = rp.Transform(PlacementOffset);
+							_trace.Verbose($"rp c:{rp.Center} d:{rp.Direction} hd:{rp.HalfDimension} pt:{pt}");
+							var sis = new SeriesItemState(siv.Index, mappedx + CategoryAxisOffset, pt.Y, tb, target.Channel) { Direction = rp.Direction };
+							itemstate.Add(sis);
+							break;
+						default:
+							var sis2 = new SeriesItemState(siv.Index, mappedx + CategoryAxisOffset, target.YValue, tb, target.Channel) { Direction = Placement.UP_RIGHT };
+							itemstate.Add(sis2);
+							break;
+						}
 					}
 				}
 				// postamble
 				ItemState = itemstate;
 				Layer.Remove(recycler.Unused);
 				Layer.Add(recycler.Created);
-				foreach (var xx in recycler.Created) {
-					if (xx.DesiredSize.Width == 0 || xx.DesiredSize.Height == 0) {
-						// force it to measure; needed for Transforms
-						xx.Measure(icrc.Dimensions);
-					}
+				foreach (var xx in ItemState) {
+					// force everything to measure; needed for Transforms
+					xx.Element.Measure(icrc.Dimensions);
 				}
 				Dirty = false;
 			}
@@ -255,8 +264,8 @@ namespace eScapeLLC.UWP.Charts {
 				// IST elements must have had measure-pass before we get to here!
 				var hw = state.Element.ActualWidth / 2;
 				var hh = state.Element.ActualHeight / 2;
-				state.Element.SetValue(Canvas.LeftProperty, dcc.X - hw + state.Element.ActualWidth*LabelOffset.X);
-				state.Element.SetValue(Canvas.TopProperty, dcc.Y - hh + state.Element.ActualHeight*LabelOffset.Y);
+				state.Element.SetValue(Canvas.LeftProperty, dcc.X - hw + hw*LabelOffset.X*state.Direction.X);
+				state.Element.SetValue(Canvas.TopProperty, dcc.Y - hh + hh*LabelOffset.Y*state.Direction.Y);
 #if false
 				if (ClipToDataRegion) {
 					// TODO this does not work "correctly" the TB gets clipped no matter what

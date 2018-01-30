@@ -494,18 +494,18 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Default implementation for <see cref="IProvideSeriesItemValues"/>.
 	/// </summary>
-	public class ItemStateMultiChannelCore : ItemStateCore, IProvideSeriesItemValues {
+	public class ItemStateMultiChannelCore : ItemStateCore, ISeriesItemValues {
 		/// <summary>
 		/// Return all the channels.
 		/// </summary>
-		public IEnumerable<ISeriesItem> SeriesItemValues { get; private set; }
+		public IEnumerable<ISeriesItemValue> YValues { get; private set; }
 		/// <summary>
 		/// Ctor.
 		/// </summary>
 		/// <param name="idx">Index.</param>
 		/// <param name="xv">X-value.</param>
 		/// <param name="isis">Channel details.  THIS takes ownership.</param>
-		public ItemStateMultiChannelCore(int idx, double xv, ISeriesItem[] isis) : base(idx, xv) { SeriesItemValues = isis; }
+		public ItemStateMultiChannelCore(int idx, double xv, ISeriesItemValue[] isis) : base(idx, xv) { YValues = isis; }
 	}
 
 	/// <summary>

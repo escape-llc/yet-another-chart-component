@@ -157,6 +157,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// ONLY use this if your <see cref="Items"/> DOES NOT implement <see cref="INotifyCollectionChanged"/>.
 		/// </summary>
 		public int ExternalRefresh { get { return (int)GetValue(ExternalRefreshProperty); } set { SetValue(ExternalRefreshProperty, value); } }
+		/// <summary>
+		/// The current list of renderers.
+		/// </summary>
+		public IEnumerable<IDataSourceRenderer> Renderers { get { return _renderers.AsReadOnly(); } }
 		#endregion
 		#region events
 		/// <summary>

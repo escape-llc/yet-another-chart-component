@@ -133,7 +133,7 @@ namespace eScapeLLC.UWP.Charts {
 		#region helpers
 		IEnumerable<ISeriesItem> UnwrapItemState(IEnumerable<SeriesItemState> siss) {
 			foreach (var sis in siss) {
-				var sis2 = new ISeriesItem[sis.Elements.Length];
+				var sis2 = new ISeriesItemValue[sis.Elements.Length];
 				for (int idx = 0; idx < sis.Elements.Length; idx++) {
 					sis2[idx] = new ItemState<PathFigure>(sis.Index, sis.XValue, sis.Elements[idx].Item1, sis.Elements[idx].Item2, idx);
 				}

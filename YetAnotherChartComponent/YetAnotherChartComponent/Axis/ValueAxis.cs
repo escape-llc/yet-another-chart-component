@@ -75,7 +75,6 @@ namespace eScapeLLC.UWP.Charts {
 						Padding = Side == Side.Right ? new Thickness(padding, 0, 0, 0) : new Thickness(0, 0, padding, 0)
 					};
 					BindTo(this, "LabelStyle", tb, TextBlock.StyleProperty);
-					//tb.Style = LabelStyle;
 					return tb;
 				} else {
 					// SHOULD NOT execute this code, unless default style failed!
@@ -107,15 +106,13 @@ namespace eScapeLLC.UWP.Charts {
 				}
 			}
 			// VT and internal bookkeeping
+			TickLabels = itemstate;
 			Layer.Remove(tbr.Unused);
 			Layer.Add(tbr.Created);
-			foreach (var xx in tbr.Created) {
-				if (xx.DesiredSize.Width == 0 || xx.DesiredSize.Height == 0) {
-					// force it to measure; needed for Transforms
-					xx.Measure(icrc.Dimensions);
-				}
+			foreach (var xx in TickLabels) {
+				// force it to measure; needed for Transforms
+				xx.tb.Measure(icrc.Dimensions);
 			}
-			TickLabels = itemstate;
 		}
 		#endregion
 		#region IRequireEnterLeave

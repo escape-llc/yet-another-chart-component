@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Diagnostics;
+using System.Threading.Tasks;
 using Yacc.Demo.VM;
 
 namespace Yacc.Demo.Pages {
@@ -20,6 +22,11 @@ namespace Yacc.Demo.Pages {
 				new Observation2("Group 6", -5.25, 0.5, 1, 5)
 			});
 			return vm;
+		}
+		private void chart_ChartError(eScapeLLC.UWP.Charts.Chart sender, eScapeLLC.UWP.Charts.ChartErrorEventArgs args) {
+			foreach (var ev in args.Results) {
+				Debug.WriteLine($"chart error {ev.Source}\t{String.Join(",", ev.MemberNames)}: {ev.ErrorMessage}");
+			}
 		}
 #pragma warning restore 1998
 	}
