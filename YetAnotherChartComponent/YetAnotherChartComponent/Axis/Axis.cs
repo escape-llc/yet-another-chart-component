@@ -213,6 +213,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icei">For error reporting.</param>
 		protected void ApplyLabelStyle(IChartErrorInfo icei) {
+			if (LabelStyle != null) return;
 			if (LabelStyle == null && Theme != null) {
 				switch (Side) {
 				case Side.Left:

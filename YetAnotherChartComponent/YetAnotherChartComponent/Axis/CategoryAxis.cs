@@ -98,8 +98,7 @@ namespace eScapeLLC.UWP.Charts {
 			Layer = icelc.CreateLayer(Axis);
 			ApplyLabelStyle(icelc as IChartErrorInfo);
 			AssignFromRef(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathAxisCategory),
-				PathStyle == null && Theme != null,
-				Theme.PathAxisCategory != null,
+				PathStyle == null, Theme != null, Theme.PathAxisCategory != null,
 				() => PathStyle = Theme.PathAxisCategory
 			);
 			BindTo(this, "PathStyle", Axis, Path.StyleProperty);

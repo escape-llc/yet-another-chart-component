@@ -632,11 +632,13 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="vsource">Validation source in error reports.</param>
 		/// <param name="localprop">Local property in error reports.</param>
 		/// <param name="refprop">Reference property in error reports.</param>
-		/// <param name="localcheck">The local check; True to proceed to refcheck.</param>
+		/// <param name="localcheck">The local check; True to proceed to sourcecheck.</param>
+		/// <param name="sourcecheck">The source check; True to proceed to refcheck.</param>
 		/// <param name="refcheck">The reference check; True to proceed to action.</param>
 		/// <param name="applyvalue">Execute if everything returned True.</param>
-		protected static void AssignFromRef(IChartErrorInfo icei, String vsource, String localprop, String refprop, bool localcheck, bool refcheck, Action applyvalue) {
-			if (localcheck) {
+		protected static void AssignFromRef(IChartErrorInfo icei, String vsource, String localprop, String refprop, bool localcheck, bool sourcecheck, bool refcheck, Action applyvalue) {
+			if (!localcheck) return;
+			if (sourcecheck) {
 				if (refcheck)
 					applyvalue();
 				else {

@@ -79,8 +79,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icelc"></param>
 		void DoBindings(IChartEnterLeaveContext icelc) {
 			AssignFromRef(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathGridValue),
-				PathStyle == null && Theme != null,
-				Theme.PathGridValue != null,
+				PathStyle == null, Theme != null, Theme.PathGridValue != null,
 				() => PathStyle = Theme.PathGridValue
 			);
 			BindTo(this, "PathStyle", Grid, Path.StyleProperty);

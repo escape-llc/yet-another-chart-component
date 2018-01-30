@@ -113,8 +113,7 @@ namespace eScapeLLC.UWP.Charts {
 		#region helpers
 		void DoBindings(IChartEnterLeaveContext icelc) {
 			AssignFromRef(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathHorizontalRule),
-				PathStyle == null && Theme != null,
-				Theme.PathHorizontalRule != null,
+				PathStyle == null, Theme != null, Theme.PathHorizontalRule != null,
 				() => PathStyle = Theme.PathHorizontalRule
 			);
 			BindTo(this, "PathStyle", Path, Path.StyleProperty);

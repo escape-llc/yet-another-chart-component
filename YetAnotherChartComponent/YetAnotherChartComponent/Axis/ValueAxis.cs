@@ -127,8 +127,7 @@ namespace eScapeLLC.UWP.Charts {
 			Layer = icelc.CreateLayer(Axis);
 			ApplyLabelStyle(icelc as IChartErrorInfo);
 			AssignFromRef(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathAxisValue),
-				PathStyle == null && Theme != null,
-				Theme.PathAxisValue != null,
+				PathStyle == null, Theme != null, Theme.PathAxisValue != null,
 				() => PathStyle = Theme.PathAxisValue
 			);
 			DoBindings(icelc);

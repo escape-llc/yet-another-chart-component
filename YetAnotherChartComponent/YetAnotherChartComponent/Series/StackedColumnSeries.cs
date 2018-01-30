@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
@@ -102,6 +103,17 @@ namespace eScapeLLC.UWP.Charts {
 			/// <param name="xv"></param>
 			public SeriesItemState(int idx, double xv) :base(idx, xv){ }
 		}
+		/// <summary>
+		/// Wrapper for the channel items.
+		/// </summary>
+		protected class ChannelItemState : ItemStateWithPlacement<Path> {
+			/// <summary>
+			/// Extract the rectangle geometry and create placement.
+			/// </summary>
+			/// <returns></returns>
+			protected override Placement CreatePlacement() { return new RectanglePlacement((Element.Data as RectangleGeometry).Rect); }
+			internal ChannelItemState(int idx, double xv, double yv, Path ele, int ch) : base(idx, xv, yv, ele, ch) { }
+		}
 		#endregion
 		#region properties
 		/// <summary>
@@ -151,7 +163,7 @@ namespace eScapeLLC.UWP.Charts {
 			foreach (var sis in siss) {
 				var sis2 = new ISeriesItem[sis.Elements.Count];
 				for (int idx = 0; idx < sis.Elements.Count; idx++) {
-					sis2[idx] = new ItemState<Path>(sis.Index, sis.XValue, sis.Elements[idx].Item1, sis.Elements[idx].Item2, idx);
+					sis2[idx] = new ChannelItemState(sis.Index, sis.XValue, sis.Elements[idx].Item1, sis.Elements[idx].Item2, idx);
 				}
 				var sivc = new ItemStateMultiChannelCore(sis.Index, sis.XValue, sis2);
 				yield return sivc;
@@ -268,12 +280,10 @@ namespace eScapeLLC.UWP.Charts {
 				var bottomy = Math.Min(y1, y2);
 				sis.UpdateLimits(y1);
 				_trace.Verbose($"{Name}[{index},{ix}] {valuey} ({leftx},{topy}) ({rightx},{bottomy}) sis ({sis.Min},{sis.Max})");
-				var pf = PathHelper.Rectangle(leftx, topy, rightx, bottomy);
 				var path = st.NextElement();
 				if (path == null) return;
-				var pg = new PathGeometry();
-				pg.Figures.Add(pf);
-				path.Data = pg;
+				var rg = new RectangleGeometry() { Rect = new Rect(new Point(leftx, topy), new Point(rightx, bottomy)) };
+				path.Data = rg;
 				BindTo(ColumnStack[ix], "PathStyle", path, Path.StyleProperty);
 				UpdateLimits(valuex, sis.Min, sis.Max);
 				sis.Elements.Add(new Tuple<double, Path>(y1, path));

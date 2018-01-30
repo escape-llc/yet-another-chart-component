@@ -165,13 +165,11 @@ namespace eScapeLLC.UWP.Charts {
 		#region helpers
 		void DoBindings(IChartEnterLeaveContext icelc) {
 			AssignFromRef(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathHorizontalRule),
-				PathStyle == null && Theme != null,
-				Theme.PathHorizontalRule != null,
+				PathStyle == null, Theme != null, Theme.PathHorizontalRule != null,
 				() => PathStyle = Theme.PathHorizontalRule
 			);
 			AssignFromRef(icelc as IChartErrorInfo, NameOrType(), nameof(BandPathStyle), nameof(Theme.PathHorizontalBand),
-				BandPathStyle == null && Theme != null,
-				Theme.PathHorizontalBand != null,
+				BandPathStyle == null, Theme != null, Theme.PathHorizontalBand != null,
 				() => BandPathStyle = Theme.PathHorizontalBand
 			);
 			BindTo(this, "PathStyle", Value1Path, Path.StyleProperty);

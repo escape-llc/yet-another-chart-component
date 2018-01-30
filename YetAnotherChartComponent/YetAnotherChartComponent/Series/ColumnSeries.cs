@@ -18,9 +18,15 @@ namespace eScapeLLC.UWP.Charts {
 		static LogTools.Flag _trace = LogTools.Add("ColumnSeries", LogTools.Level.Error);
 		static LogTools.Flag _traceg = LogTools.Add("ColumnSeriesPaths", LogTools.Level.Off);
 		/// <summary>
-		/// Shorthand for marker state.
+		/// Implementation for marker state.
+		/// Provides placement information.
 		/// </summary>
-		protected class SeriesItemState : ItemState<Path> {
+		protected class SeriesItemState : ItemStateWithPlacement<Path> {
+			/// <summary>
+			/// Extract the rectangle geometry and create placement.
+			/// </summary>
+			/// <returns></returns>
+			protected override Placement CreatePlacement() { return new RectanglePlacement(YValue >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, (Element.Data as RectangleGeometry).Rect); }
 			internal SeriesItemState(int idx, double xv, double yv, Path ele) : base(idx, xv, yv, ele, 0) { }
 		}
 		#region properties
@@ -99,8 +105,7 @@ namespace eScapeLLC.UWP.Charts {
 				Layer.Add(DebugSegments);
 			}
 			AssignFromRef(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathColumnSeries),
-				PathStyle == null && Theme != null,
-				Theme.PathColumnSeries != null,
+				PathStyle == null, Theme != null, Theme.PathColumnSeries != null,
 				() => PathStyle = Theme.PathColumnSeries
 			);
 		}
@@ -196,12 +201,10 @@ namespace eScapeLLC.UWP.Charts {
 			var leftx = (st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()))) + BarOffset;
 			var rightx = leftx + BarWidth;
 			_trace.Verbose($"{Name}[{index}] {valuey} ({leftx},{topy}) ({rightx},{bottomy})");
-			var pf = PathHelper.Rectangle(leftx, topy, rightx, bottomy);
 			var path = st.NextElement();
 			if (path == null) return;
-			var pg = new PathGeometry();
-			pg.Figures.Add(pf);
-			path.Data = pg;
+			var rg = new RectangleGeometry() { Rect = new Rect(new Point(leftx, topy), new Point(rightx, bottomy)) };
+			path.Data = rg;
 			st.itemstate.Add(new SeriesItemState(index, leftx, y1, path));
 		}
 		/// <summary>

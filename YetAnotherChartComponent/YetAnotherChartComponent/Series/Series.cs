@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
@@ -257,7 +258,7 @@ namespace eScapeLLC.UWP.Charts {
 		double XValue { get; }
 	}
 	/// <summary>
-	/// Item tracking a single value.
+	/// Item tracking a single channel.
 	/// </summary>
 	public interface ISeriesItemValue {
 		/// <summary>
@@ -266,28 +267,151 @@ namespace eScapeLLC.UWP.Charts {
 		double YValue { get; }
 		/// <summary>
 		/// What "channel" this value is tracking.
-		/// Value is host-dependent if tracking multiple values.
+		/// Value is host-dependent if tracking multiple values, else SHOULD be ZERO.
 		/// </summary>
 		int Channel { get; }
 	}
 	/// <summary>
-	/// Item tracking multiple values.
+	/// Item tracking multiple channels.
 	/// </summary>
 	public interface ISeriesItemValues {
 		/// <summary>
 		/// Enumerator to traverse the values.
-		/// Order SHOULD be by channel.
+		/// SHOULD order-by channel.
 		/// </summary>
 		IEnumerable<ISeriesItemValue> YValues { get; }
 	}
 	/// <summary>
-	/// Ability to provide access to the computed series item state.
+	/// Ability to provide access to the current series item state.
 	/// </summary>
 	public interface IProvideSeriesItemValues {
 		/// <summary>
 		/// Enumerator to traverse the item values.
+		/// SHOULD operate on a COPY of the actual underlying sequence.
 		/// </summary>
 		IEnumerable<ISeriesItem> SeriesItemValues { get; }
+	}
+	#endregion
+	#region placement
+	/// <summary>
+	/// Abstract base for placement data.
+	/// </summary>
+	public abstract class Placement {
+		#region direction vectors
+		/// <summary>
+		/// Direction vector: up.
+		/// </summary>
+		public static readonly Point UP_ONLY = new Point(0, 1);
+		/// <summary>
+		/// Direction vector: up and right.
+		/// </summary>
+		public static readonly Point UP_RIGHT = new Point(1, 1);
+		/// <summary>
+		/// Direction vector: up and left.
+		/// </summary>
+		public static readonly Point UP_LEFT = new Point(-1, 1);
+		/// <summary>
+		/// Direction vector: right.
+		/// </summary>
+		public static readonly Point RIGHT_ONLY = new Point(1, 0);
+		/// <summary>
+		/// Direction vector: down.
+		/// </summary>
+		public static readonly Point DOWN_ONLY = new Point(0, -1);
+		/// <summary>
+		/// Direction vector: down and right.
+		/// </summary>
+		public static readonly Point DOWN_RIGHT = new Point(1, -1);
+		/// <summary>
+		/// Direction vector: down and left.
+		/// </summary>
+		public static readonly Point DOWN_LEFT = new Point(-1, -1);
+		/// <summary>
+		/// Direction vector: left.
+		/// </summary>
+		public static readonly Point LEFT_ONLY = new Point(-1, 0);
+		#endregion
+		/// <summary>
+		/// Take the placement coordinates and transform them.
+		/// (0,0) is the "center".
+		/// (1,0) is the "end".
+		/// (-1,0) is the "start".
+		/// The directions are "relative" as defined by subclasses.
+		/// </summary>
+		/// <param name="pt">Input point.</param>
+		/// <returns>Transformed point.</returns>
+		public abstract Point Transform(Point pt);
+	}
+	/// <summary>
+	/// Rectangle placement uses a center point of (0,0) at the center of the rectangle.
+	/// Coordinates extend in one unit along each axis, relative to a "direction" vector
+	/// that can be used to "flip" the coordinate system for mirroring purposes.
+	/// </summary>
+	public class RectanglePlacement : Placement {
+		#region properties
+		/// <summary>
+		/// Which way figure is "pointing".
+		/// For a rectangle SHOULD be axis-aligned.
+		/// MUST be one of (-1, 0, 1) in each dimension!  MAY use Zero to "lock" an axis, or negative one to "flip" an axis.
+		/// The X,Y are multiplied with the incoming values in <see cref="Transform"/>.
+		/// </summary>
+		public Point Direction { get; private set; }
+		/// <summary>
+		/// Center point of the rectangle.
+		/// </summary>
+		public Point Center { get; private set; }
+		/// <summary>
+		/// Half-dimensions of the rectangle.
+		/// </summary>
+		public Size HalfDimension { get; private set; }
+		#endregion
+		#region ctor
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="direction"></param>
+		/// <param name="center"></param>
+		/// <param name="hd"></param>
+		public RectanglePlacement(Point direction, Point center, Size hd) {
+			Direction = direction;
+			Center = center;
+			HalfDimension = hd;
+		}
+		/// <summary>
+		/// Ctor.
+		/// Explicit direction vector.
+		/// </summary>
+		/// <param name="direction"></param>
+		/// <param name="rc"></param>
+		public RectanglePlacement(Point direction, Rect rc) : this(direction, new Point(rc.Left + rc.Width / 2, rc.Top + rc.Height / 2), new Size(rc.Width / 2, rc.Height / 2)) { }
+		/// <summary>
+		/// Ctor.
+		/// Infers direction from the coordinates of the rectangle.
+		/// </summary>
+		/// <param name="rc">A rectangle.</param>
+		public RectanglePlacement(Rect rc) :this(new Point(Math.Sign(rc.Right - rc.Left), Math.Sign(rc.Bottom - rc.Top)), rc) { }
+		#endregion
+		#region public
+		/// <summary>
+		/// Take the placement coordinates and transform them.
+		/// (0,0) is the "center".
+		/// (1,0) is the "end".
+		/// (-1,0) is the "start".
+		/// The directions are relative to the <see cref="Direction"/> vector.
+		/// </summary>
+		/// <param name="pt"></param>
+		/// <returns></returns>
+		public override Point Transform(Point pt) { return new Point(Center.X + pt.X*HalfDimension.Width*Direction.X, Center.Y + pt.Y*HalfDimension.Height*Direction.Y); }
+		#endregion
+	}
+	/// <summary>
+	/// Ability to provide placement data for a channel.
+	/// </summary>
+	public interface IProvidePlacement {
+		/// <summary>
+		/// Provide the placement information.
+		/// </summary>
+		Placement Placement { get; }
 	}
 	#endregion
 	#region ItemState implementations
@@ -325,7 +449,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public double YValue { get; private set; }
 		/// <summary>
-		/// Lock the channel on zero.
+		/// The channel.
 		/// </summary>
 		public int Channel { get; private set; }
 		/// <summary>
@@ -343,7 +467,32 @@ namespace eScapeLLC.UWP.Charts {
 		}
 	}
 	/// <summary>
-	/// Multi-channel version for IProvideSeriesItemValues.
+	/// Wrapper with placement.
+	/// </summary>
+	/// <typeparam name="EL">The element type.</typeparam>
+	public abstract class ItemStateWithPlacement<EL> : ItemState<EL>, IProvidePlacement where EL : DependencyObject {
+		Placement cache;
+		/// <summary>
+		/// (Cache and) return placement info.
+		/// </summary>
+		Placement IProvidePlacement.Placement { get { if (cache == null) cache = CreatePlacement(); return cache; } }
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="idx"></param>
+		/// <param name="xv"></param>
+		/// <param name="yv"></param>
+		/// <param name="ele"></param>
+		/// <param name="ch"></param>
+		public ItemStateWithPlacement(int idx, double xv, double yv, EL ele, int ch = 0) : base(idx, xv, yv, ele, ch) { }
+		/// <summary>
+		/// Override to create placement.
+		/// </summary>
+		/// <returns></returns>
+		protected abstract Placement CreatePlacement();
+	}
+	/// <summary>
+	/// Default implementation for <see cref="IProvideSeriesItemValues"/>.
 	/// </summary>
 	public class ItemStateMultiChannelCore : ItemStateCore, IProvideSeriesItemValues {
 		/// <summary>
@@ -355,7 +504,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="idx">Index.</param>
 		/// <param name="xv">X-value.</param>
-		/// <param name="isis">Channel details.</param>
+		/// <param name="isis">Channel details.  THIS takes ownership.</param>
 		public ItemStateMultiChannelCore(int idx, double xv, ISeriesItem[] isis) : base(idx, xv) { SeriesItemValues = isis; }
 	}
 
@@ -380,7 +529,7 @@ namespace eScapeLLC.UWP.Charts {
 		public Matrix World { get; set; }
 	}
 	/// <summary>
-	/// Item with <see cref="Path"/> element, local matrix and geometry.
+	/// Item with <see cref="Path"/> as element type, local matrix and geometry.
 	/// </summary>
 	/// <typeparam name="G">Type of geometry.</typeparam>
 	public class ItemState_MatrixAndGeometry<G> : ItemState_Matrix<Path> where G : Geometry {
@@ -404,6 +553,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Common state for implementations of <see cref="IDataSourceRenderer"/>.
 	/// Contains no references to any values on either axis, just core bookkeeping.
+	/// The "basic" case has a list of state elements, and a recycler for its UI elements.
 	/// </summary>
 	/// <typeparam name="SIS">Series item state type.</typeparam>
 	/// <typeparam name="EL">Recycled element type.</typeparam>
@@ -436,7 +586,7 @@ namespace eScapeLLC.UWP.Charts {
 			elements = recycler.Items().GetEnumerator();
 		}
 		/// <summary>
-		/// Call for the next element from the recycler's iterator.
+		/// Convenience method to call for the next element from the recycler's iterator.
 		/// </summary>
 		/// <returns>Next element or NULL.</returns>
 		internal EL NextElement() {

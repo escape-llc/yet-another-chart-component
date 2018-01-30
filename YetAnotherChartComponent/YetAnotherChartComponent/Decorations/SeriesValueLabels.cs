@@ -171,8 +171,7 @@ namespace eScapeLLC.UWP.Charts {
 			EnsureComponents(icelc as IChartComponentContext);
 			Layer = icelc.CreateLayer();
 			AssignFromRef(icelc as IChartErrorInfo, NameOrType(), nameof(LabelStyle), nameof(Theme.LabelAxisTop),
-				LabelStyle == null && Theme != null,
-				Theme.LabelAxisTop != null,
+				LabelStyle == null, Theme != null, Theme.LabelAxisTop != null,
 				() => LabelStyle = Theme.LabelAxisTop
 			);
 			_trace.Verbose($"{Name} enter s:{SeriesName} {Source} v:{ValueAxis} c:{CategoryAxis}");
@@ -209,6 +208,17 @@ namespace eScapeLLC.UWP.Charts {
 					if(target != null && !double.IsNaN(target.YValue)) {
 						var tb = NextElement(elenum);
 						if (tb == null) continue;
+						var pmt = (target as IProvidePlacement)?.Placement;
+						if(pmt != null) {
+							// provide customized placement according to info
+							switch(pmt) {
+							case RectanglePlacement rp:
+								// TODO come from new property PlacementOffset
+								var pt = rp.Transform(new Point(0, 1));
+								_trace.Verbose($"rp c:{rp.Center} d:{rp.Direction} hd:{rp.HalfDimension} pt:{pt}");
+								break;
+							}
+						}
 						tb.Text = target.YValue.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
 						var mappedx = CategoryAxis.For(siv.Index);
 						var sis = new SeriesItemState(siv.Index, mappedx + CategoryAxisOffset, target.YValue, tb, target.Channel);

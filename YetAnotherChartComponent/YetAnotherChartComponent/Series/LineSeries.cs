@@ -75,8 +75,7 @@ namespace eScapeLLC.UWP.Charts {
 			Layer = icelc.CreateLayer(Segments);
 			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis} c:{CategoryAxisName}:{CategoryAxis} d:{DataSourceName}");
 			AssignFromRef(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathLineSeries),
-				PathStyle == null && Theme != null,
-				Theme.PathLineSeries != null,
+				PathStyle == null, Theme != null, Theme.PathLineSeries != null,
 				() => PathStyle = Theme.PathLineSeries
 			);
 			BindTo(this, "PathStyle", Segments, Path.StyleProperty);
