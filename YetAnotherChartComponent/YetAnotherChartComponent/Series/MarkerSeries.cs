@@ -19,7 +19,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Shorthand for marker state.
 		/// </summary>
 		protected class SeriesItemState : ItemState_Matrix<Path> {
-			internal SeriesItemState(int idx, double xv, double yv, Path ele) : base(idx, xv, yv, ele, 0) { }
+			internal SeriesItemState(int idx, double xv, double xvo, double yv, Path ele) : base(idx, xv, xvo, yv, ele, 0) { }
 		}
 		#endregion
 		#region properties
@@ -117,7 +117,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (ItemState.Count == 0) return;
 			var world = MatrixSupport.ModelFor(CategoryAxis, ValueAxis);
 			foreach (var state in ItemState) {
-				state.World = MatrixSupport.Translate(world, state.XValue, state.YValue);
+				state.World = MatrixSupport.Translate(world, state.XValueOffset, state.YValue);
 			}
 		}
 		#endregion
@@ -190,15 +190,15 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			var mappedy = ValueAxis.For(valuey);
 			var mappedx = st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()));
-			mappedx += MarkerOffset;
-			_trace.Verbose($"[{index}] {valuey} ({mappedx},{mappedy})");
+			var markerx = mappedx + MarkerOffset;
+			_trace.Verbose($"[{index}] {valuey} ({markerx},{mappedy})");
 			var mk = MarkerTemplate.LoadContent() as Geometry;
 			// TODO allow MK to be other things like (Path or Image).
 			// no path yet
 			var path = st.NextElement();
 			if (path == null) return;
 			path.Data = mk;
-			st.itemstate.Add(new SeriesItemState(index, mappedx, mappedy, path));
+			st.itemstate.Add(new SeriesItemState(index, mappedx, markerx, mappedy, path));
 		}
 		void IDataSourceRenderer.RenderComplete(object state) {
 			var st = state as RenderState_ValueAndLabel<SeriesItemState, Path>;

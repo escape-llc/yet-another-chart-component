@@ -1,5 +1,6 @@
 ﻿using eScape.Core;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using Windows.Foundation;
 using Windows.UI.Xaml;
@@ -11,7 +12,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Represents a horizontal "rule" on the chart, for a value not belonging to any data source value, e.g. a value computed "outside" the series itself (Average).
 	/// </summary>
-	public class HorizontalRule : ChartComponent, IProvideValueExtents, IRequireChartTheme, IRequireEnterLeave, IRequireRender, IRequireTransforms {
+	public class HorizontalRule : ChartComponent, IProvideValueExtents, IProvideSeriesItemValues, IRequireChartTheme, IRequireEnterLeave, IRequireRender, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("HorizontalRule", LogTools.Level.Error);
 		#region properties
 		/// <summary>
@@ -67,6 +68,15 @@ namespace eScapeLLC.UWP.Charts {
 		/// The layer for components.
 		/// </summary>
 		protected IChartLayer Layer { get; set; }
+		/// <summary>
+		/// Provide a wrapper so labels can generate.
+		/// </summary>
+		IEnumerable<ISeriesItem> IProvideSeriesItemValues.SeriesItemValues {
+			get {
+				var sivc = new ItemState<Path>(0, 0, 1, Value, Path, 0);
+				return new[] { sivc };
+			}
+		}
 		#endregion
 		#region DPs
 		/// <summary>

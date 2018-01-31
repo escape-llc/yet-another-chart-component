@@ -63,17 +63,17 @@
 						<yacc:ColumnStackItem Title="Value 4" ValuePath="Value4" PathStyle="{StaticResource Column_v4}"/>
 					</yacc:StackedColumnSeries.ColumnStack>
 				</yacc:StackedColumnSeries>
-				<yacc:SeriesValueLabels SeriesName="stack" LabelFormatString="F1"
+				<yacc:SeriesValueLabels SourceName="stack" LabelFormatString="F1"
 					CategoryAxisOffset=".375" LabelStyle="{StaticResource BigLabels}" />
-				<yacc:SeriesValueLabels SeriesName="stack" ValueChannel="1" LabelFormatString="F1"
+				<yacc:SeriesValueLabels SourceName="stack" ValueChannel="1" LabelFormatString="F1"
 					CategoryAxisOffset=".375" LabelStyle="{StaticResource BigLabels}" />
-				<yacc:SeriesValueLabels SeriesName="stack" ValueChannel="2" LabelFormatString="F1"
+				<yacc:SeriesValueLabels SourceName="stack" ValueChannel="2" LabelFormatString="F1"
 					CategoryAxisOffset=".375" LabelStyle="{StaticResource BigLabels}" />
-				<yacc:SeriesValueLabels SeriesName="stack" ValueChannel="3" LabelFormatString="F1"
+				<yacc:SeriesValueLabels SourceName="stack" ValueChannel="3" LabelFormatString="F1"
 					CategoryAxisOffset=".375" LabelStyle="{StaticResource BigLabels}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>
-		<TextBlock x:Name="title" Style="{StaticResource Title}" Text="Stacked Columns"
+		<TextBlock x:Name="title" Style="{StaticResource Title}" Text="Stacked Columns with Labels"
 			RelativePanel.AlignTopWith="chart" RelativePanel.AlignHorizontalCenterWithPanel="True"/>
 		<Image Source="ms-appx:/Assets/Square44x44Logo.scale-100.png" Style="{StaticResource Logo}"
 			RelativePanel.LeftOf="title" RelativePanel.AlignVerticalCenterWith="title" />

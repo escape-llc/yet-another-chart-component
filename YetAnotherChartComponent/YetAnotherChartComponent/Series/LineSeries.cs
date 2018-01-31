@@ -18,7 +18,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// There's only one path in this series; all elements point to it.
 		/// </summary>
 		protected class SeriesItemState : ItemState<Path> {
-			internal SeriesItemState(int idx, double xv, double yv, Path ele) : base(idx, xv, yv, ele, 0) { }
+			internal SeriesItemState(int idx, double xv, double xvo, double yv, Path ele) : base(idx, xv, xvo, yv, ele, 0) { }
 		}
 		#region properties
 		/// <summary>
@@ -144,7 +144,6 @@ namespace eScapeLLC.UWP.Charts {
 			var st = state as State;
 			var valuey = CoerceValue(item, st.by);
 			var valuex = st.bx != null ? (double)st.bx.For(item) : index;
-			valuex += CategoryAxisOffset;
 			st.ix = index;
 			UpdateLimits(valuex, valuey);
 			// short-circuit if it's NaN
@@ -157,16 +156,17 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			var mappedy = ValueAxis.For(valuey);
 			var mappedx = st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()));
-			_trace.Verbose($"{Name}[{index}] v:({valuex},{valuey}) m:({mappedx},{mappedy})");
+			var linex = mappedx + CategoryAxisOffset;
+			_trace.Verbose($"{Name}[{index}] v:({valuex},{valuey}) m:({linex},{mappedy})");
 			if (st.first) {
 				// TODO handle multiple-sample "gaps", e.g. successive NaN values.
 				// TODO handle multiple start-points.
-				st.pf.StartPoint = new Point(mappedx, mappedy);
+				st.pf.StartPoint = new Point(linex, mappedy);
 				st.first = false;
 			} else {
-				st.pf.Segments.Add(new LineSegment() { Point = new Point(mappedx, mappedy) });
+				st.pf.Segments.Add(new LineSegment() { Point = new Point(linex, mappedy) });
 			}
-			st.itemstate.Add(new SeriesItemState(index, mappedx, mappedy, Segments));
+			st.itemstate.Add(new SeriesItemState(index, mappedx, linex, mappedy, Segments));
 		}
 		void IDataSourceRenderer.RenderComplete(object state) {
 			var st = state as State;

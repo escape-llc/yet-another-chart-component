@@ -1,5 +1,6 @@
 ﻿using eScape.Core;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using Windows.Foundation;
 using Windows.UI.Xaml;
@@ -11,13 +12,18 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Represents a horizontal "rule" on the chart, for a value not belonging to any data source value, e.g. a value computed "outside" the series itself (Average).
 	/// </summary>
-	public class HorizontalBand : ChartComponent, IProvideValueExtents, IRequireChartTheme, IRequireEnterLeave, IRequireRender, IRequireTransforms {
+	public class HorizontalBand : ChartComponent, IProvideValueExtents, IProvideSeriesItemValues, IRequireChartTheme, IRequireEnterLeave, IRequireRender, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("HorizontalBand", LogTools.Level.Error);
 		#region properties
 		/// <summary>
 		/// The style to use for "rules" Path geometry.
 		/// </summary>
 		public Style PathStyle { get { return (Style)GetValue(PathStyleProperty); } set { SetValue(PathStyleProperty, value); } }
+		/// <summary>
+		/// The style to use for the Value2 "rule" Path geometry.
+		/// If NULL, falls back to <see cref="PathStyle"/>.
+		/// </summary>
+		public Style Value2PathStyle { get { return (Style)GetValue(Value2PathStyleProperty); } set { SetValue(Value2PathStyleProperty, value); } }
 		/// <summary>
 		/// The style to use for "band" Path geometry.
 		/// If NULL, falls back to <see cref="PathStyle"/>.
@@ -97,6 +103,18 @@ namespace eScapeLLC.UWP.Charts {
 		/// The layer for components.
 		/// </summary>
 		protected IChartLayer Layer { get; set; }
+		/// <summary>
+		/// Provide a wrapper so labels can generate.
+		/// </summary>
+		IEnumerable<ISeriesItem> IProvideSeriesItemValues.SeriesItemValues {
+			get {
+				var sis2 = new ISeriesItemValue[2];
+				sis2[0] = new ItemState<Path>(0, 0, .5, Value1, Value1Path, 0);
+				sis2[1] = new ItemState<Path>(0, 0, .5, Value2, Value2Path, 1);
+				var sivc = new ItemStateMultiChannelCore(0, 0, 1, sis2);
+				return new[] { sivc };
+			}
+		}
 		#endregion
 		#region DPs
 		/// <summary>
@@ -104,6 +122,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public static readonly DependencyProperty PathStyleProperty = DependencyProperty.Register(
 			nameof(PathStyle), typeof(Style), typeof(HorizontalBand), new PropertyMetadata(null)
+		);
+		/// <summary>
+		/// Identifies <see cref="Value2PathStyle"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty Value2PathStyleProperty = DependencyProperty.Register(
+			nameof(Value2PathStyle), typeof(Style), typeof(HorizontalBand), new PropertyMetadata(null)
 		);
 		/// <summary>
 		/// Identifies <see cref="BandPathStyle"/> dependency property.
@@ -172,26 +196,26 @@ namespace eScapeLLC.UWP.Charts {
 				BandPathStyle == null, Theme != null, Theme.PathHorizontalBand != null,
 				() => BandPathStyle = Theme.PathHorizontalBand
 			);
-			BindTo(this, "PathStyle", Value1Path, Path.StyleProperty);
+			BindTo(this, nameof(PathStyle), Value1Path, Path.StyleProperty);
 			var bx = GetBindingExpression(UIElement.VisibilityProperty);
 			if (bx != null) {
 				Value1Path.SetBinding(UIElement.VisibilityProperty, bx.ParentBinding);
 			} else {
-				BindTo(this, "Visibility", Value1Path, Path.VisibilityProperty);
+				BindTo(this, nameof(Visibility), Value1Path, Path.VisibilityProperty);
 			}
-			BindTo(this, "PathStyle", Value2Path, Path.StyleProperty);
+			BindTo(this, Value2PathStyle == null ? nameof(PathStyle) : nameof(Value2PathStyle), Value2Path, Path.StyleProperty);
 			bx = GetBindingExpression(UIElement.VisibilityProperty);
 			if (bx != null) {
 				Value2Path.SetBinding(UIElement.VisibilityProperty, bx.ParentBinding);
 			} else {
-				BindTo(this, "Visibility", Value2Path, Path.VisibilityProperty);
+				BindTo(this, nameof(Visibility), Value2Path, Path.VisibilityProperty);
 			}
-			BindTo(this, BandPathStyle == null ? "PathStyle" : "BandPathStyle", BandPath, Path.StyleProperty);
+			BindTo(this, BandPathStyle == null ? nameof(PathStyle) : nameof(BandPathStyle), BandPath, Path.StyleProperty);
 			bx = GetBindingExpression(UIElement.VisibilityProperty);
 			if (bx != null) {
 				BandPath.SetBinding(UIElement.VisibilityProperty, bx.ParentBinding);
 			} else {
-				BindTo(this, "Visibility", BandPath, Path.VisibilityProperty);
+				BindTo(this, nameof(Visibility), BandPath, Path.VisibilityProperty);
 			}
 		}
 		/// <summary>
@@ -208,7 +232,7 @@ namespace eScapeLLC.UWP.Charts {
 			}
 		}
 		#endregion
-		#region extensions
+		#region IRequireEnterLeave
 		/// <summary>
 		/// Add elements and attach bindings.
 		/// </summary>
@@ -227,6 +251,8 @@ namespace eScapeLLC.UWP.Charts {
 			icelc.DeleteLayer(Layer);
 			Layer = null;
 		}
+		#endregion
+		#region IRequireRender
 		/// <summary>
 		/// Rule coordinates:
 		///		x: "normalized" [0..1] and scaled to the area-width
@@ -247,6 +273,8 @@ namespace eScapeLLC.UWP.Charts {
 			Band.Rect = new Rect(Value1Rule.StartPoint, Value2Rule.EndPoint);
 			Dirty = false;
 		}
+		#endregion
+		#region IRequireTransforms
 		/// <summary>
 		/// rule coordinates (x:[0..1], y:axis)
 		/// </summary>

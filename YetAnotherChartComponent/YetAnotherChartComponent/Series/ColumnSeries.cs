@@ -27,7 +27,7 @@ namespace eScapeLLC.UWP.Charts {
 			/// </summary>
 			/// <returns></returns>
 			protected override Placement CreatePlacement() { return new RectanglePlacement(YValue >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, (Element.Data as RectangleGeometry).Rect); }
-			internal SeriesItemState(int idx, double xv, double yv, Path ele) : base(idx, xv, yv, ele, 0) { }
+			internal SeriesItemState(int idx, double xv, double xvo, double yv, Path ele) : base(idx, xv, xvo, yv, ele, 0) { }
 		}
 		#region properties
 		/// <summary>
@@ -198,14 +198,15 @@ namespace eScapeLLC.UWP.Charts {
 			var y2 = ValueAxis.For(0);
 			var topy = Math.Max(y1, y2);
 			var bottomy = Math.Min(y1, y2);
-			var leftx = (st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()))) + BarOffset;
-			var rightx = leftx + BarWidth;
-			_trace.Verbose($"{Name}[{index}] {valuey} ({leftx},{topy}) ({rightx},{bottomy})");
+			var leftx = (st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString())));
+			var barx = leftx + BarOffset;
+			var rightx = barx + BarWidth;
+			_trace.Verbose($"{Name}[{index}] {valuey} ({barx},{topy}) ({rightx},{bottomy})");
 			var path = st.NextElement();
 			if (path == null) return;
-			var rg = new RectangleGeometry() { Rect = new Rect(new Point(leftx, topy), new Point(rightx, bottomy)) };
+			var rg = new RectangleGeometry() { Rect = new Rect(new Point(barx, topy), new Point(rightx, bottomy)) };
 			path.Data = rg;
-			st.itemstate.Add(new SeriesItemState(index, leftx, y1, path));
+			st.itemstate.Add(new SeriesItemState(index, leftx, barx, y1, path));
 		}
 		/// <summary>
 		/// Have to perform update here and not in Postamble because we are altering axis limits.

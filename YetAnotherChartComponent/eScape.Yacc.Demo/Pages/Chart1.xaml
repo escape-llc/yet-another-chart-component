@@ -33,8 +33,12 @@
 			<Setter Property="Stroke" Value="LightBlue"/>
 			<Setter Property="StrokeThickness" Value="3"/>
 		</Style>
-		<Style x:Key="Band_v1v2-rule" TargetType="Path">
+		<Style x:Key="Band_v1-rule" TargetType="Path">
 			<Setter Property="Stroke" Value="DarkGoldenrod"/>
+			<Setter Property="StrokeThickness" Value="3"/>
+		</Style>
+		<Style x:Key="Band_v2-rule" TargetType="Path">
+			<Setter Property="Stroke" Value="Goldenrod"/>
 			<Setter Property="StrokeThickness" Value="3"/>
 		</Style>
 		<Style x:Key="Band_v1v2-band" TargetType="Path">
@@ -64,7 +68,11 @@
 		</Style>
 		<Style x:Key="BigLabels" BasedOn="{StaticResource Labels}" TargetType="TextBlock">
 			<Setter Property="FontSize" Value="16"/>
-			<Setter Property="Foreground" Value="Azure"/>
+			<Setter Property="Foreground" Value="Cyan"/>
+		</Style>
+		<Style x:Key="BigLabels2" BasedOn="{StaticResource Labels}" TargetType="TextBlock">
+			<Setter Property="FontSize" Value="20"/>
+			<Setter Property="Foreground" Value="LightGoldenrodYellow"/>
 		</Style>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
@@ -114,16 +122,20 @@
 						</DataTemplate>
 					</yacc:MarkerSeries.MarkerTemplate>
 				</yacc:MarkerSeries>
-				<yacc:HorizontalBand ValueAxisName="yaxis" Value1="{Binding Value1Average}" Value2="{Binding Value2Average}"
-					PathStyle="{StaticResource Band_v1v2-rule}" BandPathStyle="{StaticResource Band_v1v2-band}"
+				<yacc:HorizontalBand x:Name="band" ValueAxisName="yaxis" Value1="{Binding Value1Average}" Value2="{Binding Value2Average}"
+					PathStyle="{StaticResource Band_v1-rule}" Value2PathStyle="{StaticResource Band_v2-rule}" BandPathStyle="{StaticResource Band_v1v2-band}"
 					Visibility="{Binding ElementName=cb_band, Path=IsChecked, Converter={StaticResource b2v}}"
 				/>
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}"
 					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="F1" />
 				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource Grid}"
 					Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
-				<yacc:SeriesValueLabels SeriesName="colv2" LabelFormatString="F2"
+				<yacc:SeriesValueLabels SourceName="colv2" LabelFormatString="F2"
 					CategoryAxisOffset=".625" PlacementOffset="0,1" LabelOffset="0,-1" LabelStyle="{StaticResource BigLabels}" />
+				<yacc:SeriesValueLabels SourceName="band" LabelFormatString="F2"
+					CategoryAxisOffset="0" PlacementOffset="0,1" LabelOffset="1,0" LabelStyle="{StaticResource BigLabels2}" />
+				<yacc:SeriesValueLabels SourceName="band" ValueChannel="1" LabelFormatString="F2"
+					CategoryAxisOffset="1" PlacementOffset="0,0" LabelOffset="-1,0" LabelStyle="{StaticResource BigLabels2}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>
 		<TextBlock x:Name="title" Style="{StaticResource Title}" Text="YACC Demonstration Chart"

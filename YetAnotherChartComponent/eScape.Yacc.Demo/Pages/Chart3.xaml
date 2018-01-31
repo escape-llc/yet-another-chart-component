@@ -73,9 +73,9 @@
 				<yacc:LineSeries x:Name="v4" DataSourceName="data" ValuePath="Value4" Title="Value 4 Line"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".375"
 					ClipToDataRegion="False" PathStyle="{StaticResource Line_v3}" />
-				<yacc:SeriesValueLabels SeriesName="v3" LabelFormatString="F2"
+				<yacc:SeriesValueLabels SourceName="v3" LabelFormatString="F2"
 					CategoryAxisOffset=".5" LabelOffset="0,0" LabelStyle="{StaticResource Labels}" />
-				<yacc:SeriesValueLabels SeriesName="v4" LabelFormatString="F2"
+				<yacc:SeriesValueLabels SourceName="v4" LabelFormatString="F2"
 					CategoryAxisOffset=".375" LabelOffset="0,-1" LabelStyle="{StaticResource Labels}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>

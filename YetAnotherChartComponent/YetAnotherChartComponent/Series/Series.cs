@@ -253,9 +253,13 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		int Index { get; }
 		/// <summary>
-		/// The category axis value.
+		/// The category axis value for the <see cref="Index"/>.
 		/// </summary>
-		double XValue { get; }
+		double XValueIndex { get; }
+		/// <summary>
+		/// The category axis value after applying offset, e.g. <see cref="MarkerSeries.MarkerOffset"/>.
+		/// </summary>
+		double XValueOffset { get; }
 	}
 	/// <summary>
 	/// Item tracking a single channel.
@@ -363,19 +367,19 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Half-dimensions of the rectangle.
 		/// </summary>
-		public Size HalfDimension { get; private set; }
+		public Size HalfDimensions { get; private set; }
 		#endregion
 		#region ctor
 		/// <summary>
 		/// Ctor.
 		/// </summary>
-		/// <param name="direction"></param>
-		/// <param name="center"></param>
-		/// <param name="hd"></param>
+		/// <param name="direction">Direction vector.</param>
+		/// <param name="center">Center point.</param>
+		/// <param name="hd">Half dimensions.</param>
 		public RectanglePlacement(Point direction, Point center, Size hd) {
 			Direction = direction;
 			Center = center;
-			HalfDimension = hd;
+			HalfDimensions = hd;
 		}
 		/// <summary>
 		/// Ctor.
@@ -387,6 +391,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Ctor.
 		/// Infers direction from the coordinates of the rectangle.
+		/// IST: the Rect is always DC so its direction vector is (-,1) because the most-negative y-coordinate becomes the TOP.
 		/// </summary>
 		/// <param name="rc">A rectangle.</param>
 		public RectanglePlacement(Rect rc) :this(new Point(Math.Sign(rc.Right - rc.Left), Math.Sign(rc.Bottom - rc.Top)), rc) { }
@@ -401,7 +406,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="pt"></param>
 		/// <returns></returns>
-		public override Point Transform(Point pt) { return new Point(Center.X + pt.X*HalfDimension.Width*Direction.X, Center.Y + pt.Y*HalfDimension.Height*Direction.Y); }
+		public override Point Transform(Point pt) { return new Point(Center.X + pt.X*HalfDimensions.Width*Direction.X, Center.Y + pt.Y*HalfDimensions.Height*Direction.Y); }
 		#endregion
 	}
 	/// <summary>
@@ -424,15 +429,20 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public int Index { get; private set; }
 		/// <summary>
-		/// The x value.
+		/// The x value for <see cref="Index"/>.
 		/// </summary>
-		public double XValue { get; private set; }
+		public double XValueIndex { get; private set; }
+		/// <summary>
+		/// The x value after intra-unit offset.
+		/// </summary>
+		public double XValueOffset { get; private set; }
 		/// <summary>
 		/// Ctor.
 		/// </summary>
 		/// <param name="idx"></param>
 		/// <param name="xv"></param>
-		public ItemStateCore(int idx, double xv) { Index = idx; XValue = xv; }
+		/// <param name="xvo"></param>
+		public ItemStateCore(int idx, double xv, double xvo) { Index = idx; XValueIndex = xv; XValueOffset = xvo; }
 	}
 	/// <summary>
 	/// Item state for single value.
@@ -457,10 +467,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="idx"></param>
 		/// <param name="xv"></param>
+		/// <param name="xvo"></param>
 		/// <param name="yv"></param>
 		/// <param name="ele"></param>
 		/// <param name="ch">Channel; default to zero.</param>
-		public ItemState(int idx, double xv, double yv, EL ele, int ch = 0) :base(idx, xv) {
+		public ItemState(int idx, double xv, double xvo, double yv, EL ele, int ch = 0) :base(idx, xv, xvo) {
 			YValue = yv;
 			Element = ele;
 			Channel = ch;
@@ -481,10 +492,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="idx"></param>
 		/// <param name="xv"></param>
+		/// <param name="xvo"></param>
 		/// <param name="yv"></param>
 		/// <param name="ele"></param>
 		/// <param name="ch"></param>
-		public ItemStateWithPlacement(int idx, double xv, double yv, EL ele, int ch = 0) : base(idx, xv, yv, ele, ch) { }
+		public ItemStateWithPlacement(int idx, double xv, double xvo, double yv, EL ele, int ch = 0) : base(idx, xv, xvo, yv, ele, ch) { }
 		/// <summary>
 		/// Override to create placement.
 		/// </summary>
@@ -504,8 +516,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="idx">Index.</param>
 		/// <param name="xv">X-value.</param>
+		/// <param name="xvo"></param>
 		/// <param name="isis">Channel details.  THIS takes ownership.</param>
-		public ItemStateMultiChannelCore(int idx, double xv, ISeriesItemValue[] isis) : base(idx, xv) { YValues = isis; }
+		public ItemStateMultiChannelCore(int idx, double xv, double xvo, ISeriesItemValue[] isis) : base(idx, xv, xvo) { YValues = isis; }
 	}
 
 	/// <summary>
@@ -518,10 +531,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="idx"></param>
 		/// <param name="xv"></param>
+		/// <param name="xvo"></param>
 		/// <param name="yv"></param>
 		/// <param name="ele"></param>
 		/// <param name="ch"></param>
-		public ItemState_Matrix(int idx, double xv, double yv, EL ele, int ch = 0) : base(idx, xv, yv, ele, ch) { }
+		public ItemState_Matrix(int idx, double xv, double xvo, double yv, EL ele, int ch = 0) : base(idx, xv, xvo, yv, ele, ch) { }
 		/// <summary>
 		/// Alternate matrix for the M matrix.
 		/// Used when establishing a local transform for <see cref="ItemState{E}.Element"/>.
@@ -543,10 +557,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="idx"></param>
 		/// <param name="xv"></param>
+		/// <param name="xvo"></param>
 		/// <param name="yv"></param>
 		/// <param name="ele"></param>
 		/// <param name="ch"></param>
-		public ItemState_MatrixAndGeometry(int idx, double xv, double yv, Path ele, int ch = 0) : base(idx, xv, yv, ele, ch) { }
+		public ItemState_MatrixAndGeometry(int idx, double xv, double xvo, double yv, Path ele, int ch = 0) : base(idx, xv, xvo, yv, ele, ch) { }
 	}
 	#endregion
 	#region RenderState implementations

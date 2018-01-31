@@ -10,6 +10,67 @@ using Windows.UI.Xaml.Media;
 namespace Yacc.Tests {
 	[TestClass]
 	public class UnitTest_Platform {
+		public TestContext TestContext { get; set; }
+		/// <summary>
+		/// Confirms that positive y-axis is increasing "downward" as in Device Coordinates.
+		/// Also confirms ZERO is a valid dimension.
+		/// </summary>
+		[TestMethod]
+		public void Rect_PositiveYAxis() {
+			var rect = new Rect(new Point(0, 0), new Point(0, 10));
+			TestContext.WriteLine("rect {0}", rect);
+			Assert.AreEqual(10, rect.Height, "height failed");
+			Assert.AreEqual(0, rect.Width, "width failed");
+			Assert.AreEqual(0, rect.Top, "top failed");
+			Assert.AreEqual(0, rect.Left, "left failed");
+			Assert.AreEqual(10, rect.Bottom, "bottom failed");
+			Assert.AreEqual(0, rect.Right, "right failed");
+		}
+		/// <summary>
+		/// Windows.Foundation.Rect is ALWAYS Device Coordinates!
+		/// BECAUSE the y-axis increases "downward", a negative value is "above" zero, and becomes the TOP of the rectangle,
+		/// so HEIGHT can be positive.
+		/// Presumably this is done because it STORES the dimensions plus TL and NOT the two points given.
+		/// IST: the ctor parameters are only called "first point" and "second point" so they are not necessarily TL/BR in order.
+		/// </summary>
+		[TestMethod]
+		public void Rect_NegativeYAxis() {
+			var rect = new Rect(new Point(0, 0), new Point(0, -10));
+			TestContext.WriteLine("rect {0}", rect);
+			Assert.AreEqual(10, rect.Height, "height failed");
+			Assert.AreEqual(0, rect.Width, "width failed");
+			// OMG WTF!  oh yea, DC!
+			Assert.AreEqual(-10, rect.Top, "top failed");
+			Assert.AreEqual(0, rect.Left, "left failed");
+			Assert.AreEqual(0, rect.Bottom, "bottom failed");
+			Assert.AreEqual(0, rect.Right, "right failed");
+		}
+		[TestMethod]
+		public void Rect_AllNegativeYAxis() {
+			var rect = new Rect(new Point(0, -20), new Point(0, -10));
+			TestContext.WriteLine("rect {0}", rect);
+			Assert.AreEqual(10, rect.Height, "height failed");
+			Assert.AreEqual(0, rect.Width, "width failed");
+			Assert.AreEqual(-20, rect.Top, "top failed");
+			Assert.AreEqual(0, rect.Left, "left failed");
+			Assert.AreEqual(-10, rect.Bottom, "bottom failed");
+			Assert.AreEqual(0, rect.Right, "right failed");
+		}
+		/// <summary>
+		/// As in DC, negative X-axis works as expected, increasing "rightward".
+		/// </summary>
+		[TestMethod]
+		public void Rect_NegativeXAxis() {
+			var rect = new Rect(new Point(0, 0), new Point(-10, 0));
+			TestContext.WriteLine("rect {0}", rect);
+			Assert.AreEqual(0, rect.Height, "height failed");
+			Assert.AreEqual(10, rect.Width, "width failed");
+			// OMG WTF!
+			Assert.AreEqual(0, rect.Top, "top failed");
+			Assert.AreEqual(-10, rect.Left, "left failed");
+			Assert.AreEqual(0, rect.Bottom, "bottom failed");
+			Assert.AreEqual(0, rect.Right, "right failed");
+		}
 		/// <summary>
 		/// Not-a-Number is very special: it does not compare to anything!
 		/// </summary>

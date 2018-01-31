@@ -18,7 +18,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		protected class SeriesItemState : ItemState<TextBlock> {
 			internal Point Direction { get; set; }
-			internal SeriesItemState(int idx, double xv, double yv, TextBlock ele, int ch) : base(idx, xv, yv, ele, ch) { }
+			internal SeriesItemState(int idx, double xv, double xvo, double yv, TextBlock ele, int ch) : base(idx, xv, xvo, yv, ele, ch) { }
 		}
 		#endregion
 		#region properties
@@ -27,10 +27,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public IChartTheme Theme { get; set; }
 		/// <summary>
-		/// The name of the series in the Components collection.
-		/// The axes are obtained from this series.
+		/// The name of the source in the Components collection.
+		/// The item values are obtained from this series.
 		/// </summary>
-		public String SeriesName { get { return (String)GetValue(SeriesNameProperty); } set { SetValue(SeriesNameProperty, value); } }
+		public String SourceName { get { return (String)GetValue(SourceNameProperty); } set { SetValue(SourceNameProperty, value); } }
 		/// <summary>
 		/// The value channel to display values for.
 		/// </summary>
@@ -71,9 +71,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		protected IChartAxis CategoryAxis { get; set; }
 		/// <summary>
-		/// Dereferenced data series to interrogate for values.
+		/// Dereferenced component to interrogate for values.
 		/// </summary>
-		protected DataSeries Source { get; set; }
+		protected ChartComponent Source { get; set; }
 		/// <summary>
 		/// The layer for components.
 		/// </summary>
@@ -91,10 +91,10 @@ namespace eScapeLLC.UWP.Charts {
 			nameof(ValueChannel), typeof(int), typeof(SeriesValueLabels), new PropertyMetadata(0, new PropertyChangedCallback(PropertyChanged_ValueDirty))
 		);
 		/// <summary>
-		/// Identifies <see cref="SeriesName"/> dependency property.
+		/// Identifies <see cref="SourceName"/> dependency property.
 		/// </summary>
-		public static readonly DependencyProperty SeriesNameProperty = DependencyProperty.Register(
-			nameof(SeriesName), typeof(string), typeof(SeriesValueLabels), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
+		public static readonly DependencyProperty SourceNameProperty = DependencyProperty.Register(
+			nameof(SourceName), typeof(string), typeof(SeriesValueLabels), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
 		);
 		/// <summary>
 		/// Identifies <see cref="LabelStyle"/> dependency property.
@@ -113,43 +113,47 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region helpers
 		/// <summary>
-		/// Resolve series and axis references.
+		/// Resolve component and axis references.
 		/// </summary>
 		/// <param name="icrc">The context.</param>
 		protected void EnsureComponents(IChartComponentContext icrc) {
-			if(Source == null && !String.IsNullOrEmpty(SeriesName)) {
-				Source = icrc.Find(SeriesName) as DataSeries;
+			if(Source == null && !String.IsNullOrEmpty(SourceName)) {
+				Source = icrc.Find(SourceName);
 			} else {
 				if (icrc is IChartErrorInfo icei) {
-					icei.Report(new ChartValidationResult(NameOrType(), $"Series '{SeriesName}' was not found", new[] { nameof(Source), nameof(SeriesName) }));
+					icei.Report(new ChartValidationResult(NameOrType(), $"Series '{SourceName}' was not found", new[] { nameof(Source), nameof(SourceName) }));
 				}
 			}
 			if (Source == null) {
 				if (icrc is IChartErrorInfo icei) {
-					icei.Report(new ChartValidationResult(NameOrType(), $"Series lookup failed; no other components can resolve", new[] { nameof(Source), nameof(SeriesName) }));
+					icei.Report(new ChartValidationResult(NameOrType(), $"Series lookup failed; no other components can resolve", new[] { nameof(Source), nameof(SourceName) }));
 				}
 				return;
 			}
 			else {
 				if(!(Source is IProvideSeriesItemValues)) {
 					if (icrc is IChartErrorInfo icei) {
-						icei.Report(new ChartValidationResult(Source.NameOrType(), $"Series does not provide values; no labels will generate", new[] { nameof(Source), nameof(SeriesName) }));
+						icei.Report(new ChartValidationResult(Source.NameOrType(), $"Series does not provide values; no labels will generate", new[] { nameof(Source), nameof(SourceName) }));
 					}
 					return;
 				}
 			}
-			if (ValueAxis == null && !String.IsNullOrEmpty(Source.ValueAxisName)) {
-				ValueAxis = icrc.Find(Source.ValueAxisName) as IChartAxis;
-			} else {
-				if (icrc is IChartErrorInfo icei) {
-					icei.Report(new ChartValidationResult(Source.NameOrType(), $"Value axis '{Source.ValueAxisName}' was not found", new[] { nameof(ValueAxis), nameof(Source.ValueAxisName) }));
+			if (Source is IProvideValueExtents ipve) {
+				if (ValueAxis == null && !String.IsNullOrEmpty(ipve.ValueAxisName)) {
+					ValueAxis = icrc.Find(ipve.ValueAxisName) as IChartAxis;
+				} else {
+					if (icrc is IChartErrorInfo icei) {
+						icei.Report(new ChartValidationResult(Source.NameOrType(), $"Value axis '{ipve.ValueAxisName}' was not found", new[] { nameof(ValueAxis), nameof(ipve.ValueAxisName) }));
+					}
 				}
 			}
-			if (CategoryAxis == null && !String.IsNullOrEmpty(Source.CategoryAxisName)) {
-				CategoryAxis = icrc.Find(Source.CategoryAxisName) as IChartAxis;
-			} else {
-				if (icrc is IChartErrorInfo icei) {
-					icei.Report(new ChartValidationResult(Source.NameOrType(), $"Category axis '{Source.CategoryAxisName}' was not found", new[] { nameof(CategoryAxis), nameof(Source.CategoryAxisName) }));
+			if (Source is IProvideCategoryExtents ipce) {
+				if (CategoryAxis == null && !String.IsNullOrEmpty(ipce.CategoryAxisName)) {
+					CategoryAxis = icrc.Find(ipce.CategoryAxisName) as IChartAxis;
+				} else {
+					if (icrc is IChartErrorInfo icei) {
+						icei.Report(new ChartValidationResult(Source.NameOrType(), $"Category axis '{ipce.CategoryAxisName}' was not found", new[] { nameof(CategoryAxis), nameof(ipce.CategoryAxisName) }));
+					}
 				}
 			}
 		}
@@ -183,7 +187,7 @@ namespace eScapeLLC.UWP.Charts {
 				LabelStyle == null, Theme != null, Theme.LabelAxisTop != null,
 				() => LabelStyle = Theme.LabelAxisTop
 			);
-			_trace.Verbose($"{Name} enter s:{SeriesName} {Source} v:{ValueAxis} c:{CategoryAxis}");
+			_trace.Verbose($"{Name} enter s:{SourceName} {Source} v:{ValueAxis} c:{CategoryAxis}");
 		}
 		void IRequireEnterLeave.Leave(IChartEnterLeaveContext icelc) {
 			_trace.Verbose($"{Name} leave");
@@ -196,7 +200,7 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region IRequireRender
 		void IRequireRender.Render(IChartRenderContext icrc) {
-			if (Source == null || ValueAxis == null || CategoryAxis == null) return;
+			// IST: not using CategoryAxis OR ValueAxis so not checking it for null
 			if(Source is IProvideSeriesItemValues ipsiv) {
 				// preamble
 				var elements = ItemState.Select(ms => ms.Element);
@@ -218,19 +222,16 @@ namespace eScapeLLC.UWP.Charts {
 						var tb = NextElement(elenum);
 						if (tb == null) continue;
 						tb.Text = target.YValue.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
-						var mappedx = CategoryAxis.For(siv.Index);
 						var pmt = (target as IProvidePlacement)?.Placement;
-						// provide customized placement according to info
 						switch(pmt) {
 						case RectanglePlacement rp:
-							// use the PlacementOffset
 							var pt = rp.Transform(PlacementOffset);
-							_trace.Verbose($"rp c:{rp.Center} d:{rp.Direction} hd:{rp.HalfDimension} pt:{pt}");
-							var sis = new SeriesItemState(siv.Index, mappedx + CategoryAxisOffset, pt.Y, tb, target.Channel) { Direction = rp.Direction };
+							_trace.Verbose($"rp c:{rp.Center} d:{rp.Direction} hd:{rp.HalfDimensions} pt:{pt}");
+							var sis = new SeriesItemState(siv.Index, siv.XValueIndex, siv.XValueIndex + CategoryAxisOffset, pt.Y, tb, target.Channel) { Direction = rp.Direction };
 							itemstate.Add(sis);
 							break;
 						default:
-							var sis2 = new SeriesItemState(siv.Index, mappedx + CategoryAxisOffset, target.YValue, tb, target.Channel) { Direction = Placement.UP_RIGHT };
+							var sis2 = new SeriesItemState(siv.Index, siv.XValueIndex, siv.XValueIndex + CategoryAxisOffset, target.YValue, tb, target.Channel) { Direction = Placement.UP_RIGHT };
 							itemstate.Add(sis2);
 							break;
 						}
@@ -254,12 +255,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icrc"></param>
 		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
-			if (CategoryAxis == null || ValueAxis == null) return;
+			if (ValueAxis == null) return;
 			if (ItemState.Count == 0) return;
-			_trace.Verbose($"{Name} transforms a:{icrc.Area} rx:{CategoryAxis.Range} ry:{ValueAxis.Range}");
-			var matx = MatrixSupport.TransformFor(icrc.Area, CategoryAxis, ValueAxis);
+			_trace.Verbose($"{Name} transforms a:{icrc.Area} rx:{CategoryAxis?.Range} ry:{ValueAxis.Range}");
+			var matx = CategoryAxis != null ? MatrixSupport.TransformFor(icrc.Area, CategoryAxis, ValueAxis) : MatrixSupport.TransformFor(icrc.Area, ValueAxis);
 			foreach (var state in ItemState) {
-				var dcc = matx.Transform(new Point(state.XValue, state.YValue));
+				var dcc = matx.Transform(new Point(state.XValueOffset, state.YValue));
 				// get half-dimensions of the TextBlock
 				// IST elements must have had measure-pass before we get to here!
 				var hw = state.Element.ActualWidth / 2;
@@ -274,7 +275,7 @@ namespace eScapeLLC.UWP.Charts {
 					//state.Element.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
 				}
 #endif
-				_trace.Verbose($"{Name} matx:{matx} pt:({state.XValue},{state.YValue}) dcc:{dcc} tbsz:{state.Element.ActualWidth},{state.Element.ActualHeight}");
+				_trace.Verbose($"{Name} matx:{matx} pt:({state.XValueIndex},{state.YValue}) dcc:{dcc} tbsz:{state.Element.ActualWidth},{state.Element.ActualHeight}");
 			}
 		}
 		#endregion

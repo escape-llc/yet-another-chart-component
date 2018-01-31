@@ -101,7 +101,8 @@ namespace eScapeLLC.UWP.Charts {
 			/// </summary>
 			/// <param name="idx"></param>
 			/// <param name="xv"></param>
-			public SeriesItemState(int idx, double xv) :base(idx, xv){ }
+			/// <param name="xvo"></param>
+			public SeriesItemState(int idx, double xv, double xvo) :base(idx, xv, xvo){ }
 		}
 		/// <summary>
 		/// Wrapper for the channel items.
@@ -112,7 +113,7 @@ namespace eScapeLLC.UWP.Charts {
 			/// </summary>
 			/// <returns></returns>
 			protected override Placement CreatePlacement() { return new RectanglePlacement(YValue >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, (Element.Data as RectangleGeometry).Rect); }
-			internal ChannelItemState(int idx, double xv, double yv, Path ele, int ch) : base(idx, xv, yv, ele, ch) { }
+			internal ChannelItemState(int idx, double xv, double xvo, double yv, Path ele, int ch) : base(idx, xv, xvo, yv, ele, ch) { }
 		}
 		#endregion
 		#region properties
@@ -163,9 +164,9 @@ namespace eScapeLLC.UWP.Charts {
 			foreach (var sis in siss) {
 				var sis2 = new ISeriesItemValue[sis.Elements.Count];
 				for (int idx = 0; idx < sis.Elements.Count; idx++) {
-					sis2[idx] = new ChannelItemState(sis.Index, sis.XValue, sis.Elements[idx].Item1, sis.Elements[idx].Item2, idx);
+					sis2[idx] = new ChannelItemState(sis.Index, sis.XValueIndex, sis.XValueOffset, sis.Elements[idx].Item1, sis.Elements[idx].Item2, idx);
 				}
-				var sivc = new ItemStateMultiChannelCore(sis.Index, sis.XValue, sis2);
+				var sivc = new ItemStateMultiChannelCore(sis.Index, sis.XValueIndex, sis.XValueOffset, sis2);
 				yield return sivc;
 			}
 		}
@@ -254,14 +255,14 @@ namespace eScapeLLC.UWP.Charts {
 				bys
 			);
 		}
-
 		void IDataSourceRenderer.Render(object state, int index, object item) {
 			var st = state as State;
 			var valuex = st.bx != null ? (double)st.bx.For(item) : index;
 			st.ix = index;
-			var leftx = (st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()))) + BarOffset;
-			var rightx = leftx + BarWidth;
-			var sis = new SeriesItemState(index, leftx);
+			var leftx = (st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString())));
+			var barx = leftx + BarOffset;
+			var rightx = barx + BarWidth;
+			var sis = new SeriesItemState(index, leftx, barx);
 			for (int ix = 0; ix < st.bys.Length; ix++) {
 				var valuey = CoerceValue(item, st.bys[ix]);
 				if (double.IsNaN(valuey)) {
@@ -279,10 +280,10 @@ namespace eScapeLLC.UWP.Charts {
 				var topy = Math.Max(y1, y2);
 				var bottomy = Math.Min(y1, y2);
 				sis.UpdateLimits(y1);
-				_trace.Verbose($"{Name}[{index},{ix}] {valuey} ({leftx},{topy}) ({rightx},{bottomy}) sis ({sis.Min},{sis.Max})");
+				_trace.Verbose($"{Name}[{index},{ix}] {valuey} ({barx},{topy}) ({rightx},{bottomy}) sis ({sis.Min},{sis.Max})");
 				var path = st.NextElement();
 				if (path == null) return;
-				var rg = new RectangleGeometry() { Rect = new Rect(new Point(leftx, topy), new Point(rightx, bottomy)) };
+				var rg = new RectangleGeometry() { Rect = new Rect(new Point(barx, topy), new Point(rightx, bottomy)) };
 				path.Data = rg;
 				BindTo(ColumnStack[ix], "PathStyle", path, Path.StyleProperty);
 				UpdateLimits(valuex, sis.Min, sis.Max);

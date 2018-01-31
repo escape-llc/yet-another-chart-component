@@ -20,7 +20,7 @@ namespace eScapeLLC.UWP.Charts {
 			/// The list of paths created for the figure.
 			/// </summary>
 			internal Tuple<double, PathFigure>[] Elements { get; private set; }
-			internal SeriesItemState(int idx, double xv, double yv, Path ele, Tuple<double, PathFigure>[] figs) : base(idx, xv, yv, ele, 0) { Elements = figs; }
+			internal SeriesItemState(int idx, double xv, double xvo, double yv, Path ele, Tuple<double, PathFigure>[] figs) : base(idx, xv, xvo, yv, ele, 0) { Elements = figs; }
 		}
 		#region properties
 		/// <summary>
@@ -135,9 +135,9 @@ namespace eScapeLLC.UWP.Charts {
 			foreach (var sis in siss) {
 				var sis2 = new ISeriesItemValue[sis.Elements.Length];
 				for (int idx = 0; idx < sis.Elements.Length; idx++) {
-					sis2[idx] = new ItemState<PathFigure>(sis.Index, sis.XValue, sis.Elements[idx].Item1, sis.Elements[idx].Item2, idx);
+					sis2[idx] = new ItemState<PathFigure>(sis.Index, sis.XValueIndex, sis.XValueOffset, sis.Elements[idx].Item1, sis.Elements[idx].Item2, idx);
 				}
-				var sivc = new ItemStateMultiChannelCore(sis.Index, sis.XValue, sis2);
+				var sivc = new ItemStateMultiChannelCore(sis.Index, sis.XValueIndex, sis.XValueOffset, sis2);
 				yield return sivc;
 			}
 		}
@@ -272,23 +272,24 @@ namespace eScapeLLC.UWP.Charts {
 			var y2 = ValueAxis.For(valueC);
 			var y3 = ValueAxis.For(valueH);
 			var y4 = ValueAxis.For(valueL);
-			var leftx = (st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()))) + BarOffset;
-			var rightx = leftx + BarWidth;
+			var leftx = (st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString())));
+			var barx = leftx + BarOffset;
+			var rightx = barx + BarWidth;
 			// force them to be a min/max
 			var topy = Math.Max(y1, y2);
 			var bottomy = Math.Min(y1, y2);
 			var highy = Math.Max(y3, y4);
 			var lowy = Math.Min(y3, y4);
-			_trace.Verbose($"{Name}[{index}] {valueO}/{valueH}/{valueL}/{valueC} ({leftx},{topy}) ({rightx},{bottomy})");
+			_trace.Verbose($"{Name}[{index}] {valueO}/{valueH}/{valueL}/{valueC} ({barx},{topy}) ({rightx},{bottomy})");
 			// create geometry
 			var path = st.NextElement();
 			if (path == null) return;
 			var pg = new PathGeometry();
 			// body (open/close)
-			var pf = PathHelper.Rectangle(leftx, topy, rightx, bottomy);
+			var pf = PathHelper.Rectangle(barx, topy, rightx, bottomy);
 			pg.Figures.Add(pf);
 			// upper shadow (high)
-			var centerx = leftx + (rightx - leftx) / 2;
+			var centerx = barx + (rightx - barx) / 2;
 			var upper = PathHelper.Line(centerx, topy, centerx, highy);
 			pg.Figures.Add(upper);
 			// lower shadow (low)
@@ -302,7 +303,7 @@ namespace eScapeLLC.UWP.Charts {
 			figs[1] = new Tuple<double, PathFigure>(y2, pf);
 			figs[2] = new Tuple<double, PathFigure>(y3, upper);
 			figs[3] = new Tuple<double, PathFigure>(y4, lower);
-			st.itemstate.Add(new SeriesItemState(index, leftx, y1, path, figs));
+			st.itemstate.Add(new SeriesItemState(index, leftx, barx, y1, path, figs));
 		}
 		void IDataSourceRenderer.RenderComplete(object state) {
 			var st = state as State;
