@@ -125,9 +125,11 @@
     <Compile Include="Series\MarkerSeries.cs" />
     <Compile Include="MatrixSupport.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Series\PieSeries.cs" />
+    <Compile Include="Series\Placement.cs" />
     <Compile Include="Series\Series.cs" />
     <Compile Include="Series\StackedColumnSeries.cs" />
-    <Compile Include="Decorations\SeriesValueLabels.cs" />
+    <Compile Include="Decorations\ValueLabels.cs" />
     <Compile Include="Theme.cs" />
     <Compile Include="Axis\ValueAxis.cs" />
     <EmbeddedResource Include="Properties\eScapeLLC.UWP.Charts.rd.xml" />

@@ -1,0 +1,52 @@
+﻿<local:BasicPage
+	x:Class="Yacc.Demo.Pages.Chart6"
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:local="using:Yacc.Demo.Pages"
+	xmlns:yacc="using:eScapeLLC.UWP.Charts"
+	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+	mc:Ignorable="d">
+	<Page.Resources>
+		<Style x:Key="Column_v1" TargetType="Path">
+			<Setter Property="Stroke" Value="Gray"/>
+			<Setter Property="StrokeThickness" Value="2"/>
+			<Setter Property="Fill" Value="Green"/>
+		</Style>
+		<Style x:Key="BigLabels" BasedOn="{StaticResource Labels}" TargetType="TextBlock">
+			<Setter Property="FontSize" Value="38"/>
+			<Setter Property="Foreground" Value="Azure"/>
+		</Style>
+		<yacc:DefaultColorsGenerator x:Key="colors" BaseStyle="{StaticResource Column_v1}"/>
+	</Page.Resources>
+	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+		<CommandBar x:Name="toolbar"
+			RelativePanel.AlignTopWithPanel="True">
+			<CommandBar.PrimaryCommands>
+				<AppBarToggleButton IsChecked="True" x:Name="cb_legend" Label="Toggle" Content="Legend"/>
+			</CommandBar.PrimaryCommands>
+		</CommandBar>
+		<yacc:Chart x:Name="chart" Style="{StaticResource Chart}" ChartError="Chart_ChartError"
+			RelativePanel.Below="toolbar" RelativePanel.AlignBottomWithPanel="True"
+			RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True">
+			<yacc:Chart.DataSources>
+				<yacc:DataSource x:Name="data" Items="{Binding Data}"/>
+			</yacc:Chart.DataSources>
+			<yacc:Chart.Components>
+				<yacc:PieSeries x:Name="pie" DataSourceName="data" CategoryLabelPath="Label" ValuePath="Value1" Generator="{StaticResource colors}" />
+				<yacc:ValueLabels SourceName="pie" PlacementOffset=".5,.5" LabelFormatString="F1" LabelStyle="{StaticResource BigLabels}" />
+			</yacc:Chart.Components>
+		</yacc:Chart>
+		<TextBlock x:Name="title" Style="{StaticResource Title}" Text="Pie Chart"
+			RelativePanel.AlignTopWith="chart" RelativePanel.AlignHorizontalCenterWithPanel="True"/>
+		<Image Source="ms-appx:/Assets/Square44x44Logo.scale-100.png" Style="{StaticResource Logo}"
+			RelativePanel.LeftOf="title" RelativePanel.AlignVerticalCenterWith="title" />
+		<Border Style="{StaticResource Legend}"
+			Visibility="{Binding ElementName=cb_legend,Path=IsChecked}"
+			RelativePanel.AlignRightWith="chart" RelativePanel.AlignTopWith="chart">
+			<ItemsControl x:Name="legend" Margin="2" Padding="2"
+				ItemsSource="{Binding ElementName=chart,Path=LegendItems}"
+				ItemTemplate="{StaticResource LegendItem}"/>
+		</Border>
+	</RelativePanel>
+</local:BasicPage>

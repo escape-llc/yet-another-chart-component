@@ -34,7 +34,8 @@ namespace Yacc.Demo.VM {
 				new PageItem() { Symbol = Symbol.Font, Title = "Default", Description = "Default styles in case you forget!", PageType = typeof(Chart2) },
 				new PageItem() { Symbol = Symbol.Clock, Title = "Recycling", Description = "Paths get recycled efficiently as values enter and leave chart.", PageType = typeof(Chart3) },
 				new PageItem() { Symbol = Symbol.Account, Title = "Stock Chart", Description = "Cached real data (to avoid permissions) and multiple Y-axis.", PageType = typeof(Chart4) },
-				new PageItem() { Symbol = Symbol.CalendarWeek, Title = "Stacked", Description = "Stacked column chart.", PageType = typeof(Chart5) }
+				new PageItem() { Symbol = Symbol.CalendarWeek, Title = "Stacked", Description = "Stacked column chart with labels.", PageType = typeof(Chart5) },
+				new PageItem() { Symbol = Symbol.Favorite, Title = "Pie", Description = "Pie chart.", PageType = typeof(Chart6) }
 			};
 			PageList = pl;
 		}

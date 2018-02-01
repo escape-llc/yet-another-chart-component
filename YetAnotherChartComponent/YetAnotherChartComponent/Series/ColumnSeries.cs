@@ -85,7 +85,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Initialize after entering VT.
 		/// </summary>
 		/// <param name="icelc"></param>
-		public void Enter(IChartEnterLeaveContext icelc) {
+		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			EnsureAxes(icelc as IChartComponentContext);
 			Layer = icelc.CreateLayer();
 			_trace.Verbose($"{Name} enter v:{ValueAxisName} {ValueAxis} c:{CategoryAxisName} {CategoryAxis} d:{DataSourceName}");
@@ -113,7 +113,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Undo effects of Enter().
 		/// </summary>
 		/// <param name="icelc"></param>
-		public void Leave(IChartEnterLeaveContext icelc) {
+		void IRequireEnterLeave.Leave(IChartEnterLeaveContext icelc) {
 			_trace.Verbose($"{Name} leave");
 			ValueAxis = null;
 			CategoryAxis = null;
@@ -125,7 +125,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Geometry: scaled to actual values in cartesian coordinates as indicated by axes.
 		/// </summary>
 		/// <param name="icrc"></param>
-		public void Transforms(IChartRenderContext icrc) {
+		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			if (ItemState.Count == 0) return;
 			var matx = MatrixSupport.TransformFor(icrc.Area, CategoryAxis, ValueAxis);

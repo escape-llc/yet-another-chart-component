@@ -63,13 +63,13 @@
 						<yacc:ColumnStackItem Title="Value 4" ValuePath="Value4" PathStyle="{StaticResource Column_v4}"/>
 					</yacc:StackedColumnSeries.ColumnStack>
 				</yacc:StackedColumnSeries>
-				<yacc:SeriesValueLabels SourceName="stack" LabelFormatString="F1"
+				<yacc:ValueLabels SourceName="stack" LabelFormatString="F1"
 					CategoryAxisOffset=".375" LabelStyle="{StaticResource BigLabels}" />
-				<yacc:SeriesValueLabels SourceName="stack" ValueChannel="1" LabelFormatString="F1"
+				<yacc:ValueLabels SourceName="stack" ValueChannel="1" LabelFormatString="F1"
 					CategoryAxisOffset=".375" LabelStyle="{StaticResource BigLabels}" />
-				<yacc:SeriesValueLabels SourceName="stack" ValueChannel="2" LabelFormatString="F1"
+				<yacc:ValueLabels SourceName="stack" ValueChannel="2" LabelFormatString="F1"
 					CategoryAxisOffset=".375" LabelStyle="{StaticResource BigLabels}" />
-				<yacc:SeriesValueLabels SourceName="stack" ValueChannel="3" LabelFormatString="F1"
+				<yacc:ValueLabels SourceName="stack" ValueChannel="3" LabelFormatString="F1"
 					CategoryAxisOffset=".375" LabelStyle="{StaticResource BigLabels}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>

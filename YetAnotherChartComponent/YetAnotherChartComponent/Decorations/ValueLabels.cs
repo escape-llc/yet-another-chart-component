@@ -5,13 +5,14 @@ using System.Linq;
 using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Media;
 
 namespace eScapeLLC.UWP.Charts {
 	/// <summary>
-	/// Decoration that creates series value labels.
+	/// Decoration that creates value labels.
 	/// </summary>
-	public class SeriesValueLabels : ChartComponent, IRequireChartTheme, IRequireEnterLeave, IRequireRender, IRequireTransforms {
-		static LogTools.Flag _trace = LogTools.Add("SeriesValueLabels", LogTools.Level.Error);
+	public class ValueLabels : ChartComponent, IRequireChartTheme, IRequireEnterLeave, IRequireRender, IRequireTransforms {
+		static LogTools.Flag _trace = LogTools.Add("ValueLabels", LogTools.Level.Error);
 		#region SeriesItemState
 		/// <summary>
 		/// Shorthand for item state.
@@ -88,26 +89,26 @@ namespace eScapeLLC.UWP.Charts {
 		/// Identifies <see cref="ValueChannel"/> dependency property.
 		/// </summary>
 		public static readonly DependencyProperty ValueChannelProperty = DependencyProperty.Register(
-			nameof(ValueChannel), typeof(int), typeof(SeriesValueLabels), new PropertyMetadata(0, new PropertyChangedCallback(PropertyChanged_ValueDirty))
+			nameof(ValueChannel), typeof(int), typeof(ValueLabels), new PropertyMetadata(0, new PropertyChangedCallback(PropertyChanged_ValueDirty))
 		);
 		/// <summary>
 		/// Identifies <see cref="SourceName"/> dependency property.
 		/// </summary>
 		public static readonly DependencyProperty SourceNameProperty = DependencyProperty.Register(
-			nameof(SourceName), typeof(string), typeof(SeriesValueLabels), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
+			nameof(SourceName), typeof(string), typeof(ValueLabels), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
 		);
 		/// <summary>
 		/// Identifies <see cref="LabelStyle"/> dependency property.
 		/// </summary>
 		public static readonly DependencyProperty LabelStyleProperty = DependencyProperty.Register(
-			nameof(LabelStyle), typeof(Style), typeof(SeriesValueLabels), new PropertyMetadata(null)
+			nameof(LabelStyle), typeof(Style), typeof(ValueLabels), new PropertyMetadata(null)
 		);
 		#endregion
 		#region ctor
 		/// <summary>
 		/// Ctor.
 		/// </summary>
-		public SeriesValueLabels() {
+		public ValueLabels() {
 			ItemState = new List<SeriesItemState>();
 		}
 		#endregion
@@ -230,9 +231,15 @@ namespace eScapeLLC.UWP.Charts {
 							var sis = new SeriesItemState(siv.Index, siv.XValueIndex, siv.XValueIndex + CategoryAxisOffset, pt.Y, tb, target.Channel) { Direction = rp.Direction };
 							itemstate.Add(sis);
 							break;
-						default:
-							var sis2 = new SeriesItemState(siv.Index, siv.XValueIndex, siv.XValueIndex + CategoryAxisOffset, target.YValue, tb, target.Channel) { Direction = Placement.UP_RIGHT };
+						case MidpointPlacement mp:
+							var pt2 = mp.Transform(PlacementOffset);
+							_trace.Verbose($"mp {mp.Midpoint} d:{mp.Direction} hd:{mp.HalfDimension} pt:{pt2}");
+							var sis2 = new SeriesItemState(siv.Index, siv.XValueIndex, pt2.X, pt2.Y, tb, target.Channel) { Direction = mp.Direction };
 							itemstate.Add(sis2);
+							break;
+						default:
+							var sis3 = new SeriesItemState(siv.Index, siv.XValueIndex, siv.XValueIndex + CategoryAxisOffset, target.YValue, tb, target.Channel) { Direction = Placement.UP_RIGHT };
+							itemstate.Add(sis3);
 							break;
 						}
 					}
@@ -251,14 +258,27 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region IRequireTransforms
 		/// <summary>
+		/// Get the transform from the source, or based on axes, whichever hits first.
+		/// </summary>
+		/// <param name="icrc">Use for the area.</param>
+		/// <returns>Matrix or DEFAULT.</returns>
+		Matrix ObtainMatrix(IChartRenderContext icrc) {
+			if(Source is IProvideCustomTransform ipct) {
+				return ipct.TransformFor(icrc.Area);
+			}
+			if (ValueAxis == null) return default(Matrix);
+			var matx = CategoryAxis != null ? MatrixSupport.TransformFor(icrc.Area, CategoryAxis, ValueAxis) : MatrixSupport.TransformFor(icrc.Area, ValueAxis);
+			return matx;
+		}
+		/// <summary>
 		/// Adjust transforms for the current element state.
 		/// </summary>
 		/// <param name="icrc"></param>
 		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
-			if (ValueAxis == null) return;
 			if (ItemState.Count == 0) return;
-			_trace.Verbose($"{Name} transforms a:{icrc.Area} rx:{CategoryAxis?.Range} ry:{ValueAxis.Range}");
-			var matx = CategoryAxis != null ? MatrixSupport.TransformFor(icrc.Area, CategoryAxis, ValueAxis) : MatrixSupport.TransformFor(icrc.Area, ValueAxis);
+			var matx = ObtainMatrix(icrc);
+			_trace.Verbose($"{Name} transforms a:{icrc.Area} rx:{CategoryAxis?.Range} ry:{ValueAxis?.Range} matx:{matx}");
+			if (matx == default(Matrix)) return;
 			foreach (var state in ItemState) {
 				var dcc = matx.Transform(new Point(state.XValueOffset, state.YValue));
 				// get half-dimensions of the TextBlock

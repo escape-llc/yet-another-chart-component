@@ -497,27 +497,6 @@ namespace eScapeLLC.UWP.Charts {
 			}
 		}
 		#endregion
-		#region preset brushes - not currently used
-		private List<Brush> _presetBrushes = new List<Brush>() {
-			new SolidColorBrush(Color.FromArgb(0xFF, 0xFF, 0x66, 0x00)),
-			new SolidColorBrush(Color.FromArgb(0xFF, 0xFC, 0xD2, 0x02)),
-			new SolidColorBrush(Color.FromArgb(0xFF, 0xB0, 0xDE, 0x09)),
-			new SolidColorBrush(Color.FromArgb(0xFF, 0x0D, 0x8E, 0xCF)),
-			new SolidColorBrush(Color.FromArgb(0xFF, 0x2A, 0x0C, 0xD0)),
-			new SolidColorBrush(Color.FromArgb(0xFF, 0xCD, 0x0D, 0x74)),
-			new SolidColorBrush(Color.FromArgb(0xFF, 0xCC, 0x00, 0x00)),
-			new SolidColorBrush(Color.FromArgb(0xFF, 0x00, 0xCC, 0x00)),
-			new SolidColorBrush(Color.FromArgb(0xFF, 0x00, 0x00, 0xCC)),
-			new SolidColorBrush(Color.FromArgb(0xFF, 0xDD, 0xDD, 0xDD)),
-			new SolidColorBrush(Color.FromArgb(0xFF, 0x99, 0x99, 0x99)),
-			new SolidColorBrush(Color.FromArgb(0xFF, 0x33, 0x33, 0x33)),
-			new SolidColorBrush(Color.FromArgb(0xFF, 0x99, 0x00, 0x00))
-		};
-		/// <summary>
-		/// Gets a collection of preset brushes used for graphs when their Brush property isn't set explicitly.
-		/// </summary>
-		public List<Brush> PresetBrushes { get { return _presetBrushes; } }
-		#endregion
 		#region phase helpers
 		/// <summary>
 		/// Reset all axis extents.
