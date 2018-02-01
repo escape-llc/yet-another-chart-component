@@ -1,5 +1,9 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using Windows.Foundation;
 using Windows.UI;
@@ -234,7 +238,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Use internally to report errors to the chart "owner".
 	/// </summary>
-	public class ChartValidationResult :ValidationResult {
+	public class ChartValidationResult : ValidationResult {
 		/// <summary>
 		/// Source of the error: chart, series, axis, etc.
 		/// MAY be the name of a component.
@@ -246,14 +250,14 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="source"></param>
 		/// <param name="errorMessage"></param>
-		public ChartValidationResult(string source, string errorMessage) :base(errorMessage) { Source = source; }
+		public ChartValidationResult(string source, string errorMessage) : base(errorMessage) { Source = source; }
 		/// <summary>
 		/// Ctor.
 		/// </summary>
 		/// <param name="source"></param>
 		/// <param name="errorMessage"></param>
 		/// <param name="memberNames"></param>
-		public ChartValidationResult(string source, string errorMessage, IEnumerable<string> memberNames) :base(errorMessage, memberNames) { Source = source; }
+		public ChartValidationResult(string source, string errorMessage, IEnumerable<string> memberNames) : base(errorMessage, memberNames) { Source = source; }
 	}
 	#endregion
 	#region IChartErrorInfo
@@ -433,6 +437,36 @@ namespace eScapeLLC.UWP.Charts {
 		/// MUST NOT be called before <see cref="IRequireEnterLeave.Enter"/>.
 		/// </summary>
 		IEnumerable<Legend> LegendItems { get; }
+	}
+	#endregion
+	#region IProvideLegendDynamic
+	/// <summary>
+	/// Event args for the <see cref="IProvideLegendDynamic.LegendChanged"/> event.
+	/// </summary>
+	public sealed class LegendDynamicEventArgs : EventArgs {
+		/// <summary>
+		/// The previous items.
+		/// </summary>
+		public IEnumerable<Legend> PreviousItems { get; private set; }
+		/// <summary>
+		/// The current items.
+		/// </summary>
+		public IEnumerable<Legend> CurrentItems { get; private set; }
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="pitems"></param>
+		/// <param name="nitems"></param>
+		public LegendDynamicEventArgs(IEnumerable<Legend> pitems, IEnumerable<Legend> nitems) { PreviousItems = pitems; CurrentItems = nitems; }
+	}
+	/// <summary>
+	/// Ability to provide a dynamically-varying set of legend items.
+	/// </summary>
+	public interface IProvideLegendDynamic : IProvideLegend {
+		/// <summary>
+		/// Event to signal the legend items have changed.
+		/// </summary>
+		event TypedEventHandler<ChartComponent, LegendDynamicEventArgs> LegendChanged;
 	}
 	#endregion
 	#region IProvideValueExtents
@@ -843,7 +877,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="pvalue">New value.</param>
 		/// <returns></returns>
 		/// <typeparam name="PT">Property value type.</typeparam>
-		protected Style Override<PT>(Style source, DependencyProperty tp,  PT pvalue) {
+		protected Style Override<PT>(Style source, DependencyProperty tp, PT pvalue) {
 			var style = new Style(source.TargetType);
 			var did = false;
 			foreach (var setter in source.Setters) {
@@ -864,7 +898,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Identity.  Returns the BaseStyle over-and-over.
 	/// </summary>
-	public sealed class IdentityStyleGenerator: StyleGenerator {
+	public sealed class IdentityStyleGenerator : StyleGenerator {
 		/// <summary>
 		/// Return the base style always.
 		/// </summary>
@@ -968,11 +1002,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <returns>Another instance.  MAY be newly created.</returns>
 		public IEnumerable<T> Items() {
-			foreach(var tx in _source) {
+			foreach (var tx in _source) {
 				_unused.Remove(tx);
 				yield return tx;
 			}
-			while(true) {
+			while (true) {
 				var tx = _factory();
 				_created.Add(tx);
 				yield return tx;

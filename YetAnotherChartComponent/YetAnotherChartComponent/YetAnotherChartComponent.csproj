@@ -130,6 +130,7 @@
     <Compile Include="Series\Series.cs" />
     <Compile Include="Series\StackedColumnSeries.cs" />
     <Compile Include="Decorations\ValueLabels.cs" />
+    <Compile Include="Series\State.cs" />
     <Compile Include="Theme.cs" />
     <Compile Include="Axis\ValueAxis.cs" />
     <EmbeddedResource Include="Properties\eScapeLLC.UWP.Charts.rd.xml" />

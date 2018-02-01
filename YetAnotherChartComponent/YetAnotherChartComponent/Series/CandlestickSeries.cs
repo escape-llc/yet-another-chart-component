@@ -10,7 +10,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Render a "candle stick" series, typically used for OHLC data.
 	/// </summary>
-	public class CandlestickSeries : DataSeries, IDataSourceRenderer, IProvideLegend, IProvideSeriesItemValues, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
+	public class CandlestickSeries : DataSeriesWithAxes, IDataSourceRenderer, IProvideLegend, IProvideSeriesItemValues, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("CandlestickSeries", LogTools.Level.Error);
 		/// <summary>
 		/// Shorthand for marker state.

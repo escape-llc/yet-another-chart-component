@@ -13,9 +13,8 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Pie-wedges series.
 	/// The geometry is a circle of radius 10 centered at (0,0).
-	/// TODO need a DataSeries subclass without axis information.
 	/// </summary>
-	public class PieSeries : DataSeries, IDataSourceRenderer, IProvideSeriesItemValues, IProvideCustomTransform, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
+	public class PieSeries : DataSeries, IDataSourceRenderer, IProvideSeriesItemValues, IProvideCustomTransform, IProvideLegendDynamic, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("PieSeries", LogTools.Level.Error);
 		const double TO_RADS = Math.PI / 180.0;
 		const double RADIUS = 10.0;
@@ -54,6 +53,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public IChartTheme Theme { get; set; }
 		/// <summary>
+		/// Binding path to the value label.
+		/// If ValueLabelrPath is NULL, the data-index is used.
+		/// MAY be NULL, in which case no labels are used.
+		/// </summary>
+		public String ValueLabelPath { get { return (String)GetValue(ValueLabelPathProperty); } set { SetValue(ValueLabelPathProperty, value); } }
+		/// <summary>
 		/// Binding path to the value axis value.
 		/// </summary>
 		public String ValuePath { get { return (String)GetValue(ValuePathProperty); } set { SetValue(ValuePathProperty, value); } }
@@ -62,19 +67,39 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public StyleGenerator Generator { get { return (StyleGenerator)GetValue(GeneratorProperty); } set { SetValue(GeneratorProperty, value); } }
 		/// <summary>
+		/// Provide item values.
+		/// </summary>
+		public IEnumerable<ISeriesItem> SeriesItemValues => UnwrapItemState(ItemState.AsReadOnly());
+		/// <summary>
+		/// The current set of legend items.
+		/// </summary>
+		public IEnumerable<Legend> LegendItems { get { return InternalLegendItems; } }
+		/// <summary>
 		/// The layer for components.
 		/// </summary>
 		protected IChartLayer Layer { get; set; }
 		/// <summary>
-		/// Data needed for current markers
+		/// Data needed for current state.
 		/// </summary>
 		protected List<SeriesItemState> ItemState { get; set; }
 		/// <summary>
-		/// Provide item values.
+		/// Internal legend items.
 		/// </summary>
-		public IEnumerable<ISeriesItem> SeriesItemValues => UnwrapItemState(ItemState.AsReadOnly());
+		protected List<Legend> InternalLegendItems { get; set; }
+		#endregion
+		#region events
+		/// <summary>
+		/// Notify interested parties of changes in the legend items.
+		/// </summary>
+		public event TypedEventHandler<ChartComponent, LegendDynamicEventArgs> LegendChanged;
 		#endregion
 		#region DPs
+		/// <summary>
+		/// Identifies <see cref="ValueLabelPath"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty ValueLabelPathProperty = DependencyProperty.Register(
+			nameof(ValueLabelPath), typeof(string), typeof(PieSeries), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
+		);
 		/// <summary>
 		/// ValuePath DP.
 		/// </summary>
@@ -94,6 +119,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public PieSeries() {
 			ItemState = new List<SeriesItemState>();
+			InternalLegendItems = new List<Legend>();
 		}
 		#endregion
 		#region helpers
@@ -106,6 +132,22 @@ namespace eScapeLLC.UWP.Charts {
 				yield return sivc;
 			}
 		}
+		/// <summary>
+		/// Refresh the current state of the legend items.
+		/// </summary>
+		void UpdateLegend() {
+			List<Legend> legend = new List<Legend>();
+			foreach(var sis in ItemState) {
+				var leg = new Legend() {
+					Title = sis.Label,
+					Fill = sis.Element.Style.Find<Brush>(Path.FillProperty),
+					Stroke = sis.Element.Style.Find<Brush>(Path.StrokeProperty)
+				};
+				legend.Add(leg);
+			}
+			LegendChanged?.Invoke(this, new LegendDynamicEventArgs(InternalLegendItems, legend));
+			InternalLegendItems = legend;
+		}
 		#endregion
 		#region IRequireEnterLeave
 		/// <summary>
@@ -113,9 +155,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icelc"></param>
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
-			//EnsureAxes(icelc as IChartComponentContext);
 			Layer = icelc.CreateLayer();
-			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis} c:{CategoryAxisName}:{CategoryAxis} d:{DataSourceName}");
+			_trace.Verbose($"enter d:{DataSourceName}");
 			if(Generator == null) {
 				// TODO error info
 				Generator = new IdentityStyleGenerator() { BaseStyle = Theme.PathColumnSeries };
@@ -127,8 +168,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icelc"></param>
 		void IRequireEnterLeave.Leave(IChartEnterLeaveContext icelc) {
 			_trace.Verbose($"leave");
-			ValueAxis = null;
-			CategoryAxis = null;
 			icelc.DeleteLayer(Layer);
 			Layer = null;
 		}
@@ -157,8 +196,8 @@ namespace eScapeLLC.UWP.Charts {
 			var recycler = new Recycler<Path>(paths, CreatePath);
 			Generator.Reset();
 			return new State(new List<SeriesItemState>(), recycler,
-				!String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
-				!String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null,
+				null,
+				!String.IsNullOrEmpty(ValueLabelPath) ? new BindingEvaluator(ValueLabelPath) : null,
 				by
 			);
 		}
@@ -208,6 +247,7 @@ namespace eScapeLLC.UWP.Charts {
 			Layer.Remove(st.recycler.Unused);
 			Layer.Add(st.recycler.Created);
 			Dirty = false;
+			UpdateLegend();
 		}
 		#endregion
 		#region IProvideCustomTransform

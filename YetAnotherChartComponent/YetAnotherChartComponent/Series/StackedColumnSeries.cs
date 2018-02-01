@@ -68,7 +68,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// Stacked column series.
 	/// Plots multiple series values on a stacked arrangement.
 	/// </summary>
-	public class StackedColumnSeries :DataSeries, IProvideLegend, IProvideSeriesItemValues, IRequireChartTheme, IRequireEnterLeave, IDataSourceRenderer, IRequireTransforms {
+	public class StackedColumnSeries :DataSeriesWithAxes, IProvideLegend, IProvideSeriesItemValues, IRequireChartTheme, IRequireEnterLeave, IDataSourceRenderer, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("StackedColumnSeries", LogTools.Level.Error);
 		#region SeriesItemState
 		/// <summary>

@@ -33,7 +33,7 @@
 				<yacc:DataSource x:Name="data" Items="{Binding Data}"/>
 			</yacc:Chart.DataSources>
 			<yacc:Chart.Components>
-				<yacc:PieSeries x:Name="pie" DataSourceName="data" CategoryLabelPath="Label" ValuePath="Value1" Generator="{StaticResource colors}" />
+				<yacc:PieSeries x:Name="pie" DataSourceName="data" ValueLabelPath="Label" ValuePath="Value1" Generator="{StaticResource colors}" />
 				<yacc:ValueLabels SourceName="pie" PlacementOffset=".5,.5" LabelFormatString="F1" LabelStyle="{StaticResource BigLabels}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>

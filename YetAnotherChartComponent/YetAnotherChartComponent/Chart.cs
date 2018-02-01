@@ -474,6 +474,21 @@ namespace eScapeLLC.UWP.Charts {
 				}
 			});
 		}
+		/// <summary>
+		/// Manage dynamic legend updates.
+		/// </summary>
+		/// <param name="sender">Component sending update.</param>
+		/// <param name="args">Current state of legend.</param>
+		private void Ipld_LegendChanged(ChartComponent sender, LegendDynamicEventArgs args) {
+			foreach (var ldea in args.PreviousItems) {
+				if (!args.CurrentItems.Contains(ldea))
+					LegendItems.Remove(ldea);
+			}
+			foreach (var ldea in args.CurrentItems) {
+				if (!LegendItems.Contains(ldea))
+					LegendItems.Add(ldea);
+			}
+		}
 		#endregion
 		#region extensions
 		/// <summary>
@@ -664,6 +679,10 @@ namespace eScapeLLC.UWP.Charts {
 					LegendItems.Add(li);
 				}
 			}
+			if(cc is IProvideLegendDynamic ipld) {
+				// attach the event
+				ipld.LegendChanged += Ipld_LegendChanged;
+			}
 			// axis and DSRP are mutually-exclusive
 			if (cc is IChartAxis ica) {
 				Axes.Add(ica);
@@ -683,6 +702,10 @@ namespace eScapeLLC.UWP.Charts {
 				foreach (var li in ipl.LegendItems) {
 					LegendItems.Remove(li);
 				}
+			}
+			if (cc is IProvideLegendDynamic ipld) {
+				// detach the event
+				ipld.LegendChanged -= Ipld_LegendChanged;
 			}
 			if (cc is IChartAxis ica) {
 				Axes.Remove(ica);
