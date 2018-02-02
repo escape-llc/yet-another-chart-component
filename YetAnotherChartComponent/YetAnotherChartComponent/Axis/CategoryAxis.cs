@@ -101,7 +101,7 @@ namespace eScapeLLC.UWP.Charts {
 				PathStyle == null, Theme != null, Theme.PathAxisCategory != null,
 				() => PathStyle = Theme.PathAxisCategory
 			);
-			BindTo(this, "PathStyle", Axis, Path.StyleProperty);
+			BindTo(this, nameof(PathStyle), Axis, FrameworkElement.StyleProperty);
 		}
 		/// <summary>
 		/// Reverse effect of Enter.

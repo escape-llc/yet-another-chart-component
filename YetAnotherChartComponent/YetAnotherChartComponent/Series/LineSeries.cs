@@ -78,7 +78,7 @@ namespace eScapeLLC.UWP.Charts {
 				PathStyle == null, Theme != null, Theme.PathLineSeries != null,
 				() => PathStyle = Theme.PathLineSeries
 			);
-			BindTo(this, "PathStyle", Segments, Path.StyleProperty);
+			BindTo(this, nameof(PathStyle), Segments, FrameworkElement.StyleProperty);
 		}
 		/// <summary>
 		/// Undo effects of Enter().

@@ -133,8 +133,10 @@
 				<yacc:ValueLabels SourceName="colv2" LabelFormatString="F2"
 					CategoryAxisOffset=".625" PlacementOffset="0,1" LabelOffset="0,-1" LabelStyle="{StaticResource BigLabels}" />
 				<yacc:ValueLabels SourceName="band" LabelFormatString="F2"
+					Visibility="{Binding ElementName=cb_band, Path=IsChecked, Converter={StaticResource b2v}}"
 					CategoryAxisOffset="0" PlacementOffset="0,1" LabelOffset="1,0" LabelStyle="{StaticResource BigLabels2}" />
 				<yacc:ValueLabels SourceName="band" ValueChannel="1" LabelFormatString="F2"
+					Visibility="{Binding ElementName=cb_band, Path=IsChecked, Converter={StaticResource b2v}}"
 					CategoryAxisOffset="1" PlacementOffset="0,0" LabelOffset="-1,0" LabelStyle="{StaticResource BigLabels2}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>

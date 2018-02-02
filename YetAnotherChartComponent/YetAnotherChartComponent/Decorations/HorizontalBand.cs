@@ -196,27 +196,12 @@ namespace eScapeLLC.UWP.Charts {
 				BandPathStyle == null, Theme != null, Theme.PathHorizontalBand != null,
 				() => BandPathStyle = Theme.PathHorizontalBand
 			);
-			BindTo(this, nameof(PathStyle), Value1Path, Path.StyleProperty);
-			var bx = GetBindingExpression(UIElement.VisibilityProperty);
-			if (bx != null) {
-				Value1Path.SetBinding(UIElement.VisibilityProperty, bx.ParentBinding);
-			} else {
-				BindTo(this, nameof(Visibility), Value1Path, Path.VisibilityProperty);
-			}
-			BindTo(this, Value2PathStyle == null ? nameof(PathStyle) : nameof(Value2PathStyle), Value2Path, Path.StyleProperty);
-			bx = GetBindingExpression(UIElement.VisibilityProperty);
-			if (bx != null) {
-				Value2Path.SetBinding(UIElement.VisibilityProperty, bx.ParentBinding);
-			} else {
-				BindTo(this, nameof(Visibility), Value2Path, Path.VisibilityProperty);
-			}
-			BindTo(this, BandPathStyle == null ? nameof(PathStyle) : nameof(BandPathStyle), BandPath, Path.StyleProperty);
-			bx = GetBindingExpression(UIElement.VisibilityProperty);
-			if (bx != null) {
-				BandPath.SetBinding(UIElement.VisibilityProperty, bx.ParentBinding);
-			} else {
-				BindTo(this, nameof(Visibility), BandPath, Path.VisibilityProperty);
-			}
+			BindTo(this, nameof(PathStyle), Value1Path, FrameworkElement.StyleProperty);
+			ApplyBinding(this, nameof(Visibility), Value1Path, UIElement.VisibilityProperty);
+			BindTo(this, Value2PathStyle == null ? nameof(PathStyle) : nameof(Value2PathStyle), Value2Path, FrameworkElement.StyleProperty);
+			ApplyBinding(this, nameof(Visibility), Value2Path, UIElement.VisibilityProperty);
+			BindTo(this, BandPathStyle == null ? nameof(PathStyle) : nameof(BandPathStyle), BandPath, FrameworkElement.StyleProperty);
+			ApplyBinding(this, nameof(Visibility), BandPath, UIElement.VisibilityProperty);
 		}
 		/// <summary>
 		/// Resolve axis references.

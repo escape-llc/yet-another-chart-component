@@ -168,6 +168,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (LabelStyle != null) {
 				tb.Style = LabelStyle;
 			}
+			ApplyBinding(this, nameof(Visibility), tb, UIElement.VisibilityProperty);
 			return tb;
 		}
 		/// <summary>

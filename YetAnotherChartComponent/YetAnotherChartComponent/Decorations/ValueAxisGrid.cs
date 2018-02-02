@@ -82,13 +82,8 @@ namespace eScapeLLC.UWP.Charts {
 				PathStyle == null, Theme != null, Theme.PathGridValue != null,
 				() => PathStyle = Theme.PathGridValue
 			);
-			BindTo(this, "PathStyle", Grid, Path.StyleProperty);
-			var bx = GetBindingExpression(UIElement.VisibilityProperty);
-			if (bx != null) {
-				Grid.SetBinding(UIElement.VisibilityProperty, bx.ParentBinding);
-			} else {
-				BindTo(this, "Visibility", Grid, Path.VisibilityProperty);
-			}
+			BindTo(this, nameof(PathStyle), Grid, FrameworkElement.StyleProperty);
+			ApplyBinding(this, nameof(Visibility), Grid, UIElement.VisibilityProperty);
 		}
 		#endregion
 		#region extensions

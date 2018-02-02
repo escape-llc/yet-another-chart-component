@@ -677,6 +677,21 @@ namespace eScapeLLC.UWP.Charts {
 			target.SetBinding(dp, bx);
 		}
 		/// <summary>
+		/// Transfer any binding from the source DP to the given target's DP.
+		/// </summary>
+		/// <param name="source">Source element.</param>
+		/// <param name="path"></param>
+		/// <param name="target">Target framework element.</param>
+		/// <param name="dp"></param>
+		protected static void ApplyBinding(FrameworkElement source, String path, FrameworkElement target, DependencyProperty dp) {
+			var bx = source.GetBindingExpression(dp);
+			if (bx != null) {
+				target.SetBinding(dp, bx.ParentBinding);
+			} else {
+				BindTo(source, path, target, dp);
+			}
+		}
+		/// <summary>
 		/// Boilerplate for assigning a "local property" from a "reference value" while applying <see cref="IChartErrorInfo"/>.
 		/// </summary>
 		/// <param name="icei">For error reporting; MAY be NULL.</param>

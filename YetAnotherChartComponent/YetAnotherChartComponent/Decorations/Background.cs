@@ -45,7 +45,7 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region helpers
 		void DoBindings(IChartEnterLeaveContext icelc) {
-			BindTo(this, "PathStyle", Path, Path.StyleProperty);
+			BindTo(this, nameof(PathStyle), Path, FrameworkElement.StyleProperty);
 		}
 		#endregion
 		#region extensions

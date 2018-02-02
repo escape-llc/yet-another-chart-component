@@ -156,7 +156,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <returns></returns>
 		Path CreatePath() {
 			var path = new Path();
-			BindTo(this, "PathStyle", path, Path.StyleProperty);
+			BindTo(this, nameof(PathStyle), path, FrameworkElement.StyleProperty);
 			return path;
 		}
 		object IDataSourceRenderer.Preamble(IChartRenderContext icrc) {

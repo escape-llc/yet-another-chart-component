@@ -126,13 +126,8 @@ namespace eScapeLLC.UWP.Charts {
 				PathStyle == null, Theme != null, Theme.PathHorizontalRule != null,
 				() => PathStyle = Theme.PathHorizontalRule
 			);
-			BindTo(this, "PathStyle", Path, Path.StyleProperty);
-			var bx = GetBindingExpression(UIElement.VisibilityProperty);
-			if (bx != null) {
-				Path.SetBinding(UIElement.VisibilityProperty, bx.ParentBinding);
-			} else {
-				BindTo(this, "Visibility", Path, Path.VisibilityProperty);
-			}
+			BindTo(this, nameof(PathStyle), Path, FrameworkElement.StyleProperty);
+			ApplyBinding(this, nameof(Visibility), Path, UIElement.VisibilityProperty);
 		}
 		/// <summary>
 		/// Resolve axis references.

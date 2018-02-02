@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Windows.Foundation;
 using Windows.UI;
+using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
 
@@ -162,7 +163,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <returns></returns>
 		Path CreatePath() {
 			var path = new Path();
-			BindTo(this, "PathStyle", path, Path.StyleProperty);
+			BindTo(this, nameof(PathStyle), path, FrameworkElement.StyleProperty);
 			return path;
 		}
 		object IDataSourceRenderer.Preamble(IChartRenderContext icrc) {

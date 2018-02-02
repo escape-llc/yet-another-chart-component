@@ -285,7 +285,7 @@ namespace eScapeLLC.UWP.Charts {
 				if (path == null) return;
 				var rg = new RectangleGeometry() { Rect = new Rect(new Point(barx, topy), new Point(rightx, bottomy)) };
 				path.Data = rg;
-				BindTo(ColumnStack[ix], "PathStyle", path, Path.StyleProperty);
+				BindTo(ColumnStack[ix], "PathStyle", path, FrameworkElement.StyleProperty);
 				UpdateLimits(valuex, sis.Min, sis.Max);
 				sis.Elements.Add(new Tuple<double, Path>(y1, path));
 			}

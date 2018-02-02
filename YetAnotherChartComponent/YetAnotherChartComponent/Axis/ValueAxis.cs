@@ -61,7 +61,7 @@ namespace eScapeLLC.UWP.Charts {
 			MinWidth = 32;
 		}
 		void DoBindings(IChartEnterLeaveContext icelc) {
-			BindTo(this, "PathStyle", Axis, Path.StyleProperty);
+			BindTo(this, nameof(PathStyle), Axis, FrameworkElement.StyleProperty);
 		}
 		void DoTickLabels(IChartRenderContext icrc) {
 			var tc = new TickCalculator(Minimum, Maximum);
@@ -74,7 +74,7 @@ namespace eScapeLLC.UWP.Charts {
 						Width = icrc.Area.Width - padding,
 						Padding = Side == Side.Right ? new Thickness(padding, 0, 0, 0) : new Thickness(0, 0, padding, 0)
 					};
-					BindTo(this, "LabelStyle", tb, TextBlock.StyleProperty);
+					BindTo(this, nameof(LabelStyle), tb, FrameworkElement.StyleProperty);
 					return tb;
 				} else {
 					// SHOULD NOT execute this code, unless default style failed!
