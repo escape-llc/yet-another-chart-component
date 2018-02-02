@@ -45,7 +45,7 @@
 			RelativePanel.Below="toolbar" RelativePanel.AlignBottomWithPanel="True"
 			RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True">
 			<yacc:Chart.DataSources>
-				<yacc:DataSource x:Name="data" Items="{Binding Data}" ExternalRefresh="{Binding GroupCounter}"/>
+				<yacc:DataSource x:Name="data" Items="{Binding Data}"/>
 			</yacc:Chart.DataSources>
 			<yacc:Chart.Components>
 				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" PathStyle="{StaticResource Axes}"

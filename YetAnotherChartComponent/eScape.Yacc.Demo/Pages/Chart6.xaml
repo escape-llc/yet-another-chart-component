@@ -34,7 +34,7 @@
 			</yacc:Chart.DataSources>
 			<yacc:Chart.Components>
 				<yacc:PieSeries x:Name="pie" DataSourceName="data" ValueLabelPath="Label" ValuePath="Value1" Generator="{StaticResource colors}" />
-				<yacc:ValueLabels SourceName="pie" PlacementOffset=".5,.5" LabelFormatString="F1" LabelStyle="{StaticResource BigLabels}" />
+				<yacc:ValueLabels SourceName="pie" PlacementOffset=".5,.5" LabelFormatString="F2" LabelStyle="{StaticResource BigLabels}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>
 		<TextBlock x:Name="title" Style="{StaticResource Title}" Text="Pie Chart"

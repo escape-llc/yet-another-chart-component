@@ -28,6 +28,9 @@ namespace Yacc.Demo.Pages {
 		protected override async void OnNavigatedTo(NavigationEventArgs e) {
 			base.OnNavigatedTo(e);
 			try {
+				// Clear the data context, because we came in with the Frame's DC
+				DataContext = null;
+				// OnNavigatedTo returns here (because of await), and an "unknown" data context can trigger binding errors
 				DataContext = await InitializeDataContextAsync();
 				if (DataContext == null)
 					_trace.Error($"{nameof(DataContext)} was NULL");

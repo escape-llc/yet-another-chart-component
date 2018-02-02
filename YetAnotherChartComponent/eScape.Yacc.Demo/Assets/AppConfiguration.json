@@ -11,9 +11,9 @@
 		"HorizontalRule": "Error",
 		"LineSeries": "Error",
 		"MarkerSeries": "Error",
-		"PieSeries": "Verbose",
+		"PieSeries": "Error",
 		"StackedColumnSeries": "Error",
 		"ValueAxis": "Error",
-		"ValueLabels": "Verbose"
+		"ValueLabels": "Error"
 	}
 }

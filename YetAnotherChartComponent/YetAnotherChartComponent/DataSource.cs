@@ -108,7 +108,7 @@ namespace eScapeLLC.UWP.Charts {
 		private static void ExternalRefreshPropertyChanged(DependencyObject dobj, DependencyPropertyChangedEventArgs dpcea) {
 			DataSource ds = dobj as DataSource;
 			if(dpcea.NewValue is int bx) {
-				if (dpcea.NewValue != dpcea.OldValue) {
+				if (dpcea.NewValue != dpcea.OldValue && ds.Items != null) {
 					ds.Refresh();
 				}
 			}
