@@ -1,12 +1,15 @@
 # eScapeLLC.UWP.Charts
 Yet another chart component.  Also a play on the venerable "yacc" parser-generator tool.  Yes, I've used it, and know all about LR(1) parsers!
 
-## Get It!
+## Use It!
 From *Package Manager Console*:
 ```
    PM> Install-Package eScapeLLC.UWP.Charts
 ```
 [Package page on nuget.org](https://www.nuget.org/packages/eScapeLLC.UWP.Charts/)
+
+## Demo It!
+The demo application in the solution is now available in [Windows Store](https://www.microsoft.com/store/apps/9P9XC6Z7R3BW) so you don't have to build it from source.
 
 # Before you build
 If you are rebuilding the demo application and/or test projects (e.g. because you forked or cloned it), you must re-generate the PFX file, because it is excluded from repository by `.gitignore`.
@@ -20,9 +23,6 @@ If you are rebuilding the demo application and/or test projects (e.g. because yo
 # Screen Shot
 This is the current demo chart in the solution (subject to last-minute tweaking):
 ![yacc demo screen shot](http://escape-technology-llc.com/mobile/wp-content/gallery/main/yacc-chart-demo-8.png)
-
-# Demo Application
-This is coming to Windows Store; watch for a link here when the submission process is complete.
 
 # More Info
 Please check out the [Wiki](../../wiki) to learn more about the guts of YACC and rendering and linear algebra in general!
