@@ -30,6 +30,11 @@
 			<Setter Property="StrokeThickness" Value="1"/>
 			<Setter Property="Fill" Value="Blue"/>
 		</Style>
+		<DataTemplate x:Key="Marker">
+			<GeometryGroup>
+				<EllipseGeometry RadiusX=".5" RadiusY=".5" Center=".5,.5" />
+			</GeometryGroup>
+		</DataTemplate>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 		<CommandBar x:Name="toolbar"
@@ -60,16 +65,8 @@
 					Title="Value 2 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" ClipToDataRegion="True"
 					PathStyle="{StaticResource Column_v2}" BarOffset=".5" BarWidth=".25" />
 				<yacc:MarkerSeries x:Name="v3" DataSourceName="data" ValuePath="Value3" Title="Value 3 Marker"
-					ValueAxisName="yaxis" CategoryAxisName="xaxis"
-					MarkerOffset=".5" MarkerWidth=".5" PathStyle="{StaticResource Marker_v4}">
-					<yacc:MarkerSeries.MarkerTemplate>
-						<DataTemplate>
-							<GeometryGroup>
-								<EllipseGeometry RadiusX=".5" RadiusY=".5" Center=".5,.5" />
-							</GeometryGroup>
-						</DataTemplate>
-					</yacc:MarkerSeries.MarkerTemplate>
-				</yacc:MarkerSeries>
+					ValueAxisName="yaxis" CategoryAxisName="xaxis" MarkerOffset=".5" MarkerWidth=".5"
+					PathStyle="{StaticResource Marker_v4}" MarkerTemplate="{StaticResource Marker}"/>
 				<yacc:LineSeries x:Name="v4" DataSourceName="data" ValuePath="Value4" Title="Value 4 Line"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".375"
 					ClipToDataRegion="False" PathStyle="{StaticResource Line_v3}" />

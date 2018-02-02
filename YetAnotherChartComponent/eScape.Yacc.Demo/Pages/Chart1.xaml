@@ -74,6 +74,13 @@
 			<Setter Property="FontSize" Value="20"/>
 			<Setter Property="Foreground" Value="LightGoldenrodYellow"/>
 		</Style>
+		<DataTemplate x:Key="Marker">
+			<GeometryGroup>
+				<EllipseGeometry RadiusX=".5" RadiusY=".5" Center=".5,.5" />
+				<LineGeometry StartPoint=".5,.4" EndPoint=".5,.6" />
+				<LineGeometry StartPoint=".4,.5" EndPoint=".6,.5" />
+			</GeometryGroup>
+		</DataTemplate>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 		<CommandBar x:Name="toolbar"
@@ -100,7 +107,7 @@
 				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" PathStyle="{StaticResource Axes}"
 					LabelStyle="{StaticResource CategoryAxisLabel}" />
 				<yacc:ColumnSeries x:Name="colv1" DataSourceName="data" ValuePath="Value1" CategoryLabelPath="Label" ClipToDataRegion="True"
-					Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" EnableDebugPaths="True"
+					Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					PathStyle="{StaticResource Column_v1}" BarOffset=".25" BarWidth=".25" />
 				<yacc:ColumnSeries x:Name="colv2" DataSourceName="data" ValuePath="Value2"
 					Title="Value 2 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" ClipToDataRegion="True"
@@ -109,23 +116,11 @@
 					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".375"
 					ClipToDataRegion="False" PathStyle="{StaticResource Line_v2}" />
 				<yacc:MarkerSeries DataSourceName="data"
-					ValuePath="Value1" Title="Value 1 Marker"
-					ValueAxisName="yaxis" CategoryAxisName="xaxis"
-					MarkerOffset=".625" MarkerWidth=".25" PathStyle="{StaticResource Marker_v1}">
-					<yacc:MarkerSeries.MarkerTemplate>
-						<DataTemplate>
-							<GeometryGroup>
-								<EllipseGeometry RadiusX=".5" RadiusY=".5" Center=".5,.5" />
-								<LineGeometry StartPoint=".5,.4" EndPoint=".5,.6" />
-								<LineGeometry StartPoint=".4,.5" EndPoint=".6,.5" />
-							</GeometryGroup>
-						</DataTemplate>
-					</yacc:MarkerSeries.MarkerTemplate>
-				</yacc:MarkerSeries>
+					ValuePath="Value1" Title="Value 1 Marker" ValueAxisName="yaxis" CategoryAxisName="xaxis"
+					MarkerOffset=".625" MarkerWidth=".25" PathStyle="{StaticResource Marker_v1}" MarkerTemplate="{StaticResource Marker}"/>
 				<yacc:HorizontalBand x:Name="band" ValueAxisName="yaxis" Value1="{Binding Value1Average}" Value2="{Binding Value2Average}"
 					PathStyle="{StaticResource Band_v1-rule}" Value2PathStyle="{StaticResource Band_v2-rule}" BandPathStyle="{StaticResource Band_v1v2-band}"
-					Visibility="{Binding ElementName=cb_band, Path=IsChecked, Converter={StaticResource b2v}}"
-				/>
+					Visibility="{Binding ElementName=cb_band, Path=IsChecked, Converter={StaticResource b2v}}" />
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}"
 					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="F1" />
 				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource Grid}"

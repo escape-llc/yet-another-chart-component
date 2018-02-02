@@ -40,7 +40,7 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		/// <summary>
 		/// Take the actual value from the source and coerce it to the double type, until we get full polymorphism on the y-value.
-		/// Currently handles <see cref="double"/>, <see cref="int"/>, <see cref="short"/>,and Nullable{double} types.
+		/// Currently handles <see cref="double"/>, <see cref="int"/>, <see cref="short"/>,and Nullable{double,int,short} types.
 		/// </summary>
 		/// <param name="item"></param>
 		/// <param name="be"></param>
@@ -50,9 +50,19 @@ namespace eScapeLLC.UWP.Charts {
 			if (ox is short sx) return (double)sx;
 			if (ox is int ix) return (double)ix;
 			if (ox is long lx) return (double)lx;
-			if (ox is DateTime dt) return (double)dt.Ticks;
+			if (ox is DateTime dt)
+				return dt == default(DateTime) ? double.NaN : (double)dt.Ticks;
+			// now nullable types
 			if (ox is double?) {
 				double? ddx = (double?)ox;
+				return ddx ?? double.NaN;
+			}
+			if (ox is int?) {
+				int? ddx = (int?)ox;
+				return ddx ?? double.NaN;
+			}
+			if (ox is short?) {
+				short? ddx = (short?)ox;
 				return ddx ?? double.NaN;
 			}
 			return (double)ox;
