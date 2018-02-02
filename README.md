@@ -11,8 +11,8 @@ From *Package Manager Console*:
 ## Demo It!
 The demo application in the solution is now available in [Windows Store](https://www.microsoft.com/store/apps/9P9XC6Z7R3BW) so you don't have to build it from source.
 
-# Before you build
-If you are rebuilding the demo application and/or test projects (e.g. because you forked or cloned it), you must re-generate the PFX file, because it is excluded from repository by `.gitignore`.
+## Build It!
+If you are rebuilding the demo application and/or test projects (e.g. because you forked or cloned this repo), you must re-generate the PFX file(s), because they are excluded from repository by `.gitignore`.
 
 * In *Solution Explorer*, double-click the app manifest file.
 * In the *Manifest Designer*, go to the *Packaging* tab.
@@ -52,4 +52,9 @@ Some breaking changes, sorry about that!  As always, consult the demo chart XAML
 ## 1.2.0
 More features and fixes.
 
-Since we were more organized this release, plesae see the [Milestone page](https://github.com/escape-llc/yet-another-chart-component/milestone/3?closed=1) for a list of included items.
+Since we were more organized this release, please see the [Milestone page](https://github.com/escape-llc/yet-another-chart-component/milestone/3?closed=1) for a list of included items.
+
+## 1.3.0
+More features and fixes.
+
+See the [Milestone page](https://github.com/escape-llc/yet-another-chart-component/milestone/4?closed=1) for a list of included items.
