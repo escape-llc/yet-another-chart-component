@@ -9,7 +9,7 @@
 	<Page.Resources>
 		<DataTemplate x:Key="PageItem">
 			<RelativePanel HorizontalAlignment="Stretch">
-				<SymbolIcon x:Name="icon" Symbol="{Binding Symbol}" Width="48" MaxWidth="48" VerticalAlignment="Center"
+				<FontIcon x:Name="icon" Glyph="{Binding Glyph}" FontFamily="Arial" FontWeight="Bold" FontSize="40" Width="48" MaxWidth="48" VerticalAlignment="Center"
 				RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignVerticalCenterWithPanel="True"/>
 				<TextBlock x:Name="title" Text="{Binding Title}" FontSize="16"
 					RelativePanel.RightOf="icon" RelativePanel.AlignRightWithPanel="True" RelativePanel.AlignTopWithPanel="True"/>
@@ -19,7 +19,7 @@
 		</DataTemplate>
 		<DataTemplate x:Key="NavItem">
 			<RelativePanel HorizontalAlignment="Stretch">
-				<SymbolIcon x:Name="icon" Symbol="{Binding Symbol}" Width="48" MaxWidth="48" VerticalAlignment="Center"
+				<FontIcon x:Name="icon" Glyph="{Binding Glyph}" FontFamily="Arial" FontWeight="Bold" FontSize="32" Width="48" MaxWidth="48" VerticalAlignment="Center"
 				RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignVerticalCenterWithPanel="True"/>
 				<TextBlock x:Name="title" Text="{Binding Title}" FontSize="14"
 					RelativePanel.RightOf="icon" RelativePanel.AlignRightWithPanel="True" RelativePanel.AlignTopWithPanel="True"/>

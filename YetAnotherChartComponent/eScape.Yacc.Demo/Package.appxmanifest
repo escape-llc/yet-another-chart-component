@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" IgnorableNamespaces="uap mp">
-  <Identity Name="eScapeTechnologyLLC.YetAnotherChartComponentDemo" Publisher="CN=3D68122A-CFAD-4771-A47D-34317340F18F" Version="1.0.0.0" />
+  <Identity Name="eScapeTechnologyLLC.YetAnotherChartComponentDemo" Publisher="CN=3D68122A-CFAD-4771-A47D-34317340F18F" Version="1.0.1.0" />
   <mp:PhoneIdentity PhoneProductId="05458329-ab86-4eaa-9da0-a2dce73cb2ed" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
   <Properties>
     <DisplayName>Yet Another Chart Component Demo</DisplayName>

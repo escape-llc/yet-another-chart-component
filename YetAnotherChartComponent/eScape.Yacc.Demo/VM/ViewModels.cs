@@ -17,7 +17,7 @@ namespace Yacc.Demo.VM {
 	/// Represents an item on the nav pane.
 	/// </summary>
 	public class PageItem {
-		public Symbol Symbol { get; set; }
+		public String Glyph { get; set; } = "?";
 		public String Title { get; set; }
 		public String Description { get; set; }
 		public Type PageType { get; set; }
@@ -30,12 +30,12 @@ namespace Yacc.Demo.VM {
 		public MainPageVM(CoreDispatcher dx) : base(dx) {
 			// build offline so we don't trigger events
 			var pl = new ObservableCollection<PageItem> {
-				new PageItem() { Symbol = Symbol.Map, Title = "Demo", Description = "The demo chart (as seen on The Internet).", PageType = typeof(Chart1) },
-				new PageItem() { Symbol = Symbol.Font, Title = "Default", Description = "Default styles in case you forget!", PageType = typeof(Chart2) },
-				new PageItem() { Symbol = Symbol.Clock, Title = "Recycling", Description = "Paths get recycled efficiently as values enter and leave chart.", PageType = typeof(Chart3) },
-				new PageItem() { Symbol = Symbol.Account, Title = "Stock Chart", Description = "Cached real data (to avoid permissions) and multiple Y-axis.", PageType = typeof(Chart4) },
-				new PageItem() { Symbol = Symbol.CalendarWeek, Title = "Stacked", Description = "Stacked column chart with labels.", PageType = typeof(Chart5) },
-				new PageItem() { Symbol = Symbol.Favorite, Title = "Pie", Description = "Pie chart.", PageType = typeof(Chart6) }
+				new PageItem() { Glyph="\u2460", Title = "Demo", Description = "The demo chart (as seen on The Internet).", PageType = typeof(Chart1) },
+				new PageItem() { Glyph="\u2461", Title = "Default", Description = "Default styles in case you forget!", PageType = typeof(Chart2) },
+				new PageItem() { Glyph="\u2462", Title = "Recycling", Description = "Paths get recycled efficiently as values enter and leave chart.", PageType = typeof(Chart3) },
+				new PageItem() { Glyph="\u2463", Title = "Stock Chart", Description = "Cached real data (to avoid permissions) and multiple Y-axis.", PageType = typeof(Chart4) },
+				new PageItem() { Glyph="\u2464", Title = "Stacked", Description = "Stacked column chart with labels.", PageType = typeof(Chart5) },
+				new PageItem() { Glyph="\u2465", Title = "Pie", Description = "Pie chart.", PageType = typeof(Chart6) }
 			};
 			PageList = pl;
 		}

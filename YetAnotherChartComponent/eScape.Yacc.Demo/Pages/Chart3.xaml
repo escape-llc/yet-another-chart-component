@@ -42,7 +42,7 @@
 			<CommandBar.PrimaryCommands>
 				<AppBarToggleButton IsChecked="True" x:Name="cb_legend" Label="Toggle" Content="Legend"/>
 				<AppBarToggleButton IsChecked="True" x:Name="cb_grid" Label="Toggle" Content="Grid"/>
-				<AppBarButton Content="+-" Label="Toggle" Command="{Binding Toggle}" />
+				<AppBarButton Content="&#x207a;&#x2215;&#x208b;" Label="Toggle" Command="{Binding Toggle}" />
 			</CommandBar.PrimaryCommands>
 		</CommandBar>
 		<yacc:Chart x:Name="chart" Style="{StaticResource Chart}"

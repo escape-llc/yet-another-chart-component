@@ -89,11 +89,11 @@
 				<AppBarToggleButton IsChecked="True" x:Name="cb_legend" Label="Toggle" Content="Legend"/>
 				<AppBarToggleButton IsChecked="True" x:Name="cb_grid" Label="Toggle" Content="Grid"/>
 				<AppBarToggleButton IsChecked="True" x:Name="cb_band" Label="Toggle" Content="Band"/>
-				<AppBarButton x:Name="add_head" Content="+[0]" Label="Add Head" Click="Add_head_Click"/>
-				<AppBarButton x:Name="add_tail" Content="+ [N]" Label="Add End" Click="Add_item_Click"/>
-				<AppBarButton x:Name="remove_head" Content="-[0]" Label="Delete Head" Click="Remove_head_Click"/>
-				<AppBarButton x:Name="remove_tail" Content="-[N]" Label="Delete End" Click="Remove_tail_Click"/>
-				<AppBarButton x:Name="add_and_remove_head" Content="-[0]+[N]" Label="Scroll" Click="Add_and_remove_head_Click"/>
+				<AppBarButton x:Name="add_head" Content="&#x21d2;&#x2395;" Label="Add Head" Click="Add_head_Click"/>
+				<AppBarButton x:Name="add_tail" Content="&#x2395;&#x21d0;" Label="Add End" Click="Add_item_Click"/>
+				<AppBarButton x:Name="remove_head" Content="&#x21d0;&#x2395;" Label="Delete Head" Click="Remove_head_Click"/>
+				<AppBarButton x:Name="remove_tail" Content="&#x2395;&#x21d2;" Label="Delete End" Click="Remove_tail_Click"/>
+				<AppBarButton x:Name="add_and_remove_head" Content="&#x21d0;&#x2395;&#x21d0;" Label="Scroll" Click="Add_and_remove_head_Click"/>
 			</CommandBar.PrimaryCommands>
 		</CommandBar>
 		<yacc:Chart x:Name="chart" Style="{StaticResource Chart}" ChartError="Chart_ChartError"
@@ -105,7 +105,7 @@
 			<yacc:Chart.Components>
 				<yacc:Background PathStyle="{StaticResource Bkg}"/>
 				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" PathStyle="{StaticResource Axes}"
-					LabelStyle="{StaticResource CategoryAxisLabel}" />
+					LabelStyle="{StaticResource CategoryAxisLabel2}" />
 				<yacc:ColumnSeries x:Name="colv1" DataSourceName="data" ValuePath="Value1" CategoryLabelPath="Label" ClipToDataRegion="True"
 					Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					PathStyle="{StaticResource Column_v1}" BarOffset=".25" BarWidth=".25" />
