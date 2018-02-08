@@ -1,17 +1,18 @@
 ﻿using eScapeLLC.UWP.Charts;
 using System;
 using System.Diagnostics;
-using System.Threading.Tasks;
 using Windows.UI.Xaml;
+using Windows.UI.Xaml.Navigation;
 using Yacc.Demo.VM;
 
 namespace Yacc.Demo.Pages {
 	public sealed partial class Chart1 : BasicPage {
+		public override string PageTitle => "Demo Chart";
+
 		public Chart1() {
 			this.InitializeComponent();
 		}
-#pragma warning disable 1998
-		protected override async Task<object> InitializeDataContextAsync() {
+		protected override object InitializeDataContext(NavigationEventArgs e) {
 			var vm = new ObservationsVM(Dispatcher, new[] {
 				new Observation("Group 1", -0.5, 1),
 				new Observation("Group 2", 3, 10),
@@ -22,7 +23,6 @@ namespace Yacc.Demo.Pages {
 			});
 			return vm;
 		}
-#pragma warning restore 1998
 
 		private void Add_item_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e) {
 			(DataContext as ObservationsVM).AddTail();

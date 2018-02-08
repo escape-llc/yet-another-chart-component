@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Threading.Tasks;
+using Windows.UI.Xaml.Navigation;
 using Yacc.Demo.VM;
 
 namespace Yacc.Demo.Pages {
@@ -8,11 +8,11 @@ namespace Yacc.Demo.Pages {
 	/// Chart5: stacked columns.
 	/// </summary>
 	public sealed partial class Chart5 : BasicPage {
+		public override string PageTitle => "Stacked Column Chart";
 		public Chart5() {
 			this.InitializeComponent();
 		}
-#pragma warning disable 1998
-		protected override async Task<object> InitializeDataContextAsync() {
+		protected override object InitializeDataContext(NavigationEventArgs e) {
 			var vm = new ObservationsVM(Dispatcher, new[] {
 				new Observation2("Group 1", -0.5, 1, 2, 2.3),
 				new Observation2("Group 2", 3, 10, 1, 2),
@@ -28,6 +28,5 @@ namespace Yacc.Demo.Pages {
 				Debug.WriteLine($"chart error {ev.Source}\t{String.Join(",", ev.MemberNames)}: {ev.ErrorMessage}");
 			}
 		}
-#pragma warning restore 1998
 	}
 }

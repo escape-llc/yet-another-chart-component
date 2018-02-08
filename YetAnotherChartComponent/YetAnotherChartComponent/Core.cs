@@ -842,14 +842,44 @@ namespace eScapeLLC.UWP.Charts {
 		/// <returns>The value or DEFV.</returns>
 		public static T Find<T>(this Style style, DependencyProperty property, T defv = default(T)) {
 			if (style == null) return defv;
+			var xx = style.Find(property);
+			return xx == null ? defv : (T)xx.Value;
+		}
+		/// <summary>
+		/// Search style and all sub-styles for the given DP, ELSE return a default value.
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="style"></param>
+		/// <param name="property"></param>
+		/// <param name="defv"></param>
+		/// <returns></returns>
+		public static T FindRecursive<T>(this Style style, DependencyProperty property, T defv = default(T)) {
+			if (style == null) return defv;
+			if(style.BasedOn != null) {
+				var sx = style.BasedOn.Find(property);
+				if(sx != null) {
+					return (T)sx.Value;
+				}
+			}
+			var xx = style.Find(property);
+			return xx == null ? defv : (T)xx.Value;
+		}
+		/// <summary>
+		/// Return the <see cref="Setter"/> for the given DP on the immediate style.
+		/// </summary>
+		/// <param name="style"></param>
+		/// <param name="property"></param>
+		/// <returns>The <see cref="Setter"/> or NULL.</returns>
+		public static Setter Find(this Style style, DependencyProperty property) {
+			if (style == null) return null;
 			foreach (var xx in style.Setters) {
 				if (xx is Setter sx) {
 					if (sx.Property == property) {
-						return (T)sx.Value;
+						return sx;
 					}
 				}
 			}
-			return defv;
+			return null;
 		}
 	}
 	#endregion

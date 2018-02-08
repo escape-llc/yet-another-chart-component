@@ -15,12 +15,16 @@ namespace Yacc.Demo.Pages {
 	public abstract class BasicPage : Page {
 		static LogTools.Flag _trace = LogTools.Add("BasicPage", LogTools.Level.Error);
 		/// <summary>
+		/// Page title for message reporting purposes.
+		/// </summary>
+		public abstract String PageTitle { get; }
+		/// <summary>
 		/// Create and initialize the view model.
 		/// When overriding, MUST declare method as async!
 		/// If the override ends up NOT being async, you can use "#pragma warning disable/restore 1998" around it to suppress warning.
 		/// </summary>
 		/// <returns>The view model.</returns>
-		protected abstract Task<object> InitializeDataContextAsync();
+		protected abstract object InitializeDataContext(NavigationEventArgs e);
 		/// <summary>
 		/// Create the VM and call down IRequireRefresh if necessary.
 		/// </summary>
@@ -28,22 +32,28 @@ namespace Yacc.Demo.Pages {
 		protected override async void OnNavigatedTo(NavigationEventArgs e) {
 			base.OnNavigatedTo(e);
 			try {
-				// Clear the data context, because we came in with the Frame's DC
-				DataContext = null;
-				// OnNavigatedTo returns here (because of await), and an "unknown" data context can trigger binding errors
-				DataContext = await InitializeDataContextAsync();
+				DataContext = InitializeDataContext(e);
 				if (DataContext == null)
-					_trace.Error($"{nameof(DataContext)} was NULL");
+					_trace.Error($"{GetType().Name}.{nameof(DataContext)} was NULL");
+				// page first
+				if(this is IRequireRefresh irrt) {
+					await irrt.RefreshAsync();
+				}
+				// now the VM
 				if (DataContext is IRequireRefresh irr) {
 					await irr.RefreshAsync();
 				}
 			}
 			catch(Exception ex) {
-				_trace.Error($"OnNavigatedTo.unhandled ${ex}");
+				_trace.Error($"{GetType().Name}.OnNavigatedTo.unhandled ${ex}");
+				if (this is IProvideFeedback ipf) {
+					ipf.Error(PageTitle, ex.Message);
+				}
 			}
 		}
 		/// <summary>
 		/// Call down <see cref="IRequireReleaseAsync"/>/<see cref="IRequireRelease"/> if necessary.
+		/// Order is reversed from TO.
 		/// </summary>
 		/// <param name="e"></param>
 		protected override async void OnNavigatingFrom(NavigatingCancelEventArgs e) {
@@ -63,7 +73,10 @@ namespace Yacc.Demo.Pages {
 					pirr.Release();
 				}
 			} catch (Exception ex) {
-				_trace.Error($"OnNavigatingFrom.unhandled ${ex}");
+				_trace.Error($"{GetType().Name}.OnNavigatingFrom.unhandled ${ex}");
+				if (this is IProvideFeedback ipf) {
+					ipf.Error(PageTitle, ex.Message);
+				}
 			} finally {
 				base.OnNavigatingFrom(e);
 			}

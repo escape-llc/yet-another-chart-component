@@ -1,17 +1,14 @@
-﻿using System.Threading.Tasks;
-using Windows.UI.Xaml;
+﻿using Windows.UI.Xaml;
+using Windows.UI.Xaml.Navigation;
 using Yacc.Demo.VM;
 
 namespace Yacc.Demo.Pages {
-	/// <summary>
-	/// An empty page that can be used on its own or navigated to within a Frame.
-	/// </summary>
 	public sealed partial class Chart2 : BasicPage {
+		public override string PageTitle => "Default Styles";
 		public Chart2() {
 			this.InitializeComponent();
 		}
-#pragma warning disable 1998
-		protected override async Task<object> InitializeDataContextAsync() {
+		protected override object InitializeDataContext(NavigationEventArgs e) {
 			var vm = new ObservationsVM(Dispatcher, new[] {
 				new Observation("Group 1", -0.5, 1),
 				new Observation("Group 2", 3, 10),
@@ -22,7 +19,6 @@ namespace Yacc.Demo.Pages {
 			});
 			return vm;
 		}
-#pragma warning restore 1998
 
 		private void Add_item_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e) {
 			(DataContext as ObservationsVM).AddTail();

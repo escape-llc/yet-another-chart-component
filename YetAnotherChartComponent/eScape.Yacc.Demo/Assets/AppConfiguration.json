@@ -2,7 +2,7 @@
 	"TraceSwitches": {
 		"AxisCommon": "Error",
 		"CandlestickSeries": "Error",
-		"CategoryAxis": "Error",
+		"CategoryAxis": "Verbose",
 		"Chart": "Error",
 		"ColumnSeries": "Error",
 		"ColumnSeriesPaths": "Off",

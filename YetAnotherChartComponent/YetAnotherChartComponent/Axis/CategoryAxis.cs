@@ -134,12 +134,14 @@ namespace eScapeLLC.UWP.Charts {
 			var i2 = (int)Maximum;
 			var scalex = icrc.Area.Width / Range;
 			// recycle and lay out tick labels
+			// see if style wants to override width
+			var widx = LabelStyle?.Find(FrameworkElement.WidthProperty);
 			var tbr = new Recycler<TextBlock>(TickLabels.Select(tl => tl.tb), () => {
 				if (LabelStyle != null) {
-					// let style override everything but what MUST be calculated
-					var tb = new TextBlock() {
-						Width = scalex,
-					};
+					var tb = new TextBlock();
+					if (widx == null) {
+						Width = scalex;
+					}
 					tb.Style = LabelStyle;
 					return tb;
 				} else {
@@ -169,6 +171,7 @@ namespace eScapeLLC.UWP.Charts {
 						var tb = tbget.Current;
 						var state = new ItemState() { tb = tb, value = tpx.Item1, label = tpx.Item2 };
 						tb.Text = state.label;
+						// anywhere is good for now; will recalibrate in Transforms()
 						state.SetLocation(icrc.Area.Left + ix * scalex, icrc.Area.Top + AxisLineThickness + 2 * AxisMargin);
 						itemstate.Add(state);
 					}
@@ -194,10 +197,21 @@ namespace eScapeLLC.UWP.Charts {
 			var scalex = icrc.Area.Width / Range;
 			var matx = new Matrix(scalex, 0, 0, 1, icrc.Area.Left, icrc.Area.Top + AxisMargin);
 			AxisGeometry.Transform = new MatrixTransform() { Matrix = matx };
-			_trace.Verbose($"transforms sx:{scalex:F3} matx:{matx} a:{icrc.Area}");
+			// see if style wants to override width
+			var widx = LabelStyle?.Find(FrameworkElement.WidthProperty);
+			_trace.Verbose($"transforms sx:{scalex:F3} matx:{matx} a:{icrc.Area} widx:{widx?.Value}");
 			foreach (var state in TickLabels) {
-				state.SetLocation(icrc.Area.Left + state.value * scalex, icrc.Area.Top + AxisLineThickness + 2 * AxisMargin);
-				state.tb.Width = scalex;
+				var yy = icrc.Area.Top + AxisLineThickness + 2 * AxisMargin;
+				if (widx == null) {
+					state.SetLocation(icrc.Area.Left + state.value * scalex, yy);
+					state.tb.Width = scalex;
+				}
+				else {
+					// place it centered in cell
+					var xx = icrc.Area.Left + state.value * scalex + scalex/2 - state.tb.ActualWidth / 2;
+					state.SetLocation(xx, yy);
+					_trace.Verbose($"tb {state.tb.ActualWidth}x{state.tb.ActualHeight} v:{state.value} @:({xx},{yy})");
+				}
 			}
 		}
 		#endregion
