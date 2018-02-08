@@ -22,7 +22,7 @@ If you are rebuilding the demo application and/or test projects (e.g. because yo
 
 # Screen Shot
 This is the current demo chart in the solution (subject to last-minute tweaking):
-![yacc demo screen shot](http://escape-technology-llc.com/mobile/wp-content/gallery/main/yacc-chart-demo-8.png)
+![yacc demo screen shot](http://escape-technology-llc.com/mobile/wp-content/gallery/main/yacc-chart-demo-13.png)
 
 # More Info
 Please check out the [Wiki](../../wiki) to learn more about the guts of YACC and rendering and linear algebra in general!
