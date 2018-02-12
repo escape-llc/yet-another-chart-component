@@ -8,6 +8,7 @@ using System.ComponentModel.DataAnnotations;
 using Windows.Foundation;
 using Windows.UI;
 using Windows.UI.Xaml;
+using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
@@ -309,6 +310,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// The area where series are displayed.
 		/// </summary>
 		Rect SeriesArea { get; }
+		/// <summary>
+		/// Whether this pass is transforms-only.
+		/// </summary>
+		bool IsTransformsOnly { get; }
 	}
 	#endregion
 	#region IChartEnterLeaveContext
@@ -664,17 +669,18 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Bind source.Path to the target.DP.
 		/// </summary>
-		/// <param name="source">Source element.</param>
+		/// <param name="source">Source instance.</param>
 		/// <param name="path">Component's (source) property path.</param>
-		/// <param name="target">Target framework element.</param>
+		/// <param name="target">Target DO.</param>
 		/// <param name="dp">FE's (target) DP.</param>
-		protected static void BindTo(FrameworkElement source, String path, FrameworkElement target, DependencyProperty dp) {
+		protected static void BindTo(object source, String path, DependencyObject target, DependencyProperty dp) {
 			Binding bx = new Binding() {
 				Path = new PropertyPath(path),
 				Source = source,
 				Mode = BindingMode.OneWay
 			};
-			target.SetBinding(dp, bx);
+			target.ClearValue(dp);
+			BindingOperations.SetBinding(target, dp, bx);
 		}
 		/// <summary>
 		/// Transfer any binding from the source DP to the given target's DP.
@@ -683,10 +689,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="path"></param>
 		/// <param name="target">Target framework element.</param>
 		/// <param name="dp"></param>
-		protected static void ApplyBinding(FrameworkElement source, String path, FrameworkElement target, DependencyProperty dp) {
+		protected static void ApplyBinding(FrameworkElement source, String path, DependencyObject target, DependencyProperty dp) {
 			var bx = source.GetBindingExpression(dp);
 			if (bx != null) {
-				target.SetBinding(dp, bx.ParentBinding);
+				target.ClearValue(dp);
+				BindingOperations.SetBinding(target, dp, bx.ParentBinding);
 			} else {
 				BindTo(source, path, target, dp);
 			}
@@ -1041,21 +1048,55 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region public
 		/// <summary>
-		/// First exhaust the original source, then start creating new instances until no longer iterating.
+		/// First exhaust the original source, then start creating new instances until caller stops.
 		/// Do the bookkeeping for used and created lists.
 		/// DO NOT use this to control looping!
 		/// </summary>
-		/// <returns>Another instance.  MAY be newly created.</returns>
-		public IEnumerable<T> Items() {
+		/// <returns>Item1: true=created, false=reused; Item2: Another instance.</returns>
+		public IEnumerable<Tuple<bool,T>> Items() {
 			foreach (var tx in _source) {
 				_unused.Remove(tx);
-				yield return tx;
+				yield return new Tuple<bool,T>(false, tx);
 			}
 			while (true) {
 				var tx = _factory();
 				_created.Add(tx);
-				yield return tx;
+				yield return new Tuple<bool, T>(true, tx);
 			}
+		}
+		#endregion
+	}
+	#endregion
+	#region DataTemplateShim
+	/// <summary>
+	/// "Internal" shim view model used as the <see cref="FrameworkElement.DataContext"/> for a <see cref="DataTemplate"/>.
+	/// </summary>
+	public class DataTemplateShim : INotifyPropertyChanged {
+		/// <summary>
+		/// Implemented for <see cref="Windows.UI.Xaml.Data.INotifyPropertyChanged"/>.
+		/// </summary>
+		public event PropertyChangedEventHandler PropertyChanged;
+		#region data
+		Visibility _vis;
+		String _text;
+		#endregion
+		#region properties
+		/// <summary>
+		/// Current visibility.
+		/// </summary>
+		public Visibility Visibility { get { return _vis; } set { _vis = value; Changed(nameof(Visibility)); } }
+		/// <summary>
+		/// Current text.
+		/// </summary>
+		public String Text { get { return _text; } set { _text = value; Changed(nameof(Text)); } }
+		#endregion
+		#region helpers
+		/// <summary>
+		/// Hit the <see cref="PropertyChanged"/> event.
+		/// </summary>
+		/// <param name="prop">Property that changed.</param>
+		protected void Changed(String prop) {
+			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(prop));
 		}
 		#endregion
 	}

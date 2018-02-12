@@ -215,8 +215,8 @@ namespace eScapeLLC.UWP.Charts {
 			var path = st.NextElement();
 			if (path == null) return;
 			// start with empty geometry
-			path.Data = new PathGeometry();
-			st.itemstate.Add(new SeriesItemState(index, valuex, valuex, valuey, path, index) { Label = label });
+			path.Item2.Data = new PathGeometry();
+			st.itemstate.Add(new SeriesItemState(index, valuex, valuex, valuey, path.Item2, index) { Label = label });
 		}
 		void IDataSourceRenderer.RenderComplete(object state) {
 			var st = state as State;

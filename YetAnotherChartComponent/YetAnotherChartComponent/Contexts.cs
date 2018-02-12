@@ -66,6 +66,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// The remaining area for series.
 		/// </summary>
 		public Rect SeriesArea { get; protected set; }
+		/// <summary>
+		/// True: is transforms only; False: full.
+		/// </summary>
+		public bool IsTransformsOnly { get; set; }
 		#endregion
 		#region ctor
 		/// <summary>

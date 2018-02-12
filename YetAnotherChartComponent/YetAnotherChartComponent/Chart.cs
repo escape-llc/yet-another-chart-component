@@ -155,6 +155,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Initialized by <see cref="InitializeLayoutContext"/>
 		/// </summary>
 		public DefaultLayoutContext Layout { get; set; }
+		public bool IsTransformsOnly { get; set; }
 		#endregion
 		#region data
 		/// <summary>
@@ -205,6 +206,7 @@ namespace eScapeLLC.UWP.Charts {
 			var rect = Layout.For(cc);
 			var drc = new DefaultRenderContext(surf, ccs, LayoutDimensions, rect, Layout.RemainingRect, dc);
 			rendercache.Add(cc, drc);
+			drc.IsTransformsOnly = IsTransformsOnly;
 			return drc;
 		}
 		#endregion
@@ -406,7 +408,7 @@ namespace eScapeLLC.UWP.Charts {
 				foreach (ChartComponent cc in e.OldItems) {
 					_trace.Verbose($"leave '{cc.Name}' {cc}");
 					cc.RefreshRequest -= ChartComponent_RefreshRequest;
-					LeaveComponent(celc, cc);
+					ComponentLeave(celc, cc);
 				}
 			}
 			if (e.NewItems != null) {
@@ -415,7 +417,7 @@ namespace eScapeLLC.UWP.Charts {
 					cc.RefreshRequest += ChartComponent_RefreshRequest;
 					cc.DataContext = DataContext;
 					if(Surface != null)  {
-						EnterComponent(celc, cc);
+						ComponentEnter(celc, cc);
 					}
 					else {
 						DeferredEnter.Add(cc);
@@ -501,7 +503,7 @@ namespace eScapeLLC.UWP.Charts {
 				_trace.Verbose($"OnApplyTemplate ({Width}x{Height}) {Surface} d:{DeferredEnter.Count}");
 				var celc = new DefaultEnterLeaveContext(Surface, Components, Layers, DataContext);
 				foreach (var cc in DeferredEnter) {
-					EnterComponent(celc, cc);
+					ComponentEnter(celc, cc);
 				}
 				DeferredEnter.Clear();
 				if (celc.Errors.Count > 0) {
@@ -630,6 +632,7 @@ namespace eScapeLLC.UWP.Charts {
 		#region helpers
 		/// <summary>
 		/// Report event(s).
+		/// MUST be on Dispatcher thread!
 		/// </summary>
 		/// <param name="cvr">The event(s) to report.</param>
 		protected void Report(params ChartValidationResult[] cvr) {
@@ -660,11 +663,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icelc">The context.</param>
 		/// <param name="cc">The component entering chart.</param>
-		protected void EnterComponent(IChartEnterLeaveContext icelc, ChartComponent cc) {
+		protected void ComponentEnter(IChartEnterLeaveContext icelc, ChartComponent cc) {
 			// pre-load resources
 			if (cc is IRequireChartTheme irct) {
 				if (Theme == null) {
-					Report(new ChartValidationResult("Chart", "The Theme property is NULL, paths may not be visible", new[] { cc.NameOrType(), "Theme" }));
+					Report(new ChartValidationResult("Chart", "The Theme property is NULL, paths may not be visible", new[] { cc.NameOrType(), nameof(Theme) }));
 				} else {
 					irct.Theme = Theme;
 				}
@@ -697,7 +700,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icelc">The context.</param>
 		/// <param name="cc">The component leaving chart.</param>
-		protected void LeaveComponent(IChartEnterLeaveContext icelc, ChartComponent cc) {
+		protected void ComponentLeave(IChartEnterLeaveContext icelc, ChartComponent cc) {
 			if(cc is IProvideLegend ipl) {
 				foreach (var li in ipl.LegendItems) {
 					LegendItems.Remove(li);
@@ -730,7 +733,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (rrea.Component is IRequireTransforms irt) {
 				var rect = ls.Layout.For(rrea.Component);
 				_trace.Verbose($"component-transforms {rrea.Component} {rrea.Axis} {rect}");
-				var ctx = new DefaultRenderContext(Surface, Components, ls.LayoutDimensions, rect, ls.Layout.RemainingRect, DataContext);
+				var ctx = new DefaultRenderContext(Surface, Components, ls.LayoutDimensions, rect, ls.Layout.RemainingRect, DataContext) { IsTransformsOnly = true };
 				irt.Transforms(ctx);
 			}
 		}
@@ -748,7 +751,7 @@ namespace eScapeLLC.UWP.Charts {
 					Phase_ResetAxes();
 					Phase_AxisLimits((cc2) => cc2 is DataSeries && (cc2 is IProvideCategoryExtents || cc2 is IProvideValueExtents));
 				}
-				var ctx = new DefaultRenderContext(Surface, Components, ls.LayoutDimensions, rect, ls.Layout.RemainingRect, DataContext);
+				var ctx = new DefaultRenderContext(Surface, Components, ls.LayoutDimensions, rect, ls.Layout.RemainingRect, DataContext) { IsTransformsOnly = false };
 				irr.Render(ctx);
 				if (rrea.Axis != AxisUpdateState.None) {
 					// axes MUST be re-evaluated because this thing changed.
@@ -765,9 +768,11 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		/// <summary>
 		/// Adjust layout and transforms based on size change.
+		/// SETs <see cref="LayoutState.IsTransformsOnly"/> to TRUE.
 		/// </summary>
 		/// <param name="ls">Layout state.</param>
 		protected void TransformsLayout(LayoutState ls) {
+			ls.IsTransformsOnly = true;
 			ls.InitializeLayoutContext(Padding);
 			_trace.Verbose($"transforms-only starting {ls.LayoutRect}");
 			Phase_Layout(ls);
@@ -777,9 +782,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// Perform a full layout and rendering pass.
 		/// At least ONE component reported as dirty.
 		/// The full rendering sequence is: axis-reset, layout, render, transforms.
+		/// SETs <see cref="LayoutState.IsTransformsOnly"/> to FALSE.
 		/// </summary>
 		/// <param name="ls">Layout state.</param>
 		protected void FullLayout(LayoutState ls) {
+			ls.IsTransformsOnly = false;
 			ls.InitializeLayoutContext(Padding);
 			_trace.Verbose($"full starting {ls.LayoutRect}");
 			// Phase I: reset axes

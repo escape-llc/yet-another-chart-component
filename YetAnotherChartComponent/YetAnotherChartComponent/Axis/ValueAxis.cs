@@ -99,8 +99,8 @@ namespace eScapeLLC.UWP.Charts {
 				//_trace.Verbose($"grid vx:{tick}");
 				if (tbget.MoveNext()) {
 					var tb = tbget.Current;
-					tb.Text = tick.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
-					var state = new ItemState() { tb = tb, value = tick };
+					var state = new ItemState() { tb = tb.Item2, value = tick };
+					state.tb.Text = tick.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
 					state.SetLocation(icrc.Area.Left, tick);
 					itemstate.Add(state);
 				}

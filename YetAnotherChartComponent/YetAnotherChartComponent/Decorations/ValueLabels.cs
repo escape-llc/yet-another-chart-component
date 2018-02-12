@@ -1,10 +1,13 @@
 ﻿using eScape.Core;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using Windows.Foundation;
+using Windows.UI;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Media;
 
 namespace eScapeLLC.UWP.Charts {
@@ -15,11 +18,19 @@ namespace eScapeLLC.UWP.Charts {
 		static LogTools.Flag _trace = LogTools.Add("ValueLabels", LogTools.Level.Error);
 		#region SeriesItemState
 		/// <summary>
-		/// Shorthand for item state.
+		/// The item state.
 		/// </summary>
-		protected class SeriesItemState : ItemState<TextBlock> {
+		protected class SeriesItemState : ItemState<FrameworkElement> {
 			internal Point Direction { get; set; }
-			internal SeriesItemState(int idx, double xv, double xvo, double yv, TextBlock ele, int ch) : base(idx, xv, xvo, yv, ele, ch) { }
+			internal Point CanvasLocation { get; set; }
+			internal SeriesItemState(int idx, double xv, double xvo, double yv, FrameworkElement ele, int ch) : base(idx, xv, xvo, yv, ele, ch) { }
+			internal void Locate(FrameworkElement fe, Point offs) {
+				var hw = fe.ActualWidth / 2;
+				var hh = fe.ActualHeight / 2;
+				fe.SetValue(Canvas.LeftProperty, CanvasLocation.X - hw + hw * offs.X * Direction.X);
+				fe.SetValue(Canvas.TopProperty, CanvasLocation.Y - hh + hh * offs.Y * Direction.Y);
+			}
+
 		}
 		#endregion
 		#region properties
@@ -37,9 +48,15 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public int ValueChannel { get { return (int)GetValue(ValueChannelProperty); } set { SetValue(ValueChannelProperty, value); } }
 		/// <summary>
-		/// The style to apply to labels.
+		/// The style to apply to (non-templated) labels.
 		/// </summary>
 		public Style LabelStyle { get { return (Style)GetValue(LabelStyleProperty); } set { SetValue(LabelStyleProperty, value); } }
+		/// <summary>
+		/// If set, the template to use for labels.
+		/// This overrides <see cref="LabelStyle"/>.
+		/// If this is not set, then <see cref="TextBlock"/>s are used and <see cref="LabelStyle"/> applied to them.
+		/// </summary>
+		public DataTemplate LabelTemplate { get { return (DataTemplate)GetValue(LabelTemplateProperty); } set { SetValue(LabelTemplateProperty, value); } }
 		/// <summary>
 		/// Alternate format string for labels.
 		/// </summary>
@@ -103,6 +120,12 @@ namespace eScapeLLC.UWP.Charts {
 		public static readonly DependencyProperty LabelStyleProperty = DependencyProperty.Register(
 			nameof(LabelStyle), typeof(Style), typeof(ValueLabels), new PropertyMetadata(null)
 		);
+		/// <summary>
+		/// Identifies <see cref="LabelTemplate"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty LabelTemplateProperty = DependencyProperty.Register(
+			nameof(LabelTemplate), typeof(DataTemplate), typeof(ValueLabels), new PropertyMetadata(null)
+		);
 		#endregion
 		#region ctor
 		/// <summary>
@@ -159,29 +182,75 @@ namespace eScapeLLC.UWP.Charts {
 			}
 		}
 		/// <summary>
+		/// Hit all the view models to update visibility.
+		/// </summary>
+		/// <param name="viz"></param>
+		protected void UpdateVisibility(Visibility viz) {
+			foreach(var st in ItemState) {
+				if(st.Element.DataContext is DataTemplateShim dts) {
+					dts.Visibility = viz;
+				}
+			}
+		}
+		/// <summary>
+		/// Get the transform from the source, or based on axes, whichever hits first.
+		/// </summary>
+		/// <param name="icrc">Use for the area.</param>
+		/// <returns>Matrix or DEFAULT.</returns>
+		protected Matrix ObtainMatrix(IChartRenderContext icrc) {
+			if (Source is IProvideCustomTransform ipct) {
+				return ipct.TransformFor(icrc.Area);
+			}
+			if (ValueAxis == null) return default(Matrix);
+			var matx = CategoryAxis != null ? MatrixSupport.TransformFor(icrc.Area, CategoryAxis, ValueAxis) : MatrixSupport.TransformFor(icrc.Area, ValueAxis);
+			return matx;
+		}
+		/// <summary>
 		/// Element factory for recycler.
-		/// TODO should come from a <see cref="DataTemplate"/>.
+		/// Comes from a <see cref="DataTemplate"/> if the <see cref="LabelTemplate"/> was set.
 		/// </summary>
 		/// <returns></returns>
-		TextBlock CreateElement() {
-			var tb = new TextBlock();
-			if (LabelStyle != null) {
-				tb.Style = LabelStyle;
+		FrameworkElement CreateElement() {
+			if (LabelTemplate != null) {
+				var el = LabelTemplate.LoadContent() as FrameworkElement;
+				return el;
+			} else {
+				var tb = new TextBlock();
+				if (LabelStyle != null) {
+					tb.Style = LabelStyle;
+				}
+				return tb;
 			}
-			ApplyBinding(this, nameof(Visibility), tb, UIElement.VisibilityProperty);
-			return tb;
 		}
 		/// <summary>
 		/// Advance the recycler's iterator.
 		/// </summary>
 		/// <param name="elements"></param>
 		/// <returns></returns>
-		TextBlock NextElement(IEnumerator<TextBlock> elements) {
+		Tuple<bool, FrameworkElement> NextElement(IEnumerator<Tuple<bool,FrameworkElement>> elements) {
 			if (elements.MoveNext()) return elements.Current;
 			else return null;
 		}
+		/// <summary>
+		/// Follow-up handler to re-position the label element at exactly the right spot after it's done with (asynchronous) measure/arrange.
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		void Element_SizeChanged(object sender, SizeChangedEventArgs e) {
+#if false
+			var vm = fe.DataContext as DataTemplateShim;
+			_trace.Verbose($"{Name} sizeChanged ps:{e.PreviousSize} ns:{e.NewSize} text:{vm?.Text}");
+#endif
+			var fe = sender as FrameworkElement;
+			var state = ItemState.SingleOrDefault((sis) => sis.Element == fe);
+			if (state != null) {
+				_trace.Verbose($"{Name} sizeChanged loc:{state.CanvasLocation} yv:{state.YValue} ns:{e.NewSize}");
+				state.Locate(fe, LabelOffset);
+			}
+		}
 		#endregion
 		#region IRequireEnterLeave
+		long token;
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			EnsureComponents(icelc as IChartComponentContext);
 			Layer = icelc.CreateLayer();
@@ -190,9 +259,19 @@ namespace eScapeLLC.UWP.Charts {
 				() => LabelStyle = Theme.LabelAxisTop
 			);
 			_trace.Verbose($"{Name} enter s:{SourceName} {Source} v:{ValueAxis} c:{CategoryAxis}");
+			token = RegisterPropertyChangedCallback(UIElement.VisibilityProperty, PropertyChanged_Visibility);
 		}
+
+		private void PropertyChanged_Visibility(DependencyObject sender, DependencyProperty dp) {
+			_trace.Verbose($"inst.vizChanged {Name} {Visibility}");
+			if (dp == VisibilityProperty) {
+				UpdateVisibility(Visibility);
+			}
+		}
+
 		void IRequireEnterLeave.Leave(IChartEnterLeaveContext icelc) {
 			_trace.Verbose($"{Name} leave");
+			UnregisterPropertyChangedCallback(VisibilityProperty, token);
 			ValueAxis = null;
 			CategoryAxis = null;
 			Source = null;
@@ -202,11 +281,10 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region IRequireRender
 		void IRequireRender.Render(IChartRenderContext icrc) {
-			// IST: not using CategoryAxis OR ValueAxis so not checking it for null
 			if(Source is IProvideSeriesItemValues ipsiv) {
 				// preamble
 				var elements = ItemState.Select(ms => ms.Element);
-				var recycler = new Recycler<TextBlock>(elements, CreateElement);
+				var recycler = new Recycler<FrameworkElement>(elements, CreateElement);
 				var itemstate = new List<SeriesItemState>();
 				var elenum = recycler.Items().GetEnumerator();
 				// render
@@ -218,28 +296,45 @@ namespace eScapeLLC.UWP.Charts {
 						}
 					}
 					else if(siv is ISeriesItemValues isivs) {
-						target = isivs.YValues.SingleOrDefault((yv) => yv.Channel == ValueChannel);
+						target = isivs.YValues.SingleOrDefault(yv => yv.Channel == ValueChannel);
 					}
 					if(target != null && !double.IsNaN(target.YValue)) {
-						var tb = NextElement(elenum);
-						if (tb == null) continue;
-						tb.Text = target.YValue.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
+						var el = NextElement(elenum);
+						if (el == null) continue;
+						var txt = target.YValue.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
+						if(el.Item1) {
+							// created fresh from data template; connect a VM
+							var shim = new DataTemplateShim() { Visibility = Visibility, Text = txt };
+							// connect the shim to template root element's Visibility
+							BindTo(shim, nameof(Visibility), el.Item2, UIElement.VisibilityProperty);
+							el.Item2.DataContext = shim;
+							el.Item2.SizeChanged += Element_SizeChanged;
+						} else {
+							// already hooked in; update values
+							if(el.Item2.DataContext is DataTemplateShim dts) {
+								dts.Visibility = Visibility;
+								dts.Text = txt;
+							}
+						}
+						if (LabelTemplate == null && el.Item2 is TextBlock tb) {
+							tb.Text = txt;
+						}
 						var pmt = (target as IProvidePlacement)?.Placement;
 						switch(pmt) {
 						case RectanglePlacement rp:
 							var pt = rp.Transform(PlacementOffset);
 							_trace.Verbose($"rp c:{rp.Center} d:{rp.Direction} hd:{rp.HalfDimensions} pt:{pt}");
-							var sis = new SeriesItemState(siv.Index, siv.XValueIndex, siv.XValueIndex + CategoryAxisOffset, pt.Y, tb, target.Channel) { Direction = rp.Direction };
+							var sis = new SeriesItemState(siv.Index, siv.XValueIndex, siv.XValueIndex + CategoryAxisOffset, pt.Y, el.Item2, target.Channel) { Direction = rp.Direction };
 							itemstate.Add(sis);
 							break;
 						case MidpointPlacement mp:
 							var pt2 = mp.Transform(PlacementOffset);
 							_trace.Verbose($"mp {mp.Midpoint} d:{mp.Direction} hd:{mp.HalfDimension} pt:{pt2}");
-							var sis2 = new SeriesItemState(siv.Index, siv.XValueIndex, pt2.X, pt2.Y, tb, target.Channel) { Direction = mp.Direction };
+							var sis2 = new SeriesItemState(siv.Index, siv.XValueIndex, pt2.X, pt2.Y, el.Item2, target.Channel) { Direction = mp.Direction };
 							itemstate.Add(sis2);
 							break;
 						default:
-							var sis3 = new SeriesItemState(siv.Index, siv.XValueIndex, siv.XValueIndex + CategoryAxisOffset, target.YValue, tb, target.Channel) { Direction = Placement.UP_RIGHT };
+							var sis3 = new SeriesItemState(siv.Index, siv.XValueIndex, siv.XValueIndex + CategoryAxisOffset, target.YValue, el.Item2, target.Channel) { Direction = Placement.UP_RIGHT };
 							itemstate.Add(sis3);
 							break;
 						}
@@ -249,28 +344,11 @@ namespace eScapeLLC.UWP.Charts {
 				ItemState = itemstate;
 				Layer.Remove(recycler.Unused);
 				Layer.Add(recycler.Created);
-				foreach (var xx in ItemState) {
-					// force everything to measure; needed for Transforms
-					xx.Element.Measure(icrc.Dimensions);
-				}
 				Dirty = false;
 			}
 		}
 		#endregion
 		#region IRequireTransforms
-		/// <summary>
-		/// Get the transform from the source, or based on axes, whichever hits first.
-		/// </summary>
-		/// <param name="icrc">Use for the area.</param>
-		/// <returns>Matrix or DEFAULT.</returns>
-		Matrix ObtainMatrix(IChartRenderContext icrc) {
-			if(Source is IProvideCustomTransform ipct) {
-				return ipct.TransformFor(icrc.Area);
-			}
-			if (ValueAxis == null) return default(Matrix);
-			var matx = CategoryAxis != null ? MatrixSupport.TransformFor(icrc.Area, CategoryAxis, ValueAxis) : MatrixSupport.TransformFor(icrc.Area, ValueAxis);
-			return matx;
-		}
 		/// <summary>
 		/// Adjust transforms for the current element state.
 		/// </summary>
@@ -278,16 +356,18 @@ namespace eScapeLLC.UWP.Charts {
 		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
 			if (ItemState.Count == 0) return;
 			var matx = ObtainMatrix(icrc);
-			_trace.Verbose($"{Name} transforms a:{icrc.Area} rx:{CategoryAxis?.Range} ry:{ValueAxis?.Range} matx:{matx}");
+			_trace.Verbose($"{Name} transforms a:{icrc.Area} rx:{CategoryAxis?.Range} ry:{ValueAxis?.Range} matx:{matx}  ito:{icrc.IsTransformsOnly}");
 			if (matx == default(Matrix)) return;
 			foreach (var state in ItemState) {
-				var dcc = matx.Transform(new Point(state.XValueOffset, state.YValue));
-				// get half-dimensions of the TextBlock
-				// IST elements must have had measure-pass before we get to here!
-				var hw = state.Element.ActualWidth / 2;
-				var hh = state.Element.ActualHeight / 2;
-				state.Element.SetValue(Canvas.LeftProperty, dcc.X - hw + hw*LabelOffset.X*state.Direction.X);
-				state.Element.SetValue(Canvas.TopProperty, dcc.Y - hh + hh*LabelOffset.Y*state.Direction.Y);
+				state.CanvasLocation = matx.Transform(new Point(state.XValueOffset, state.YValue));
+				_trace.Verbose($"{Name} el:{state.Element} ds:{state.Element.DesiredSize} as:{state.Element.ActualWidth},{state.Element.ActualHeight}");
+				// invoke it now because it won't invoke EVH if size didn't actually change
+				state.Locate(state.Element, LabelOffset);
+				if (!icrc.IsTransformsOnly) {
+					// trigger the SizeChanged handler
+					state.Element.InvalidateMeasure();
+					state.Element.InvalidateArrange();
+				}
 #if false
 				if (ClipToDataRegion) {
 					// TODO this does not work "correctly" the TB gets clipped no matter what
@@ -296,7 +376,7 @@ namespace eScapeLLC.UWP.Charts {
 					//state.Element.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
 				}
 #endif
-				_trace.Verbose($"{Name} matx:{matx} pt:({state.XValueIndex},{state.YValue}) dcc:{dcc} tbsz:{state.Element.ActualWidth},{state.Element.ActualHeight}");
+				_trace.Verbose($"{Name} matx:{matx} pt:({state.XValueIndex},{state.YValue}) dcc:{state.CanvasLocation}");
 			}
 		}
 		#endregion

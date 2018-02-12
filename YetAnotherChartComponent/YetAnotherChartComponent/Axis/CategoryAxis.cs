@@ -169,8 +169,8 @@ namespace eScapeLLC.UWP.Charts {
 					_trace.Verbose($"key {ix} label {tpx.Item2}");
 					if (tbget.MoveNext()) {
 						var tb = tbget.Current;
-						var state = new ItemState() { tb = tb, value = tpx.Item1, label = tpx.Item2 };
-						tb.Text = state.label;
+						var state = new ItemState() { tb = tb.Item2, value = tpx.Item1, label = tpx.Item2 };
+						state.tb.Text = state.label;
 						// anywhere is good for now; will recalibrate in Transforms()
 						state.SetLocation(icrc.Area.Left + ix * scalex, icrc.Area.Top + AxisLineThickness + 2 * AxisMargin);
 						itemstate.Add(state);

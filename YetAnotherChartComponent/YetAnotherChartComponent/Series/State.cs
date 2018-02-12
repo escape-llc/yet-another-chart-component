@@ -229,7 +229,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// The recycler's iterator to generate the elements.
 		/// </summary>
-		internal readonly IEnumerator<EL> elements;
+		internal readonly IEnumerator<Tuple<bool,EL>> elements;
 		/// <summary>
 		/// Ctor.
 		/// </summary>
@@ -244,7 +244,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Convenience method to call for the next element from the recycler's iterator.
 		/// </summary>
 		/// <returns>Next element or NULL.</returns>
-		internal EL NextElement() {
+		internal Tuple<bool, EL> NextElement() {
 			if (elements.MoveNext()) return elements.Current;
 			else return null;
 		}

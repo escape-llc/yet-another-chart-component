@@ -284,10 +284,10 @@ namespace eScapeLLC.UWP.Charts {
 				var path = st.NextElement();
 				if (path == null) return;
 				var rg = new RectangleGeometry() { Rect = new Rect(new Point(barx, topy), new Point(rightx, bottomy)) };
-				path.Data = rg;
-				BindTo(ColumnStack[ix], "PathStyle", path, FrameworkElement.StyleProperty);
+				path.Item2.Data = rg;
+				BindTo(ColumnStack[ix], "PathStyle", path.Item2, FrameworkElement.StyleProperty);
 				UpdateLimits(valuex, sis.Min, sis.Max);
-				sis.Elements.Add(new Tuple<double, Path>(y1, path));
+				sis.Elements.Add(new Tuple<double, Path>(y1, path.Item2));
 			}
 			st.itemstate.Add(sis);
 		}

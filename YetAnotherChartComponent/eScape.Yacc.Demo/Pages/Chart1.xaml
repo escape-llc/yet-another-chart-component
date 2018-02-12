@@ -81,6 +81,11 @@
 				<LineGeometry StartPoint=".4,.5" EndPoint=".6,.5" />
 			</GeometryGroup>
 		</DataTemplate>
+		<DataTemplate x:Key="LabelWithBorder">
+			<Border Background="DarkGray" Padding="2" BorderThickness="1" CornerRadius="2" BorderBrush="LightGoldenrodYellow">
+				<TextBlock Text="{Binding Text}" Style="{StaticResource BigLabels2}" />
+			</Border>
+		</DataTemplate>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 		<CommandBar x:Name="toolbar"
@@ -88,7 +93,7 @@
 			<CommandBar.PrimaryCommands>
 				<AppBarToggleButton IsChecked="True" x:Name="cb_legend" Label="Toggle" Content="Legend"/>
 				<AppBarToggleButton IsChecked="True" x:Name="cb_grid" Label="Toggle" Content="Grid"/>
-				<AppBarToggleButton IsChecked="True" x:Name="cb_band" Label="Toggle" Content="Band"/>
+				<AppBarToggleButton x:Name="cb_band" Label="Toggle" Content="Band" IsChecked="{Binding ShowBand, Mode=TwoWay}"/>
 				<AppBarButton x:Name="add_head" Content="&#x21d2;&#x2395;" Label="Add Head" Click="Add_head_Click"/>
 				<AppBarButton x:Name="add_tail" Content="&#x2395;&#x21d0;" Label="Add End" Click="Add_item_Click"/>
 				<AppBarButton x:Name="remove_head" Content="&#x21d0;&#x2395;" Label="Delete Head" Click="Remove_head_Click"/>
@@ -127,12 +132,12 @@
 					Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
 				<yacc:ValueLabels SourceName="colv2" LabelFormatString="F2"
 					CategoryAxisOffset=".625" PlacementOffset="0,1" LabelOffset="0,-1" LabelStyle="{StaticResource BigLabels}" />
-				<yacc:ValueLabels SourceName="band" LabelFormatString="F2"
-					Visibility="{Binding ElementName=cb_band, Path=IsChecked, Converter={StaticResource b2v}}"
-					CategoryAxisOffset="0" PlacementOffset="0,1" LabelOffset="1,0" LabelStyle="{StaticResource BigLabels2}" />
-				<yacc:ValueLabels SourceName="band" ValueChannel="1" LabelFormatString="F2"
-					Visibility="{Binding ElementName=cb_band, Path=IsChecked, Converter={StaticResource b2v}}"
-					CategoryAxisOffset="1" PlacementOffset="0,0" LabelOffset="-1,0" LabelStyle="{StaticResource BigLabels2}" />
+				<yacc:ValueLabels SourceName="band" LabelFormatString="F2" x:Name="values1"
+					Visibility="{Binding ShowBand, Converter={StaticResource b2v}}"
+					CategoryAxisOffset="0" PlacementOffset="0,1" LabelOffset="1,0" LabelTemplate="{StaticResource LabelWithBorder}" />
+				<yacc:ValueLabels SourceName="band" ValueChannel="1" LabelFormatString="F2" x:Name="values2"
+					Visibility="{Binding ShowBand, Converter={StaticResource b2v}}"
+					CategoryAxisOffset="1" PlacementOffset="0,0" LabelOffset="-1,0" LabelTemplate="{StaticResource LabelWithBorder}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>
 		<TextBlock x:Name="title" Style="{StaticResource Title}" Text="YACC Demonstration Chart"

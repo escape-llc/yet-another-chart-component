@@ -206,8 +206,8 @@ namespace eScapeLLC.UWP.Charts {
 			var path = st.NextElement();
 			if (path == null) return;
 			var rg = new RectangleGeometry() { Rect = new Rect(new Point(barx, topy), new Point(rightx, bottomy)) };
-			path.Data = rg;
-			st.itemstate.Add(new SeriesItemState(index, leftx, barx, y1, path));
+			path.Item2.Data = rg;
+			st.itemstate.Add(new SeriesItemState(index, leftx, barx, y1, path.Item2));
 		}
 		/// <summary>
 		/// Have to perform update here and not in Postamble because we are altering axis limits.

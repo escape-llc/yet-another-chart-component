@@ -197,8 +197,8 @@ namespace eScapeLLC.UWP.Charts {
 			// no path yet
 			var path = st.NextElement();
 			if (path == null) return;
-			path.Data = mk;
-			st.itemstate.Add(new SeriesItemState(index, mappedx, markerx, mappedy, path));
+			path.Item2.Data = mk;
+			st.itemstate.Add(new SeriesItemState(index, mappedx, markerx, mappedy, path.Item2));
 		}
 		void IDataSourceRenderer.RenderComplete(object state) {
 			var st = state as RenderState_ValueAndLabel<SeriesItemState, Path>;

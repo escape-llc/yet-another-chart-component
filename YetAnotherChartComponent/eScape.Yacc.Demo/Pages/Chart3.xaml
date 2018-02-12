@@ -35,6 +35,11 @@
 				<EllipseGeometry RadiusX=".5" RadiusY=".5" Center=".5,.5" />
 			</GeometryGroup>
 		</DataTemplate>
+		<DataTemplate x:Key="LabelWithBorder">
+			<Border Background="Bisque" Padding="2" BorderThickness="1" CornerRadius="2" BorderBrush="LightBlue" Opacity=".75">
+				<TextBlock Text="{Binding Text}" Style="{StaticResource Labels}" Foreground="Black" FontStyle="Italic"/>
+			</Border>
+		</DataTemplate>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 		<CommandBar x:Name="toolbar"
@@ -73,7 +78,7 @@
 				<yacc:ValueLabels SourceName="v3" LabelFormatString="F2"
 					CategoryAxisOffset=".5" LabelOffset="0,0" LabelStyle="{StaticResource Labels}" />
 				<yacc:ValueLabels SourceName="v4" LabelFormatString="F2"
-					CategoryAxisOffset=".375" LabelOffset="0,-1" LabelStyle="{StaticResource Labels}" />
+					CategoryAxisOffset=".375" LabelOffset="0,-1" LabelTemplate="{StaticResource LabelWithBorder}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>
 		<TextBlock x:Name="title" Style="{StaticResource Title}" Text="Time Series Data"

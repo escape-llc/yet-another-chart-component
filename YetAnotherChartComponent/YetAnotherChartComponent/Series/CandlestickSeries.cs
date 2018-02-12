@@ -295,15 +295,15 @@ namespace eScapeLLC.UWP.Charts {
 			// lower shadow (low)
 			var lower = PathHelper.Line(centerx, bottomy, centerx, lowy);
 			pg.Figures.Add(lower);
-			path.Data = pg;
+			path.Item2.Data = pg;
 			// establish the style for "forward" or "reverse" polarity
-			BindTo(this, valueO < valueC ? nameof(PathStyle) : nameof(ReversePathStyle), path, Path.StyleProperty);
+			BindTo(this, valueO < valueC ? nameof(PathStyle) : nameof(ReversePathStyle), path.Item2, Path.StyleProperty);
 			var figs = new Tuple<double, PathFigure>[4];
 			figs[0] = new Tuple<double, PathFigure>(y1, pf);
 			figs[1] = new Tuple<double, PathFigure>(y2, pf);
 			figs[2] = new Tuple<double, PathFigure>(y3, upper);
 			figs[3] = new Tuple<double, PathFigure>(y4, lower);
-			st.itemstate.Add(new SeriesItemState(index, leftx, barx, y1, path, figs));
+			st.itemstate.Add(new SeriesItemState(index, leftx, barx, y1, path.Item2, figs));
 		}
 		void IDataSourceRenderer.RenderComplete(object state) {
 			var st = state as State;
