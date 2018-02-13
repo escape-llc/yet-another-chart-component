@@ -112,11 +112,13 @@
     <Compile Include="Axis\Axis.cs" />
     <Compile Include="Axis\CategoryAxis.cs" />
     <Compile Include="Chart.cs" />
+    <Compile Include="ChartComponent.cs" />
     <Compile Include="Contexts.cs" />
     <Compile Include="Decorations\Background.cs" />
     <Compile Include="Decorations\HorizontalBand.cs" />
     <Compile Include="Decorations\HorizontalRule.cs" />
     <Compile Include="Decorations\ValueAxisGrid.cs" />
+    <Compile Include="Recycler.cs" />
     <Compile Include="Series\CandlestickSeries.cs" />
     <Compile Include="Series\ColumnSeries.cs" />
     <Compile Include="DataSource.cs" />
@@ -131,6 +133,7 @@
     <Compile Include="Series\StackedColumnSeries.cs" />
     <Compile Include="Decorations\ValueLabels.cs" />
     <Compile Include="Series\State.cs" />
+    <Compile Include="Style.cs" />
     <Compile Include="Theme.cs" />
     <Compile Include="Axis\ValueAxis.cs" />
     <EmbeddedResource Include="Properties\eScapeLLC.UWP.Charts.rd.xml" />

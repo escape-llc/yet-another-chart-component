@@ -1,14 +1,9 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using Windows.Foundation;
-using Windows.UI;
 using Windows.UI.Xaml;
-using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
@@ -618,116 +613,6 @@ namespace eScapeLLC.UWP.Charts {
 	/// <param name="rrea">Refresh request info.</param>
 	public delegate void RefreshRequestEventHandler(ChartComponent cc, RefreshRequestEventArgs rrea);
 	#endregion
-	#region ChartComponent
-	/// <summary>
-	/// Base class of chart components.
-	/// It is FrameworkElement primarily to participate in DataContext and Binding.
-	/// </summary>
-	public abstract class ChartComponent : FrameworkElement {
-		#region ctor
-		/// <summary>
-		/// Default ctor.
-		/// </summary>
-		protected ChartComponent() { }
-		#endregion
-		#region events
-		/// <summary>
-		/// "External" interest in this component's updates.
-		/// </summary>
-		public event RefreshRequestEventHandler RefreshRequest;
-		#endregion
-		#region properties
-		/// <summary>
-		/// True: visuals require re-computing.
-		/// </summary>
-		public bool Dirty { get; protected set; }
-		#endregion
-		#region helpers
-		/// <summary>
-		/// Generic DP property change handler.
-		/// Calls ChartComponent.Refresh(ValueDirty, Unknown).
-		/// </summary>
-		/// <param name="ddo"></param>
-		/// <param name="dpcea"></param>
-		protected static void PropertyChanged_ValueDirty(DependencyObject ddo, DependencyPropertyChangedEventArgs dpcea) {
-			var cc = ddo as ChartComponent;
-			cc.Refresh(RefreshRequestType.ValueDirty, AxisUpdateState.Unknown);
-		}
-		/// <summary>
-		/// Return the name if set, otherwise the type.
-		/// </summary>
-		/// <returns>Name or type.</returns>
-		public String NameOrType() {
-			return String.IsNullOrEmpty(Name) ? GetType().Name : Name;
-		}
-		/// <summary>
-		/// Mark self as dirty and invoke the RefreshRequest event.
-		/// </summary>
-		/// <param name="rrt">Request type.</param>
-		/// <param name="aus">Axis update status.</param>
-		protected void Refresh(RefreshRequestType rrt, AxisUpdateState aus) { Dirty = true; RefreshRequest?.Invoke(this, new RefreshRequestEventArgs(rrt, aus, this)); }
-		/// <summary>
-		/// Bind source.Path to the target.DP.
-		/// </summary>
-		/// <param name="source">Source instance.</param>
-		/// <param name="path">Component's (source) property path.</param>
-		/// <param name="target">Target DO.</param>
-		/// <param name="dp">FE's (target) DP.</param>
-		protected static void BindTo(object source, String path, DependencyObject target, DependencyProperty dp) {
-			Binding bx = new Binding() {
-				Path = new PropertyPath(path),
-				Source = source,
-				Mode = BindingMode.OneWay
-			};
-			target.ClearValue(dp);
-			BindingOperations.SetBinding(target, dp, bx);
-		}
-		/// <summary>
-		/// Transfer any binding from the source DP to the given target's DP.
-		/// </summary>
-		/// <param name="source">Source element.</param>
-		/// <param name="path"></param>
-		/// <param name="target">Target framework element.</param>
-		/// <param name="dp"></param>
-		protected static void ApplyBinding(FrameworkElement source, String path, DependencyObject target, DependencyProperty dp) {
-			var bx = source.GetBindingExpression(dp);
-			if (bx != null) {
-				target.ClearValue(dp);
-				BindingOperations.SetBinding(target, dp, bx.ParentBinding);
-			} else {
-				BindTo(source, path, target, dp);
-			}
-		}
-		/// <summary>
-		/// Boilerplate for assigning a "local property" from a "reference value" while applying <see cref="IChartErrorInfo"/>.
-		/// </summary>
-		/// <param name="icei">For error reporting; MAY be NULL.</param>
-		/// <param name="vsource">Validation source in error reports.</param>
-		/// <param name="localprop">Local property in error reports.</param>
-		/// <param name="refprop">Reference property in error reports.</param>
-		/// <param name="localcheck">The local check; True to proceed to sourcecheck.</param>
-		/// <param name="sourcecheck">The source check; True to proceed to refcheck.</param>
-		/// <param name="refcheck">The reference check; True to proceed to action.</param>
-		/// <param name="applyvalue">Execute if everything returned True.</param>
-		protected static void AssignFromRef(IChartErrorInfo icei, String vsource, String localprop, String refprop, bool localcheck, bool sourcecheck, bool refcheck, Action applyvalue) {
-			if (!localcheck) return;
-			if (sourcecheck) {
-				if (refcheck)
-					applyvalue();
-				else {
-					if (icei != null) {
-						icei.Report(new ChartValidationResult(vsource, $"{localprop} not found and {refprop} not found", new[] { localprop, refprop }));
-					}
-				}
-			} else {
-				if (icei != null) {
-					icei.Report(new ChartValidationResult(vsource, $"{localprop} not found and no Theme was found", new[] { localprop, refprop }));
-				}
-			}
-		}
-		#endregion
-	}
-	#endregion
 	#region TreeHelper (disabled not used)
 #if false
 	/// <summary>
@@ -834,323 +719,31 @@ namespace eScapeLLC.UWP.Charts {
 		}
 	}
 	#endregion
-	#region StyleExtensions
+	#region ViewModelBase
 	/// <summary>
-	/// Extension methods for <see cref="Style"/>.
+	/// Very lightweight VM base class.
 	/// </summary>
-	public static class StyleExtensions {
+	public abstract class ViewModelBase : INotifyPropertyChanged {
 		/// <summary>
-		/// Find the setter and get its value, ELSE return a default value.
+		/// Implemented for <see cref="Windows.UI.Xaml.Data.INotifyPropertyChanged"/>.
 		/// </summary>
-		/// <typeparam name="T">Return type.</typeparam>
-		/// <param name="style">Style to search.</param>
-		/// <param name="property">DP to locate.</param>
-		/// <param name="defv">Default value to return if nothing found OR the style is NULL.</param>
-		/// <returns>The value or DEFV.</returns>
-		public static T Find<T>(this Style style, DependencyProperty property, T defv = default(T)) {
-			if (style == null) return defv;
-			var xx = style.Find(property);
-			return xx == null ? defv : (T)xx.Value;
-		}
-		/// <summary>
-		/// Search style and all sub-styles for the given DP, ELSE return a default value.
-		/// </summary>
-		/// <typeparam name="T"></typeparam>
-		/// <param name="style"></param>
-		/// <param name="property"></param>
-		/// <param name="defv"></param>
-		/// <returns></returns>
-		public static T FindRecursive<T>(this Style style, DependencyProperty property, T defv = default(T)) {
-			if (style == null) return defv;
-			if(style.BasedOn != null) {
-				var sx = style.BasedOn.Find(property);
-				if(sx != null) {
-					return (T)sx.Value;
-				}
-			}
-			var xx = style.Find(property);
-			return xx == null ? defv : (T)xx.Value;
-		}
-		/// <summary>
-		/// Return the <see cref="Setter"/> for the given DP on the immediate style.
-		/// </summary>
-		/// <param name="style"></param>
-		/// <param name="property"></param>
-		/// <returns>The <see cref="Setter"/> or NULL.</returns>
-		public static Setter Find(this Style style, DependencyProperty property) {
-			if (style == null) return null;
-			foreach (var xx in style.Setters) {
-				if (xx is Setter sx) {
-					if (sx.Property == property) {
-						return sx;
-					}
-				}
-			}
-			return null;
-		}
-	}
-	#endregion
-	#region StyleGenerator
-	/// <summary>
-	/// Abstract base for style generator.
-	/// </summary>
-	public abstract class StyleGenerator : DependencyObject {
-		#region properties
-		/// <summary>
-		/// The underlying style to use when creating new styles.
-		/// </summary>
-		public Style BaseStyle { get { return (Style)GetValue(BaseStyleProperty); } set { SetValue(BaseStyleProperty, value); } }
-		#endregion
-		#region DPs
-		/// <summary>
-		/// Identifies the <see cref="BaseStyle"/> DP.
-		/// </summary>
-		public static readonly DependencyProperty BaseStyleProperty = DependencyProperty.Register(
-			nameof(BaseStyle), typeof(string), typeof(StyleGenerator), new PropertyMetadata(null)
-		);
-		#endregion
-		#region extension points
-		/// <summary>
-		/// Return the "next" style.
-		/// </summary>
-		/// <returns></returns>
-		public abstract Style NextStyle();
-		/// <summary>
-		/// Reset the style sequence, if applicable.
-		/// </summary>
-		public abstract void Reset();
-		#endregion
+		public event PropertyChangedEventHandler PropertyChanged;
 		#region helpers
 		/// <summary>
-		/// Convenience method to copy a style and replace the Fill property with given brush.
+		/// Hit the <see cref="PropertyChanged"/> event.
 		/// </summary>
-		/// <param name="source">Source style.</param>
-		/// <param name="tp">Target DP.</param>
-		/// <param name="pvalue">New value.</param>
-		/// <returns></returns>
-		/// <typeparam name="PT">Property value type.</typeparam>
-		protected Style Override<PT>(Style source, DependencyProperty tp, PT pvalue) {
-			var style = new Style(source.TargetType);
-			var did = false;
-			foreach (var setter in source.Setters) {
-				if (setter is Setter sx && sx.Property == tp) {
-					style.Setters.Add(new Setter(tp, pvalue));
-					did = true;
-				} else {
-					style.Setters.Add(setter);
-				}
-			}
-			if (!did) {
-				style.Setters.Add(new Setter(Path.FillProperty, pvalue));
-			}
-			return style;
-		}
-		#endregion
-	}
-	/// <summary>
-	/// Identity.  Returns the BaseStyle over-and-over.
-	/// </summary>
-	public sealed class IdentityStyleGenerator : StyleGenerator {
-		/// <summary>
-		/// Return the base style always.
-		/// </summary>
-		/// <returns></returns>
-		public override Style NextStyle() { return BaseStyle; }
-		/// <summary>
-		/// No Action.
-		/// </summary>
-		public override void Reset() { }
-	}
-	/// <summary>
-	/// Rotates through a hard-coded set of pre-defined colors.
-	/// </summary>
-	public sealed class DefaultColorsGenerator : StyleGenerator {
-		#region data
-		int current;
-		Dictionary<Brush, Style> stylemap = new Dictionary<Brush, Style>();
-		static Brush[] _presetBrushes = new Brush[] {
-			new SolidColorBrush(Color.FromArgb(0xFF, 0xFF, 0x66, 0x00)),
-			new SolidColorBrush(Color.FromArgb(0xFF, 0xFC, 0xD2, 0x02)),
-			new SolidColorBrush(Color.FromArgb(0xFF, 0xB0, 0xDE, 0x09)),
-			new SolidColorBrush(Color.FromArgb(0xFF, 0x0D, 0x8E, 0xCF)),
-			new SolidColorBrush(Color.FromArgb(0xFF, 0x2A, 0x0C, 0xD0)),
-			new SolidColorBrush(Color.FromArgb(0xFF, 0xCD, 0x0D, 0x74)),
-			new SolidColorBrush(Color.FromArgb(0xFF, 0xCC, 0x00, 0x00)),
-			new SolidColorBrush(Color.FromArgb(0xFF, 0x00, 0xCC, 0x00)),
-			new SolidColorBrush(Color.FromArgb(0xFF, 0x00, 0x00, 0xCC)),
-			new SolidColorBrush(Color.FromArgb(0xFF, 0xDD, 0xDD, 0xDD)),
-			new SolidColorBrush(Color.FromArgb(0xFF, 0x99, 0x99, 0x99)),
-			new SolidColorBrush(Color.FromArgb(0xFF, 0x33, 0x33, 0x33)),
-			new SolidColorBrush(Color.FromArgb(0xFF, 0x99, 0x00, 0x00))
-		};
-		#endregion
-		#region extensions
-		/// <summary>
-		/// Reset the counter but don't clear the style cache.
-		/// </summary>
-		public override void Reset() {
-			current = 0;
-		}
-		/// <summary>
-		/// Make a new style for each color, caching them as they are created.
-		/// </summary>
-		/// <returns></returns>
-		public override Style NextStyle() {
-			var cbrush = _presetBrushes[current];
-			if (stylemap.ContainsKey(cbrush)) return stylemap[cbrush];
-			var style = Override(BaseStyle, Path.FillProperty, cbrush);
-			// advance
-			stylemap.Add(cbrush, style);
-			current = (current + 1) % _presetBrushes.Length;
-			return style;
-		}
-		#endregion
-	}
-	#endregion
-	#region RecyclerBase<T>
-	/// <summary>
-	/// Abstract base for recyclers.
-	/// Designed for one-time use; there's no "reset".
-	/// </summary>
-	/// <typeparam name="T"></typeparam>
-	public abstract class RecyclerBase<T> {
-		#region data
-		/// <summary>
-		/// Internal list for bookkeeping.
-		/// </summary>
-		protected readonly List<T> _unused = new List<T>();
-		/// <summary>
-		/// Internal list for bookkeeping.
-		/// </summary>
-		protected readonly List<T> _created = new List<T>();
-		#endregion
-		#region properties
-		/// <summary>
-		/// Original items that were not used up by iterating.
-		/// </summary>
-		public IEnumerable<T> Unused { get { return _unused; } }
-		/// <summary>
-		/// Excess items that were created after original items were used up.
-		/// </summary>
-		public IEnumerable<T> Created { get { return _created; } }
-		#endregion
-		#region ctor
-		/// <summary>
-		/// Ctor.
-		/// Initializes <see cref="_unused"/> with items.
-		/// </summary>
-		/// <param name="source">Initial list to reuse; MAY be empty.</param>
-		protected RecyclerBase(IEnumerable<T> source) {
-			if (source == null) throw new ArgumentNullException(nameof(source));
-			_unused.AddRange(source);
-		}
-		#endregion
-	}
-	#endregion
-	#region Recycler<T>
-	/// <summary>
-	/// Recycles an input list of instances, then provides new instances after those run out.
-	/// Does the bookkeeping to track unused and newly-provided instances.
-	/// This implementation has <see cref="IEnumerator{T}"/> semantics.
-	/// </summary>
-	/// <typeparam name="T">Recycled element type.</typeparam>
-	public class Recycler<T> : RecyclerBase<T> {
-		#region data
-		readonly IEnumerable<T> _source;
-		readonly Func<T> _factory;
-		#endregion
-		#region ctor
-		/// <summary>
-		/// Ctor.
-		/// </summary>
-		/// <param name="source">Initial list to reuse; MAY be empty.</param>
-		/// <param name="factory">Used to create new instances when SOURCE runs out.</param>
-		public Recycler(IEnumerable<T> source, Func<T> factory) :base(source) {
-#pragma warning disable IDE0016 // Use 'throw' expression
-			if (source == null) throw new ArgumentNullException(nameof(source));
-			if (factory == null) throw new ArgumentNullException(nameof(factory));
-#pragma warning restore IDE0016 // Use 'throw' expression
-			_source = source;
-			_factory = factory;
-		}
-		#endregion
-		#region public
-		/// <summary>
-		/// First exhaust the original source, then start creating new instances until caller stops.
-		/// Do the bookkeeping for used and created lists.
-		/// DO NOT use this to control looping!
-		/// </summary>
-		/// <returns>Item1: true=created, false=reused; Item2: Another instance.</returns>
-		public IEnumerable<Tuple<bool,T>> Items() {
-			foreach (var tx in _source) {
-				_unused.Remove(tx);
-				yield return new Tuple<bool,T>(false, tx);
-			}
-			while (true) {
-				var tx = _factory();
-				_created.Add(tx);
-				yield return new Tuple<bool, T>(true, tx);
-			}
-		}
-		#endregion
-	}
-	#endregion
-	#region Recycler2<T, S>
-	/// <summary>
-	/// Recycler that does not use <see cref="IEnumerator"/> to produce instances.
-	/// In addition, the <see cref="_factory"/> can receive a state parameter per call to <see cref="Next"/>.
-	/// </summary>
-	/// <typeparam name="T">Recycled element type.</typeparam>
-	/// <typeparam name="S">Factory state type.</typeparam>
-	public class Recycler2<T, S> : RecyclerBase<T> {
-		#region data
-		readonly IEnumerator<T> _source;
-		readonly Func<S, T> _factory;
-		#endregion
-		#region ctor
-		/// <summary>
-		/// Ctor.
-		/// </summary>
-		/// <param name="source">Initial list to reuse; MAY be empty.</param>
-		/// <param name="factory">Used to create new instances when SOURCE runs out.</param>
-		public Recycler2(IEnumerable<T> source, Func<S, T> factory) : base(source) {
-			if (source == null) throw new ArgumentNullException(nameof(source));
-#pragma warning disable IDE0016 // Use 'throw' expression
-			if (factory == null) throw new ArgumentNullException(nameof(factory));
-#pragma warning restore IDE0016 // Use 'throw' expression
-			_source = source.GetEnumerator();
-			_factory = factory;
-		}
-		#endregion
-		#region public
-		/// <summary>
-		/// Return the next item.
-		/// </summary>
-		/// <param name="state">Some state the factory function can operate with.</param>
-		/// <returns>Item1: true=created, false=reused; Item2: Another instance.</returns>
-		public Tuple<bool, T> Next(S state) {
-			if (_source.MoveNext()) {
-				var tx = _source.Current;
-				_unused.Remove(tx);
-				return new Tuple<bool, T>(false, tx);
-			} else {
-				var tx = _factory(state);
-				_created.Add(tx);
-				return new Tuple<bool, T>(true, tx);
-			}
+		/// <param name="prop">Property that changed.</param>
+		protected void Changed(String prop) {
+			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(prop));
 		}
 		#endregion
 	}
 	#endregion
 	#region DataTemplateShim
 	/// <summary>
-	/// "Internal" shim view model used as the <see cref="FrameworkElement.DataContext"/> for a <see cref="DataTemplate"/>.
+	/// "Internal" VM used as the <see cref="FrameworkElement.DataContext"/> for a <see cref="DataTemplate"/>.
 	/// </summary>
-	public class DataTemplateShim : INotifyPropertyChanged {
-		/// <summary>
-		/// Implemented for <see cref="Windows.UI.Xaml.Data.INotifyPropertyChanged"/>.
-		/// </summary>
-		public event PropertyChangedEventHandler PropertyChanged;
+	public class DataTemplateShim : ViewModelBase {
 		#region data
 		Visibility _vis;
 		String _text;
@@ -1165,34 +758,60 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public String Text { get { return _text; } set { _text = value; Changed(nameof(Text)); } }
 		#endregion
-		#region helpers
+	}
+	#endregion
+	#region LegendBase
+	/// <summary>
+	/// Abstract base class for legend implementations.
+	/// </summary>
+	public abstract class LegendBase : ViewModelBase {
+		String _title;
 		/// <summary>
-		/// Hit the <see cref="PropertyChanged"/> event.
+		/// The title.
 		/// </summary>
-		/// <param name="prop">Property that changed.</param>
-		protected void Changed(String prop) {
-			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(prop));
-		}
-		#endregion
+		public String Title { get { return _title; } set { _title = value; Changed(nameof(Title)); } }
 	}
 	#endregion
 	#region Legend
 	/// <summary>
-	/// Base VM for the chart legend.
+	/// Legend VM that mimics the "color scheme" of the component.
 	/// </summary>
-	public class Legend {
+	public class Legend : LegendBase {
+		Brush _fill;
+		Brush _stroke;
 		/// <summary>
 		/// The color swatch to display.
 		/// </summary>
-		public Brush Fill { get; set; }
+		public Brush Fill { get { return _fill; } set { _fill = value; Changed(nameof(Fill)); } }
 		/// <summary>
 		/// The border for the swatch.
 		/// </summary>
-		public Brush Stroke { get; set; }
+		public Brush Stroke { get { return _stroke; } set { _stroke = value; Changed(nameof(Stroke)); } }
+	}
+	#endregion
+	#region LegendWithPath
+	/// <summary>
+	/// Legend VM with a custom Path for its visualization.
+	/// </summary>
+	public class LegendWithPath : LegendBase {
+		Path _path;
 		/// <summary>
-		/// The title.
+		/// The path to display in the legend.
 		/// </summary>
-		public String Title { get; set; }
+		public Path Path { get { return _path; } set { _path = value; Changed(nameof(Path)); } }
+	}
+	#endregion
+	#region LegendWithElement
+	/// <summary>
+	/// Legend VM with a custom Path for its visualization.
+	/// </summary>
+	public class LegendWithElement : LegendBase {
+		FrameworkElement _element;
+		/// <summary>
+		/// The element to display in the legend.
+		/// MAY come from a <see cref="DataTemplate"/>.
+		/// </summary>
+		public FrameworkElement Element { get { return _element; } set { _element = value; Changed(nameof(Element)); } }
 	}
 	#endregion
 }
