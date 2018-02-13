@@ -59,7 +59,7 @@
 			<yacc:Chart.Components>
 				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" PathStyle="{StaticResource Axes}"
 					LabelStyle="{StaticResource CategoryAxisLabel}" />
-				<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}"
+				<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}" LimitMinimum="-4.5" LimitMaximum="4.5"
 					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="F1" />
 				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource Grid}"
 					Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />

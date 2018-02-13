@@ -155,6 +155,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// Initialized by <see cref="InitializeLayoutContext"/>
 		/// </summary>
 		public DefaultLayoutContext Layout { get; set; }
+		/// <summary>
+		/// Value to provide for <see cref="IChartRenderContext.IsTransformsOnly"/>.
+		/// </summary>
 		public bool IsTransformsOnly { get; set; }
 		#endregion
 		#region data
@@ -667,7 +670,7 @@ namespace eScapeLLC.UWP.Charts {
 			// pre-load resources
 			if (cc is IRequireChartTheme irct) {
 				if (Theme == null) {
-					Report(new ChartValidationResult("Chart", "The Theme property is NULL, paths may not be visible", new[] { cc.NameOrType(), nameof(Theme) }));
+					Report(new ChartValidationResult("Chart", $"The {nameof(Theme)} property is NULL, chart elements may not be visible", new[] { cc.NameOrType(), nameof(Theme) }));
 				} else {
 					irct.Theme = Theme;
 				}
@@ -697,25 +700,26 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		/// <summary>
 		/// Common logic for leaving the chart.
+		/// SHOULD be strict dual of ComponentEnter sequence.
 		/// </summary>
 		/// <param name="icelc">The context.</param>
 		/// <param name="cc">The component leaving chart.</param>
 		protected void ComponentLeave(IChartEnterLeaveContext icelc, ChartComponent cc) {
-			if(cc is IProvideLegend ipl) {
-				foreach (var li in ipl.LegendItems) {
-					LegendItems.Remove(li);
-				}
-			}
-			if (cc is IProvideLegendDynamic ipld) {
-				// detach the event
-				ipld.LegendChanged -= Ipld_LegendChanged;
-			}
 			if (cc is IChartAxis ica) {
 				Axes.Remove(ica);
 			} else if (cc is IProvideDataSourceRenderer ipdsr) {
 				Unregister(ipdsr.Renderer);
 			} else if (cc is IDataSourceRenderer idsr) {
 				Unregister(idsr);
+			}
+			if (cc is IProvideLegendDynamic ipld) {
+				// detach the event
+				ipld.LegendChanged -= Ipld_LegendChanged;
+			}
+			if (cc is IProvideLegend ipl) {
+				foreach (var li in ipl.LegendItems) {
+					LegendItems.Remove(li);
+				}
 			}
 			if (cc is IRequireEnterLeave irel) {
 				irel.Leave(icelc);
@@ -815,8 +819,6 @@ namespace eScapeLLC.UWP.Charts {
 		protected void RenderComponents(LayoutState ls) {
 			_trace.Verbose($"render-components {ls.Dimensions.Width}x{ls.Dimensions.Height}");
 			if(ls.Dimensions.Width == 0 || ls.Dimensions.Height == 0) {
-				// MAY need to re-trigger this
-				// TODO go back to the dataseries refresh evh and do it there
 				return;
 			}
 			if (DataSources.Cast<DataSource>().Any((ds) => ds.IsDirty)) {

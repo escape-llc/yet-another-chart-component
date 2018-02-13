@@ -72,7 +72,7 @@
 		</Style>
 		<Style x:Key="BigLabels2" BasedOn="{StaticResource Labels}" TargetType="TextBlock">
 			<Setter Property="FontSize" Value="20"/>
-			<Setter Property="Foreground" Value="LightGoldenrodYellow"/>
+			<Setter Property="Foreground" Value="Bisque"/>
 		</Style>
 		<DataTemplate x:Key="Marker">
 			<GeometryGroup>
@@ -82,7 +82,12 @@
 			</GeometryGroup>
 		</DataTemplate>
 		<DataTemplate x:Key="LabelWithBorder">
-			<Border Background="DarkGray" Padding="2" BorderThickness="1" CornerRadius="2" BorderBrush="LightGoldenrodYellow">
+			<Border Background="Goldenrod" Padding="2" BorderThickness="1" CornerRadius="2" BorderBrush="DarkGray">
+				<TextBlock Text="{Binding Text}" Style="{StaticResource BigLabels2}" />
+			</Border>
+		</DataTemplate>
+		<DataTemplate x:Key="LabelWithBorder2">
+			<Border Background="DarkGoldenrod" Padding="2" BorderThickness="1" CornerRadius="2" BorderBrush="DarkGray">
 				<TextBlock Text="{Binding Text}" Style="{StaticResource BigLabels2}" />
 			</Border>
 		</DataTemplate>
@@ -91,8 +96,9 @@
 		<CommandBar x:Name="toolbar"
 			RelativePanel.AlignTopWithPanel="True">
 			<CommandBar.PrimaryCommands>
-				<AppBarToggleButton IsChecked="True" x:Name="cb_legend" Label="Toggle" Content="Legend"/>
-				<AppBarToggleButton IsChecked="True" x:Name="cb_grid" Label="Toggle" Content="Grid"/>
+				<AppBarToggleButton x:Name="cb_legend" Label="Toggle" Content="Legend" IsChecked="True" />
+				<!-- TwoWay binding here we're tying into a different XAML namescope -->
+				<AppBarToggleButton x:Name="cb_grid" Label="Toggle" Content="Grid" IsChecked="{Binding ShowGrid, Mode=TwoWay}" />
 				<AppBarToggleButton x:Name="cb_band" Label="Toggle" Content="Band" IsChecked="{Binding ShowBand, Mode=TwoWay}"/>
 				<AppBarButton x:Name="add_head" Content="&#x21d2;&#x2395;" Label="Add Head" Click="Add_head_Click"/>
 				<AppBarButton x:Name="add_tail" Content="&#x2395;&#x21d0;" Label="Add End" Click="Add_item_Click"/>
@@ -123,27 +129,31 @@
 				<yacc:MarkerSeries DataSourceName="data"
 					ValuePath="Value1" Title="Value 1 Marker" ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					MarkerOffset=".625" MarkerWidth=".25" PathStyle="{StaticResource Marker_v1}" MarkerTemplate="{StaticResource Marker}"/>
-				<yacc:HorizontalBand x:Name="band" ValueAxisName="yaxis" Value1="{Binding Value1Average}" Value2="{Binding Value2Average}"
+				<yacc:HorizontalBand x:Name="band" ValueAxisName="yaxis" Value1="{Binding Value1Average}" Value2="{Binding Value2Average}" DoMinMax="False"
 					PathStyle="{StaticResource Band_v1-rule}" Value2PathStyle="{StaticResource Band_v2-rule}" BandPathStyle="{StaticResource Band_v1v2-band}"
-					Visibility="{Binding ElementName=cb_band, Path=IsChecked, Converter={StaticResource b2v}}" />
+					Visibility="{Binding ShowBand, Converter={StaticResource b2v}}" />
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}"
 					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="F1" />
+				<!-- CANNOT ElementName bind here we're tying into a different XAML namescope -->
 				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource Grid}"
-					Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
+					Visibility="{Binding ShowGrid, Converter={StaticResource b2v}}" />
 				<yacc:ValueLabels SourceName="colv2" LabelFormatString="F2"
 					CategoryAxisOffset=".625" PlacementOffset="0,1" LabelOffset="0,-1" LabelStyle="{StaticResource BigLabels}" />
+				<!-- CANNOT ElementName bind here we're tying into a different XAML namescope -->
 				<yacc:ValueLabels SourceName="band" LabelFormatString="F2" x:Name="values1"
 					Visibility="{Binding ShowBand, Converter={StaticResource b2v}}"
 					CategoryAxisOffset="0" PlacementOffset="0,1" LabelOffset="1,0" LabelTemplate="{StaticResource LabelWithBorder}" />
+				<!-- CANNOT ElementName bind here we're tying into a different XAML namescope -->
 				<yacc:ValueLabels SourceName="band" ValueChannel="1" LabelFormatString="F2" x:Name="values2"
 					Visibility="{Binding ShowBand, Converter={StaticResource b2v}}"
-					CategoryAxisOffset="1" PlacementOffset="0,0" LabelOffset="-1,0" LabelTemplate="{StaticResource LabelWithBorder}" />
+					CategoryAxisOffset="1" PlacementOffset="0,0" LabelOffset="-1,0" LabelTemplate="{StaticResource LabelWithBorder2}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>
 		<TextBlock x:Name="title" Style="{StaticResource Title}" Text="YACC Demonstration Chart"
 			RelativePanel.AlignTopWith="chart" RelativePanel.AlignHorizontalCenterWithPanel="True"/>
 		<Image Source="ms-appx:/Assets/Square44x44Logo.scale-100.png" Style="{StaticResource Logo}"
 			RelativePanel.LeftOf="title" RelativePanel.AlignVerticalCenterWith="title" />
+		<!-- ElementName binding okay here we're in the same XAML namescope -->
 		<Border Style="{StaticResource Legend}"
 			Visibility="{Binding ElementName=cb_legend,Path=IsChecked}"
 			RelativePanel.AlignRightWith="chart" RelativePanel.AlignTopWith="chart">

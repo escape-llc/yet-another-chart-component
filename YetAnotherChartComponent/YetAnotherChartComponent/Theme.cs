@@ -68,6 +68,13 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		Style PathMarkerSeries { get; }
 		#endregion
+		#region FrameworkElements
+		/// <summary>
+		/// Data template for "default" data template.
+		/// It SHOULD be configured to accept a <see cref="DataTemplateShim"/> as its <see cref="FrameworkElement.DataContext"/>.
+		/// </summary>
+		DataTemplate TextBlockTemplate { get; }
+		#endregion
 	}
 	#endregion
 	#region IRequireChartTheme
@@ -151,6 +158,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public Style PathMarkerSeries { get { return (Style)GetValue(PathMarkerSeriesProperty); } set { SetValue(PathMarkerSeriesProperty, value); } }
 		#endregion
+		#region FrameworkElements
+		/// <summary>
+		/// Template for text blocks.
+		/// </summary>
+		public DataTemplate TextBlockTemplate { get { return (DataTemplate)GetValue(TextBlockTemplateProperty); } set { SetValue(TextBlockTemplateProperty, value); } }
+		#endregion
 		#region DPs
 		/// <summary>
 		/// Identifies <see cref="LabelAxisLeft"/> DP.
@@ -200,6 +213,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// Identifies <see cref="PathMarkerSeries"/> DP.
 		/// </summary>
 		public static readonly DependencyProperty PathMarkerSeriesProperty = DependencyProperty.Register(nameof(PathMarkerSeries), typeof(Style), typeof(ChartTheme), new PropertyMetadata(null));
+		/// <summary>
+		/// Identifies <see cref="TextBlockTemplate"/> DP.
+		/// </summary>
+		public static readonly DependencyProperty TextBlockTemplateProperty = DependencyProperty.Register(nameof(TextBlockTemplate), typeof(DataTemplate), typeof(ChartTheme), new PropertyMetadata(null));
 		#endregion
 	}
 	#endregion

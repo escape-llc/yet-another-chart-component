@@ -101,6 +101,11 @@ namespace eScapeLLC.UWP.Charts {
 				PathStyle == null, Theme != null, Theme.PathAxisCategory != null,
 				() => PathStyle = Theme.PathAxisCategory
 			);
+			if (Theme?.TextBlockTemplate == null) {
+				if (icelc is IChartErrorInfo icei) {
+					icei.Report(new ChartValidationResult(NameOrType(), $"No {nameof(Theme.TextBlockTemplate)} was not found", new[] { nameof(Theme.TextBlockTemplate) }));
+				}
+			}
 			BindTo(this, nameof(PathStyle), Axis, FrameworkElement.StyleProperty);
 		}
 		/// <summary>
@@ -124,10 +129,13 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icrc"></param>
 		void IRequireRender.Render(IChartRenderContext icrc) {
+			if (Theme?.TextBlockTemplate == null) {
+				// already reported an error so this should be no surprise
+				return;
+			}
 			if (!Dirty) return;
 			_trace.Verbose($"{Name} min:{Minimum} max:{Maximum} r:{Range}");
 			AxisGeometry.Figures.Clear();
-			//icrc.Remove(TickLabels);
 			var pf = PathHelper.Rectangle(Minimum, 0, Maximum, AxisLineThickness);
 			AxisGeometry.Figures.Add(pf);
 			var i1 = (int)Minimum;
@@ -137,28 +145,22 @@ namespace eScapeLLC.UWP.Charts {
 			// see if style wants to override width
 			var widx = LabelStyle?.Find(FrameworkElement.WidthProperty);
 			var tbr = new Recycler<TextBlock>(TickLabels.Select(tl => tl.tb), () => {
+				var tb = Theme.TextBlockTemplate.LoadContent() as TextBlock;
 				if (LabelStyle != null) {
-					var tb = new TextBlock();
+					BindTo(this, nameof(LabelStyle), tb, FrameworkElement.StyleProperty);
 					if (widx == null) {
-						Width = scalex;
+						tb.Width = scalex;
 					}
-					tb.Style = LabelStyle;
-					return tb;
 				} else {
-					// SHOULD NOT execute this code, unless default style failed!
-					if(icrc is IChartErrorInfo icei) {
-						icei.Report(new ChartValidationResult(NameOrType(), $"{nameof(LabelStyle)} from theme failed; Recycler had to make hard-coded style."));
-					}
-					var tb = new TextBlock() {
-						FontSize = 10,
-						Foreground = Axis.Fill,
-						VerticalAlignment = VerticalAlignment.Center,
-						HorizontalAlignment = HorizontalAlignment.Center,
-						Width = scalex,
-						TextAlignment = TextAlignment.Center
-					};
-					return tb;
+					// already reported this, but need to do something
+					tb.FontSize = 10;
+					tb.Foreground = Axis.Fill;
+					tb.VerticalAlignment = VerticalAlignment.Center;
+					tb.HorizontalAlignment = HorizontalAlignment.Center;
+					tb.TextAlignment = TextAlignment.Center;
+					tb.Width = scalex;
 				}
+				return tb;
 			});
 			var itemstate = new List<ItemState>();
 			var tbget = tbr.Items().GetEnumerator();

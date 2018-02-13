@@ -141,23 +141,30 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icrc">The context.</param>
 		protected void EnsureComponents(IChartComponentContext icrc) {
-			if(Source == null && !String.IsNullOrEmpty(SourceName)) {
+			if (LabelTemplate == null) {
+				if (Theme?.TextBlockTemplate == null) {
+					if (icrc is IChartErrorInfo icei) {
+						icei.Report(new ChartValidationResult(NameOrType(), $"No {nameof(LabelTemplate)} and {nameof(Theme.TextBlockTemplate)} was not found", new[] { nameof(LabelTemplate), nameof(Theme.TextBlockTemplate) }));
+					}
+				}
+			}
+			if (Source == null && !String.IsNullOrEmpty(SourceName)) {
 				Source = icrc.Find(SourceName);
 			} else {
 				if (icrc is IChartErrorInfo icei) {
-					icei.Report(new ChartValidationResult(NameOrType(), $"Series '{SourceName}' was not found", new[] { nameof(Source), nameof(SourceName) }));
+					icei.Report(new ChartValidationResult(NameOrType(), $"Source '{SourceName}' was not found", new[] { nameof(Source), nameof(SourceName) }));
 				}
 			}
 			if (Source == null) {
 				if (icrc is IChartErrorInfo icei) {
-					icei.Report(new ChartValidationResult(NameOrType(), $"Series lookup failed; no other components can resolve", new[] { nameof(Source), nameof(SourceName) }));
+					icei.Report(new ChartValidationResult(NameOrType(), $"Source '{SourceName}' lookup failed; no other components can resolve", new[] { nameof(Source), nameof(SourceName) }));
 				}
 				return;
 			}
 			else {
 				if(!(Source is IProvideSeriesItemValues)) {
 					if (icrc is IChartErrorInfo icei) {
-						icei.Report(new ChartValidationResult(Source.NameOrType(), $"Series does not provide values; no labels will generate", new[] { nameof(Source), nameof(SourceName) }));
+						icei.Report(new ChartValidationResult(Source.NameOrType(), $"Source '{SourceName}' does not provide values; no labels will generate", new[] { nameof(Source), nameof(SourceName) }));
 					}
 					return;
 				}
@@ -208,28 +215,30 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Element factory for recycler.
 		/// Comes from a <see cref="DataTemplate"/> if the <see cref="LabelTemplate"/> was set.
+		/// Otherwise comes from <see cref="IChartTheme.TextBlockTemplate"/>.
 		/// </summary>
-		/// <returns></returns>
-		FrameworkElement CreateElement() {
+		/// <param name="isiv">Item value.</param>
+		/// <returns>New element or NULL.</returns>
+		FrameworkElement CreateElement(ISeriesItemValue isiv) {
+			var fe = default(FrameworkElement);
 			if (LabelTemplate != null) {
-				var el = LabelTemplate.LoadContent() as FrameworkElement;
-				return el;
-			} else {
-				var tb = new TextBlock();
+				fe = LabelTemplate.LoadContent() as FrameworkElement;
+			} else if (Theme.TextBlockTemplate != null) {
+				fe = Theme.TextBlockTemplate.LoadContent() as TextBlock;
 				if (LabelStyle != null) {
-					tb.Style = LabelStyle;
+					BindTo(this, nameof(LabelStyle), fe, FrameworkElement.StyleProperty);
 				}
-				return tb;
 			}
-		}
-		/// <summary>
-		/// Advance the recycler's iterator.
-		/// </summary>
-		/// <param name="elements"></param>
-		/// <returns></returns>
-		Tuple<bool, FrameworkElement> NextElement(IEnumerator<Tuple<bool,FrameworkElement>> elements) {
-			if (elements.MoveNext()) return elements.Current;
-			else return null;
+			if(fe != null) {
+				// complete configuration
+				var txt = isiv.YValue.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
+				var shim = new DataTemplateShim() { Visibility = Visibility, Text = txt };
+				// connect the shim to template root element's Visibility
+				BindTo(shim, nameof(Visibility), fe, UIElement.VisibilityProperty);
+				fe.DataContext = shim;
+				fe.SizeChanged += Element_SizeChanged;
+			}
+			return fe;
 		}
 		/// <summary>
 		/// Follow-up handler to re-position the label element at exactly the right spot after it's done with (asynchronous) measure/arrange.
@@ -281,12 +290,15 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region IRequireRender
 		void IRequireRender.Render(IChartRenderContext icrc) {
+			if (LabelTemplate == null && Theme?.TextBlockTemplate == null) {
+			// already reported an error so this should be no surprise
+				return;
+			}
 			if(Source is IProvideSeriesItemValues ipsiv) {
 				// preamble
 				var elements = ItemState.Select(ms => ms.Element);
-				var recycler = new Recycler<FrameworkElement>(elements, CreateElement);
+				var recycler = new Recycler2<FrameworkElement, ISeriesItemValue>(elements, CreateElement);
 				var itemstate = new List<SeriesItemState>();
-				var elenum = recycler.Items().GetEnumerator();
 				// render
 				foreach (var siv in ipsiv.SeriesItemValues) {
 					ISeriesItemValue target = null;
@@ -299,25 +311,13 @@ namespace eScapeLLC.UWP.Charts {
 						target = isivs.YValues.SingleOrDefault(yv => yv.Channel == ValueChannel);
 					}
 					if(target != null && !double.IsNaN(target.YValue)) {
-						var el = NextElement(elenum);
+						var el = recycler.Next(target);
 						if (el == null) continue;
-						var txt = target.YValue.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
-						if(el.Item1) {
-							// created fresh from data template; connect a VM
-							var shim = new DataTemplateShim() { Visibility = Visibility, Text = txt };
-							// connect the shim to template root element's Visibility
-							BindTo(shim, nameof(Visibility), el.Item2, UIElement.VisibilityProperty);
-							el.Item2.DataContext = shim;
-							el.Item2.SizeChanged += Element_SizeChanged;
-						} else {
-							// already hooked in; update values
-							if(el.Item2.DataContext is DataTemplateShim dts) {
-								dts.Visibility = Visibility;
-								dts.Text = txt;
-							}
-						}
-						if (LabelTemplate == null && el.Item2 is TextBlock tb) {
-							tb.Text = txt;
+						if (!el.Item1 && el.Item2.DataContext is DataTemplateShim dts) {
+							// recycling; update values
+							var txt = target.YValue.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
+							dts.Visibility = Visibility;
+							dts.Text = txt;
 						}
 						var pmt = (target as IProvidePlacement)?.Placement;
 						switch(pmt) {
@@ -361,10 +361,10 @@ namespace eScapeLLC.UWP.Charts {
 			foreach (var state in ItemState) {
 				state.CanvasLocation = matx.Transform(new Point(state.XValueOffset, state.YValue));
 				_trace.Verbose($"{Name} el:{state.Element} ds:{state.Element.DesiredSize} as:{state.Element.ActualWidth},{state.Element.ActualHeight}");
-				// invoke it now because it won't invoke EVH if size didn't actually change
+				// Position element now because it WILL NOT invoke EVH if size didn't actually change
 				state.Locate(state.Element, LabelOffset);
 				if (!icrc.IsTransformsOnly) {
-					// trigger the SizeChanged handler
+					// doing render so (try to) trigger the SizeChanged handler
 					state.Element.InvalidateMeasure();
 					state.Element.InvalidateArrange();
 				}

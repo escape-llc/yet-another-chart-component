@@ -66,32 +66,23 @@ namespace eScapeLLC.UWP.Charts {
 		void DoTickLabels(IChartRenderContext icrc) {
 			var tc = new TickCalculator(Minimum, Maximum);
 			_trace.Verbose($"grid range:{tc.Range} tintv:{tc.TickInterval}");
+			// TODO may want to include the LabelStyle's padding if defined
 			var padding = AxisLineThickness + 2 * AxisMargin;
 			var tbr = new Recycler<TextBlock>(TickLabels.Select(tl => tl.tb), () => {
+				var tb = Theme.TextBlockTemplate.LoadContent() as TextBlock;
 				if (LabelStyle != null) {
-					// let style override everything but what MUST be calculated
-					var tb = new TextBlock() {
-						Width = icrc.Area.Width - padding,
-						Padding = Side == Side.Right ? new Thickness(padding, 0, 0, 0) : new Thickness(0, 0, padding, 0)
-					};
 					BindTo(this, nameof(LabelStyle), tb, FrameworkElement.StyleProperty);
-					return tb;
 				} else {
-					// SHOULD NOT execute this code, unless default style failed!
-					if (icrc is IChartErrorInfo icei) {
-						icei.Report(new ChartValidationResult(NameOrType(), $"{nameof(LabelStyle)} from theme failed; Recycler had to make hard-coded style."));
-					}
-					var tb = new TextBlock() {
-						FontSize = 10,
-						Foreground = Axis.Fill,
-						VerticalAlignment = VerticalAlignment.Center,
-						HorizontalAlignment = Side == Side.Right ? HorizontalAlignment.Left : HorizontalAlignment.Right,
-						Width = icrc.Area.Width - padding,
-						TextAlignment = Side == Side.Right ? TextAlignment.Left : TextAlignment.Right,
-						Padding = Side == Side.Right ? new Thickness(padding, 0, 0, 0) : new Thickness(0, 0, padding, 0)
-					};
-					return tb;
+					// already reported this, but need to do something
+					tb.FontSize = 10;
+					tb.Foreground = Axis.Fill;
+					tb.VerticalAlignment = VerticalAlignment.Center;
+					tb.HorizontalAlignment = Side == Side.Right ? HorizontalAlignment.Left : HorizontalAlignment.Right;
+					tb.TextAlignment = Side == Side.Right ? TextAlignment.Left : TextAlignment.Right;
 				}
+				tb.Width = icrc.Area.Width - padding;
+				tb.Padding = Side == Side.Right ? new Thickness(padding, 0, 0, 0) : new Thickness(0, 0, padding, 0);
+				return tb;
 			});
 			var itemstate = new List<ItemState>();
 			var tbget = tbr.Items().GetEnumerator();
@@ -127,6 +118,11 @@ namespace eScapeLLC.UWP.Charts {
 				PathStyle == null, Theme != null, Theme.PathAxisValue != null,
 				() => PathStyle = Theme.PathAxisValue
 			);
+			if (Theme?.TextBlockTemplate == null) {
+				if (icelc is IChartErrorInfo icei) {
+					icei.Report(new ChartValidationResult(NameOrType(), $"No {nameof(Theme.TextBlockTemplate)} was not found", new[] { nameof(Theme.TextBlockTemplate) }));
+				}
+			}
 			DoBindings(icelc);
 		}
 		/// <summary>
@@ -160,6 +156,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icrc"></param>
 		void IRequireRender.Render(IChartRenderContext icrc) {
+			if (Theme?.TextBlockTemplate == null) {
+				// already reported an error so this should be no surprise
+				return;
+			}
 			if (!Dirty) return;
 			_trace.Verbose($"{Name} min:{Minimum} max:{Maximum} r:{Range}");
 			// axis and tick marks

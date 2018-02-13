@@ -58,6 +58,9 @@
 	<Style x:Key="Band_Fill" TargetType="Path">
 		<Setter Property="Fill" Value="{StaticResource band-fill}"/>
 	</Style>
+	<DataTemplate x:Key="TextBlock">
+		<TextBlock Text="{Binding Text}"/>
+	</DataTemplate>
 	<local:ChartTheme x:Key="DefaultChartTheme" Name="DefaultFromGenericXaml"
 		LabelAxisLeft="{ThemeResource AxisLabel_LEFT}"
 		LabelAxisRight="{ThemeResource AxisLabel_RIGHT}"
@@ -71,6 +74,7 @@
 		PathMarkerSeries="{ThemeResource Marker}"
 		PathHorizontalRule="{ThemeResource Rule}"
 		PathHorizontalBand="{ThemeResource Band_Fill}"
+		TextBlockTemplate="{ThemeResource TextBlock}"
 	/>
 	<Style TargetType="local:Chart">
 		<Setter Property="Theme" Value="{ThemeResource DefaultChartTheme}"/>

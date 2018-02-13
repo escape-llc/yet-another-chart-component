@@ -60,17 +60,20 @@ namespace Yacc.Demo.VM {
 	/// </summary>
 	public class ObservationsVM : CoreViewModel {
 		readonly Random rnd = new Random();
+		bool _band;
+		bool _grid;
 		public int GroupCounter { get; private set; }
 		public double Value1Average { get; private set; }
 		public double Value2Average { get; private set; }
 		public ObservableCollection<Observation> Data { get; private set; }
-		bool _show;
-		public bool ShowBand { get { return _show; } set { _show = value; Changed(nameof(ShowBand)); } }
+		public bool ShowBand { get { return _band; } set { _band = value; Changed(nameof(ShowBand)); } }
+		public bool ShowGrid { get { return _grid; } set { _grid = value; Changed(nameof(ShowGrid)); } }
 		public ObservationsVM(CoreDispatcher dx, IEnumerable<Observation> initial): base(dx) {
 			Data = new ObservableCollection<Observation>(initial);
 			GroupCounter = Data.Count;
 			Recalculate();
-			_show = true;
+			_band = true;
+			_grid = true;
 		}
 		/// <summary>
 		/// Randomly generate an item and add it to end and recalculate.
