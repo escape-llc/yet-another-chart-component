@@ -42,10 +42,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// Take the actual value from the source and coerce it to the double type, until we get full polymorphism on the y-value.
 		/// Currently handles <see cref="double"/>, <see cref="int"/>, <see cref="short"/>,and Nullable{double,int,short} types.
 		/// </summary>
-		/// <param name="item"></param>
-		/// <param name="be"></param>
+		/// <param name="item">Source instance.</param>
+		/// <param name="be">Evaluator or NULL.  If NULL returns NaN.</param>
 		/// <returns>Coerced value or THROWs.</returns>
 		public static double CoerceValue(object item, BindingEvaluator be) {
+			if (be == null) return double.NaN;
 			var ox = be.For(item);
 			if (ox is short sx) return (double)sx;
 			if (ox is int ix) return (double)ix;
@@ -224,10 +225,16 @@ namespace eScapeLLC.UWP.Charts {
 	public abstract class DataSeriesWithValue : DataSeriesWithAxes, IProvideSeriesItemValues {
 		#region DPs
 		/// <summary>
-		/// ValuePath DP.
+		/// Identifies <see cref="ValuePath"/> dependency property.
 		/// </summary>
 		public static readonly DependencyProperty ValuePathProperty = DependencyProperty.Register(
 			nameof(ValuePath), typeof(string), typeof(DataSeriesWithValue), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
+		);
+		/// <summary>
+		/// Identifies <see cref="ValueLabelPath"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty ValueLabelPathProperty = DependencyProperty.Register(
+			nameof(ValueLabelPath), typeof(string), typeof(DataSeriesWithValue), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
 		);
 		/// <summary>
 		/// Identifies <see cref="PathStyle"/> dependency property.
@@ -249,12 +256,20 @@ namespace eScapeLLC.UWP.Charts {
 		public String Title { get { return (String)GetValue(TitleProperty); } set { SetValue(TitleProperty, value); } }
 		/// <summary>
 		/// The style to use for Path geometry.
+		/// SHOULD be non-NULL.
 		/// </summary>
 		public Style PathStyle { get { return (Style)GetValue(PathStyleProperty); } set { SetValue(PathStyleProperty, value); } }
 		/// <summary>
 		/// Binding path to the value axis value.
+		/// MUST be non-NULL.
 		/// </summary>
 		public String ValuePath { get { return (String)GetValue(ValuePathProperty); } set { SetValue(ValuePathProperty, value); } }
+		/// <summary>
+		/// Binding path to the value axis label.
+		/// MAY be NULL.
+		/// If specified, this value will replace the one used for Channel 0 in <see cref="ISeriesItemValue"/>.
+		/// </summary>
+		public String ValueLabelPath { get { return (String)GetValue(ValueLabelPathProperty); } set { SetValue(ValueLabelPathProperty, value); } }
 		/// <summary>
 		/// Force an override of IProvideSeriesItemValues property.
 		/// </summary>
@@ -271,6 +286,19 @@ namespace eScapeLLC.UWP.Charts {
 			else if (dp == PathStyleProperty) return "PathStyle";
 			else if (dp == TitleProperty) return "Title";
 			else return base.DPName(dp);
+		}
+		#endregion
+		#region helpers
+		/// <summary>
+		/// Report an error if the <see cref="ValuePath"/> was not configured.
+		/// </summary>
+		/// <param name="iccc"></param>
+		protected void EnsureValuePath(IChartComponentContext iccc) {
+			if (String.IsNullOrEmpty(ValuePath)) {
+				if (iccc is IChartErrorInfo icei) {
+					icei.Report(new ChartValidationResult(NameOrType(), $"{nameof(ValuePath)} was not set, no values will generate", new[] { nameof(ValuePath) }));
+				}
+			}
 		}
 		#endregion
 	}

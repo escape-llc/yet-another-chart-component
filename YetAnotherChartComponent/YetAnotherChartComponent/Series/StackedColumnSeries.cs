@@ -112,7 +112,7 @@ namespace eScapeLLC.UWP.Charts {
 			/// Extract the rectangle geometry and create placement.
 			/// </summary>
 			/// <returns></returns>
-			protected override Placement CreatePlacement() { return new RectanglePlacement(YValue >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, (Element.Data as RectangleGeometry).Rect); }
+			protected override Placement CreatePlacement() { return new RectanglePlacement(Value >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, (Element.Data as RectangleGeometry).Rect); }
 			internal ChannelItemState(int idx, double xv, double xvo, double yv, Path ele, int ch) : base(idx, xv, xvo, yv, ele, ch) { }
 		}
 		#endregion
@@ -189,6 +189,13 @@ namespace eScapeLLC.UWP.Charts {
 			EnsureAxes(icelc as IChartComponentContext);
 			Layer = icelc.CreateLayer();
 			_trace.Verbose($"{Name} enter v:{ValueAxisName} {ValueAxis} c:{CategoryAxisName} {CategoryAxis} d:{DataSourceName}");
+			for (int ix = 0; ix < ColumnStack.Count; ix++) {
+				if(String.IsNullOrEmpty(ColumnStack[ix].ValuePath)) {
+					if(icelc is IChartErrorInfo icei) {
+						icei.Report(new ChartValidationResult(NameOrType(), $"ValuePath[{ix}] was not set, NO values are generated", new[] { $"ValuePath[{ix}]" }));
+					}
+				}
+			}
 		}
 		void IRequireEnterLeave.Leave(IChartEnterLeaveContext icelc) {
 			_trace.Verbose($"{Name} leave");
@@ -237,14 +244,9 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		object IDataSourceRenderer.Preamble(IChartRenderContext icrc) {
 			if (ValueAxis == null || CategoryAxis == null) return null;
-			foreach(var csi in ColumnStack) {
-				// TODO report the binding error
-				if (String.IsNullOrEmpty(csi.ValuePath)) return null;
-			}
 			var bys = new BindingEvaluator[ColumnStack.Count];
 			for (int ix = 0; ix < ColumnStack.Count; ix++) {
-				var by = new BindingEvaluator(ColumnStack[ix].ValuePath);
-				bys[ix] = by;
+				bys[ix] = String.IsNullOrEmpty(ColumnStack[ix].ValuePath) ? null : new BindingEvaluator(ColumnStack[ix].ValuePath);
 			}
 			ResetLimits();
 			var paths = ItemState.Select(ms => ms.Elements).SelectMany(el=>el).Select(el=>el.Item2);

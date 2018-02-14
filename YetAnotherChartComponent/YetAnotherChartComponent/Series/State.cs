@@ -6,6 +6,7 @@ using Windows.UI.Xaml.Shapes;
 
 namespace eScapeLLC.UWP.Charts {
 	#region item state interfaces
+	#region ISeriesItem
 	/// <summary>
 	/// Entry point to series item data.
 	/// </summary>
@@ -23,20 +24,42 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		double XValueOffset { get; }
 	}
+	#endregion
+	#region ISeriesItemValue
 	/// <summary>
-	/// Item tracking a single channel.
+	/// Entry point to item values.
 	/// </summary>
 	public interface ISeriesItemValue {
-		/// <summary>
-		/// Value axis value.
-		/// </summary>
-		double YValue { get; }
 		/// <summary>
 		/// What "channel" this value is tracking.
 		/// Value is host-dependent if tracking multiple values, else SHOULD be ZERO.
 		/// </summary>
 		int Channel { get; }
 	}
+	#endregion
+	#region ISeriesItemValueDouble
+	/// <summary>
+	/// Item tracking double on a single channel.
+	/// </summary>
+	public interface ISeriesItemValueDouble : ISeriesItemValue {
+		/// <summary>
+		/// Value axis value.
+		/// </summary>
+		double Value { get; }
+	}
+	#endregion
+	#region ISeriesItemValueCustom
+	/// <summary>
+	/// Item tracking custom object on a single channel
+	/// </summary>
+	public interface ISeriesItemValueCustom : ISeriesItemValueDouble {
+		/// <summary>
+		/// Value axis value.
+		/// </summary>
+		object CustomValue { get; }
+	}
+	#endregion
+	#region ISeriesItemValues
 	/// <summary>
 	/// Item tracking multiple channels.
 	/// </summary>
@@ -47,6 +70,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		IEnumerable<ISeriesItemValue> YValues { get; }
 	}
+	#endregion
+	#region IProvideSeriesItemValues
 	/// <summary>
 	/// Ability to provide access to the current series item state.
 	/// </summary>
@@ -58,7 +83,9 @@ namespace eScapeLLC.UWP.Charts {
 		IEnumerable<ISeriesItem> SeriesItemValues { get; }
 	}
 	#endregion
+	#endregion
 	#region ItemState implementations
+	#region ItemStateCore
 	/// <summary>
 	/// Simplest item state to start from.
 	/// </summary>
@@ -83,12 +110,14 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="xvo"></param>
 		public ItemStateCore(int idx, double xv, double xvo) { Index = idx; XValueIndex = xv; XValueOffset = xvo; }
 	}
+	#endregion
+	#region ItemState<EL>
 	/// <summary>
 	/// Item state for single value.
 	/// This is used when one element-per-item is generated, so it can be re-adjusted in Transforms et al.
 	/// </summary>
 	/// <typeparam name="EL">The element type.</typeparam>
-	public class ItemState<EL> : ItemStateCore, ISeriesItem, ISeriesItemValue where EL : DependencyObject {
+	public class ItemState<EL> : ItemStateCore, ISeriesItem, ISeriesItemValueDouble where EL : DependencyObject {
 		/// <summary>
 		/// The generated element.
 		/// </summary>
@@ -96,7 +125,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// The y value.
 		/// </summary>
-		public double YValue { get; private set; }
+		public double Value { get; private set; }
 		/// <summary>
 		/// The channel.
 		/// </summary>
@@ -111,11 +140,38 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="ele"></param>
 		/// <param name="ch">Channel; default to zero.</param>
 		public ItemState(int idx, double xv, double xvo, double yv, EL ele, int ch = 0) : base(idx, xv, xvo) {
-			YValue = yv;
+			Value = yv;
 			Element = ele;
 			Channel = ch;
 		}
 	}
+	#endregion
+	#region ItemStateCustom<EL>
+	/// <summary>
+	/// Wrapper for Custom value state.
+	/// </summary>
+	/// <typeparam name="EL">The element type.</typeparam>
+	public class ItemStateCustom<EL> : ItemState<EL>, ISeriesItemValueCustom where EL : DependencyObject {
+		/// <summary>
+		/// The custom state for this value.
+		/// </summary>
+		public object CustomValue { get; private set; }
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="idx"></param>
+		/// <param name="xv"></param>
+		/// <param name="xvo"></param>
+		/// <param name="yv"></param>
+		/// <param name="cs">Custom state.</param>
+		/// <param name="ele"></param>
+		/// <param name="ch">Channel; default to zero.</param>
+		public ItemStateCustom(int idx, double xv, double xvo, double yv, object cs, EL ele, int ch = 0) : base(idx, xv, xvo, yv, ele, ch) {
+			CustomValue = cs;
+		}
+	}
+	#endregion
+	#region ItemStateWithPlacement<EL>
 	/// <summary>
 	/// Wrapper with placement.
 	/// Caches the Placement instance.
@@ -143,6 +199,37 @@ namespace eScapeLLC.UWP.Charts {
 		/// <returns></returns>
 		protected abstract Placement CreatePlacement();
 	}
+	#endregion
+	#region ItemStateCustomWithPlacement<EL>
+	/// <summary>
+	/// Wrapper for Custom value state with placement.
+	/// </summary>
+	/// <typeparam name="EL">The element type.</typeparam>
+	public abstract class ItemStateCustomWithPlacement<EL> : ItemStateCustom<EL>, IProvidePlacement where EL : DependencyObject {
+		Placement cache;
+		/// <summary>
+		/// (Cache and) return placement info.
+		/// </summary>
+		Placement IProvidePlacement.Placement { get { if (cache == null) cache = CreatePlacement(); return cache; } }
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="idx"></param>
+		/// <param name="xv"></param>
+		/// <param name="xvo"></param>
+		/// <param name="yv"></param>
+		/// <param name="cs">Custom state.</param>
+		/// <param name="ele"></param>
+		/// <param name="ch">Channel; default to zero.</param>
+		public ItemStateCustomWithPlacement(int idx, double xv, double xvo, double yv, object cs, EL ele, int ch = 0) : base(idx, xv, xvo, yv, cs, ele, ch) { }
+		/// <summary>
+		/// Override to create placement.
+		/// </summary>
+		/// <returns></returns>
+		protected abstract Placement CreatePlacement();
+	}
+	#endregion
+	#region ItemStateMultiChannelCore
 	/// <summary>
 	/// Default implementation for <see cref="ISeriesItemValues"/>.
 	/// </summary>
@@ -160,7 +247,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="isis">Channel details.  THIS takes ownership.</param>
 		public ItemStateMultiChannelCore(int idx, double xv, double xvo, ISeriesItemValue[] isis) : base(idx, xv, xvo) { YValues = isis; }
 	}
-
+	#endregion
+	#region ItemState_Matrix<EL>
 	/// <summary>
 	/// Item state with transformation matrix.
 	/// </summary>
@@ -182,6 +270,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public Matrix World { get; set; }
 	}
+	#endregion
+	#region ItemState_MatrixAndGeometry<G>
 	/// <summary>
 	/// Item with <see cref="Path"/> as element type, local matrix and geometry.
 	/// </summary>
@@ -204,7 +294,9 @@ namespace eScapeLLC.UWP.Charts {
 		public ItemState_MatrixAndGeometry(int idx, double xv, double xvo, double yv, Path ele, int ch = 0) : base(idx, xv, xvo, yv, ele, ch) { }
 	}
 	#endregion
+	#endregion
 	#region RenderState implementations
+	#region RenderStateCore<SIS,EL>
 	/// <summary>
 	/// Common state for implementations of <see cref="IDataSourceRenderer"/>.
 	/// Contains no references to any values on either axis, just core bookkeeping.
@@ -249,6 +341,8 @@ namespace eScapeLLC.UWP.Charts {
 			else return null;
 		}
 	}
+	#endregion
+	#region RenderState_ValueAndLabel<SIS, EL>
 	/// <summary>
 	/// Extended state for common case of single value with category label.
 	/// </summary>
@@ -268,6 +362,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		internal readonly BindingEvaluator bl;
 		/// <summary>
+		/// Binds custom y-label; MAY be NULL.
+		/// </summary>
+		internal readonly BindingEvaluator byl;
+		/// <summary>
 		/// Ctor.
 		/// </summary>
 		/// <param name="state">Starting state; SHOULD be empty.</param>
@@ -275,12 +373,17 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="bx">Evaluate x-value.</param>
 		/// <param name="bl">Evaluate label MAY be NULL.</param>
 		/// <param name="by">Evaluate y-value.</param>
-		internal RenderState_ValueAndLabel(List<SIS> state, Recycler<EL> rc, BindingEvaluator bx, BindingEvaluator bl, BindingEvaluator by) : base(state, rc) {
+		/// <param name="byl">Evaluate custom y-label MAY be NULL.</param>
+		internal RenderState_ValueAndLabel(List<SIS> state, Recycler<EL> rc, BindingEvaluator bx, BindingEvaluator bl, BindingEvaluator by, BindingEvaluator byl) : base(state, rc) {
+#pragma warning disable IDE0016 // Use 'throw' expression
 			if (by == null) throw new ArgumentNullException(nameof(by));
+#pragma warning restore IDE0016 // Use 'throw' expression
 			this.bx = bx;
 			this.by = by;
 			this.bl = bl;
+			this.byl = byl;
 		}
 	}
+	#endregion
 	#endregion
 }

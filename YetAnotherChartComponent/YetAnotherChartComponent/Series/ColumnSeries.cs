@@ -27,7 +27,7 @@ namespace eScapeLLC.UWP.Charts {
 			/// Extract the rectangle geometry and create placement.
 			/// </summary>
 			/// <returns></returns>
-			protected override Placement CreatePlacement() { return new RectanglePlacement(YValue >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, (Element.Data as RectangleGeometry).Rect); }
+			protected override Placement CreatePlacement() { return new RectanglePlacement(Value >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, (Element.Data as RectangleGeometry).Rect); }
 			internal SeriesItemState(int idx, double xv, double xvo, double yv, Path ele) : base(idx, xv, xvo, yv, ele, 0) { }
 		}
 		#region properties
@@ -81,13 +81,14 @@ namespace eScapeLLC.UWP.Charts {
 			ItemState = new List<SeriesItemState>();
 		}
 		#endregion
-		#region extensions
+		#region IRequireEnterLeave
 		/// <summary>
 		/// Initialize after entering VT.
 		/// </summary>
 		/// <param name="icelc"></param>
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			EnsureAxes(icelc as IChartComponentContext);
+			EnsureValuePath(icelc as IChartComponentContext);
 			Layer = icelc.CreateLayer();
 			_trace.Verbose($"{Name} enter v:{ValueAxisName} {ValueAxis} c:{CategoryAxisName} {CategoryAxis} d:{DataSourceName}");
 			if (EnableDebugPaths) {
@@ -121,6 +122,8 @@ namespace eScapeLLC.UWP.Charts {
 			icelc.DeleteLayer(Layer);
 			Layer = null;
 		}
+		#endregion
+		#region IRequireTransforms
 		/// <summary>
 		/// Adjust transforms for the various components.
 		/// Geometry: scaled to actual values in cartesian coordinates as indicated by axes.
@@ -170,7 +173,6 @@ namespace eScapeLLC.UWP.Charts {
 			if (ValueAxis == null || CategoryAxis == null) return null;
 			if (String.IsNullOrEmpty(ValuePath)) return null;
 			var by = new BindingEvaluator(ValuePath);
-			// TODO report the binding error
 			if (by == null) return null;
 			ResetLimits();
 			var paths = ItemState.Select(ms => ms.Element);
@@ -178,7 +180,8 @@ namespace eScapeLLC.UWP.Charts {
 			return new RenderState_ValueAndLabel<SeriesItemState, Path>(new List<SeriesItemState>(), recycler,
 				!String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
 				!String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null,
-				by
+				by,
+				!String.IsNullOrEmpty(ValueLabelPath) ? new BindingEvaluator(ValueLabelPath) : null
 			);
 		}
 		void IDataSourceRenderer.Render(object state, int index, object item) {

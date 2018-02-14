@@ -83,6 +83,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icelc"></param>
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			EnsureAxes(icelc as IChartComponentContext);
+			EnsureValuePath(icelc as IChartComponentContext);
 			Layer = icelc.CreateLayer();
 			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis} c:{CategoryAxisName}:{CategoryAxis} d:{DataSourceName}");
 			AssignFromRef(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathMarkerSeries),
@@ -117,7 +118,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (ItemState.Count == 0) return;
 			var world = MatrixSupport.ModelFor(CategoryAxis, ValueAxis);
 			foreach (var state in ItemState) {
-				state.World = MatrixSupport.Translate(world, state.XValueOffset, state.YValue);
+				state.World = MatrixSupport.Translate(world, state.XValueOffset, state.Value);
 			}
 		}
 		#endregion
@@ -163,7 +164,6 @@ namespace eScapeLLC.UWP.Charts {
 			if (ValueAxis == null || CategoryAxis == null) return null;
 			if (String.IsNullOrEmpty(ValuePath)) return null;
 			var by = new BindingEvaluator(ValuePath);
-			// TODO report the binding error
 			if (by == null) return null;
 			ResetLimits();
 			var paths = ItemState.Select(ms => ms.Element);
@@ -171,7 +171,8 @@ namespace eScapeLLC.UWP.Charts {
 			return new RenderState_ValueAndLabel<SeriesItemState, Path>(new List<SeriesItemState>(), recycler,
 				!String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
 				!String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null,
-				by
+				by,
+				!String.IsNullOrEmpty(ValueLabelPath) ? new BindingEvaluator(ValueLabelPath) : null
 			);
 		}
 		void IDataSourceRenderer.Render(object state, int index, object item) {

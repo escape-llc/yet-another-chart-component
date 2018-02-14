@@ -65,13 +65,14 @@ namespace eScapeLLC.UWP.Charts {
 			ItemState = new List<SeriesItemState>();
 		}
 		#endregion
-		#region extensions
+		#region IRequireEnterLeave
 		/// <summary>
 		/// Initialize after entering VT.
 		/// </summary>
 		/// <param name="icelc"></param>
-		public void Enter(IChartEnterLeaveContext icelc) {
+		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			EnsureAxes(icelc as IChartComponentContext);
+			EnsureValuePath(icelc as IChartComponentContext);
 			Layer = icelc.CreateLayer(Segments);
 			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis} c:{CategoryAxisName}:{CategoryAxis} d:{DataSourceName}");
 			AssignFromRef(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathLineSeries),
@@ -84,19 +85,21 @@ namespace eScapeLLC.UWP.Charts {
 		/// Undo effects of Enter().
 		/// </summary>
 		/// <param name="icelc"></param>
-		public void Leave(IChartEnterLeaveContext icelc) {
+		void IRequireEnterLeave.Leave(IChartEnterLeaveContext icelc) {
 			_trace.Verbose($"leave");
 			ValueAxis = null;
 			CategoryAxis = null;
 			icelc.DeleteLayer(Layer);
 			Layer = null;
 		}
+		#endregion
+		#region IRequireTransforms
 		/// <summary>
 		/// Adjust transforms for the various components.
 		/// Geometry: scaled to actual values in cartesian coordinates as indicated by axes.
 		/// </summary>
 		/// <param name="icrc"></param>
-		public void Transforms(IChartRenderContext icrc) {
+		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			var matx = MatrixSupport.TransformFor(icrc.Area, CategoryAxis, ValueAxis);
 			_trace.Verbose($"{Name} mat:{matx} clip:{icrc.SeriesArea}");
@@ -129,7 +132,6 @@ namespace eScapeLLC.UWP.Charts {
 			if (ValueAxis == null || CategoryAxis == null) return null;
 			if (String.IsNullOrEmpty(ValuePath)) return null;
 			var by = new BindingEvaluator(ValuePath);
-			// TODO report the binding error
 			if (by == null) return null;
 			ResetLimits();
 			return new State() {

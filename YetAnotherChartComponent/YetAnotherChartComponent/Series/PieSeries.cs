@@ -126,7 +126,7 @@ namespace eScapeLLC.UWP.Charts {
 		IEnumerable<ISeriesItem> UnwrapItemState(IEnumerable<SeriesItemState> siss) {
 			foreach (var sis in siss) {
 				var sis2 = new ISeriesItemValue[2];
-				sis2[0] = new ChannelItemState(sis.Index, sis.XValueIndex, sis.XValueOffset, sis.YValue, sis.PlacementAngle, RADIUS/2, sis.Element, 0);
+				sis2[0] = new ChannelItemState(sis.Index, sis.XValueIndex, sis.XValueOffset, sis.Value, sis.PlacementAngle, RADIUS/2, sis.Element, 0);
 				sis2[1] = new ChannelItemState(sis.Index, sis.XValueIndex, sis.XValueOffset, sis.Percent, sis.PlacementAngle, RADIUS/2, sis.Element, 1);
 				var sivc = new ItemStateMultiChannelCore(sis.Index, sis.XValueIndex, sis.XValueOffset, sis2);
 				yield return sivc;
@@ -185,7 +185,7 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		class State : RenderState_ValueAndLabel<SeriesItemState, Path> {
 			internal double totalv;
-			internal State(List<SeriesItemState> sis, Recycler<Path> rc, params BindingEvaluator[] bes) : base(sis, rc, bes[0], bes[1], bes[2]) { }
+			internal State(List<SeriesItemState> sis, Recycler<Path> rc, params BindingEvaluator[] bes) : base(sis, rc, bes[0], bes[1], bes[2], bes[3]) { }
 		}
 		object IDataSourceRenderer.Preamble(IChartRenderContext icrc) {
 			if (String.IsNullOrEmpty(ValuePath)) return null;
@@ -198,7 +198,8 @@ namespace eScapeLLC.UWP.Charts {
 			return new State(new List<SeriesItemState>(), recycler,
 				null,
 				!String.IsNullOrEmpty(ValueLabelPath) ? new BindingEvaluator(ValueLabelPath) : null,
-				by
+				by,
+				!String.IsNullOrEmpty(ValueLabelPath) ? new BindingEvaluator(ValueLabelPath) : null
 			);
 		}
 		void IDataSourceRenderer.Render(object state, int index, object item) {
@@ -222,7 +223,7 @@ namespace eScapeLLC.UWP.Charts {
 			var st = state as State;
 			var startangle = 0.0;
 			foreach (var sis in st.itemstate) {
-				sis.Percent = Math.Abs(sis.YValue) / st.totalv;
+				sis.Percent = Math.Abs(sis.Value) / st.totalv;
 				// lay out geometry
 				var degs = sis.Percent*360;
 				var pg = sis.Element.Data as PathGeometry;
@@ -231,7 +232,7 @@ namespace eScapeLLC.UWP.Charts {
 				var starty = Math.Sin(startangle*TO_RADS) * RADIUS;
 				var endx = Math.Cos((startangle + degs)*TO_RADS) * RADIUS;
 				var endy = Math.Sin((startangle + degs)*TO_RADS) * RADIUS;
-				_trace.Verbose($"{Name}[{sis.Index}] {sis.YValue} sa:{startangle:F2} degs:{degs:F2} s:({startx:F2},{starty:F2}) e:({endx:F2},{endy:F2})");
+				_trace.Verbose($"{Name}[{sis.Index}] {sis.Value} sa:{startangle:F2} degs:{degs:F2} s:({startx:F2},{starty:F2}) e:({endx:F2},{endy:F2})");
 				var pf = new PathFigure() { StartPoint = new Point(0, 0), IsClosed = true };
 				var leg1 = new LineSegment() { Point = new Point(startx, starty) };
 				var seg = new ArcSegment() { Size = new Size(RADIUS, RADIUS), Point = new Point(endx, endy), IsLargeArc = degs >= 180, SweepDirection = SweepDirection.Clockwise };

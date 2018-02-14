@@ -23,6 +23,7 @@ namespace eScapeLLC.UWP.Charts {
 		protected class SeriesItemState : ItemState<FrameworkElement> {
 			internal Point Direction { get; set; }
 			internal Point CanvasLocation { get; set; }
+			internal object CustomValue { get; set; }
 			internal SeriesItemState(int idx, double xv, double xvo, double yv, FrameworkElement ele, int ch) : base(idx, xv, xvo, yv, ele, ch) { }
 			internal void Locate(FrameworkElement fe, Point offs) {
 				var hw = fe.ActualWidth / 2;
@@ -219,7 +220,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="isiv">Item value.</param>
 		/// <returns>New element or NULL.</returns>
-		FrameworkElement CreateElement(ISeriesItemValue isiv) {
+		FrameworkElement CreateElement(ISeriesItemValueDouble isiv) {
 			var fe = default(FrameworkElement);
 			if (LabelTemplate != null) {
 				fe = LabelTemplate.LoadContent() as FrameworkElement;
@@ -231,7 +232,7 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			if(fe != null) {
 				// complete configuration
-				var txt = isiv.YValue.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
+				var txt = isiv.Value.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
 				var shim = new DataTemplateShim() { Visibility = Visibility, Text = txt };
 				// connect the shim to template root element's Visibility
 				BindTo(shim, nameof(Visibility), fe, UIElement.VisibilityProperty);
@@ -253,7 +254,7 @@ namespace eScapeLLC.UWP.Charts {
 			var fe = sender as FrameworkElement;
 			var state = ItemState.SingleOrDefault((sis) => sis.Element == fe);
 			if (state != null) {
-				_trace.Verbose($"{Name} sizeChanged loc:{state.CanvasLocation} yv:{state.YValue} ns:{e.NewSize}");
+				_trace.Verbose($"{Name} sizeChanged loc:{state.CanvasLocation} yv:{state.Value} ns:{e.NewSize}");
 				state.Locate(fe, LabelOffset);
 			}
 		}
@@ -297,7 +298,7 @@ namespace eScapeLLC.UWP.Charts {
 			if(Source is IProvideSeriesItemValues ipsiv) {
 				// preamble
 				var elements = ItemState.Select(ms => ms.Element);
-				var recycler = new Recycler2<FrameworkElement, ISeriesItemValue>(elements, CreateElement);
+				var recycler = new Recycler2<FrameworkElement, ISeriesItemValueDouble>(elements, CreateElement);
 				var itemstate = new List<SeriesItemState>();
 				// render
 				foreach (var siv in ipsiv.SeriesItemValues) {
@@ -310,12 +311,12 @@ namespace eScapeLLC.UWP.Charts {
 					else if(siv is ISeriesItemValues isivs) {
 						target = isivs.YValues.SingleOrDefault(yv => yv.Channel == ValueChannel);
 					}
-					if(target != null && !double.IsNaN(target.YValue)) {
-						var el = recycler.Next(target);
+					if(target is ISeriesItemValueDouble isivd && !double.IsNaN(isivd.Value)) {
+						var el = recycler.Next(isivd);
 						if (el == null) continue;
 						if (!el.Item1 && el.Item2.DataContext is DataTemplateShim dts) {
 							// recycling; update values
-							var txt = target.YValue.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
+							var txt = isivd.Value.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
 							dts.Visibility = Visibility;
 							dts.Text = txt;
 						}
@@ -324,17 +325,26 @@ namespace eScapeLLC.UWP.Charts {
 						case RectanglePlacement rp:
 							var pt = rp.Transform(PlacementOffset);
 							_trace.Verbose($"rp c:{rp.Center} d:{rp.Direction} hd:{rp.HalfDimensions} pt:{pt}");
-							var sis = new SeriesItemState(siv.Index, siv.XValueIndex, siv.XValueIndex + CategoryAxisOffset, pt.Y, el.Item2, target.Channel) { Direction = rp.Direction };
+							var sis = new SeriesItemState(siv.Index, siv.XValueIndex, siv.XValueIndex + CategoryAxisOffset, pt.Y, el.Item2, target.Channel) {
+								Direction = rp.Direction,
+								CustomValue = target is ISeriesItemValueCustom isivc ? isivc.CustomValue : null
+								};
 							itemstate.Add(sis);
 							break;
 						case MidpointPlacement mp:
 							var pt2 = mp.Transform(PlacementOffset);
 							_trace.Verbose($"mp {mp.Midpoint} d:{mp.Direction} hd:{mp.HalfDimension} pt:{pt2}");
-							var sis2 = new SeriesItemState(siv.Index, siv.XValueIndex, pt2.X, pt2.Y, el.Item2, target.Channel) { Direction = mp.Direction };
+							var sis2 = new SeriesItemState(siv.Index, siv.XValueIndex, pt2.X, pt2.Y, el.Item2, target.Channel) {
+								Direction = mp.Direction,
+								CustomValue = target is ISeriesItemValueCustom isivc2 ? isivc2.CustomValue : null
+							};
 							itemstate.Add(sis2);
 							break;
 						default:
-							var sis3 = new SeriesItemState(siv.Index, siv.XValueIndex, siv.XValueIndex + CategoryAxisOffset, target.YValue, el.Item2, target.Channel) { Direction = Placement.UP_RIGHT };
+							var sis3 = new SeriesItemState(siv.Index, siv.XValueIndex, siv.XValueIndex + CategoryAxisOffset, isivd.Value, el.Item2, target.Channel) {
+								Direction = Placement.UP_RIGHT,
+								CustomValue = target is ISeriesItemValueCustom isivc3 ? isivc3.CustomValue : null
+							};
 							itemstate.Add(sis3);
 							break;
 						}
@@ -359,7 +369,7 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"{Name} transforms a:{icrc.Area} rx:{CategoryAxis?.Range} ry:{ValueAxis?.Range} matx:{matx}  ito:{icrc.IsTransformsOnly}");
 			if (matx == default(Matrix)) return;
 			foreach (var state in ItemState) {
-				state.CanvasLocation = matx.Transform(new Point(state.XValueOffset, state.YValue));
+				state.CanvasLocation = matx.Transform(new Point(state.XValueOffset, state.Value));
 				_trace.Verbose($"{Name} el:{state.Element} ds:{state.Element.DesiredSize} as:{state.Element.ActualWidth},{state.Element.ActualHeight}");
 				// Position element now because it WILL NOT invoke EVH if size didn't actually change
 				state.Locate(state.Element, LabelOffset);
@@ -376,7 +386,7 @@ namespace eScapeLLC.UWP.Charts {
 					//state.Element.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
 				}
 #endif
-				_trace.Verbose($"{Name} matx:{matx} pt:({state.XValueIndex},{state.YValue}) dcc:{state.CanvasLocation}");
+				_trace.Verbose($"{Name} matx:{matx} pt:({state.XValueIndex},{state.Value}) dcc:{state.CanvasLocation}");
 			}
 		}
 		#endregion
