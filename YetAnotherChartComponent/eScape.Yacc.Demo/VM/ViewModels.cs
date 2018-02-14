@@ -149,6 +149,63 @@ namespace Yacc.Demo.VM {
 		/// </summary>
 		public static Observation2 PLACEHOLDER = new Observation2("-", double.NaN, double.NaN, double.NaN, double.NaN, 0);
 	}
+	public class DateRangeVM : CoreViewModel, IRequireRefresh {
+		/// <summary>
+		/// The list of data.
+		/// NOTE this does NOT implement <see cref="INotifyCollectionChanged"/>.
+		/// </summary>
+		public List<Observation2> Data { get; private set; }
+		protected List<Observation2> AllTheData { get; set; }
+		public DateTimeOffset MinDate { get; private set; }
+		public DateTimeOffset MaxDate { get; private set; }
+		public DateTimeOffset Starting { get; set; }
+		public DateTimeOffset Ending { get; set; }
+		public DateRangeVM(CoreDispatcher dx) : base(dx) { }
+		async Task<List<Observation2>> LoadTheData() {
+			var sf = await Package.Current.InstalledLocation.GetFileAsync(@"Assets\MSFT.json");
+			var jsonText = await Windows.Storage.FileIO.ReadTextAsync(sf);
+			var json = JsonObject.Parse(jsonText);
+			var prices = json.GetNamedObject("Time Series (Daily)");
+			var list = new List<Observation2>();
+			foreach (var price in prices) {
+				// this is an object not an array so we lose the ordering
+				var date = price.Key;
+				var ts = DateTime.Parse(date);
+				var ohlcv = price.Value.GetObject();
+				var open = ohlcv.GetNamedString("1. open");
+				var high = ohlcv.GetNamedString("2. high");
+				var low = ohlcv.GetNamedString("3. low");
+				var close = ohlcv.GetNamedString("4. close");
+				var volume = ohlcv.GetNamedString("5. volume");
+				var obs = new Observation2(date, double.Parse(open), double.Parse(high), double.Parse(low), double.Parse(close), int.Parse(volume)) { Timestamp = ts };
+				list.Add(obs);
+			}
+			// since it's a Map we need to sort things based on the "date" keys
+			list.Sort((o1, o2) => {
+				return o1.Timestamp.CompareTo(o2.Timestamp);
+			});
+			return list;
+		}
+		async Task IRequireRefresh.RefreshAsync() {
+			AllTheData = await LoadTheData();
+			Data = AllTheData.Take(21).ToList();
+			MinDate = AllTheData[0].Timestamp.Date;
+			MaxDate = AllTheData[AllTheData.Count - 1].Timestamp.Date;
+			Starting = Data[0].Timestamp.Date;
+			Ending = Data[Data.Count - 1].Timestamp.Date;
+			Changed(nameof(Data));
+			Changed(nameof(MinDate));
+			Changed(nameof(MaxDate));
+			Changed(nameof(Starting));
+			Changed(nameof(Ending));
+		}
+		public void RefreshData() {
+			if (AllTheData == null) return;
+			var data = AllTheData.Where(ob => ob.Timestamp >= Starting && ob.Timestamp <= Ending).ToList();
+			Data = data;
+			Changed(nameof(Data));
+		}
+	}
 	/// <summary>
 	/// This VM demonstrates how to use a NOT observable collection, to avoid extra "churn" caused by individual add/remove operations.
 	/// This also allows the path recycling to stabilize once chart reaches Window Size elements.
@@ -179,9 +236,7 @@ namespace Yacc.Demo.VM {
 		/// </summary>
 		public int WindowSize { get; set; } = 30;
 		public bool IsRunning { get; private set; }
-		public bool AutoStart { get; set; }
 		protected Timer Timer { get; set; }
-		protected List<Observation2> AllTheData { get; set; }
 		public TimedObservationsVM(CoreDispatcher dx) :this(dx, new List<Observation2>()) {}
 		public TimedObservationsVM(CoreDispatcher dx, List<Observation2> data) :base(dx) {
 			Data = data;
@@ -234,43 +289,9 @@ namespace Yacc.Demo.VM {
 				Data.RemoveAt(0);
 			}
 		}
-		async Task<List<Observation2>> LoadTheData() {
-			var sf = await Package.Current.InstalledLocation.GetFileAsync(@"Assets\MSFT.json");
-			var jsonText = await Windows.Storage.FileIO.ReadTextAsync(sf);
-			var json = JsonObject.Parse(jsonText);
-			var prices = json.GetNamedObject("Time Series (Daily)");
-			var list = new List<Observation2>();
-			foreach (var price in prices) {
-				// this is an object not an array so we lose the ordering
-				var date = price.Key;
-				var ts = DateTime.Parse(date);
-				var ohlcv = price.Value.GetObject();
-				var open = ohlcv.GetNamedString("1. open");
-				var high = ohlcv.GetNamedString("2. high");
-				var low = ohlcv.GetNamedString("3. low");
-				var close = ohlcv.GetNamedString("4. close");
-				var volume = ohlcv.GetNamedString("5. volume");
-				var obs = new Observation2(date, double.Parse(open), double.Parse(high), double.Parse(low), double.Parse(close), int.Parse(volume)) { Timestamp = ts };
-				list.Add(obs);
-			}
-			// since it's a Map we need to sort things based on the "date" keys
-			list.Sort((o1, o2) => {
-				return o1.Timestamp.CompareTo(o2.Timestamp);
-			});
-			return list;
-		}
 		async Task IRequireRefresh.RefreshAsync() {
-			if (AutoStart) {
-				await Task.Delay(1000);
-				StartTimer();
-			}
-			else {
-				AllTheData = await LoadTheData();
-				Data = AllTheData.Take(21).ToList();
-				GroupCounter = Data.Count;
-				Changed(nameof(Data));
-				//Changed(nameof(GroupCounter));
-			}
+			await Task.Delay(500);
+			StartTimer();
 		}
 		void IRequireRelease.Release() {
 			try {

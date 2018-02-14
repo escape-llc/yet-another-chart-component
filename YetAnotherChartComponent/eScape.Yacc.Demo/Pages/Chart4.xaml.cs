@@ -8,7 +8,11 @@ namespace Yacc.Demo.Pages {
 			this.InitializeComponent();
 		}
 		protected override object InitializeDataContext(NavigationEventArgs e) {
-			return new TimedObservationsVM(Dispatcher);
+			return new DateRangeVM(Dispatcher);
+		}
+
+		private void CalendarDatePicker_DateChanged(Windows.UI.Xaml.Controls.CalendarDatePicker sender, Windows.UI.Xaml.Controls.CalendarDatePickerDateChangedEventArgs args) {
+			if(DataContext is DateRangeVM drvm) drvm.RefreshData();
 		}
 	}
 }

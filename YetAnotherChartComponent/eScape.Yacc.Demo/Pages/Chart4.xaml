@@ -35,6 +35,14 @@
 				</Setter.Value>
 			</Setter>
 		</Style>
+		<Style x:Key="Search" TargetType="RelativePanel">
+			<Setter Property="Margin" Value="0,8,8,0"/>
+			<Setter Property="Padding" Value="2"/>
+			<Setter Property="Background" Value="DarkGray"/>
+			<Setter Property="BorderBrush" Value="White"/>
+			<Setter Property="BorderThickness" Value="2"/>
+			<Setter Property="CornerRadius" Value="4"/>
+		</Style>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 		<CommandBar x:Name="toolbar"
@@ -74,12 +82,18 @@
 			RelativePanel.AlignTopWith="chart" RelativePanel.AlignHorizontalCenterWithPanel="True"/>
 		<Image Source="ms-appx:/Assets/Square44x44Logo.scale-100.png" Style="{StaticResource Logo}"
 			RelativePanel.LeftOf="title" RelativePanel.AlignVerticalCenterWith="title" />
-		<Border Style="{StaticResource Legend}"
+		<Border x:Name="Legend" Style="{StaticResource Legend}"
 			Visibility="{Binding ElementName=cb_legend,Path=IsChecked}"
 			RelativePanel.AlignRightWith="chart" RelativePanel.AlignTopWith="chart">
 			<ItemsControl x:Name="legend" Margin="2" Padding="2"
 				ItemsSource="{Binding ElementName=chart,Path=LegendItems}"
 				ItemTemplate="{StaticResource LegendItem}"/>
 		</Border>
+		<RelativePanel Style="{StaticResource Search}" RelativePanel.LeftOf="Legend" RelativePanel.AlignTopWith="Legend">
+			<CalendarDatePicker x:Name="Start" HorizontalAlignment="Stretch" DateChanged="CalendarDatePicker_DateChanged" Date="{Binding Starting,Mode=TwoWay}" MinDate="{Binding MinDate}" MaxDate="{Binding MaxDate}"
+			RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignLeftWithPanel="True"/>
+			<CalendarDatePicker x:Name="End" HorizontalAlignment="Stretch" DateChanged="CalendarDatePicker_DateChanged" Date="{Binding Ending,Mode=TwoWay}" MinDate="{Binding MinDate}" MaxDate="{Binding MaxDate}"
+			RelativePanel.Below="Start" RelativePanel.AlignLeftWith="Start" RelativePanel.AlignRightWith="Start"/>
+		</RelativePanel>
 	</RelativePanel>
 </local:BasicPage>
