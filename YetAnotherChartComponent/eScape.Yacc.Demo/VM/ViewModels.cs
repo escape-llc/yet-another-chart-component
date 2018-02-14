@@ -34,8 +34,8 @@ namespace Yacc.Demo.VM {
 			var pl = new ObservableCollection<PageItem> {
 				new PageItem() { Glyph="\u2460", Title = "Demo", Description = "The demo chart (as seen on The Internet).", PageType = typeof(Chart1) },
 				new PageItem() { Glyph="\u2461", Title = "Default", Description = "Default styles in case you forget!", PageType = typeof(Chart2) },
-				new PageItem() { Glyph="\u2462", Title = "Recycling", Description = "Paths get recycled efficiently as values enter and leave chart.", PageType = typeof(Chart3) },
-				new PageItem() { Glyph="\u2463", Title = "Stock Chart", Description = "Cached real data (to avoid permissions) and multiple Y-axis.", PageType = typeof(Chart4) },
+				new PageItem() { Glyph="\u2462", Title = "Recycling", Description = "Paths recycle efficiently as values enter and leave chart.", PageType = typeof(Chart3) },
+				new PageItem() { Glyph="\u2463", Title = "Stock Chart", Description = "Cached real data multiple Y-axis rotated labels.", PageType = typeof(Chart4) },
 				new PageItem() { Glyph="\u2464", Title = "Stacked", Description = "Stacked column chart with labels.", PageType = typeof(Chart5) },
 				new PageItem() { Glyph="\u2465", Title = "Pie", Description = "Pie chart.", PageType = typeof(Chart6) }
 			};

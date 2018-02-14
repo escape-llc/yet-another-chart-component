@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
@@ -24,9 +25,34 @@ namespace eScapeLLC.UWP.Charts {
 			internal TextBlock tb;
 			internal String label;
 			internal double value;
-			internal void SetLocation(double left, double top) {
-				tb.SetValue(Canvas.LeftProperty, left);
-				tb.SetValue(Canvas.TopProperty, top);
+			// these are used for JIT re-positioning
+			internal double scalex;
+			internal bool usexau;
+			internal double yy;
+			internal double aleft;
+			/// <summary>
+			/// Configure <see cref="Canvas"/> attached properties.
+			/// </summary>
+			/// <param name="loc"></param>
+			internal void Locate(Point loc) {
+				if(usexau) {
+					tb.Width = scalex;
+				}
+				tb.SetValue(Canvas.LeftProperty, loc.X);
+				tb.SetValue(Canvas.TopProperty, loc.Y);
+			}
+			/// <summary>
+			/// Calculate position based on <see cref="FrameworkElement.ActualWidth"/> or XAU as appropriate.
+			/// </summary>
+			/// <returns></returns>
+			internal Point GetLocation() {
+				if (usexau) {
+					// place it at XAU zero point
+					return new Point(aleft + value * scalex, yy);
+				} else {
+					// place it centered in cell
+					return new Point(aleft + value * scalex + scalex / 2 - tb.ActualWidth / 2, yy);
+				}
 			}
 		}
 		#region properties
@@ -66,6 +92,26 @@ namespace eScapeLLC.UWP.Charts {
 			MinHeight = 24;
 		}
 		#endregion
+		#region helpers
+		/// <summary>
+		/// Just-in-time re-position of label element at exactly the right spot after it's done with (asynchronous) measure/arrange.
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		void Element_SizeChanged(object sender, SizeChangedEventArgs e) {
+#if false
+			var vm = fe.DataContext as DataTemplateShim;
+			_trace.Verbose($"{Name} sizeChanged ps:{e.PreviousSize} ns:{e.NewSize} text:{vm?.Text}");
+#endif
+			var fe = sender as FrameworkElement;
+			var state = TickLabels.SingleOrDefault((sis) => sis.tb == fe);
+			if (state != null) {
+				var loc = state.GetLocation();
+				_trace.Verbose($"{Name} sizeChanged loc:{loc} yv:{state.value} ns:{e.NewSize}");
+				state.Locate(loc);
+			}
+		}
+		#endregion
 		#region extensions
 		/// <summary>
 		/// Clear the label map in addition to default impl.
@@ -90,6 +136,8 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			return mv;
 		}
+		#endregion
+		#region IRequireEnterLeave
 		/// <summary>
 		/// Add elements and attach bindings.
 		/// </summary>
@@ -116,6 +164,8 @@ namespace eScapeLLC.UWP.Charts {
 			icelc.DeleteLayer(Layer);
 			Layer = null;
 		}
+		#endregion
+		#region IRequireLayout
 		/// <summary>
 		/// Claim the space indicated by properties.
 		/// </summary>
@@ -124,8 +174,11 @@ namespace eScapeLLC.UWP.Charts {
 			var space = AxisMargin + AxisLineThickness + MinHeight;
 			iclc.ClaimSpace(this, Side, space);
 		}
+		#endregion
+		#region IRequireRender
 		/// <summary>
 		/// Compute axis visual elements.
+		/// This is an AXIS, so the extents are already finalized and safe to use here.
 		/// </summary>
 		/// <param name="icrc"></param>
 		void IRequireRender.Render(IChartRenderContext icrc) {
@@ -144,7 +197,7 @@ namespace eScapeLLC.UWP.Charts {
 			// recycle and lay out tick labels
 			// see if style wants to override width
 			var widx = LabelStyle?.Find(FrameworkElement.WidthProperty);
-			var tbr = new Recycler<TextBlock>(TickLabels.Select(tl => tl.tb), () => {
+			var recycler = new Recycler2<TextBlock, Tuple<double, string>>(TickLabels.Select(tl => tl.tb), (tpx) => {
 				var tb = Theme.TextBlockTemplate.LoadContent() as TextBlock;
 				if (LabelStyle != null) {
 					BindTo(this, nameof(LabelStyle), tb, FrameworkElement.StyleProperty);
@@ -160,35 +213,35 @@ namespace eScapeLLC.UWP.Charts {
 					tb.TextAlignment = TextAlignment.Center;
 					tb.Width = scalex;
 				}
+				tb.SizeChanged += Element_SizeChanged;
 				return tb;
 			});
 			var itemstate = new List<ItemState>();
-			var tbget = tbr.Items().GetEnumerator();
 			for (var ix = i1; ix <= i2; ix++) {
 				if (LabelMap.ContainsKey(ix)) {
-					// create a label
+					// create a label for this entry
 					var tpx = LabelMap[ix];
 					_trace.Verbose($"key {ix} label {tpx.Item2}");
-					if (tbget.MoveNext()) {
-						var tb = tbget.Current;
-						var state = new ItemState() { tb = tb.Item2, value = tpx.Item1, label = tpx.Item2 };
-						state.tb.Text = state.label;
-						// anywhere is good for now; will recalibrate in Transforms()
-						state.SetLocation(icrc.Area.Left + ix * scalex, icrc.Area.Top + AxisLineThickness + 2 * AxisMargin);
-						itemstate.Add(state);
-					}
+					var tb = recycler.Next(tpx);
+					if (tb == null) break;
+					var state = new ItemState() {
+						tb = tb.Item2,
+						value = tpx.Item1,
+						label = tpx.Item2,
+						usexau = widx == null
+					};
+					state.tb.Text = state.label;
+					itemstate.Add(state);
 				}
 			}
 			// VT and internal bookkeeping
 			TickLabels = itemstate;
-			Layer.Remove(tbr.Unused);
-			Layer.Add(tbr.Created);
-			foreach (var xx in TickLabels) {
-				// force it to measure; needed for Transforms
-				xx.tb.Measure(icrc.Dimensions);
-			}
+			Layer.Remove(recycler.Unused);
+			Layer.Add(recycler.Created);
 			Dirty = false;
 		}
+		#endregion
+		#region IRequireTransforms
 		/// <summary>
 		/// X-coordinates	axis
 		/// Y-coordinates	"px"
@@ -199,20 +252,18 @@ namespace eScapeLLC.UWP.Charts {
 			var scalex = icrc.Area.Width / Range;
 			var matx = new Matrix(scalex, 0, 0, 1, icrc.Area.Left, icrc.Area.Top + AxisMargin);
 			AxisGeometry.Transform = new MatrixTransform() { Matrix = matx };
-			// see if style wants to override width
-			var widx = LabelStyle?.Find(FrameworkElement.WidthProperty);
-			_trace.Verbose($"transforms sx:{scalex:F3} matx:{matx} a:{icrc.Area} widx:{widx?.Value}");
+			_trace.Verbose($"transforms sx:{scalex:F3} matx:{matx} a:{icrc.Area}");
 			foreach (var state in TickLabels) {
-				var yy = icrc.Area.Top + AxisLineThickness + 2 * AxisMargin;
-				if (widx == null) {
-					state.SetLocation(icrc.Area.Left + state.value * scalex, yy);
-					state.tb.Width = scalex;
-				}
-				else {
-					// place it centered in cell
-					var xx = icrc.Area.Left + state.value * scalex + scalex/2 - state.tb.ActualWidth / 2;
-					state.SetLocation(xx, yy);
-					_trace.Verbose($"tb {state.tb.ActualWidth}x{state.tb.ActualHeight} v:{state.value} @:({xx},{yy})");
+				state.scalex = scalex;
+				state.yy = icrc.Area.Top + AxisLineThickness + 2 * AxisMargin;
+				state.aleft = icrc.Area.Left;
+				var loc = state.GetLocation();
+				_trace.Verbose($"tb {state.tb.ActualWidth}x{state.tb.ActualHeight} v:{state.value} @:({loc.X},{loc.Y})");
+				state.Locate(loc);
+				if (!icrc.IsTransformsOnly) {
+					// doing render so (try to) trigger the SizeChanged handler
+					state.tb.InvalidateMeasure();
+					state.tb.InvalidateArrange();
 				}
 			}
 		}

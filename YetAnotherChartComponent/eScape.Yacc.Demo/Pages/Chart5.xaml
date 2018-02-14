@@ -29,7 +29,7 @@
 			<Setter Property="Fill" Value="CadetBlue"/>
 		</Style>
 		<Style x:Key="BigLabels" BasedOn="{StaticResource Labels}" TargetType="TextBlock">
-			<Setter Property="FontSize" Value="16"/>
+			<Setter Property="FontSize" Value="21"/>
 			<Setter Property="Foreground" Value="Azure"/>
 		</Style>
 	</Page.Resources>
@@ -55,7 +55,7 @@
 				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource Grid}"
 					Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
 				<yacc:StackedColumnSeries x:Name="stack" DataSourceName="data" CategoryAxisName="xaxis" CategoryLabelPath="Label" ValueAxisName="yaxis"
-					BarOffset=".25" BarWidth=".25" ClipToDataRegion="True">
+					BarOffset=".25" BarWidth=".5" ClipToDataRegion="True">
 					<yacc:StackedColumnSeries.ColumnStack>
 						<yacc:ColumnStackItem Title="Value 1" ValuePath="Value1" PathStyle="{StaticResource Column_v1}"/>
 						<yacc:ColumnStackItem Title="Value 2" ValuePath="Value2" PathStyle="{StaticResource Column_v2}"/>
@@ -64,13 +64,13 @@
 					</yacc:StackedColumnSeries.ColumnStack>
 				</yacc:StackedColumnSeries>
 				<yacc:ValueLabels SourceName="stack" LabelFormatString="F1"
-					CategoryAxisOffset=".375" LabelStyle="{StaticResource BigLabels}" />
+					CategoryAxisOffset=".5" LabelStyle="{StaticResource BigLabels}" />
 				<yacc:ValueLabels SourceName="stack" ValueChannel="1" LabelFormatString="F1"
-					CategoryAxisOffset=".375" LabelStyle="{StaticResource BigLabels}" />
+					CategoryAxisOffset=".5" LabelStyle="{StaticResource BigLabels}" />
 				<yacc:ValueLabels SourceName="stack" ValueChannel="2" LabelFormatString="F1"
-					CategoryAxisOffset=".375" LabelStyle="{StaticResource BigLabels}" />
+					CategoryAxisOffset=".5" LabelStyle="{StaticResource BigLabels}" />
 				<yacc:ValueLabels SourceName="stack" ValueChannel="3" LabelFormatString="F1"
-					CategoryAxisOffset=".375" LabelStyle="{StaticResource BigLabels}" />
+					CategoryAxisOffset=".5" LabelStyle="{StaticResource BigLabels}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>
 		<TextBlock x:Name="title" Style="{StaticResource Title}" Text="Stacked Columns with Labels"

@@ -73,7 +73,7 @@
 					ValueAxisName="yaxis" CategoryAxisName="xaxis" MarkerOffset=".5" MarkerWidth=".5"
 					PathStyle="{StaticResource Marker_v4}" MarkerTemplate="{StaticResource Marker}"/>
 				<yacc:LineSeries x:Name="v4" DataSourceName="data" ValuePath="Value4" Title="Value 4 Line"
-					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".375"
+					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".5"
 					ClipToDataRegion="False" PathStyle="{StaticResource Line_v3}" />
 				<yacc:ValueLabels SourceName="v3" LabelFormatString="F2"
 					CategoryAxisOffset=".5" LabelOffset="0,0" LabelStyle="{StaticResource Labels}" />
