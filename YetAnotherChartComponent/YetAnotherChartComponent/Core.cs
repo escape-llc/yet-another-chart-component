@@ -741,22 +741,45 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region DataTemplateShim
 	/// <summary>
-	/// "Internal" VM used as the <see cref="FrameworkElement.DataContext"/> for a <see cref="DataTemplate"/>.
+	/// "Internal" VM used as the <see cref="FrameworkElement.DataContext"/> for a <see cref="DataTemplate"/> used by a <see cref="ChartComponent"/>.
 	/// </summary>
 	public class DataTemplateShim : ViewModelBase {
 		#region data
 		Visibility _vis;
-		String _text;
 		#endregion
 		#region properties
 		/// <summary>
 		/// Current visibility.
 		/// </summary>
 		public Visibility Visibility { get { return _vis; } set { _vis = value; Changed(nameof(Visibility)); } }
+		#endregion
+	}
+	/// <summary>
+	/// VM for a text label context.
+	/// </summary>
+	public class TextShim : DataTemplateShim {
+		#region data
+		String _text;
+		#endregion
+		#region properties
 		/// <summary>
 		/// Current text.
 		/// </summary>
 		public String Text { get { return _text; } set { _text = value; Changed(nameof(Text)); } }
+		#endregion
+	}
+	/// <summary>
+	/// VM shim for a custom label context.
+	/// </summary>
+	public class ObjectShim : TextShim {
+		#region data
+		object _source;
+		#endregion
+		#region properties
+		/// <summary>
+		/// Current text.
+		/// </summary>
+		public object Source { get { return _source; } set { _source = value; Changed(nameof(Source)); } }
 		#endregion
 	}
 	#endregion

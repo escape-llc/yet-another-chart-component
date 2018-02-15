@@ -143,12 +143,14 @@ namespace Yacc.Demo.VM {
 		public double Value3 { get; private set; }
 		public double Value4 { get; private set; }
 		public int Value5 { get; private set; }
-		public Observation2(String label, double v1, double v2, double v3, double v4,int v5 = 0) : base(label, v1, v2) { Value3 = v3; Value4 = v4; Value5 = v5; }
+		public Observation2(String label, double v1, double v2, double v3, double v4, int v5 = 0) : base(label, v1, v2) { Value3 = v3; Value4 = v4; Value5 = v5; }
 		/// <summary>
 		/// Static placeholder value.  Makes a "hole".
 		/// </summary>
 		public static Observation2 PLACEHOLDER = new Observation2("-", double.NaN, double.NaN, double.NaN, double.NaN, 0);
 	}
+	#endregion
+	#region DateRangeVM
 	public class DateRangeVM : CoreViewModel, IRequireRefresh {
 		/// <summary>
 		/// The list of data.

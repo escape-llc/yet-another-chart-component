@@ -232,14 +232,20 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			if(fe != null) {
 				// complete configuration
-				var txt = isiv.Value.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
-				var shim = new DataTemplateShim() { Visibility = Visibility, Text = txt };
+				var shim = CreateShim(isiv);
 				// connect the shim to template root element's Visibility
 				BindTo(shim, nameof(Visibility), fe, UIElement.VisibilityProperty);
 				fe.DataContext = shim;
 				fe.SizeChanged += Element_SizeChanged;
 			}
 			return fe;
+		}
+		DataTemplateShim CreateShim(ISeriesItemValueDouble isiv) {
+			var txt = isiv.Value.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
+			if(isiv is ISeriesItemValueCustom isivc) {
+				return new ObjectShim() { Visibility = Visibility, Text = txt, Source = isivc.CustomValue };
+			}
+			return new TextShim() { Visibility = Visibility, Text = txt };
 		}
 		/// <summary>
 		/// Follow-up handler to re-position the label element at exactly the right spot after it's done with (asynchronous) measure/arrange.
@@ -248,7 +254,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="e"></param>
 		void Element_SizeChanged(object sender, SizeChangedEventArgs e) {
 #if false
-			var vm = fe.DataContext as DataTemplateShim;
+			var vm = fe.DataContext as TextShim;
 			_trace.Verbose($"{Name} sizeChanged ps:{e.PreviousSize} ns:{e.NewSize} text:{vm?.Text}");
 #endif
 			var fe = sender as FrameworkElement;
@@ -314,11 +320,14 @@ namespace eScapeLLC.UWP.Charts {
 					if(target is ISeriesItemValueDouble isivd && !double.IsNaN(isivd.Value)) {
 						var el = recycler.Next(isivd);
 						if (el == null) continue;
-						if (!el.Item1 && el.Item2.DataContext is DataTemplateShim dts) {
+						if (!el.Item1 && el.Item2.DataContext is TextShim shim) {
 							// recycling; update values
 							var txt = isivd.Value.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
-							dts.Visibility = Visibility;
-							dts.Text = txt;
+							shim.Visibility = Visibility;
+							shim.Text = txt;
+							if(shim is ObjectShim oshim && isivd is ISeriesItemValueCustom isivc) {
+								oshim.Source = isivc.CustomValue;
+							}
 						}
 						var pmt = (target as IProvidePlacement)?.Placement;
 						switch(pmt) {

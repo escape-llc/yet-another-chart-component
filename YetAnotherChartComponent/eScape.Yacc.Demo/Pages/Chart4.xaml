@@ -49,6 +49,7 @@
 			RelativePanel.AlignTopWithPanel="True">
 			<CommandBar.PrimaryCommands>
 				<AppBarToggleButton IsChecked="True" x:Name="cb_legend" Label="Toggle" Content="Legend"/>
+				<AppBarToggleButton IsChecked="True" x:Name="cb_picker" Label="Toggle" Content="Picker"/>
 				<AppBarToggleButton IsChecked="True" x:Name="cb_grid" Label="Toggle" Content="Grid1"/>
 				<AppBarToggleButton IsChecked="True" x:Name="cb_grid2" Label="Toggle" Content="Grid2"/>
 			</CommandBar.PrimaryCommands>
@@ -57,7 +58,7 @@
 			RelativePanel.Below="toolbar" RelativePanel.AlignBottomWithPanel="True"
 			RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True">
 			<yacc:Chart.DataSources>
-				<yacc:DataSource x:Name="data" Items="{Binding Data}" ExternalRefresh="{Binding GroupCounter}"/>
+				<yacc:DataSource x:Name="data" Items="{Binding Data}"/>
 			</yacc:Chart.DataSources>
 			<yacc:Chart.Components>
 				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" PathStyle="{StaticResource Axes}" MinHeight="80"
@@ -89,7 +90,8 @@
 				ItemsSource="{Binding ElementName=chart,Path=LegendItems}"
 				ItemTemplate="{StaticResource LegendItem}"/>
 		</Border>
-		<RelativePanel Style="{StaticResource Search}" RelativePanel.LeftOf="Legend" RelativePanel.AlignTopWith="Legend">
+		<RelativePanel Style="{StaticResource Search}" Visibility="{Binding ElementName=cb_picker,Path=IsChecked}"
+			RelativePanel.LeftOf="Legend" RelativePanel.AlignTopWith="Legend">
 			<CalendarDatePicker x:Name="Start" HorizontalAlignment="Stretch" DateChanged="CalendarDatePicker_DateChanged" Date="{Binding Starting,Mode=TwoWay}" MinDate="{Binding MinDate}" MaxDate="{Binding MaxDate}"
 			RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignLeftWithPanel="True"/>
 			<CalendarDatePicker x:Name="End" HorizontalAlignment="Stretch" DateChanged="CalendarDatePicker_DateChanged" Date="{Binding Ending,Mode=TwoWay}" MinDate="{Binding MinDate}" MaxDate="{Binding MaxDate}"

@@ -11,7 +11,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public static class StyleExtensions {
 		/// <summary>
-		/// Find the setter and get its value, ELSE return a default value.
+		/// Find the <see cref="Setter"/> and get its value, ELSE return a default value.
 		/// </summary>
 		/// <typeparam name="T">Return type.</typeparam>
 		/// <param name="style">Style to search.</param>
@@ -25,6 +25,7 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		/// <summary>
 		/// Search style and all sub-styles for the given DP, ELSE return a default value.
+		/// Searches depth-first.
 		/// </summary>
 		/// <typeparam name="T"></typeparam>
 		/// <param name="style"></param>
@@ -63,7 +64,7 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region StyleGenerator
 	/// <summary>
-	/// Abstract base for style generator.
+	/// Abstract base for <see cref="Style"/> generator.
 	/// </summary>
 	public abstract class StyleGenerator : DependencyObject {
 		#region properties
@@ -93,15 +94,17 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region helpers
 		/// <summary>
-		/// Convenience method to copy a style and replace the Fill property with given brush.
+		/// Convenience method to copy a <see cref="Style"/> and replace given <see cref="DependencyProperty"/>with given value.
 		/// </summary>
 		/// <param name="source">Source style.</param>
 		/// <param name="tp">Target DP.</param>
 		/// <param name="pvalue">New value.</param>
-		/// <returns></returns>
+		/// <returns>New instance.</returns>
 		/// <typeparam name="PT">Property value type.</typeparam>
-		protected Style Override<PT>(Style source, DependencyProperty tp, PT pvalue) {
-			var style = new Style(source.TargetType);
+		protected static Style Override<PT>(Style source, DependencyProperty tp, PT pvalue) {
+			var style = new Style(source.TargetType) {
+				BasedOn = source.BasedOn
+			};
 			var did = false;
 			foreach (var setter in source.Setters) {
 				if (setter is Setter sx && sx.Property == tp) {
@@ -112,7 +115,7 @@ namespace eScapeLLC.UWP.Charts {
 				}
 			}
 			if (!did) {
-				style.Setters.Add(new Setter(Path.FillProperty, pvalue));
+				style.Setters.Add(new Setter(tp, pvalue));
 			}
 			return style;
 		}
