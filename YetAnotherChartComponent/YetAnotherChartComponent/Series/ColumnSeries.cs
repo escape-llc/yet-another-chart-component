@@ -18,18 +18,34 @@ namespace eScapeLLC.UWP.Charts {
 	public class ColumnSeries : DataSeriesWithValue, IDataSourceRenderer, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("ColumnSeries", LogTools.Level.Error);
 		static LogTools.Flag _traceg = LogTools.Add("ColumnSeriesPaths", LogTools.Level.Off);
+		#region item state classes
 		/// <summary>
-		/// Implementation for marker state.
+		/// Implementation for item state custom label.
 		/// Provides placement information.
+		/// This one is used when <see cref="DataSeriesWithValue.ValueLabelPath"/> is set.
 		/// </summary>
-		protected class SeriesItemState : ItemStateWithPlacement<Path> {
+		protected class SeriesItemState_Custom : ItemStateCustomWithPlacement<Path> {
 			/// <summary>
 			/// Extract the rectangle geometry and create placement.
 			/// </summary>
 			/// <returns></returns>
 			protected override Placement CreatePlacement() { return new RectanglePlacement(Value >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, (Element.Data as RectangleGeometry).Rect); }
-			internal SeriesItemState(int idx, double xv, double xvo, double yv, Path ele) : base(idx, xv, xvo, yv, ele, 0) { }
+			internal SeriesItemState_Custom(int idx, double xv, double xvo, double yv, object cs, Path ele) : base(idx, xv, xvo, yv, cs, ele, 0) { }
 		}
+		/// <summary>
+		/// Implementation for item state.
+		/// Provides placement information.
+		/// This one is used when <see cref="DataSeriesWithValue.ValueLabelPath"/> is NOT set.
+		/// </summary>
+		protected class SeriesItemState_Double : ItemStateWithPlacement<Path> {
+			/// <summary>
+			/// Extract the rectangle geometry and create placement.
+			/// </summary>
+			/// <returns></returns>
+			protected override Placement CreatePlacement() { return new RectanglePlacement(Value >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, (Element.Data as RectangleGeometry).Rect); }
+			internal SeriesItemState_Double(int idx, double xv, double xvo, double yv, Path ele) : base(idx, xv, xvo, yv, ele, 0) { }
+		}
+		#endregion
 		#region properties
 		/// <summary>
 		/// Return current state as read-only.
@@ -67,9 +83,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		protected IChartLayer Layer { get; set; }
 		/// <summary>
-		/// Data needed for current markers
+		/// Data needed for current state.
 		/// </summary>
-		protected List<SeriesItemState> ItemState { get; set; }
+		protected List<ItemState<Path>> ItemState { get; set; }
 		#endregion
 		#region DPs
 		#endregion
@@ -78,7 +94,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Default ctor.
 		/// </summary>
 		public ColumnSeries() {
-			ItemState = new List<SeriesItemState>();
+			ItemState = new List<ItemState<Path>>();
 		}
 		#endregion
 		#region IRequireEnterLeave
@@ -177,7 +193,7 @@ namespace eScapeLLC.UWP.Charts {
 			ResetLimits();
 			var paths = ItemState.Select(ms => ms.Element);
 			var recycler = new Recycler<Path>(paths, CreatePath);
-			return new RenderState_ValueAndLabel<SeriesItemState, Path>(new List<SeriesItemState>(), recycler,
+			return new RenderState_ValueAndLabel<ItemState<Path>, Path>(new List<ItemState<Path>>(), recycler,
 				!String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
 				!String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null,
 				by,
@@ -185,7 +201,7 @@ namespace eScapeLLC.UWP.Charts {
 			);
 		}
 		void IDataSourceRenderer.Render(object state, int index, object item) {
-			var st = state as RenderState_ValueAndLabel<SeriesItemState, Path>;
+			var st = state as RenderState_ValueAndLabel<ItemState<Path>, Path>;
 			var valuey = CoerceValue(item, st.by);
 			var valuex = st.bx != null ? (double)st.bx.For(item) : index;
 			st.ix = index;
@@ -210,21 +226,26 @@ namespace eScapeLLC.UWP.Charts {
 			if (path == null) return;
 			var rg = new RectangleGeometry() { Rect = new Rect(new Point(barx, topy), new Point(rightx, bottomy)) };
 			path.Item2.Data = rg;
-			st.itemstate.Add(new SeriesItemState(index, leftx, barx, y1, path.Item2));
+			if (st.byl == null) {
+				st.itemstate.Add(new SeriesItemState_Double(index, leftx, barx, y1, path.Item2));
+			} else {
+				var cs = st.byl.For(item);
+				st.itemstate.Add(new SeriesItemState_Custom(index, leftx, barx, y1, cs, path.Item2));
+			}
 		}
 		/// <summary>
 		/// Have to perform update here and not in Postamble because we are altering axis limits.
 		/// </summary>
 		/// <param name="state"></param>
 		void IDataSourceRenderer.RenderComplete(object state) {
-			var st = state as RenderState_ValueAndLabel<SeriesItemState, Path>;
+			var st = state as RenderState_ValueAndLabel<ItemState<Path>, Path>;
 			if (st.bx == null) {
 				// needs one extra "cell"
 				UpdateLimits(st.ix + 1, double.NaN);
 			}
 		}
 		void IDataSourceRenderer.Postamble(object state) {
-			var st = state as RenderState_ValueAndLabel<SeriesItemState, Path>;
+			var st = state as RenderState_ValueAndLabel<ItemState<Path>, Path>;
 			ItemState = st.itemstate;
 			Layer.Remove(st.recycler.Unused);
 			Layer.Add(st.recycler.Created);

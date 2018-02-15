@@ -648,15 +648,19 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Utility class to facilitate runtime binding evaluation.
 	/// </summary>
-	public class BindingEvaluator : FrameworkElement {
+	public class BindingEvaluator : DependencyObject {
 		private readonly PropertyPath _pp;
+		private readonly RelativeSource _rs;
 		/// <summary>
 		/// Ctor.
-		/// Initializes <see cref="_pp"/>.
+		/// Initializes <see cref="_pp"/>  and <see cref="_rs"/>.
+		/// If the <see cref="PropertyPath.Path"/> is "." or <see cref="String.Empty"/> then a <see cref="RelativeSource"/> binding is configured.
 		/// </summary>
 		/// <param name="path">Path to the property.</param>
 		public BindingEvaluator(string path) {
-			_pp = new PropertyPath(path);
+			var isrel = path == "." || String.IsNullOrEmpty(path);
+			_pp = isrel ? null : new PropertyPath(path);
+			_rs = isrel ? new RelativeSource() { Mode = RelativeSourceMode.Self } : null;
 		}
 		/// <summary>
 		/// Dependency property used to evaluate values.
@@ -664,6 +668,7 @@ namespace eScapeLLC.UWP.Charts {
 		public static readonly DependencyProperty EvaluatorProperty = DependencyProperty.Register("Evaluator", typeof(object), typeof(BindingEvaluator), null);
 		/// <summary>
 		/// Returns value of binding on provided object.
+		/// If the <see cref="PropertyPath.Path"/> is "." then a <see cref="RelativeSource"/> binding is configured.
 		/// </summary>
 		/// <param name="source">Object to evaluate binding against.</param>
 		/// <returns>Value of the binding.</returns>
@@ -671,9 +676,10 @@ namespace eScapeLLC.UWP.Charts {
 			var binding = new Binding {
 				Path = _pp,
 				Mode = BindingMode.OneTime,
-				Source = source
+				Source = source,
+				RelativeSource = _rs
 			};
-			SetBinding(EvaluatorProperty, binding);
+			BindingOperations.SetBinding(this, EvaluatorProperty, binding);
 			return GetValue(EvaluatorProperty);
 		}
 	}
@@ -773,13 +779,13 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public class ObjectShim : TextShim {
 		#region data
-		object _source;
+		object _value;
 		#endregion
 		#region properties
 		/// <summary>
-		/// Current text.
+		/// Additional custom state.
 		/// </summary>
-		public object Source { get { return _source; } set { _source = value; Changed(nameof(Source)); } }
+		public object CustomValue { get { return _value; } set { _value = value; Changed(nameof(CustomValue)); } }
 		#endregion
 	}
 	#endregion

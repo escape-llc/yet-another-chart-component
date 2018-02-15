@@ -12,6 +12,14 @@ using Windows.UI.Xaml.Media;
 
 namespace eScapeLLC.UWP.Charts {
 	/// <summary>
+	/// Context passed to the <see cref="IValueConverter"/> for <see cref="Style"/> selection.
+	/// </summary>
+	public interface ILabelStyleSelectorContext {
+		IProvideSeriesItemValues Source { get; }
+		ISeriesItemValue ItemValue { get; }
+		object DataContext { get; }
+	}
+	/// <summary>
 	/// Decoration that creates value labels.
 	/// </summary>
 	public class ValueLabels : ChartComponent, IRequireChartTheme, IRequireEnterLeave, IRequireRender, IRequireTransforms {
@@ -31,7 +39,14 @@ namespace eScapeLLC.UWP.Charts {
 				fe.SetValue(Canvas.LeftProperty, CanvasLocation.X - hw + hw * offs.X * Direction.X);
 				fe.SetValue(Canvas.TopProperty, CanvasLocation.Y - hh + hh * offs.Y * Direction.Y);
 			}
-
+		}
+		#endregion
+		#region SelectorContext
+		protected class StyleSelectorContext : ILabelStyleSelectorContext {
+			public IProvideSeriesItemValues Source { get; private set; }
+			public ISeriesItemValue ItemValue { get; private set; }
+			public object DataContext { get; private set; }
+			public StyleSelectorContext(IProvideSeriesItemValues ipsiv, ISeriesItemValue isiv, object dc) { Source = ipsiv; ItemValue = isiv; DataContext = dc; }
 		}
 		#endregion
 		#region properties
@@ -81,6 +96,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// Default value is (0,0).
 		/// </summary>
 		public Point PlacementOffset { get; set; } = new Point(0, 0);
+		/// <summary>
+		/// Converter to use as the label <see cref="Style"/> selector.
+		/// </summary>
+		public IValueConverter StyleSelector { get; set; }
 		/// <summary>
 		/// Dereferenced value axis.
 		/// </summary>
@@ -243,7 +262,7 @@ namespace eScapeLLC.UWP.Charts {
 		DataTemplateShim CreateShim(ISeriesItemValueDouble isiv) {
 			var txt = isiv.Value.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
 			if(isiv is ISeriesItemValueCustom isivc) {
-				return new ObjectShim() { Visibility = Visibility, Text = txt, Source = isivc.CustomValue };
+				return new ObjectShim() { Visibility = Visibility, Text = txt, CustomValue = isivc.CustomValue };
 			}
 			return new TextShim() { Visibility = Visibility, Text = txt };
 		}
@@ -318,6 +337,8 @@ namespace eScapeLLC.UWP.Charts {
 						target = isivs.YValues.SingleOrDefault(yv => yv.Channel == ValueChannel);
 					}
 					if(target is ISeriesItemValueDouble isivd && !double.IsNaN(isivd.Value)) {
+						// TODO apply LabelSelector here, give it item
+						// TODO it returns whether to continue with item creation for this value
 						var el = recycler.Next(isivd);
 						if (el == null) continue;
 						if (!el.Item1 && el.Item2.DataContext is TextShim shim) {
@@ -326,7 +347,18 @@ namespace eScapeLLC.UWP.Charts {
 							shim.Visibility = Visibility;
 							shim.Text = txt;
 							if(shim is ObjectShim oshim && isivd is ISeriesItemValueCustom isivc) {
-								oshim.Source = isivc.CustomValue;
+								oshim.CustomValue = isivc.CustomValue;
+							}
+							// restore binding if we are using a StyleSelector
+							if (StyleSelector != null && LabelStyle != null) {
+								BindTo(this, nameof(LabelStyle), el.Item2, FrameworkElement.StyleProperty);
+							}
+						}
+						if (StyleSelector != null) {
+							var ctx = new StyleSelectorContext(ipsiv, target, el.Item2.DataContext);
+							var style = StyleSelector.Convert(ctx, typeof(Style), this, "en-US");
+							if(style is Style sx) {
+								el.Item2.Style = sx;
 							}
 						}
 						var pmt = (target as IProvidePlacement)?.Placement;

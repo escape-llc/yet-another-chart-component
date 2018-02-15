@@ -4,6 +4,7 @@
 	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 	xmlns:yacc="using:eScapeLLC.UWP.Charts"
 	xmlns:local="using:Yacc.Demo.Pages"
+	xmlns:vm="using:Yacc.Demo.VM"
 	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 	mc:Ignorable="d">
@@ -91,6 +92,16 @@
 				<TextBlock Text="{Binding Text}" Style="{StaticResource BigLabels2}" />
 			</Border>
 		</DataTemplate>
+		<Style x:Key="v1_GreaterThan_v2" BasedOn="{StaticResource BigLabels}" TargetType="TextBlock">
+			<Setter Property="Foreground" Value="LimeGreen"/>
+		</Style>
+		<Style x:Key="v1_LessThan_v2" BasedOn="{StaticResource BigLabels}" TargetType="TextBlock">
+			<Setter Property="Foreground" Value="LightPink"/>
+		</Style>
+		<vm:CompareObservationValuesConverter x:Key="ColorLabel"
+			WhenEqual="{StaticResource BigLabels2}"
+			WhenGreater="{StaticResource v1_GreaterThan_v2}"
+			WhenLess="{StaticResource v1_LessThan_v2}"/>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 		<CommandBar x:Name="toolbar"
@@ -117,7 +128,7 @@
 				<yacc:Background PathStyle="{StaticResource Bkg}"/>
 				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" PathStyle="{StaticResource Axes}"
 					LabelStyle="{StaticResource CategoryAxisLabel2}" />
-				<yacc:ColumnSeries x:Name="colv1" DataSourceName="data" ValuePath="Value1" CategoryLabelPath="Label" ClipToDataRegion="True"
+				<yacc:ColumnSeries x:Name="colv1" DataSourceName="data" ValuePath="Value1" ValueLabelPath="." CategoryLabelPath="Label" ClipToDataRegion="True"
 					Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					PathStyle="{StaticResource Column_v1}" BarOffset=".25" BarWidth=".25" />
 				<yacc:ColumnSeries x:Name="colv2" DataSourceName="data" ValuePath="Value2"
@@ -139,6 +150,8 @@
 					Visibility="{Binding ShowGrid, Converter={StaticResource b2v}}" />
 				<yacc:ValueLabels SourceName="colv2" LabelFormatString="F2"
 					CategoryAxisOffset=".625" PlacementOffset="0,1" LabelOffset="0,-1" LabelStyle="{StaticResource BigLabels}" />
+				<yacc:ValueLabels SourceName="colv1" LabelFormatString="F2"
+					CategoryAxisOffset=".375" PlacementOffset="0,1" LabelOffset="0,-1" LabelStyle="{StaticResource BigLabels}" StyleSelector="{StaticResource ColorLabel}" />
 				<!-- CANNOT ElementName bind here we're tying into a different XAML namescope -->
 				<yacc:ValueLabels SourceName="band" LabelFormatString="F2" x:Name="values1"
 					Visibility="{Binding ShowBand, Converter={StaticResource b2v}}"
