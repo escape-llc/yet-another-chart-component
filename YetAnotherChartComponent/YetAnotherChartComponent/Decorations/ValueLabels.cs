@@ -11,14 +11,22 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Media;
 
 namespace eScapeLLC.UWP.Charts {
+	#region ILabelSelectorContext
 	/// <summary>
 	/// Context passed to the <see cref="IValueConverter"/> for <see cref="Style"/> selection.
 	/// </summary>
-	public interface ILabelStyleSelectorContext {
+	public interface ILabelSelectorContext {
+		/// <summary>
+		/// The source of the item values.
+		/// </summary>
 		IProvideSeriesItemValues Source { get; }
+		/// <summary>
+		/// The value in question.
+		/// </summary>
 		ISeriesItemValue ItemValue { get; }
-		object DataContext { get; }
 	}
+	#endregion
+	#region ValueLabels
 	/// <summary>
 	/// Decoration that creates value labels.
 	/// </summary>
@@ -42,11 +50,24 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region SelectorContext
-		protected class StyleSelectorContext : ILabelStyleSelectorContext {
+		/// <summary>
+		/// Default implementation of <see cref="ILabelSelectorContext"/>.
+		/// </summary>
+		protected class SelectorContext : ILabelSelectorContext {
+			/// <summary>
+			/// <see cref="ILabelSelectorContext.Source"/>.
+			/// </summary>
 			public IProvideSeriesItemValues Source { get; private set; }
+			/// <summary>
+			/// <see cref="ILabelSelectorContext.ItemValue"/>.
+			/// </summary>
 			public ISeriesItemValue ItemValue { get; private set; }
-			public object DataContext { get; private set; }
-			public StyleSelectorContext(IProvideSeriesItemValues ipsiv, ISeriesItemValue isiv, object dc) { Source = ipsiv; ItemValue = isiv; DataContext = dc; }
+			/// <summary>
+			/// Ctor.
+			/// </summary>
+			/// <param name="ipsiv"></param>
+			/// <param name="isiv"></param>
+			public SelectorContext(IProvideSeriesItemValues ipsiv, ISeriesItemValue isiv) { Source = ipsiv; ItemValue = isiv; }
 		}
 		#endregion
 		#region properties
@@ -99,7 +120,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Converter to use as the label <see cref="Style"/> selector.
 		/// </summary>
-		public IValueConverter StyleSelector { get; set; }
+		public IValueConverter LabelFormatter { get; set; }
 		/// <summary>
 		/// Dereferenced value axis.
 		/// </summary>
@@ -349,14 +370,23 @@ namespace eScapeLLC.UWP.Charts {
 							if(shim is ObjectShim oshim && isivd is ISeriesItemValueCustom isivc) {
 								oshim.CustomValue = isivc.CustomValue;
 							}
-							// restore binding if we are using a StyleSelector
-							if (StyleSelector != null && LabelStyle != null) {
+							// restore binding if we are using a LabelFormatter
+							if (LabelFormatter != null && LabelStyle != null) {
 								BindTo(this, nameof(LabelStyle), el.Item2, FrameworkElement.StyleProperty);
 							}
 						}
-						if (StyleSelector != null) {
-							var ctx = new StyleSelectorContext(ipsiv, target, el.Item2.DataContext);
-							var style = StyleSelector.Convert(ctx, typeof(Style), this, "en-US");
+						if (LabelFormatter != null) {
+							var ctx = new SelectorContext(ipsiv, target);
+							// TODO could call for typeof(object) and replace CustomValue
+							if(el.Item2.DataContext is TextShim ts) {
+								// call for Text override
+								var txt = LabelFormatter.Convert(ctx, typeof(String), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
+								if (txt != null) {
+									ts.Text = txt.ToString();
+								}
+							}
+							// call for style override
+							var style = LabelFormatter.Convert(ctx, typeof(Style), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
 							if(style is Style sx) {
 								el.Item2.Style = sx;
 							}
@@ -432,4 +462,5 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 	}
+	#endregion
 }
