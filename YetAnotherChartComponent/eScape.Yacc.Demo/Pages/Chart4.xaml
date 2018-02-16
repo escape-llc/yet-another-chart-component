@@ -63,8 +63,8 @@
 			<yacc:Chart.Components>
 				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" PathStyle="{StaticResource Axes}" MinHeight="80"
 					LabelStyle="{StaticResource LabelRotated}" />
-				<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}"
-					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="C0" />
+				<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}" MinWidth="40"
+					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="C2" />
 				<yacc:ValueAxis x:Name="volume" Side="Right" PathStyle="{StaticResource SecondAxis}" MinWidth="80"
 					LabelStyle="{StaticResource ValueAxisLabelRight}" LabelFormatString="N0" />
 				<yacc:ValueAxisGrid ValueAxisName="volume" PathStyle="{StaticResource SecondGrid}"
@@ -72,7 +72,7 @@
 				<yacc:ColumnSeries x:Name="colv2" DataSourceName="data" ValuePath="Value5"
 					Title="Volume" ValueAxisName="volume" CategoryAxisName="xaxis" ClipToDataRegion="True"
 					PathStyle="{StaticResource Column_volume}" BarOffset=".25" BarWidth=".5" />
-				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource Grid}"
+				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource FirstGrid}"
 					Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
 				<yacc:CandlestickSeries x:Name="candle" DataSourceName="data" OpenValuePath="Value1" HighValuePath="Value2" LowValuePath="Value3" CloseValuePath="Value4"
 					CategoryLabelPath="Label" ClipToDataRegion="True" Title="Price" ValueAxisName="yaxis" CategoryAxisName="xaxis"

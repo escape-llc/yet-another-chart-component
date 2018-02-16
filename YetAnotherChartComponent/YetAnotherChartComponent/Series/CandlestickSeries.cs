@@ -76,7 +76,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Data needed for current markers
 		/// </summary>
-		protected List<SeriesItemState> ItemState { get; set; }
+		protected List<ItemState<Path>> ItemState { get; set; }
 		#endregion
 		#region DPs
 		/// <summary>
@@ -127,18 +127,20 @@ namespace eScapeLLC.UWP.Charts {
 		/// Ctor.
 		/// </summary>
 		public CandlestickSeries()  {
-			ItemState = new List<SeriesItemState>();
+			ItemState = new List<ItemState<Path>>();
 		}
 		#endregion
 		#region helpers
-		IEnumerable<ISeriesItem> UnwrapItemState(IEnumerable<SeriesItemState> siss) {
-			foreach (var sis in siss) {
-				var sis2 = new ISeriesItemValue[sis.Elements.Length];
-				for (int idx = 0; idx < sis.Elements.Length; idx++) {
-					sis2[idx] = new ItemState<PathFigure>(sis.Index, sis.XValueIndex, sis.XValueOffset, sis.Elements[idx].Item1, sis.Elements[idx].Item2, idx);
+		IEnumerable<ISeriesItem> UnwrapItemState(IEnumerable<ItemState<Path>> siss) {
+			foreach (var state in siss) {
+				if(state is SeriesItemState sis) {
+					var sis2 = new ISeriesItemValue[sis.Elements.Length];
+					for (int idx = 0; idx < sis.Elements.Length; idx++) {
+						sis2[idx] = new ItemState<PathFigure>(sis.Index, sis.XValueIndex, sis.XValueOffset, sis.Elements[idx].Item1, sis.Elements[idx].Item2, idx);
+					}
+					var sivc = new ItemStateMultiChannelCore(sis.Index, sis.XValueIndex, sis.XValueOffset, sis2);
+					yield return sivc;
 				}
-				var sivc = new ItemStateMultiChannelCore(sis.Index, sis.XValueIndex, sis.XValueOffset, sis2);
-				yield return sivc;
 			}
 		}
 		#endregion
@@ -202,14 +204,14 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region IDataSourceRenderer
-		class State : RenderStateCore<SeriesItemState, Path> {
+		class State : RenderStateCore<ItemState<Path>, Path> {
 			internal readonly BindingEvaluator bx;
 			internal readonly BindingEvaluator bl;
 			internal readonly BindingEvaluator bopen;
 			internal readonly BindingEvaluator bhigh;
 			internal readonly BindingEvaluator blow;
 			internal readonly BindingEvaluator bclose;
-			internal State(List<SeriesItemState> sis, Recycler<Path> rc, params BindingEvaluator[] bes) :base(sis, rc) {
+			internal State(List<ItemState<Path>> sis, Recycler<Path> rc, params BindingEvaluator[] bes) :base(sis, rc) {
 				bx = bes[0];
 				bl = bes[1];
 				bopen = bes[2];
@@ -244,7 +246,7 @@ namespace eScapeLLC.UWP.Charts {
 			ResetLimits();
 			var paths = ItemState.Select(ms => ms.Element);
 			var recycler = new Recycler<Path>(paths, CreatePath);
-			return new State(new List<SeriesItemState>(), recycler,
+			return new State(new List<ItemState<Path>>(), recycler,
 				!String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
 				!String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null,
 				bopen, bhigh, blow, bclose);
