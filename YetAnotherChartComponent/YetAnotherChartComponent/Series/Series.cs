@@ -267,7 +267,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Binding path to the value axis label.
 		/// MAY be NULL.
-		/// If specified, this value will replace the one used for Channel 0 in <see cref="ISeriesItemValue"/>.
+		/// If specified, this value will augmentthe one used for All Channels in <see cref="ISeriesItemValue"/>.
 		/// </summary>
 		public String ValueLabelPath { get { return (String)GetValue(ValueLabelPathProperty); } set { SetValue(ValueLabelPathProperty, value); } }
 		/// <summary>

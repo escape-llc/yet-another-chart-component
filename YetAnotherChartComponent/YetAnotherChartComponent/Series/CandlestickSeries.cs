@@ -12,8 +12,9 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public class CandlestickSeries : DataSeriesWithAxes, IDataSourceRenderer, IProvideLegend, IProvideSeriesItemValues, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("CandlestickSeries", LogTools.Level.Error);
+		#region SeriesItemState
 		/// <summary>
-		/// Shorthand for marker state.
+		/// Item state.
 		/// </summary>
 		protected class SeriesItemState : ItemState_Matrix<Path> {
 			/// <summary>
@@ -22,6 +23,17 @@ namespace eScapeLLC.UWP.Charts {
 			internal Tuple<double, PathFigure>[] Elements { get; private set; }
 			internal SeriesItemState(int idx, double xv, double xvo, double yv, Path ele, Tuple<double, PathFigure>[] figs) : base(idx, xv, xvo, yv, ele, 0) { Elements = figs; }
 		}
+		/// <summary>
+		/// Custom item state.
+		/// </summary>
+		protected class SeriesItemState_Custom : ItemStateCustom_Matrix<Path> {
+			/// <summary>
+			/// The list of paths created for the figure.
+			/// </summary>
+			internal Tuple<double, PathFigure>[] Elements { get; private set; }
+			internal SeriesItemState_Custom(int idx, double xv, double xvo, double yv, object cs, Path ele, Tuple<double, PathFigure>[] figs) : base(idx, xv, xvo, yv, cs, ele, 0) { Elements = figs; }
+		}
+		#endregion
 		#region properties
 		/// <summary>
 		/// The title for the series.
@@ -65,6 +77,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// Binding path for the Close value.
 		/// </summary>
 		public String CloseValuePath { get { return (String)GetValue(CloseValuePathProperty); } set { SetValue(CloseValuePathProperty, value); } }
+		/// <summary>
+		/// Binding path to the value axis label.
+		/// MAY be NULL.
+		/// If specified, this value will augmentthe one used for All Channels in <see cref="ISeriesItemValue"/>.
+		/// </summary>
+		public String ValueLabelPath { get { return (String)GetValue(ValueLabelPathProperty); } set { SetValue(ValueLabelPathProperty, value); } }
 		/// <summary>
 		/// Provide item values.
 		/// </summary>
@@ -121,6 +139,12 @@ namespace eScapeLLC.UWP.Charts {
 		public static readonly DependencyProperty CloseValuePathProperty = DependencyProperty.Register(
 			nameof(CloseValuePath), typeof(string), typeof(CandlestickSeries), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
 		);
+		/// <summary>
+		/// Identifies <see cref="ValueLabelPath"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty ValueLabelPathProperty = DependencyProperty.Register(
+			nameof(ValueLabelPath), typeof(string), typeof(DataSeriesWithValue), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
+		);
 		#endregion
 		#region ctor
 		/// <summary>
@@ -139,6 +163,14 @@ namespace eScapeLLC.UWP.Charts {
 						sis2[idx] = new ItemState<PathFigure>(sis.Index, sis.XValueIndex, sis.XValueOffset, sis.Elements[idx].Item1, sis.Elements[idx].Item2, idx);
 					}
 					var sivc = new ItemStateMultiChannelCore(sis.Index, sis.XValueIndex, sis.XValueOffset, sis2);
+					yield return sivc;
+				}
+				else if(state is SeriesItemState_Custom sisc) {
+					var sis2 = new ISeriesItemValue[sisc.Elements.Length];
+					for (int idx = 0; idx < sisc.Elements.Length; idx++) {
+						sis2[idx] = new ItemStateCustom<PathFigure>(sisc.Index, sisc.XValueIndex, sisc.XValueOffset, sisc.Elements[idx].Item1, sisc.CustomValue, sisc.Elements[idx].Item2, idx);
+					}
+					var sivc = new ItemStateMultiChannelCore(sisc.Index, sisc.XValueIndex, sisc.XValueOffset, sis2);
 					yield return sivc;
 				}
 			}
@@ -205,12 +237,16 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region IDataSourceRenderer
 		class State : RenderStateCore<ItemState<Path>, Path> {
+			// category and label
 			internal readonly BindingEvaluator bx;
 			internal readonly BindingEvaluator bl;
+			// values
 			internal readonly BindingEvaluator bopen;
 			internal readonly BindingEvaluator bhigh;
 			internal readonly BindingEvaluator blow;
 			internal readonly BindingEvaluator bclose;
+			// value label
+			internal readonly BindingEvaluator bvl;
 			internal State(List<ItemState<Path>> sis, Recycler<Path> rc, params BindingEvaluator[] bes) :base(sis, rc) {
 				bx = bes[0];
 				bl = bes[1];
@@ -218,6 +254,7 @@ namespace eScapeLLC.UWP.Charts {
 				bhigh = bes[3];
 				blow = bes[4];
 				bclose = bes[5];
+				bvl = bes[6];
 			}
 		}
 		/// <summary>
@@ -249,7 +286,8 @@ namespace eScapeLLC.UWP.Charts {
 			return new State(new List<ItemState<Path>>(), recycler,
 				!String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
 				!String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null,
-				bopen, bhigh, blow, bclose);
+				bopen, bhigh, blow, bclose,
+				!String.IsNullOrEmpty(ValueLabelPath) ? new BindingEvaluator(ValueLabelPath) : null);
 		}
 		void IDataSourceRenderer.Render(object state, int index, object item) {
 			var st = state as State;
@@ -305,7 +343,12 @@ namespace eScapeLLC.UWP.Charts {
 			figs[1] = new Tuple<double, PathFigure>(y2, pf);
 			figs[2] = new Tuple<double, PathFigure>(y3, upper);
 			figs[3] = new Tuple<double, PathFigure>(y4, lower);
-			st.itemstate.Add(new SeriesItemState(index, leftx, barx, y1, path.Item2, figs));
+			if (st.bvl == null) {
+				st.itemstate.Add(new SeriesItemState(index, leftx, barx, y1, path.Item2, figs));
+			} else {
+				var cs = st.bvl.For(item);
+				st.itemstate.Add(new SeriesItemState_Custom(index, leftx, barx, y1, cs, path.Item2, figs));
+			}
 		}
 		void IDataSourceRenderer.RenderComplete(object state) {
 			var st = state as State;
