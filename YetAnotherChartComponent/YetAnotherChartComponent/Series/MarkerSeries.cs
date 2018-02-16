@@ -14,14 +14,6 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public class MarkerSeries : DataSeriesWithValue, IDataSourceRenderer, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireAfterAxesFinalized, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("MarkerSeries", LogTools.Level.Error);
-		#region SeriesItemState
-		/// <summary>
-		/// Shorthand for marker state.
-		/// </summary>
-		protected class SeriesItemState : ItemState_Matrix<Path> {
-			internal SeriesItemState(int idx, double xv, double xvo, double yv, Path ele) : base(idx, xv, xvo, yv, ele, 0) { }
-		}
-		#endregion
 		#region properties
 		/// <summary>
 		/// Return current state as read-only.
@@ -58,7 +50,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Data needed for current markers
 		/// </summary>
-		protected List<SeriesItemState> ItemState { get; set; }
+		protected List<ItemState<Path>> ItemState { get; set; }
 		#endregion
 		#region DPs
 		/// <summary>
@@ -73,7 +65,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Ctor.
 		/// </summary>
 		public MarkerSeries() {
-			ItemState = new List<SeriesItemState>();
+			ItemState = new List<ItemState<Path>>();
 		}
 		#endregion
 		#region IRequireEnterLeave
@@ -118,7 +110,9 @@ namespace eScapeLLC.UWP.Charts {
 			if (ItemState.Count == 0) return;
 			var world = MatrixSupport.ModelFor(CategoryAxis, ValueAxis);
 			foreach (var state in ItemState) {
-				state.World = MatrixSupport.Translate(world, state.XValueOffset, state.Value);
+				if (state is IItemStateMatrix ism) {
+					ism.World = MatrixSupport.Translate(world, state.XValueOffset, state.Value);
+				}
 			}
 		}
 		#endregion
@@ -138,7 +132,7 @@ namespace eScapeLLC.UWP.Charts {
 			var marker = MatrixSupport.LocalFor(world, MarkerWidth, icrc.Area, -MarkerOrigin.X, -MarkerOrigin.Y);
 			foreach (var state in ItemState) {
 				// assemble Mk * M * P transform for this path
-				var model = MatrixSupport.Multiply(state.World, marker);
+				var model = MatrixSupport.Multiply((state as IItemStateMatrix).World, marker);
 				var matx = MatrixSupport.Multiply(proj, model);
 				state.Element.Data.Transform = new MatrixTransform() { Matrix = matx };
 				// doesn't work for path
@@ -168,7 +162,7 @@ namespace eScapeLLC.UWP.Charts {
 			ResetLimits();
 			var paths = ItemState.Select(ms => ms.Element);
 			var recycler = new Recycler<Path>(paths, CreatePath);
-			return new RenderState_ValueAndLabel<SeriesItemState, Path>(new List<SeriesItemState>(), recycler,
+			return new RenderState_ValueAndLabel<ItemState<Path>, Path>(new List<ItemState<Path>>(), recycler,
 				!String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
 				!String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null,
 				by,
@@ -176,7 +170,7 @@ namespace eScapeLLC.UWP.Charts {
 			);
 		}
 		void IDataSourceRenderer.Render(object state, int index, object item) {
-			var st = state as RenderState_ValueAndLabel<SeriesItemState, Path>;
+			var st = state as RenderState_ValueAndLabel<ItemState<Path>, Path>;
 			var valuey = CoerceValue(item, st.by);
 			var valuex = st.bx != null ? (double)st.bx.For(item) : index;
 			st.ix = index;
@@ -196,20 +190,25 @@ namespace eScapeLLC.UWP.Charts {
 			var mk = MarkerTemplate.LoadContent() as Geometry;
 			// TODO allow MK to be other things like (Path or Image).
 			// no path yet
-			var path = st.NextElement();
-			if (path == null) return;
-			path.Item2.Data = mk;
-			st.itemstate.Add(new SeriesItemState(index, mappedx, markerx, mappedy, path.Item2));
+			var el = st.NextElement();
+			if (el == null) return;
+			el.Item2.Data = mk;
+			if (st.byl == null) {
+				st.itemstate.Add(new ItemState_Matrix<Path>(index, mappedx, markerx, mappedy, el.Item2));
+			} else {
+				var cs = st.byl.For(item);
+				st.itemstate.Add(new ItemStateCustom_Matrix<Path>(index, mappedx, markerx, mappedy, cs, el.Item2));
+			}
 		}
 		void IDataSourceRenderer.RenderComplete(object state) {
-			var st = state as RenderState_ValueAndLabel<SeriesItemState, Path>;
+			var st = state as RenderState_ValueAndLabel<ItemState<Path>, Path>;
 			if (st.bx == null) {
 				// needs one extra "cell"
 				UpdateLimits(st.ix + 1, double.NaN);
 			}
 		}
 		void IDataSourceRenderer.Postamble(object state) {
-			var st = state as RenderState_ValueAndLabel<SeriesItemState, Path>;
+			var st = state as RenderState_ValueAndLabel<ItemState<Path>, Path>;
 			ItemState = st.itemstate;
 			Layer.Remove(st.recycler.Unused);
 			Layer.Add(st.recycler.Created);

@@ -3,8 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media;
@@ -14,7 +12,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Represents an individual item in the stack.
 	/// </summary>
-	public class ColumnStackItem : FrameworkElement {
+	public class ColumnStackItem : DependencyObject {
 		#region properties
 		/// <summary>
 		/// The title for the series.

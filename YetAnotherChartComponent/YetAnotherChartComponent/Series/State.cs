@@ -85,6 +85,29 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#endregion
 	#region ItemState implementations
+	#region ItemStateMatrix
+	/// <summary>
+	/// Item state with a world transform attached.
+	/// </summary>
+	public interface IItemStateMatrix {
+		/// <summary>
+		/// Get or Set the world transform.
+		/// </summary>
+		Matrix World { get; set; }
+	}
+	#endregion
+	#region IItemStateGeometry<G>
+	/// <summary>
+	/// Item state with custom geometry attached.
+	/// </summary>
+	/// <typeparam name="G">Type of <see cref="Geometry"/>.</typeparam>
+	public interface IItemStateGeometry<G> where G: Geometry {
+		/// <summary>
+		/// The geometry.
+		/// </summary>
+		G Geometry { get; set; }
+	}
+	#endregion
 	#region ItemStateCore
 	/// <summary>
 	/// Simplest item state to start from.
@@ -253,7 +276,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// Item state with transformation matrix.
 	/// </summary>
 	/// <typeparam name="EL">The Element type.</typeparam>
-	public class ItemState_Matrix<EL> : ItemState<EL> where EL : FrameworkElement {
+	public class ItemState_Matrix<EL> : ItemState<EL>, IItemStateMatrix where EL : FrameworkElement {
 		/// <summary>
 		/// Ctor.
 		/// </summary>
@@ -271,12 +294,36 @@ namespace eScapeLLC.UWP.Charts {
 		public Matrix World { get; set; }
 	}
 	#endregion
+	#region ItemStateCustom_Matrix<EL>
+	/// <summary>
+	/// Item state with transformation matrix.
+	/// </summary>
+	/// <typeparam name="EL">The Element type.</typeparam>
+	public class ItemStateCustom_Matrix<EL> : ItemStateCustom<EL>, IItemStateMatrix where EL : FrameworkElement {
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="idx"></param>
+		/// <param name="xv"></param>
+		/// <param name="xvo"></param>
+		/// <param name="yv"></param>
+		/// <param name="cs"></param>
+		/// <param name="ele"></param>
+		/// <param name="ch"></param>
+		public ItemStateCustom_Matrix(int idx, double xv, double xvo, double yv, object cs, EL ele, int ch = 0) : base(idx, xv, xvo, yv, cs, ele, ch) { }
+		/// <summary>
+		/// Alternate matrix for the M matrix.
+		/// Used when establishing a local transform for <see cref="ItemState{E}.Element"/>.
+		/// </summary>
+		public Matrix World { get; set; }
+	}
+	#endregion
 	#region ItemState_MatrixAndGeometry<G>
 	/// <summary>
 	/// Item with <see cref="Path"/> as element type, local matrix and geometry.
 	/// </summary>
 	/// <typeparam name="G">Type of geometry.</typeparam>
-	public class ItemState_MatrixAndGeometry<G> : ItemState_Matrix<Path> where G : Geometry {
+	public class ItemState_MatrixAndGeometry<G> : ItemState_Matrix<Path>, IItemStateGeometry<G> where G : Geometry {
 		/// <summary>
 		/// The geometry.
 		/// If you are using Path.Data to reference geometry, choose <see cref="ItemState_Matrix{E}"/> or <see cref="ItemState{E}"/> instead.
