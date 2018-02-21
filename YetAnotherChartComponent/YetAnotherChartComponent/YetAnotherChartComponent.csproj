@@ -113,6 +113,7 @@
     <Compile Include="Axis\CategoryAxis.cs" />
     <Compile Include="Chart.cs" />
     <Compile Include="ChartComponent.cs" />
+    <Compile Include="Composition.cs" />
     <Compile Include="Contexts.cs" />
     <Compile Include="Decorations\Background.cs" />
     <Compile Include="Decorations\HorizontalBand.cs" />

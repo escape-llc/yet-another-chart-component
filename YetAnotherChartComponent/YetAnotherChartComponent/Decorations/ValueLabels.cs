@@ -1,10 +1,9 @@
-﻿using eScape.Core;
+﻿#undef COMPOSITION_ENABLED
+using eScape.Core;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using Windows.Foundation;
-using Windows.UI;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Data;
@@ -277,6 +276,9 @@ namespace eScapeLLC.UWP.Charts {
 				BindTo(shim, nameof(Visibility), fe, UIElement.VisibilityProperty);
 				fe.DataContext = shim;
 				fe.SizeChanged += Element_SizeChanged;
+#if COMPOSITION_ENABLED
+				UniversalApiContract.v3.CompositionSupport.AttachAnimations(fe);
+#endif
 			}
 			return fe;
 		}

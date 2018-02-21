@@ -5,16 +5,15 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
 using Windows.Foundation;
-using Windows.UI;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Media;
 
 namespace eScapeLLC.UWP.Charts {
 	#region layer implementations
 	#region CommonCanvasLayer
 	/// <summary>
-	/// Layer where all layers share a common canvas.
+	/// Layer where all layers share a common <see cref="Canvas"/>.
+	/// Because of the sharing, this implementation tracks its "own" elements separately from <see cref="Panel.Children"/>.
 	/// </summary>
 	public class CommonCanvasLayer : IChartLayer {
 		#region data
@@ -26,7 +25,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Ctor.
 		/// </summary>
-		/// <param name="canvas">Target canvas.</param>
+		/// <param name="canvas">Target canvas (shared).</param>
 		/// <param name="zindex">Z-index to assign to elements.</param>
 		public CommonCanvasLayer(Canvas canvas, int zindex) {
 			this.canvas = canvas;
@@ -36,7 +35,7 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region IChartLayer
 		/// <summary>
-		/// Add element with assign z-index.
+		/// Add element with assigned z-index.
 		/// </summary>
 		/// <param name="fe"></param>
 		void IChartLayer.Add(FrameworkElement fe) {
@@ -45,7 +44,7 @@ namespace eScapeLLC.UWP.Charts {
 			canvas.Children.Add(fe);
 		}
 		/// <summary>
-		/// Add elements with assign z-index.
+		/// Add elements with assigned z-index.
 		/// </summary>
 		/// <param name="fes"></param>
 		void IChartLayer.Add(IEnumerable<FrameworkElement> fes) {
@@ -58,18 +57,29 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="target"></param>
 		void IChartLayer.Layout(Rect target) { }
-		void IChartLayer.Remove(FrameworkElement fe) { canvas.Children.Remove(fe); elements.Remove(fe); }
+		void IChartLayer.Remove(FrameworkElement fe) {
+			canvas.Children.Remove(fe);
+			UniversalApiContract.v3.CompositionSupport.DetachAnimations(fe);
+			elements.Remove(fe);
+		}
 		void IChartLayer.Remove(IEnumerable<FrameworkElement> fes) { foreach (var fe in fes) { (this as IChartLayer).Remove(fe); } }
 		/// <summary>
 		/// Remove the elements this layer is tracking in the common parent.
 		/// </summary>
-		void IChartLayer.Clear() { foreach (var fe in elements) { canvas.Children.Remove(fe); } elements.Clear(); }
+		void IChartLayer.Clear() {
+			foreach (var fe in elements) {
+				canvas.Children.Remove(fe);
+				UniversalApiContract.v3.CompositionSupport.DetachAnimations(fe);
+			}
+			elements.Clear();
+		}
 		#endregion
 	}
 	#endregion
 	#region CanvasLayer
 	/// <summary>
 	/// Layer where each layer is bound to a different Canvas (COULD be IPanel).
+	/// This implementation relies on <see cref="Panel.Children"/> to track the elements.
 	/// </summary>
 	public class CanvasLayer : IChartLayer {
 		#region data
@@ -503,7 +513,7 @@ namespace eScapeLLC.UWP.Charts {
 		protected override void OnApplyTemplate() {
 			try {
 				Surface = GetTemplateChild(PART_Canvas) as Canvas;
-				_trace.Verbose($"OnApplyTemplate ({Width}x{Height}) {Surface} d:{DeferredEnter.Count}");
+				_trace.Verbose($"OnApplyTemplate ({Width}x{Height}) {Surface} d:{DeferredEnter.Count} composition:{UniversalApiContract.v3.CompositionSupport.IsSupported}");
 				var celc = new DefaultEnterLeaveContext(Surface, Components, Layers, DataContext);
 				foreach (var cc in DeferredEnter) {
 					ComponentEnter(celc, cc);
