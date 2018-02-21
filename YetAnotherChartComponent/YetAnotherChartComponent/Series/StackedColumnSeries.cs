@@ -102,6 +102,10 @@ namespace eScapeLLC.UWP.Charts {
 			/// <param name="xvo"></param>
 			public SeriesItemState(int idx, double xv, double xvo) :base(idx, xv, xvo){ }
 		}
+		protected class SeriesItemState_Custom : SeriesItemState {
+			public object CustomValue { get; private set; }
+			public SeriesItemState_Custom(int idx, double xv, double xvo, object cs) :base(idx, xv, xvo) { CustomValue = cs; }
+		}
 		/// <summary>
 		/// Wrapper for the channel items.
 		/// </summary>
@@ -113,6 +117,17 @@ namespace eScapeLLC.UWP.Charts {
 			protected override Placement CreatePlacement() { return new RectanglePlacement(Value >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, (Element.Data as RectangleGeometry).Rect); }
 			internal ChannelItemState(int idx, double xv, double xvo, double yv, Path ele, int ch) : base(idx, xv, xvo, yv, ele, ch) { }
 		}
+		/// <summary>
+		/// Wrapper for the channel items.
+		/// </summary>
+		protected class ChannelItemState_Custom : ItemStateCustomWithPlacement<Path> {
+			/// <summary>
+			/// Extract the rectangle geometry and create placement.
+			/// </summary>
+			/// <returns></returns>
+			protected override Placement CreatePlacement() { return new RectanglePlacement(Value >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, (Element.Data as RectangleGeometry).Rect); }
+			internal ChannelItemState_Custom(int idx, double xv, double xvo, double yv, object cs, Path ele, int ch) : base(idx, xv, xvo, yv, cs, ele, ch) { }
+		}
 		#endregion
 		#region properties
 		/// <summary>
@@ -123,6 +138,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// The stack of column items.
 		/// </summary>
 		public ColumnStackItemCollection ColumnStack { get; private set; }
+		/// <summary>
+		/// Binding path to the value axis label.
+		/// MAY be NULL.
+		/// If specified, this value will augment the one used for All Channels in <see cref="ISeriesItemValue"/>.
+		/// </summary>
+		public String ValueLabelPath { get { return (String)GetValue(ValueLabelPathProperty); } set { SetValue(ValueLabelPathProperty, value); } }
 		/// <summary>
 		/// Fractional offset into the "cell" of the category axis.
 		/// BarOffset + BarWidth &lt;= 1.0
@@ -147,6 +168,12 @@ namespace eScapeLLC.UWP.Charts {
 		protected List<SeriesItemState> ItemState { get; set; }
 		#endregion
 		#region DPs
+		/// <summary>
+		/// Identifies <see cref="ValueLabelPath"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty ValueLabelPathProperty = DependencyProperty.Register(
+			nameof(ValueLabelPath), typeof(string), typeof(StackedColumnSeries), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
+		);
 		#endregion
 		#region ctor
 		/// <summary>
@@ -160,12 +187,22 @@ namespace eScapeLLC.UWP.Charts {
 		#region helpers
 		IEnumerable<ISeriesItem> UnwrapItemState(IEnumerable<SeriesItemState> siss) {
 			foreach (var sis in siss) {
-				var sis2 = new ISeriesItemValue[sis.Elements.Count];
-				for (int idx = 0; idx < sis.Elements.Count; idx++) {
-					sis2[idx] = new ChannelItemState(sis.Index, sis.XValueIndex, sis.XValueOffset, sis.Elements[idx].Item1, sis.Elements[idx].Item2, idx);
+				// IST check Custom first it's a subclass!
+				if (sis is SeriesItemState_Custom sisc) {
+					var sis2 = new ISeriesItemValue[sis.Elements.Count];
+					for (int idx = 0; idx < sis.Elements.Count; idx++) {
+						sis2[idx] = new ChannelItemState_Custom(sis.Index, sis.XValueIndex, sis.XValueOffset, sis.Elements[idx].Item1, sisc.CustomValue, sis.Elements[idx].Item2, idx);
+					}
+					var sivc = new ItemStateMultiChannelCore(sis.Index, sis.XValueIndex, sis.XValueOffset, sis2);
+					yield return sivc;
+				} else {
+					var sis2 = new ISeriesItemValue[sis.Elements.Count];
+					for (int idx = 0; idx < sis.Elements.Count; idx++) {
+						sis2[idx] = new ChannelItemState(sis.Index, sis.XValueIndex, sis.XValueOffset, sis.Elements[idx].Item1, sis.Elements[idx].Item2, idx);
+					}
+					var sivc = new ItemStateMultiChannelCore(sis.Index, sis.XValueIndex, sis.XValueOffset, sis2);
+					yield return sivc;
 				}
-				var sivc = new ItemStateMultiChannelCore(sis.Index, sis.XValueIndex, sis.XValueOffset, sis2);
-				yield return sivc;
 			}
 		}
 		#endregion
@@ -226,9 +263,11 @@ namespace eScapeLLC.UWP.Charts {
 			internal readonly BindingEvaluator bx;
 			internal readonly BindingEvaluator[] bys;
 			internal readonly BindingEvaluator bl;
-			internal State(List<SeriesItemState> sis, Recycler<Path> rc, BindingEvaluator bx, BindingEvaluator bl, BindingEvaluator[] bys) :base(sis, rc) {
+			internal readonly BindingEvaluator byl;
+			internal State(List<SeriesItemState> sis, Recycler<Path> rc, BindingEvaluator bx, BindingEvaluator bl, BindingEvaluator byl, BindingEvaluator[] bys) :base(sis, rc) {
 				this.bx = bx;
 				this.bl = bl;
+				this.byl = byl;
 				this.bys = bys;
 			}
 		}
@@ -252,6 +291,7 @@ namespace eScapeLLC.UWP.Charts {
 			return new State(new List<SeriesItemState>(), recycler,
 				!String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
 				!String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null,
+				!String.IsNullOrEmpty(ValueLabelPath) ? new BindingEvaluator(ValueLabelPath) : null,
 				bys
 			);
 		}
@@ -262,7 +302,7 @@ namespace eScapeLLC.UWP.Charts {
 			var leftx = (st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString())));
 			var barx = leftx + BarOffset;
 			var rightx = barx + BarWidth;
-			var sis = new SeriesItemState(index, leftx, barx);
+			var sis = st.byl == null ? new SeriesItemState(index, leftx, barx) : new SeriesItemState_Custom(index, leftx, barx, st.byl.For(item));
 			for (int ix = 0; ix < st.bys.Length; ix++) {
 				var valuey = CoerceValue(item, st.bys[ix]);
 				if (double.IsNaN(valuey)) {
