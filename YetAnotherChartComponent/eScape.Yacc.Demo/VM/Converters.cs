@@ -45,7 +45,7 @@ namespace Yacc.Demo.VM {
 					else if(targetType == typeof(String)) {
 						// reformat the label based on the difference
 						// select the "trend indicator" in Unicode arrows
-						// Left RIght Arrow (U+2914)
+						// Left Right Arrow (U+2914)
 						var indi = "\u2194";
 						// Down Arrow (U+2193)
 						if (obv.Value1 < obv.Value2) indi = "\u2193";

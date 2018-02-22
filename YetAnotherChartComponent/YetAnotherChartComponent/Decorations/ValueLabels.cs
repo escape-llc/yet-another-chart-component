@@ -85,6 +85,7 @@ namespace eScapeLLC.UWP.Charts {
 		public int ValueChannel { get { return (int)GetValue(ValueChannelProperty); } set { SetValue(ValueChannelProperty, value); } }
 		/// <summary>
 		/// The style to apply to (non-templated) labels.
+		/// When using <see cref="LabelFormatter"/> this style can be overriden.
 		/// </summary>
 		public Style LabelStyle { get { return (Style)GetValue(LabelStyleProperty); } set { SetValue(LabelStyleProperty, value); } }
 		/// <summary>
@@ -118,12 +119,17 @@ namespace eScapeLLC.UWP.Charts {
 		public Point PlacementOffset { get; set; } = new Point(0, 0);
 		/// <summary>
 		/// Converter to use as the element <see cref="FrameworkElement.Style"/> and <see cref="TextShim.Text"/> selector.
+		/// These are already set to their "standard" values before this is called, so it MAY selectively opt out of setting them.
 		/// The <see cref="IValueConverter.Convert"/> targetType parameter is used to determine which value is requested.
+		/// Uses <see cref="String"/> for label override.  Return a new label or NULL to opt out.
+		/// Uses <see cref="Style"/> for style override.  Return a style or NULL to opt out.
 		/// </summary>
 		public IValueConverter LabelFormatter { get; set; }
 		/// <summary>
 		/// Converter to use as the label creation selector.
 		/// If it returns True, the label is created.
+		/// The <see cref="IValueConverter.Convert"/> targetType parameter is <see cref="bool"/>.
+		/// SHOULD return a <see cref="bool"/> but MAY return NULL/not-NULL.
 		/// </summary>
 		public IValueConverter LabelSelector { get; set; }
 		/// <summary>
