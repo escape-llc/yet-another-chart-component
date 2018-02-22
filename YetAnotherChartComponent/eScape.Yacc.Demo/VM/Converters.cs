@@ -5,6 +5,26 @@ using Windows.UI.Xaml.Data;
 
 namespace Yacc.Demo.VM {
 	/// <summary>
+	/// Example of a <see cref="ValueLabels.LabelSelector"/> converter.
+	/// Only accept labels for values that match the <see cref="IProvideValueExtents"/> limits, i.e. min/max values.
+	/// </summary>
+	public class MinMaxObservationValueConverter : IValueConverter {
+		public object Convert(object value, Type targetType, object parameter, string language) {
+			if (value is ILabelSelectorContext ilssc) {
+				if (targetType == typeof(bool)) {
+					if (ilssc.Source is IProvideValueExtents ipve && ilssc.ItemValue is ISeriesItemValueDouble isivd) {
+						// finally checked things enough to do something!
+						return isivd.Value >= ipve.Maximum || isivd.Value <= ipve.Minimum;
+					}
+				}
+			}
+			return true;
+		}
+		public object ConvertBack(object value, Type targetType, object parameter, string language) {
+			throw new NotImplementedException();
+		}
+	}
+	/// <summary>
 	/// Example of a <see cref="ValueLabels.LabelFormatter"/> converter.
 	/// Compare <see cref="Observation.Value1"/> to <see cref="Observation.Value2"/> and return a style/label.
 	/// </summary>

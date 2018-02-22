@@ -93,11 +93,12 @@
 			</Border>
 		</DataTemplate>
 		<Style x:Key="v1_GreaterThan_v2" BasedOn="{StaticResource BigLabels}" TargetType="TextBlock">
-			<Setter Property="Foreground" Value="LimeGreen"/>
+			<Setter Property="Foreground" Value="GreenYellow"/>
 		</Style>
 		<Style x:Key="v1_LessThan_v2" BasedOn="{StaticResource BigLabels}" TargetType="TextBlock">
-			<Setter Property="Foreground" Value="LightPink"/>
+			<Setter Property="Foreground" Value="Red"/>
 		</Style>
+		<vm:MinMaxObservationValueConverter x:Key="MinMaxLabel"/>
 		<vm:CompareObservationValuesConverter x:Key="ColorLabel"
 			WhenEqual="{StaticResource BigLabels2}"
 			WhenGreater="{StaticResource v1_GreaterThan_v2}"
@@ -153,8 +154,10 @@
 				<yacc:ValueLabels SourceName="colv2" LabelFormatString="F2" CategoryAxisOffset=".625"
 					PlacementOffset="0,1" LabelOffset="0,-1" LabelStyle="{StaticResource BigLabels}" />
 				<yacc:ValueLabels SourceName="colv1" LabelFormatString="F2" CategoryAxisOffset=".375"
-					PlacementOffset="0,1" LabelOffset="0,-1" LabelStyle="{StaticResource BigLabels}"
-					LabelFormatter="{StaticResource ColorLabel}" />
+					PlacementOffset="0,1" LabelOffset="0,-1" LabelStyle="{StaticResource BigLabels}" />
+				<yacc:ValueLabels SourceName="colv1" LabelFormatString="F2" CategoryAxisOffset=".375"
+					PlacementOffset="0,1" LabelOffset="0,1" LabelStyle="{StaticResource BigLabels}"
+					LabelFormatter="{StaticResource ColorLabel}" LabelSelector="{StaticResource MinMaxLabel}" />
 				<!-- CANNOT ElementName bind here we're tying into a different XAML namescope -->
 				<yacc:ValueLabels SourceName="band" LabelFormatString="F2" x:Name="values1"
 					Visibility="{Binding ShowBand, Converter={StaticResource b2v}}"

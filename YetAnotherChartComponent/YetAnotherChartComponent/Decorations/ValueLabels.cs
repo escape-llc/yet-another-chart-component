@@ -117,9 +117,15 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public Point PlacementOffset { get; set; } = new Point(0, 0);
 		/// <summary>
-		/// Converter to use as the label <see cref="Style"/> selector.
+		/// Converter to use as the element <see cref="FrameworkElement.Style"/> and <see cref="TextShim.Text"/> selector.
+		/// The <see cref="IValueConverter.Convert"/> targetType parameter is used to determine which value is requested.
 		/// </summary>
 		public IValueConverter LabelFormatter { get; set; }
+		/// <summary>
+		/// Converter to use as the label creation selector.
+		/// If it returns True, the label is created.
+		/// </summary>
+		public IValueConverter LabelSelector { get; set; }
 		/// <summary>
 		/// Dereferenced value axis.
 		/// </summary>
@@ -360,7 +366,19 @@ namespace eScapeLLC.UWP.Charts {
 						target = isivs.YValues.SingleOrDefault(yv => yv.Channel == ValueChannel);
 					}
 					if(target is ISeriesItemValueDouble isivd && !double.IsNaN(isivd.Value)) {
-						// TODO apply LabelSelector here, give it item
+						var createit = true;
+						if(LabelSelector != null) {
+							// apply LabelSelector
+							var ctx = new SelectorContext(ipsiv, target);
+							var ox = LabelSelector.Convert(ctx, typeof(bool), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
+							if(ox is bool bx) {
+								createit = bx;
+							}
+							else {
+								createit = ox != null;
+							}
+						}
+						if (!createit) continue;
 						// TODO it returns whether to continue with item creation for this value
 						var el = recycler.Next(isivd);
 						if (el == null) continue;
@@ -387,7 +405,7 @@ namespace eScapeLLC.UWP.Charts {
 									ts.Text = txt.ToString();
 								}
 							}
-							// call for style override
+							// call for Style override
 							var style = LabelFormatter.Convert(ctx, typeof(Style), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
 							if(style is Style sx) {
 								el.Item2.Style = sx;

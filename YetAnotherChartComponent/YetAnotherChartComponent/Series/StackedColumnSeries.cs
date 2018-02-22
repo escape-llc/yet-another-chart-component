@@ -102,8 +102,21 @@ namespace eScapeLLC.UWP.Charts {
 			/// <param name="xvo"></param>
 			public SeriesItemState(int idx, double xv, double xvo) :base(idx, xv, xvo){ }
 		}
+		/// <summary>
+		/// Custom state version.
+		/// </summary>
 		protected class SeriesItemState_Custom : SeriesItemState {
+			/// <summary>
+			/// The custom state.
+			/// </summary>
 			public object CustomValue { get; private set; }
+			/// <summary>
+			/// Ctor.
+			/// </summary>
+			/// <param name="idx"></param>
+			/// <param name="xv"></param>
+			/// <param name="xvo"></param>
+			/// <param name="cs"></param>
 			public SeriesItemState_Custom(int idx, double xv, double xvo, object cs) :base(idx, xv, xvo) { CustomValue = cs; }
 		}
 		/// <summary>
