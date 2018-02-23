@@ -22,7 +22,7 @@ If you are rebuilding the demo application and/or test projects (e.g. because yo
 
 # Screen Shot
 This is the current demo chart in the solution (subject to last-minute tweaking):
-![yacc demo screen shot](http://escape-technology-llc.com/mobile/wp-content/gallery/main/yacc-chart-demo-13.png)
+![yacc demo screen shot](http://escape-technology-llc.com/mobile/wp-content/gallery/main/yacc-chart-demo-18.png)
 
 # API Documentation
 The details of all the classes etc. used in YACC can be found at our [documentation page](http://escape-technology-llc.com/documentation/escapellc-uwp-core/) in the API section.
@@ -61,3 +61,8 @@ Since we were more organized this release, please see the [Milestone page](https
 More features and fixes.
 
 See the [Milestone page](https://github.com/escape-llc/yet-another-chart-component/milestone/4?closed=1) for a list of included items.
+
+## 1.4.0
+More features and fixes.
+
+See the [Milestone page](https://github.com/escape-llc/yet-another-chart-component/milestone/5?closed=1) for a list of included items.
