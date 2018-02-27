@@ -63,14 +63,14 @@
 					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="F1" />
 				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource Grid}"
 					Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
-				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value1" CategoryLabelPath="Label" ClipToDataRegion="True"
+				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value1" CategoryLabelPath="Label" ClipToDataRegion="False"
 					Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" EnableDebugPaths="True"
 					PathStyle="{StaticResource Column_v1}" BarOffset=".25" BarWidth=".25" />
 				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value2"
-					Title="Value 2 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" ClipToDataRegion="True"
+					Title="Value 2 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" ClipToDataRegion="False"
 					PathStyle="{StaticResource Column_v2}" BarOffset=".5" BarWidth=".25" />
 				<yacc:MarkerSeries x:Name="v3" DataSourceName="data" ValuePath="Value3" Title="Value 3 Marker"
-					ValueAxisName="yaxis" CategoryAxisName="xaxis" MarkerOffset=".5" MarkerWidth=".5"
+					ValueAxisName="yaxis" CategoryAxisName="xaxis" MarkerOffset=".5" MarkerWidth=".5" ClipToDataRegion="False"
 					PathStyle="{StaticResource Marker_v4}" MarkerTemplate="{StaticResource Marker}"/>
 				<yacc:LineSeries x:Name="v4" DataSourceName="data" ValuePath="Value4" Title="Value 4 Line"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".5"

@@ -246,7 +246,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Mark as dirty and fire refresh request event.
 		/// Use this with sources that <b>don't</b> implement <see cref="INotifyCollectionChanged"/>.
-		/// ALSO use this if you are not using <see cref="RefreshRequest"/> property.
+		/// ALSO use this if you are not using <see cref="ExternalRefresh"/> property.
 		/// </summary>
 		public void Refresh() { Dirty(); RefreshRequest?.Invoke(this); }
 		#endregion

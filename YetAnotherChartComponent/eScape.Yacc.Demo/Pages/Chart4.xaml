@@ -70,12 +70,12 @@
 				<yacc:ValueAxisGrid ValueAxisName="volume" PathStyle="{StaticResource SecondGrid}"
 					Visibility="{Binding ElementName=cb_grid2, Path=IsChecked, Converter={StaticResource b2v}}" />
 				<yacc:ColumnSeries x:Name="colv2" DataSourceName="data" ValuePath="Value5"
-					Title="Volume" ValueAxisName="volume" CategoryAxisName="xaxis" ClipToDataRegion="True"
+					Title="Volume" ValueAxisName="volume" CategoryAxisName="xaxis" ClipToDataRegion="False"
 					PathStyle="{StaticResource Column_volume}" BarOffset=".25" BarWidth=".5" />
 				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource FirstGrid}"
 					Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
 				<yacc:CandlestickSeries x:Name="candle" DataSourceName="data" OpenValuePath="Value1" HighValuePath="Value2" LowValuePath="Value3" CloseValuePath="Value4"
-					CategoryLabelPath="Label" ClipToDataRegion="True" Title="Price" ValueAxisName="yaxis" CategoryAxisName="xaxis"
+					CategoryLabelPath="Label" ClipToDataRegion="False" Title="Price" ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					PathStyle="{StaticResource Column_v1}" ReversePathStyle="{StaticResource Column_v2}" BarOffset=".375" BarWidth=".25" />
 			</yacc:Chart.Components>
 		</yacc:Chart>

@@ -32,18 +32,18 @@
 			</yacc:Chart.DataSources>
 			<yacc:Chart.Components>
 				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" />
-				<yacc:ColumnSeries x:Name="colv1" DataSourceName="data" ValuePath="Value1" CategoryLabelPath="Label" ClipToDataRegion="True"
-					Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" EnableDebugPaths="True"
+				<yacc:ColumnSeries x:Name="colv1" DataSourceName="data" ValuePath="Value1" CategoryLabelPath="Label" ClipToDataRegion="False"
+					Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" EnableDebugPaths="False"
 					BarOffset=".25" BarWidth=".25" />
 				<yacc:ColumnSeries x:Name="colv2" DataSourceName="data" ValuePath="Value2"
-					Title="Value 2 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" ClipToDataRegion="True"
+					Title="Value 2 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" ClipToDataRegion="False"
 					BarOffset=".5" BarWidth=".25" />
 				<yacc:LineSeries x:Name="linev2" DataSourceName="data" ValuePath="Value2" Title="Value 2 Line"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".375"
 					ClipToDataRegion="False" />
 				<yacc:MarkerSeries DataSourceName="data"
 					ValuePath="Value1" Title="Value 1 Marker"
-					ValueAxisName="yaxis" CategoryAxisName="xaxis"
+					ValueAxisName="yaxis" CategoryAxisName="xaxis" ClipToDataRegion="False"
 					MarkerOffset=".625" MarkerWidth=".25">
 					<yacc:MarkerSeries.MarkerTemplate>
 						<DataTemplate>

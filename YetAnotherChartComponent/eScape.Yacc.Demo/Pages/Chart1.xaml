@@ -130,11 +130,11 @@
 				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" PathStyle="{StaticResource Axes}"
 					LabelStyle="{StaticResource CategoryAxisLabel2}" />
 				<yacc:ColumnSeries x:Name="colv1" DataSourceName="data" ValuePath="Value1" ValueLabelPath="."
-					CategoryLabelPath="Label" ClipToDataRegion="True"
+					CategoryLabelPath="Label" ClipToDataRegion="False"
 					Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					PathStyle="{StaticResource Column_v1}" BarOffset=".25" BarWidth=".25" />
 				<yacc:ColumnSeries x:Name="colv2" DataSourceName="data" ValuePath="Value2"
-					Title="Value 2 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" ClipToDataRegion="True"
+					Title="Value 2 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" ClipToDataRegion="False"
 					PathStyle="{StaticResource Column_v2}" BarOffset=".5" BarWidth=".25" />
 				<yacc:LineSeries x:Name="linev2" DataSourceName="data" ValuePath="Value2" Title="Value 2 Line"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".375"
@@ -144,7 +144,7 @@
 					PathStyle="{StaticResource Marker_v1}" MarkerTemplate="{StaticResource Marker}"/>
 				<yacc:HorizontalBand x:Name="band" ValueAxisName="yaxis" Value1="{Binding Value1Average}" Value2="{Binding Value2Average}"
 					DoMinMax="False" PathStyle="{StaticResource Band_v1-rule}" Value2PathStyle="{StaticResource Band_v2-rule}"
-					BandPathStyle="{StaticResource Band_v1v2-band}"
+					BandPathStyle="{StaticResource Band_v1v2-band}" ClipToDataRegion="False"
 					Visibility="{Binding ShowBand, Converter={StaticResource b2v}}" />
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}"
 					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="F1" />

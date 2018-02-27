@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Windows.Foundation;
@@ -262,6 +263,14 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="sz"></param>
 		/// <param name="rc"></param>
 		public DefaultLayoutContext(Size sz, Rect rc) { Dimensions = sz; RemainingRect = rc; }
+		/// <summary>
+		/// Layout quota for width and height.
+		/// No single request can exceed this percentage of the <see cref="Dimensions"/>.
+		/// </summary>
+		public Size Quota { get; set; } = new Size(.2, .2);
+		/// <summary>
+		/// Tracks the claimed rects by component.
+		/// </summary>
 		IDictionary<ChartComponent, Rect> ClaimedRects { get; set; } = new Dictionary<ChartComponent, Rect>();
 		/// <summary>
 		/// Return the rect mapped to this component, else RemainingRect.
@@ -309,43 +318,43 @@ namespace eScapeLLC.UWP.Charts {
 			}
 		}
 		/// <summary>
-		/// Claim the indicated space for given component.
+		/// Claim the indicated space for given component, subject to the quota.
 		/// </summary>
-		/// <param name="cc"></param>
-		/// <param name="sd"></param>
-		/// <param name="amt"></param>
-		/// <returns></returns>
+		/// <param name="cc">The requestor.</param>
+		/// <param name="sd">Requested side of layout.</param>
+		/// <param name="amt">Amount of space in PX.</param>
+		/// <returns>The actual bounds allocated.</returns>
 		public Rect ClaimSpace(ChartComponent cc, Side sd, double amt) {
 			var ul = new Point();
 			var sz = new Size();
 			switch (sd) {
 			case Side.Top:
+				sz.Width = Dimensions.Width;
+				sz.Height = Math.Min(amt, Dimensions.Height * Quota.Height);
 				ul.X = RemainingRect.Left;
 				ul.Y = RemainingRect.Top;
-				sz.Width = Dimensions.Width;
-				sz.Height = amt;
-				RemainingRect = new Rect(RemainingRect.Left, RemainingRect.Top + amt, RemainingRect.Width, RemainingRect.Height - amt);
+				RemainingRect = new Rect(RemainingRect.Left, RemainingRect.Top + sz.Height, RemainingRect.Width, RemainingRect.Height - sz.Height);
 				break;
 			case Side.Right:
-				ul.X = RemainingRect.Right - amt;
-				ul.Y = RemainingRect.Top;
-				sz.Width = amt;
+				sz.Width = Math.Min(amt, Dimensions.Width * Quota.Width);
 				sz.Height = Dimensions.Height;
-				RemainingRect = new Rect(RemainingRect.Left, RemainingRect.Top, RemainingRect.Width - amt, RemainingRect.Height);
+				ul.X = RemainingRect.Right - sz.Width;
+				ul.Y = RemainingRect.Top;
+				RemainingRect = new Rect(RemainingRect.Left, RemainingRect.Top, RemainingRect.Width - sz.Width, RemainingRect.Height);
 				break;
 			case Side.Bottom:
-				ul.X = RemainingRect.Left;
-				ul.Y = RemainingRect.Bottom - amt;
 				sz.Width = Dimensions.Width;
-				sz.Height = amt;
-				RemainingRect = new Rect(RemainingRect.Left, RemainingRect.Top, RemainingRect.Width, RemainingRect.Height - amt);
+				sz.Height = Math.Min(amt, Dimensions.Height * Quota.Height);
+				ul.X = RemainingRect.Left;
+				ul.Y = RemainingRect.Bottom - sz.Height;
+				RemainingRect = new Rect(RemainingRect.Left, RemainingRect.Top, RemainingRect.Width, RemainingRect.Height - sz.Height);
 				break;
 			case Side.Left:
+				sz.Width = Math.Min(amt, Dimensions.Width * Quota.Width);
+				sz.Height = Dimensions.Height;
 				ul.X = RemainingRect.Left;
 				ul.Y = RemainingRect.Top;
-				sz.Width = amt;
-				sz.Height = Dimensions.Height;
-				RemainingRect = new Rect(RemainingRect.Left + amt, RemainingRect.Top, RemainingRect.Width - amt, RemainingRect.Height);
+				RemainingRect = new Rect(RemainingRect.Left + sz.Width, RemainingRect.Top, RemainingRect.Width - sz.Width, RemainingRect.Height);
 				break;
 			}
 			var rect = new Rect(ul, sz);

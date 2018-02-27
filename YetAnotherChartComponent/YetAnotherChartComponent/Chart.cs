@@ -191,7 +191,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="padding">Amount to subtract from rect.</param>
 		/// <returns>Rectangle minus padding.</returns>
 		Rect Initial(Thickness padding) {
-			return new Rect(padding.Left, padding.Top, Dimensions.Width - padding.Left - padding.Right, Dimensions.Height - padding.Top - padding.Bottom);
+			// ensure w/h are GE zero
+			var wid = padding.Left + padding.Right >= Dimensions.Width ? Dimensions.Width: Dimensions.Width - padding.Left - padding.Right;
+			var hgt = padding.Top + padding.Bottom >= Dimensions.Height ? Dimensions.Height : Dimensions.Height - padding.Top - padding.Bottom;
+			return new Rect(padding.Left, padding.Top, wid, hgt);
 		}
 		/// <summary>
 		/// Recreate the layout context.
