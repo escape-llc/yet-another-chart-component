@@ -9,6 +9,8 @@ From *Package Manager Console*:
 ```
    PM> Install-Package eScapeLLC.UWP.Charts
 ```
+[![NuGet version](https://badge.fury.io/nu/escapellc.uwp.core.svg)](https://badge.fury.io/nu/escapellc.uwp.charts)
+
 [Package page on nuget.org](https://www.nuget.org/packages/eScapeLLC.UWP.Charts/)
 
 ## Or Build It
