@@ -1,4 +1,5 @@
-﻿using eScapeLLC.UWP.Charts;
+﻿using eScape.Core.Page;
+using eScapeLLC.UWP.Charts;
 using System;
 using System.Diagnostics;
 using Windows.UI.Xaml.Navigation;

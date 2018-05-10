@@ -1,4 +1,5 @@
-﻿using Windows.UI.Xaml;
+﻿using eScape.Core.Page;
+using Windows.UI.Xaml;
 using Windows.UI.Xaml.Navigation;
 using Yacc.Demo.VM;
 

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using eScape.Core.Page;
+using System;
 using System.Diagnostics;
 using Windows.UI.Xaml.Navigation;
 using Yacc.Demo.VM;

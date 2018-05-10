@@ -20,7 +20,7 @@ namespace Yacc.Demo {
 			DataContext = vm;
 		}
 
-		private void HamburgerMenu_ItemInvoked(object sender, Microsoft.Toolkit.Uwp.UI.Controls.HamburgetMenuItemInvokedEventArgs e) {
+		private void HamburgerMenu_ItemInvoked(object sender, Microsoft.Toolkit.Uwp.UI.Controls.HamburgerMenuItemInvokedEventArgs e) {
 			if(e.InvokedItem is PageItem pi) {
 				Notification.Content = pi;
 				Notification.Show();

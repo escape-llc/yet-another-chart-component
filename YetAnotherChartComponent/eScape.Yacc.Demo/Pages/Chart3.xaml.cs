@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using eScape.Core.Page;
+using System.Collections.Generic;
 using Windows.UI.Xaml.Navigation;
 using Yacc.Demo.VM;
 
