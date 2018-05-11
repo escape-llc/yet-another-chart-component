@@ -2,18 +2,56 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
 
 namespace eScapeLLC.UWP.Charts {
+	#region IAxisLabelSelectorContext
+	/// <summary>
+	/// Base context for axis labels.
+	/// </summary>
+	public interface IAxisLabelSelectorContext {
+		/// <summary>
+		/// Current axis label index.
+		/// </summary>
+		int Index { get; }
+		/// <summary>
+		/// The axis presenting labels.
+		/// </summary>
+		IChartAxis Axis { get; }
+		/// <summary>
+		/// Axis rendering area in DC.
+		/// </summary>
+		Rect Area { get; }
+	}
+	#endregion
+	#region IValueAxisLabelSelectorContext
+	/// <summary>
+	/// Context passed to the <see cref="IValueConverter"/> for value axis <see cref="Style"/> selection etc.
+	/// </summary>
+	public interface IValueAxisLabelSelectorContext : IAxisLabelSelectorContext {
+		/// <summary>
+		/// List of all tick values, in order of layout.
+		/// MAY NOT be in sorted order!
+		/// </summary>
+		double[] AllTicks { get; }
+		/// <summary>
+		/// The computed tick interval.
+		/// </summary>
+		double TickInterval { get; }
+	}
+	#endregion
 	#region ValueAxis
 	/// <summary>
 	/// Value axis is a "vertical" axis that represents the "Y" coordinate.
 	/// </summary>
 	public class ValueAxis : AxisCommon, IRequireLayout, IRequireRender, IRequireTransforms, IRequireEnterLeave {
-		static LogTools.Flag _trace = LogTools.Add("ValueAxis", LogTools.Level.Error);
+		static readonly LogTools.Flag _trace = LogTools.Add("ValueAxis", LogTools.Level.Error);
+		#region ItemState
 		/// <summary>
 		/// The item state for this component.
 		/// </summary>
@@ -25,7 +63,63 @@ namespace eScapeLLC.UWP.Charts {
 				tb.SetValue(Canvas.TopProperty, top);
 			}
 		}
+		#endregion
+		#region SelectorContext
+		/// <summary>
+		/// Internal context for selector.
+		/// </summary>
+		protected class SelectorContext : IValueAxisLabelSelectorContext {
+			/// <summary>
+			/// <see cref="IAxisLabelSelectorContext.Index"/>.
+			/// </summary>
+			public int Index { get; private set; }
+			/// <summary>
+			/// <see cref="IValueAxisLabelSelectorContext.AllTicks"/>.
+			/// </summary>
+			public double[] AllTicks { get; private set; }
+			/// <summary>
+			/// <see cref="IValueAxisLabelSelectorContext.TickInterval"/>.
+			/// </summary>
+			public double TickInterval { get; private set; }
+			/// <summary>
+			/// <see cref="IAxisLabelSelectorContext.Axis"/>.
+			/// </summary>
+			public IChartAxis Axis { get; private set; }
+			/// <summary>
+			/// <see cref="IAxisLabelSelectorContext.Area"/>.
+			/// </summary>
+			public Rect Area { get; private set; }
+			/// <summary>
+			/// Ctor.
+			/// </summary>
+			/// <param name="ica"></param>
+			/// <param name="rc"></param>
+			/// <param name="ticks"></param>
+			/// <param name="ti"></param>
+			public SelectorContext(IChartAxis ica, Rect rc, double[] ticks, double ti) { Axis = ica; Area = rc; AllTicks = ticks; TickInterval = ti; }
+			/// <summary>
+			/// Set the current index.
+			/// </summary>
+			/// <param name="idx"></param>
+			public void SetTick(int idx) { Index = idx; }
+		}
+		#endregion
 		#region properties
+		/// <summary>
+		/// Converter to use as the element <see cref="FrameworkElement.Style"/> and <see cref="TextBlock.Text"/> selector.
+		/// These are already set to their "standard" values before this is called, so it MAY selectively opt out of setting them.
+		/// The <see cref="IValueConverter.Convert"/> targetType parameter is used to determine which value is requested.
+		/// Uses <see cref="String"/> for label override.  Return a new label or NULL to opt out.
+		/// Uses <see cref="Style"/> for style override.  Return a style or NULL to opt out.
+		/// </summary>
+		public IValueConverter LabelFormatter { get; set; }
+		/// <summary>
+		/// Converter to use as the label creation selector.
+		/// If it returns True, the label is created.
+		/// The <see cref="IValueConverter.Convert"/> targetType parameter is <see cref="bool"/>.
+		/// SHOULD return a <see cref="bool"/> but MAY return NULL/not-NULL.
+		/// </summary>
+		public IValueConverter LabelSelector { get; set; }
 		/// <summary>
 		/// Path for the axis "bar".
 		/// </summary>
@@ -86,12 +180,48 @@ namespace eScapeLLC.UWP.Charts {
 			});
 			var itemstate = new List<ItemState>();
 			var tbget = tbr.Items().GetEnumerator();
-			foreach (var tick in tc.GetTicks()) {
+			// materialize the ticks
+			var lx = tc.GetTicks().ToArray();
+			var sc = new SelectorContext(this, icrc.Area, lx, tc.TickInterval);
+			for(int ix = 0; ix < lx.Length; ix++) {
 				//_trace.Verbose($"grid vx:{tick}");
+				sc.SetTick(ix);
+				var createit = true;
+				if (LabelSelector != null) {
+					// ask the label selector
+					var ox = LabelSelector.Convert(sc, typeof(bool), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
+					if (ox is bool bx) {
+						createit = bx;
+					} else {
+						createit = ox != null;
+					}
+				}
+				if (!createit) continue;
 				if (tbget.MoveNext()) {
-					var tb = tbget.Current;
-					var state = new ItemState() { tb = tb.Item2, value = tick };
-					state.tb.Text = tick.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
+					var tick = lx[ix];
+					var current = tbget.Current;
+					if(!current.Item1) {
+						// restore binding if we are using a LabelFormatter
+						if (LabelFormatter != null && LabelStyle != null) {
+							BindTo(this, nameof(LabelStyle), current.Item2, FrameworkElement.StyleProperty);
+						}
+					}
+					// default text
+					var text = tick.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
+					if (LabelFormatter != null) {
+						// call for Style override
+						var style = LabelFormatter.Convert(sc, typeof(Style), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
+						if (style is Style sx) {
+							current.Item2.Style = sx;
+						}
+						// call for Text override
+						var txt = LabelFormatter.Convert(sc, typeof(String), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
+						if (txt != null) {
+							text = txt.ToString();
+						}
+					}
+					var state = new ItemState() { tb = current.Item2, value = tick };
+					state.tb.Text = text;
 					state.SetLocation(icrc.Area.Left, tick);
 					itemstate.Add(state);
 				}

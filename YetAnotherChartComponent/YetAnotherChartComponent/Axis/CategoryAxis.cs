@@ -5,10 +5,25 @@ using System.Linq;
 using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
 
 namespace eScapeLLC.UWP.Charts {
+	#region ICategoryAxisLabelSelectorContext
+	/// <summary>
+	/// Context passed to the <see cref="IValueConverter"/> for category axis <see cref="Style"/> selection etc.
+	/// </summary>
+	public interface ICategoryAxisLabelSelectorContext : IAxisLabelSelectorContext {
+		/// <summary>
+		/// The list of all labels and their indices.
+		/// Item1 = index
+		/// Item2.Item1 = value
+		/// Item2.Item2 = label
+		/// </summary>
+		List<Tuple<int, Tuple<double, object>>> AllLabels { get; }
+	}
+	#endregion
 	#region CategoryAxis
 	/// <summary>
 	/// Horizontal Category axis.
@@ -17,7 +32,8 @@ namespace eScapeLLC.UWP.Charts {
 	/// Certain series types MAY extend the discrete axis by ONE cell, to draw the "last" elements there.
 	/// </summary>
 	public class CategoryAxis : AxisCommon, IRequireLayout, IRequireRender, IRequireTransforms, IRequireEnterLeave {
-		static LogTools.Flag _trace = LogTools.Add("CategoryAxis", LogTools.Level.Error);
+		static readonly LogTools.Flag _trace = LogTools.Add("CategoryAxis", LogTools.Level.Error);
+		#region ItemState
 		/// <summary>
 		/// The item state for this component.
 		/// </summary>
@@ -55,7 +71,58 @@ namespace eScapeLLC.UWP.Charts {
 				}
 			}
 		}
+		#endregion
+		#region SelectorContext
+		/// <summary>
+		/// Internal context for selector.
+		/// </summary>
+		protected class SelectorContext : ICategoryAxisLabelSelectorContext {
+			/// <summary>
+			/// <see cref="IAxisLabelSelectorContext.Index"/>.
+			/// </summary>
+			public int Index { get; private set; }
+			/// <summary>
+			/// <see cref="ICategoryAxisLabelSelectorContext.AllLabels"/>.
+			/// </summary>
+			public List<Tuple<int, Tuple<double, object>>> AllLabels { get; private set; }
+			/// <summary>
+			/// <see cref="IAxisLabelSelectorContext.Axis"/>.
+			/// </summary>
+			public IChartAxis Axis { get; private set; }
+			/// <summary>
+			/// <see cref="IAxisLabelSelectorContext.Area"/>.
+			/// </summary>
+			public Rect Area { get; private set; }
+			/// <summary>
+			/// Ctor.
+			/// </summary>
+			/// <param name="ica"></param>
+			/// <param name="rc"></param>
+			/// <param name="labels"></param>
+			public SelectorContext(IChartAxis ica, Rect rc, List<Tuple<int, Tuple<double, object>>> labels) { Axis = ica; Area = rc; AllLabels = labels; }
+			/// <summary>
+			/// Set the current index and value.
+			/// </summary>
+			/// <param name="idx">Current index.</param>
+			public void SetTick(int idx) { Index = idx; }
+		}
+		#endregion
 		#region properties
+		/// <summary>
+		/// Converter to use as the element <see cref="FrameworkElement.Style"/> and <see cref="TextBlock.Text"/> selector.
+		/// These are already set to their "standard" values before this is called, so it MAY selectively opt out of setting them.
+		/// The <see cref="IValueConverter.Convert"/> targetType parameter is used to determine which value is requested.
+		/// Uses <see cref="String"/> for label override.  Return a new label or NULL to opt out.
+		/// Uses <see cref="Style"/> for style override.  Return a style or NULL to opt out.
+		/// </summary>
+		public IValueConverter LabelFormatter { get; set; }
+		/// <summary>
+		/// Converter to use as the label creation selector.
+		/// If it returns True, the label is created.
+		/// The <see cref="IValueConverter.Convert"/> targetType parameter is <see cref="bool"/>.
+		/// SHOULD return a <see cref="bool"/> but MAY return NULL/not-NULL.
+		/// </summary>
+		public IValueConverter LabelSelector { get; set; }
 		/// <summary>
 		/// Path for axis "bar".
 		/// </summary>
@@ -67,7 +134,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Manage labels.
 		/// </summary>
-		protected Dictionary<int, Tuple<double, string>> LabelMap { get; set; } = new Dictionary<int, Tuple<double, string>>();
+		protected Dictionary<int, Tuple<double, object>> LabelMap { get; set; } = new Dictionary<int, Tuple<double, object>>();
 		/// <summary>
 		/// List of active TextBlocks for labels.
 		/// </summary>
@@ -125,7 +192,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="valueWithLabel"></param>
 		/// <returns>base.For(double)</returns>
-		public override double For(Tuple<double, string> valueWithLabel) {
+		public override double For(Tuple<double, object> valueWithLabel) {
 			var mv = base.For(valueWithLabel.Item1);
 			int key = (int)mv;
 			if (LabelMap.ContainsKey(key)) {
@@ -197,7 +264,7 @@ namespace eScapeLLC.UWP.Charts {
 			// recycle and lay out tick labels
 			// see if style wants to override width
 			var widx = LabelStyle?.Find(FrameworkElement.WidthProperty);
-			var recycler = new Recycler2<TextBlock, Tuple<double, string>>(TickLabels.Select(tl => tl.tb), (tpx) => {
+			var recycler = new Recycler2<TextBlock, Tuple<double, object>>(TickLabels.Select(tl => tl.tb), (tpx) => {
 				var tb = Theme.TextBlockTemplate.LoadContent() as TextBlock;
 				if (LabelStyle != null) {
 					BindTo(this, nameof(LabelStyle), tb, FrameworkElement.StyleProperty);
@@ -217,22 +284,62 @@ namespace eScapeLLC.UWP.Charts {
 				return tb;
 			});
 			var itemstate = new List<ItemState>();
-			for (var ix = i1; ix <= i2; ix++) {
-				if (LabelMap.ContainsKey(ix)) {
-					// create a label for this entry
-					var tpx = LabelMap[ix];
-					_trace.Verbose($"key {ix} label {tpx.Item2}");
-					var tb = recycler.Next(tpx);
-					if (tb == null) break;
-					var state = new ItemState() {
-						tb = tb.Item2,
-						value = tpx.Item1,
-						label = tpx.Item2,
-						usexau = widx == null
-					};
-					state.tb.Text = state.label;
-					itemstate.Add(state);
+			// materialize the labels into a list
+			var labels = new List<Tuple<int, Tuple<double, object>>>();
+			for(var ix = i1; ix <= i2; ix++) {
+				if(LabelMap.ContainsKey(ix)) {
+					labels.Add(new Tuple<int, Tuple<double, object>>(ix, LabelMap[ix]));
+				} else {
+					labels.Add(new Tuple<int, Tuple<double, object>>(ix, null));
 				}
+			}
+			var sc = new SelectorContext(this, icrc.SeriesArea, labels);
+			for(var ix = 0; ix < labels.Count; ix++) {
+				var tpx = labels[ix];
+				if (tpx.Item2 == null) continue;
+				// create a label for this entry
+				_trace.Verbose($"key {ix} label {tpx.Item2}");
+				sc.SetTick(ix);
+				var createit = true;
+				if (LabelSelector != null) {
+					var ox = LabelSelector.Convert(sc, typeof(bool), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
+					if (ox is bool bx) {
+						createit = bx;
+					} else {
+						createit = ox != null;
+					}
+				}
+				if (!createit) continue;
+				var current = recycler.Next(tpx.Item2);
+				if (current == null) break;
+				if (!current.Item1) {
+					// restore binding if we are using a LabelFormatter
+					if (LabelFormatter != null && LabelStyle != null) {
+						BindTo(this, nameof(LabelStyle), current.Item2, FrameworkElement.StyleProperty);
+					}
+				}
+				// default text
+				var text = tpx.Item2.Item2?.ToString();
+				if (LabelFormatter != null) {
+					// call for Style override
+					var style = LabelFormatter.Convert(sc, typeof(Style), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
+					if (style is Style sx) {
+						current.Item2.Style = sx;
+					}
+					// call for Text override
+					var txt = LabelFormatter.Convert(sc, typeof(String), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
+					if (txt != null) {
+						text = txt.ToString();
+					}
+				}
+				var state = new ItemState() {
+					tb = current.Item2,
+					value = tpx.Item2.Item1,
+					label = text,
+					usexau = widx == null
+				};
+				state.tb.Text = text;
+				itemstate.Add(state);
 			}
 			// VT and internal bookkeeping
 			TickLabels = itemstate;

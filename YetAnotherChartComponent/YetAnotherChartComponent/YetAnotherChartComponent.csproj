@@ -119,6 +119,7 @@
     <Compile Include="Decorations\HorizontalBand.cs" />
     <Compile Include="Decorations\HorizontalRule.cs" />
     <Compile Include="Decorations\ValueAxisGrid.cs" />
+    <Compile Include="Legend.cs" />
     <Compile Include="Recycler.cs" />
     <Compile Include="Series\CandlestickSeries.cs" />
     <Compile Include="Series\ColumnSeries.cs" />

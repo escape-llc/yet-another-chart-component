@@ -179,12 +179,12 @@ namespace eScapeLLC.UWP.Charts {
 			if (double.IsNaN(valuey)) {
 				if (st.bl != null) {
 					// still map the X
-					CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()));
+					CategoryAxis.For(new Tuple<double, object>(valuex, st.bl.For(item)));
 				}
 				return;
 			}
 			var mappedy = ValueAxis.For(valuey);
-			var mappedx = st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()));
+			var mappedx = st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, object>(valuex, st.bl.For(item)));
 			var markerx = mappedx + MarkerOffset;
 			_trace.Verbose($"[{index}] {valuey} ({markerx},{mappedy})");
 			var mk = MarkerTemplate.LoadContent() as Geometry;

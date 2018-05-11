@@ -303,7 +303,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (double.IsNaN(valueO) || double.IsNaN(valueH) || double.IsNaN(valueL) || double.IsNaN(valueC)) {
 				if (st.bl != null) {
 					// still map the X
-					CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()));
+					CategoryAxis.For(new Tuple<double, object>(valuex, st.bl.For(item)));
 				}
 				return;
 			}
@@ -312,7 +312,7 @@ namespace eScapeLLC.UWP.Charts {
 			var y2 = ValueAxis.For(valueC);
 			var y3 = ValueAxis.For(valueH);
 			var y4 = ValueAxis.For(valueL);
-			var leftx = (st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString())));
+			var leftx = (st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, object>(valuex, st.bl.For(item))));
 			var barx = leftx + BarOffset;
 			var rightx = barx + BarWidth;
 			// force them to be a min/max

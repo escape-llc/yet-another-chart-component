@@ -4,10 +4,13 @@
 	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 	xmlns:core="using:eScape.Core.Page"
 	xmlns:yacc="using:eScapeLLC.UWP.Charts"
+	xmlns:vm="using:Yacc.Demo.VM"
 	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 	mc:Ignorable="d">
 	<Page.Resources>
+		<vm:CategoryAxisDateRangeConverter x:Key="DateRangeSelector"/>
+		<vm:CategoryAxisDateFormatConverter x:Key="DateFormatter"/>
 		<Style x:Key="Column_v1" TargetType="Path">
 			<Setter Property="Stroke" Value="Gray"/>
 			<Setter Property="StrokeThickness" Value="2"/>
@@ -62,7 +65,7 @@
 			</yacc:Chart.DataSources>
 			<yacc:Chart.Components>
 				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" PathStyle="{StaticResource Axes}" MinHeight="80"
-					LabelStyle="{StaticResource LabelRotated}" />
+					LabelStyle="{StaticResource LabelRotated}" LabelSelector="{StaticResource DateRangeSelector}" LabelFormatter="{StaticResource DateFormatter}" />
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}" MinWidth="40"
 					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="C2" />
 				<yacc:ValueAxis x:Name="volume" Side="Right" PathStyle="{StaticResource SecondAxis}" MinWidth="80"
@@ -75,7 +78,7 @@
 				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource FirstGrid}"
 					Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
 				<yacc:CandlestickSeries x:Name="candle" DataSourceName="data" OpenValuePath="Value1" HighValuePath="Value2" LowValuePath="Value3" CloseValuePath="Value4"
-					CategoryLabelPath="Label" ClipToDataRegion="False" Title="Price" ValueAxisName="yaxis" CategoryAxisName="xaxis"
+					CategoryLabelPath="Timestamp" ClipToDataRegion="False" Title="Price" ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					PathStyle="{StaticResource Column_v1}" ReversePathStyle="{StaticResource Column_v2}" BarOffset=".375" BarWidth=".25" />
 			</yacc:Chart.Components>
 		</yacc:Chart>

@@ -312,7 +312,7 @@ namespace eScapeLLC.UWP.Charts {
 			var st = state as State;
 			var valuex = st.bx != null ? (double)st.bx.For(item) : index;
 			st.ix = index;
-			var leftx = (st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString())));
+			var leftx = (st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, object>(valuex, st.bl.For(item))));
 			var barx = leftx + BarOffset;
 			var rightx = barx + BarWidth;
 			var sis = st.byl == null ? new SeriesItemState(index, leftx, barx) : new SeriesItemState_Custom(index, leftx, barx, st.byl.For(item));
@@ -321,7 +321,7 @@ namespace eScapeLLC.UWP.Charts {
 				if (double.IsNaN(valuey)) {
 					if (st.bl != null) {
 						// still map the X
-						CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()));
+						CategoryAxis.For(new Tuple<double, object>(valuex, st.bl.For(item)));
 						UpdateLimits(valuex, double.NaN);
 					}
 					continue;

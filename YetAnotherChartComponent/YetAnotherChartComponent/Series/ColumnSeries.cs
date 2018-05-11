@@ -210,7 +210,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (double.IsNaN(valuey)) {
 				if (st.bl != null) {
 					// still map the X
-					CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString()));
+					CategoryAxis.For(new Tuple<double, object>(valuex, st.bl.For(item)));
 				}
 				return;
 			}
@@ -218,7 +218,7 @@ namespace eScapeLLC.UWP.Charts {
 			var y2 = ValueAxis.For(0);
 			var topy = Math.Max(y1, y2);
 			var bottomy = Math.Min(y1, y2);
-			var leftx = (st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, String>(valuex, st.bl.For(item).ToString())));
+			var leftx = (st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, object>(valuex, st.bl.For(item))));
 			var barx = leftx + BarOffset;
 			var rightx = barx + BarWidth;
 			_trace.Verbose($"{Name}[{index}] {valuey} ({barx},{topy}) ({rightx},{bottomy})");
