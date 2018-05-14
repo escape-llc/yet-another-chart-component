@@ -11,17 +11,24 @@ using Windows.UI.Xaml.Shapes;
 
 namespace eScapeLLC.UWP.Charts {
 	#region ICategoryAxisLabelSelectorContext
+	public class CategoryLabelState {
+		public int Index { get; private set; }
+		public double Value { get; private set; }
+		public object Label { get; private set; }
+		public CategoryLabelState(int idx, double vx, object lx) { Index = idx; Value = vx; Label = lx; }
+	}
 	/// <summary>
 	/// Context passed to the <see cref="IValueConverter"/> for category axis <see cref="Style"/> selection etc.
 	/// </summary>
 	public interface ICategoryAxisLabelSelectorContext : IAxisLabelSelectorContext {
 		/// <summary>
 		/// The list of all labels and their indices.
-		/// Item1 = index
-		/// Item2.Item1 = value
-		/// Item2.Item2 = label
 		/// </summary>
-		List<Tuple<int, Tuple<double, object>>> AllLabels { get; }
+		List<CategoryLabelState> AllLabels { get; }
+		/// <summary>
+		/// The list of previously-generated labels up to this point.
+		/// </summary>
+		List<CategoryLabelState> GeneratedLabels { get; }
 	}
 	#endregion
 	#region CategoryAxis
@@ -84,7 +91,11 @@ namespace eScapeLLC.UWP.Charts {
 			/// <summary>
 			/// <see cref="ICategoryAxisLabelSelectorContext.AllLabels"/>.
 			/// </summary>
-			public List<Tuple<int, Tuple<double, object>>> AllLabels { get; private set; }
+			public List<CategoryLabelState> AllLabels { get; private set; }
+			/// <summary>
+			/// <see cref="ICategoryAxisLabelSelectorContext.GeneratedLabels"/>.
+			/// </summary>
+			public List<CategoryLabelState> GeneratedLabels { get; private set; }
 			/// <summary>
 			/// <see cref="IAxisLabelSelectorContext.Axis"/>.
 			/// </summary>
@@ -99,12 +110,13 @@ namespace eScapeLLC.UWP.Charts {
 			/// <param name="ica"></param>
 			/// <param name="rc"></param>
 			/// <param name="labels"></param>
-			public SelectorContext(IChartAxis ica, Rect rc, List<Tuple<int, Tuple<double, object>>> labels) { Axis = ica; Area = rc; AllLabels = labels; }
+			public SelectorContext(IChartAxis ica, Rect rc, List<CategoryLabelState> labels) { Axis = ica; Area = rc; AllLabels = labels; GeneratedLabels = new List<CategoryLabelState>(); }
 			/// <summary>
 			/// Set the current index and value.
 			/// </summary>
 			/// <param name="idx">Current index.</param>
 			public void SetTick(int idx) { Index = idx; }
+			public void Generated(CategoryLabelState cls) { GeneratedLabels.Add(cls); }
 		}
 		#endregion
 		#region properties
@@ -264,7 +276,7 @@ namespace eScapeLLC.UWP.Charts {
 			// recycle and lay out tick labels
 			// see if style wants to override width
 			var widx = LabelStyle?.Find(FrameworkElement.WidthProperty);
-			var recycler = new Recycler2<TextBlock, Tuple<double, object>>(TickLabels.Select(tl => tl.tb), (tpx) => {
+			var recycler = new Recycler2<TextBlock, CategoryLabelState>(TickLabels.Select(tl => tl.tb), (tpx) => {
 				var tb = Theme.TextBlockTemplate.LoadContent() as TextBlock;
 				if (LabelStyle != null) {
 					BindTo(this, nameof(LabelStyle), tb, FrameworkElement.StyleProperty);
@@ -285,20 +297,20 @@ namespace eScapeLLC.UWP.Charts {
 			});
 			var itemstate = new List<ItemState>();
 			// materialize the labels into a list
-			var labels = new List<Tuple<int, Tuple<double, object>>>();
+			var labels = new List<CategoryLabelState>();
 			for(var ix = i1; ix <= i2; ix++) {
 				if(LabelMap.ContainsKey(ix)) {
-					labels.Add(new Tuple<int, Tuple<double, object>>(ix, LabelMap[ix]));
+					labels.Add(new CategoryLabelState(ix, LabelMap[ix].Item1, LabelMap[ix].Item2));
 				} else {
-					labels.Add(new Tuple<int, Tuple<double, object>>(ix, null));
+					labels.Add(new CategoryLabelState(ix, double.NaN, null));
 				}
 			}
 			var sc = new SelectorContext(this, icrc.SeriesArea, labels);
 			for(var ix = 0; ix < labels.Count; ix++) {
-				var tpx = labels[ix];
-				if (tpx.Item2 == null) continue;
+				var cls = labels[ix];
+				if (cls.Label == null) continue;
 				// create a label for this entry
-				_trace.Verbose($"key {ix} label {tpx.Item2}");
+				_trace.Verbose($"key {ix} label {cls.Label}");
 				sc.SetTick(ix);
 				var createit = true;
 				if (LabelSelector != null) {
@@ -310,35 +322,36 @@ namespace eScapeLLC.UWP.Charts {
 					}
 				}
 				if (!createit) continue;
-				var current = recycler.Next(tpx.Item2);
+				var current = recycler.Next(cls);
 				if (current == null) break;
 				if (!current.Item1) {
-					// restore binding if we are using a LabelFormatter
+					// recycled: restore binding if we are using a LabelFormatter
 					if (LabelFormatter != null && LabelStyle != null) {
 						BindTo(this, nameof(LabelStyle), current.Item2, FrameworkElement.StyleProperty);
 					}
 				}
 				// default text
-				var text = tpx.Item2.Item2?.ToString();
+				var text = cls.Label?.ToString();
 				if (LabelFormatter != null) {
-					// call for Style override
-					var style = LabelFormatter.Convert(sc, typeof(Style), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
-					if (style is Style sx) {
-						current.Item2.Style = sx;
-					}
-					// call for Text override
-					var txt = LabelFormatter.Convert(sc, typeof(String), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
-					if (txt != null) {
-						text = txt.ToString();
+					// call for Style, String override
+					var format = LabelFormatter.Convert(sc, typeof(Tuple<Style, String>), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
+					if(format is Tuple<Style, String> ovx) {
+						if (ovx.Item1 != null) {
+							current.Item2.Style = ovx.Item1;
+						}
+						if (ovx.Item2 != null) {
+							text = ovx.Item2;
+						}
 					}
 				}
 				var state = new ItemState() {
 					tb = current.Item2,
-					value = tpx.Item2.Item1,
+					value = cls.Value,
 					label = text,
 					usexau = widx == null
 				};
 				state.tb.Text = text;
+				sc.Generated(cls);
 				itemstate.Add(state);
 			}
 			// VT and internal bookkeeping

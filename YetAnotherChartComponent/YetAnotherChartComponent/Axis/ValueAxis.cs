@@ -43,6 +43,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// The computed tick interval.
 		/// </summary>
 		double TickInterval { get; }
+		/// <summary>
+		/// List of previously-generated ticks, in order of layout.
+		/// MAY NOT be in sorted order!
+		/// </summary>
+		List<double> GeneratedTicks { get; }
 	}
 	#endregion
 	#region ValueAxis
@@ -90,18 +95,27 @@ namespace eScapeLLC.UWP.Charts {
 			/// </summary>
 			public Rect Area { get; private set; }
 			/// <summary>
+			/// <see cref="IValueAxisLabelSelectorContext.GeneratedTicks"/>.
+			/// </summary>
+			public List<double> GeneratedTicks { get; private set; }
+			/// <summary>
 			/// Ctor.
 			/// </summary>
 			/// <param name="ica"></param>
 			/// <param name="rc"></param>
 			/// <param name="ticks"></param>
 			/// <param name="ti"></param>
-			public SelectorContext(IChartAxis ica, Rect rc, double[] ticks, double ti) { Axis = ica; Area = rc; AllTicks = ticks; TickInterval = ti; }
+			public SelectorContext(IChartAxis ica, Rect rc, double[] ticks, double ti) { Axis = ica; Area = rc; AllTicks = ticks; TickInterval = ti; GeneratedTicks = new List<double>(); }
 			/// <summary>
 			/// Set the current index.
 			/// </summary>
 			/// <param name="idx"></param>
 			public void SetTick(int idx) { Index = idx; }
+			/// <summary>
+			/// Add to the list of generated ticks.
+			/// </summary>
+			/// <param name="dx"></param>
+			public void Generated(double dx) { GeneratedTicks.Add(dx); }
 		}
 		#endregion
 		#region properties
@@ -209,20 +223,21 @@ namespace eScapeLLC.UWP.Charts {
 					// default text
 					var text = tick.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
 					if (LabelFormatter != null) {
-						// call for Style override
-						var style = LabelFormatter.Convert(sc, typeof(Style), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
-						if (style is Style sx) {
-							current.Item2.Style = sx;
-						}
-						// call for Text override
-						var txt = LabelFormatter.Convert(sc, typeof(String), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
-						if (txt != null) {
-							text = txt.ToString();
+						// call for Style, String override
+						var format = LabelFormatter.Convert(sc, typeof(Tuple<Style, String>), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
+						if (format is Tuple<Style, String> ovx) {
+							if (ovx.Item1 != null) {
+								current.Item2.Style = ovx.Item1;
+							}
+							if (ovx.Item2 != null) {
+								text = ovx.Item2;
+							}
 						}
 					}
 					var state = new ItemState() { tb = current.Item2, value = tick };
 					state.tb.Text = text;
 					state.SetLocation(icrc.Area.Left, tick);
+					sc.Generated(tick);
 					itemstate.Add(state);
 				}
 			}

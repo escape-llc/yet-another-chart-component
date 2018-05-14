@@ -294,6 +294,11 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			return fe;
 		}
+		/// <summary>
+		/// Create the shim along with setting the initial (default) text value.
+		/// </summary>
+		/// <param name="isiv">Source value.</param>
+		/// <returns>New instance.</returns>
 		DataTemplateShim CreateShim(ISeriesItemValueDouble isiv) {
 			var txt = isiv.Value.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
 			if(isiv is ISeriesItemValueCustom isivc) {
@@ -404,17 +409,16 @@ namespace eScapeLLC.UWP.Charts {
 						if (LabelFormatter != null) {
 							var ctx = new SelectorContext(ipsiv, target);
 							// TODO could call for typeof(object) and replace CustomValue
-							if(el.Item2.DataContext is TextShim ts) {
-								// call for Text override
-								var txt = LabelFormatter.Convert(ctx, typeof(String), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
-								if (txt != null) {
-									ts.Text = txt.ToString();
+							var format = LabelFormatter.Convert(ctx, typeof(Tuple<Style, String>), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
+							if (format is Tuple<Style, String> ovx) {
+								if (ovx.Item1 != null) {
+									el.Item2.Style = ovx.Item1;
 								}
-							}
-							// call for Style override
-							var style = LabelFormatter.Convert(ctx, typeof(Style), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
-							if(style is Style sx) {
-								el.Item2.Style = sx;
+								if (ovx.Item2 != null) {
+									if (el.Item2.DataContext is TextShim ts) {
+										ts.Text = ovx.Item2;
+									}
+								}
 							}
 						}
 						var pmt = (target as IProvidePlacement)?.Placement;
