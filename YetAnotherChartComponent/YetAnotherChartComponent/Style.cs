@@ -60,6 +60,32 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			return null;
 		}
+		/// <summary>
+		/// Convenience method to copy a <see cref="Style"/> and replace given <see cref="DependencyProperty"/> with given value.
+		/// </summary>
+		/// <param name="source">Source style.</param>
+		/// <param name="tp">Target DP.</param>
+		/// <param name="pvalue">New value.</param>
+		/// <returns>New instance.</returns>
+		/// <typeparam name="PT">Property value type.</typeparam>
+		public static Style Override<PT>(this Style source, DependencyProperty tp, PT pvalue) {
+			var style = new Style(source.TargetType) {
+				BasedOn = source.BasedOn
+			};
+			var did = false;
+			foreach (var setter in source.Setters) {
+				if (setter is Setter sx && sx.Property == tp) {
+					style.Setters.Add(new Setter(tp, pvalue));
+					did = true;
+				} else {
+					style.Setters.Add(setter);
+				}
+			}
+			if (!did) {
+				style.Setters.Add(new Setter(tp, pvalue));
+			}
+			return style;
+		}
 	}
 	#endregion
 	#region StyleGenerator
@@ -91,34 +117,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// Reset the style sequence, if applicable.
 		/// </summary>
 		public abstract void Reset();
-		#endregion
-		#region helpers
-		/// <summary>
-		/// Convenience method to copy a <see cref="Style"/> and replace given <see cref="DependencyProperty"/>with given value.
-		/// </summary>
-		/// <param name="source">Source style.</param>
-		/// <param name="tp">Target DP.</param>
-		/// <param name="pvalue">New value.</param>
-		/// <returns>New instance.</returns>
-		/// <typeparam name="PT">Property value type.</typeparam>
-		protected static Style Override<PT>(Style source, DependencyProperty tp, PT pvalue) {
-			var style = new Style(source.TargetType) {
-				BasedOn = source.BasedOn
-			};
-			var did = false;
-			foreach (var setter in source.Setters) {
-				if (setter is Setter sx && sx.Property == tp) {
-					style.Setters.Add(new Setter(tp, pvalue));
-					did = true;
-				} else {
-					style.Setters.Add(setter);
-				}
-			}
-			if (!did) {
-				style.Setters.Add(new Setter(tp, pvalue));
-			}
-			return style;
-		}
 		#endregion
 	}
 	/// <summary>
@@ -171,8 +169,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// <returns></returns>
 		public override Style NextStyle() {
 			var cbrush = _presetBrushes[current];
-			if (stylemap.ContainsKey(cbrush)) return stylemap[cbrush];
-			var style = Override(BaseStyle, Path.FillProperty, cbrush);
+			if (stylemap.TryGetValue(cbrush, out Style sx)) return sx;
+			var style = BaseStyle.Override(Path.FillProperty, cbrush);
 			// advance
 			stylemap.Add(cbrush, style);
 			current = (current + 1) % _presetBrushes.Length;

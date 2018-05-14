@@ -6,7 +6,7 @@
 		"Chart": "Error",
 		"ColumnSeries": "Error",
 		"ColumnSeriesPaths": "Off",
-		"DataSource": "Error",
+		"DataSource": "Verbose",
 		"HorizontalBand": "Error",
 		"HorizontalRule": "Error",
 		"LineSeries": "Error",

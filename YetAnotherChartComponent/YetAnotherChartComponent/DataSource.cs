@@ -133,11 +133,17 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		private static void AttachCollectionChanged(DataSource ds, object dataSource) {
 			if (dataSource is INotifyCollectionChanged incc) {
-				incc.CollectionChanged += new NotifyCollectionChangedEventHandler(ds.ItemsCollectionChanged);
+				incc.CollectionChanged += ds.ItemsCollectionChanged;
 			}
 		}
 		private void ItemsCollectionChanged(object sender, NotifyCollectionChangedEventArgs nccea) {
-			Refresh();
+			_trace.Verbose($"cc {nccea.Action} nsi:[{nccea.NewStartingIndex}] {nccea.NewItems?.Count} osi:[{nccea.OldStartingIndex}] {nccea.OldItems?.Count}");
+			switch(nccea.Action) {
+			case NotifyCollectionChangedAction.Reset:
+			default:
+				Refresh();
+				break;
+			}
 		}
 		#endregion
 		#region properties

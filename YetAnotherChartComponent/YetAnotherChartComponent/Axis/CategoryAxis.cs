@@ -10,13 +10,35 @@ using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
 
 namespace eScapeLLC.UWP.Charts {
-	#region ICategoryAxisLabelSelectorContext
+	#region CategoryLabelState
+	/// <summary>
+	/// Common state for category axis labels.
+	/// </summary>
 	public class CategoryLabelState {
+		/// <summary>
+		/// Index on category axis.
+		/// </summary>
 		public int Index { get; private set; }
+		/// <summary>
+		/// The value.
+		/// SHOULD be <see cref="Double.NaN"/> if this index is a "hole".
+		/// </summary>
 		public double Value { get; private set; }
+		/// <summary>
+		/// The label "object".
+		/// SHOULD be NULL if this index is a "hole".
+		/// </summary>
 		public object Label { get; private set; }
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="idx"></param>
+		/// <param name="vx"></param>
+		/// <param name="lx"></param>
 		public CategoryLabelState(int idx, double vx, object lx) { Index = idx; Value = vx; Label = lx; }
 	}
+	#endregion
+	#region ICategoryAxisLabelSelectorContext
 	/// <summary>
 	/// Context passed to the <see cref="IValueConverter"/> for category axis <see cref="Style"/> selection etc.
 	/// </summary>
@@ -24,11 +46,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// The list of all labels and their indices.
 		/// </summary>
-		List<CategoryLabelState> AllLabels { get; }
+		IList<CategoryLabelState> AllLabels { get; }
 		/// <summary>
 		/// The list of previously-generated labels up to this point.
 		/// </summary>
-		List<CategoryLabelState> GeneratedLabels { get; }
+		IList<CategoryLabelState> GeneratedLabels { get; }
 	}
 	#endregion
 	#region CategoryAxis
@@ -91,11 +113,11 @@ namespace eScapeLLC.UWP.Charts {
 			/// <summary>
 			/// <see cref="ICategoryAxisLabelSelectorContext.AllLabels"/>.
 			/// </summary>
-			public List<CategoryLabelState> AllLabels { get; private set; }
+			public IList<CategoryLabelState> AllLabels { get; private set; }
 			/// <summary>
 			/// <see cref="ICategoryAxisLabelSelectorContext.GeneratedLabels"/>.
 			/// </summary>
-			public List<CategoryLabelState> GeneratedLabels { get; private set; }
+			public IList<CategoryLabelState> GeneratedLabels { get; private set; }
 			/// <summary>
 			/// <see cref="IAxisLabelSelectorContext.Axis"/>.
 			/// </summary>
@@ -116,6 +138,10 @@ namespace eScapeLLC.UWP.Charts {
 			/// </summary>
 			/// <param name="idx">Current index.</param>
 			public void SetTick(int idx) { Index = idx; }
+			/// <summary>
+			/// Add to the generated labels list.
+			/// </summary>
+			/// <param name="cls">The state.</param>
 			public void Generated(CategoryLabelState cls) { GeneratedLabels.Add(cls); }
 		}
 		#endregion
@@ -146,7 +172,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Manage labels.
 		/// </summary>
-		protected Dictionary<int, Tuple<double, object>> LabelMap { get; set; } = new Dictionary<int, Tuple<double, object>>();
+		protected Dictionary<int, CategoryLabelState> LabelMap { get; set; } = new Dictionary<int, CategoryLabelState>();
 		/// <summary>
 		/// List of active TextBlocks for labels.
 		/// </summary>
@@ -202,16 +228,17 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Labels are cached for presentation.
 		/// </summary>
-		/// <param name="valueWithLabel"></param>
+		/// <param name="valueWithLabel">Value to map.</param>
 		/// <returns>base.For(double)</returns>
 		public override double For(Tuple<double, object> valueWithLabel) {
 			var mv = base.For(valueWithLabel.Item1);
 			int key = (int)mv;
+			var cls = new CategoryLabelState(key, valueWithLabel.Item1, valueWithLabel.Item2);
 			if (LabelMap.ContainsKey(key)) {
 				// should be an error but just overwrite it
-				LabelMap[key] = valueWithLabel;
+				LabelMap[key] = cls;
 			} else {
-				LabelMap.Add(key, valueWithLabel);
+				LabelMap.Add(key, cls);
 			}
 			return mv;
 		}
@@ -300,17 +327,17 @@ namespace eScapeLLC.UWP.Charts {
 			var labels = new List<CategoryLabelState>();
 			for(var ix = i1; ix <= i2; ix++) {
 				if(LabelMap.ContainsKey(ix)) {
-					labels.Add(new CategoryLabelState(ix, LabelMap[ix].Item1, LabelMap[ix].Item2));
+					labels.Add(LabelMap[ix]);
 				} else {
-					labels.Add(new CategoryLabelState(ix, double.NaN, null));
+					labels.Add(null);
 				}
 			}
 			var sc = new SelectorContext(this, icrc.SeriesArea, labels);
 			for(var ix = 0; ix < labels.Count; ix++) {
 				var cls = labels[ix];
-				if (cls.Label == null) continue;
+				if (cls == null) continue;
 				// create a label for this entry
-				_trace.Verbose($"key {ix} label {cls.Label}");
+				_trace.Verbose($"catlabels [{ix}] index:{cls.Index} label '{cls.Label}'");
 				sc.SetTick(ix);
 				var createit = true;
 				if (LabelSelector != null) {
