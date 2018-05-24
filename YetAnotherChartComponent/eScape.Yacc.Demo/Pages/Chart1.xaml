@@ -127,10 +127,11 @@
 			</yacc:Chart.DataSources>
 			<yacc:Chart.Components>
 				<yacc:Background PathStyle="{StaticResource Bkg}"/>
-				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" PathStyle="{StaticResource Axes}"
+				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" DataSourceName="data" LabelPath="Label"
+					PathStyle="{StaticResource Axes}"
 					LabelStyle="{StaticResource CategoryAxisLabel2}" />
 				<yacc:ColumnSeries x:Name="colv1" DataSourceName="data" ValuePath="Value1" ValueLabelPath="."
-					CategoryLabelPath="Label" ClipToDataRegion="False"
+					ClipToDataRegion="False"
 					Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					PathStyle="{StaticResource Column_v1}" BarOffset=".25" BarWidth=".25" />
 				<yacc:ColumnSeries x:Name="colv2" DataSourceName="data" ValuePath="Value2"

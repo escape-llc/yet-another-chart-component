@@ -195,7 +195,6 @@ namespace eScapeLLC.UWP.Charts {
 			var recycler = new Recycler<Path>(paths, CreatePath);
 			return new RenderState_ValueAndLabel<ItemState<Path>, Path>(new List<ItemState<Path>>(), recycler,
 				!String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
-				!String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null,
 				by,
 				!String.IsNullOrEmpty(ValueLabelPath) ? new BindingEvaluator(ValueLabelPath) : null
 			);
@@ -208,17 +207,13 @@ namespace eScapeLLC.UWP.Charts {
 			UpdateLimits(valuex, valuey, 0);
 			// short-circuit if it's NaN
 			if (double.IsNaN(valuey)) {
-				if (st.bl != null) {
-					// still map the X
-					CategoryAxis.For(new Tuple<double, object>(valuex, st.bl.For(item)));
-				}
 				return;
 			}
 			var y1 = ValueAxis.For(valuey);
 			var y2 = ValueAxis.For(0);
 			var topy = Math.Max(y1, y2);
 			var bottomy = Math.Min(y1, y2);
-			var leftx = (st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, object>(valuex, st.bl.For(item))));
+			var leftx = CategoryAxis.For(valuex);
 			var barx = leftx + BarOffset;
 			var rightx = barx + BarWidth;
 			_trace.Verbose($"{Name}[{index}] {valuey} ({barx},{topy}) ({rightx},{bottomy})");

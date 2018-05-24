@@ -164,7 +164,6 @@ namespace eScapeLLC.UWP.Charts {
 			var recycler = new Recycler<Path>(paths, CreatePath);
 			return new RenderState_ValueAndLabel<ItemState<Path>, Path>(new List<ItemState<Path>>(), recycler,
 				!String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
-				!String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null,
 				by,
 				!String.IsNullOrEmpty(ValueLabelPath) ? new BindingEvaluator(ValueLabelPath) : null
 			);
@@ -177,14 +176,10 @@ namespace eScapeLLC.UWP.Charts {
 			UpdateLimits(valuex, valuey);
 			// short-circuit if it's NaN
 			if (double.IsNaN(valuey)) {
-				if (st.bl != null) {
-					// still map the X
-					CategoryAxis.For(new Tuple<double, object>(valuex, st.bl.For(item)));
-				}
 				return;
 			}
 			var mappedy = ValueAxis.For(valuey);
-			var mappedx = st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, object>(valuex, st.bl.For(item)));
+			var mappedx = CategoryAxis.For(valuex);
 			var markerx = mappedx + MarkerOffset;
 			_trace.Verbose($"[{index}] {valuey} ({markerx},{mappedy})");
 			var mk = MarkerTemplate.LoadContent() as Geometry;

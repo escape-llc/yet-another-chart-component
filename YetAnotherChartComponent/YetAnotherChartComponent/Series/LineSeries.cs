@@ -15,7 +15,7 @@ namespace eScapeLLC.UWP.Charts {
 		static LogTools.Flag _trace = LogTools.Add("LineSeries", LogTools.Level.Error);
 		#region properties
 		/// <summary>
-		/// Not currently implemented.
+		/// Return item state.
 		/// </summary>
 		public override IEnumerable<ISeriesItem> SeriesItemValues { get { return ItemState.AsReadOnly(); } }
 		/// <summary>
@@ -115,7 +115,6 @@ namespace eScapeLLC.UWP.Charts {
 		class State {
 			internal BindingEvaluator bx;
 			internal BindingEvaluator by;
-			internal BindingEvaluator bl;
 			internal BindingEvaluator byl;
 			internal List<ItemState<Path>> itemstate;
 			internal PathFigure pf;
@@ -130,7 +129,6 @@ namespace eScapeLLC.UWP.Charts {
 			ResetLimits();
 			return new State() {
 				bx = !String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
-				bl = !String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null,
 				by = by,
 				byl = !String.IsNullOrEmpty(ValueLabelPath) ? new BindingEvaluator(ValueLabelPath) : null,
 				pf = new PathFigure(),
@@ -145,14 +143,10 @@ namespace eScapeLLC.UWP.Charts {
 			UpdateLimits(valuex, valuey);
 			// short-circuit if it's NaN
 			if (double.IsNaN(valuey)) {
-				if(st.bl != null) {
-					// still map the X
-					CategoryAxis.For(new Tuple<double, object>(valuex, st.bl.For(item)));
-				}
 				return;
 			}
 			var mappedy = ValueAxis.For(valuey);
-			var mappedx = st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, object>(valuex, st.bl.For(item)));
+			var mappedx = CategoryAxis.For(valuex);
 			var linex = mappedx + CategoryAxisOffset;
 			_trace.Verbose($"{Name}[{index}] v:({valuex},{valuey}) m:({linex},{mappedy})");
 			if (st.first) {

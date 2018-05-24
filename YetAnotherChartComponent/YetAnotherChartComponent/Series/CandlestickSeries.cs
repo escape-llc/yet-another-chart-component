@@ -239,7 +239,6 @@ namespace eScapeLLC.UWP.Charts {
 		class State : RenderStateCore<ItemState<Path>, Path> {
 			// category and label
 			internal readonly BindingEvaluator bx;
-			internal readonly BindingEvaluator bl;
 			// values
 			internal readonly BindingEvaluator bopen;
 			internal readonly BindingEvaluator bhigh;
@@ -249,12 +248,11 @@ namespace eScapeLLC.UWP.Charts {
 			internal readonly BindingEvaluator bvl;
 			internal State(List<ItemState<Path>> sis, Recycler<Path> rc, params BindingEvaluator[] bes) :base(sis, rc) {
 				bx = bes[0];
-				bl = bes[1];
-				bopen = bes[2];
-				bhigh = bes[3];
-				blow = bes[4];
-				bclose = bes[5];
-				bvl = bes[6];
+				bopen = bes[1];
+				bhigh = bes[2];
+				blow = bes[3];
+				bclose = bes[4];
+				bvl = bes[5];
 			}
 		}
 		/// <summary>
@@ -285,7 +283,6 @@ namespace eScapeLLC.UWP.Charts {
 			var recycler = new Recycler<Path>(paths, CreatePath);
 			return new State(new List<ItemState<Path>>(), recycler,
 				!String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
-				!String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null,
 				bopen, bhigh, blow, bclose,
 				!String.IsNullOrEmpty(ValueLabelPath) ? new BindingEvaluator(ValueLabelPath) : null);
 		}
@@ -301,10 +298,6 @@ namespace eScapeLLC.UWP.Charts {
 			st.ix = index;
 			// short-circuit if any are NaN
 			if (double.IsNaN(valueO) || double.IsNaN(valueH) || double.IsNaN(valueL) || double.IsNaN(valueC)) {
-				if (st.bl != null) {
-					// still map the X
-					CategoryAxis.For(new Tuple<double, object>(valuex, st.bl.For(item)));
-				}
 				return;
 			}
 			// map through axes
@@ -312,7 +305,7 @@ namespace eScapeLLC.UWP.Charts {
 			var y2 = ValueAxis.For(valueC);
 			var y3 = ValueAxis.For(valueH);
 			var y4 = ValueAxis.For(valueL);
-			var leftx = (st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, object>(valuex, st.bl.For(item))));
+			var leftx = CategoryAxis.For(valuex);
 			var barx = leftx + BarOffset;
 			var rightx = barx + BarWidth;
 			// force them to be a min/max

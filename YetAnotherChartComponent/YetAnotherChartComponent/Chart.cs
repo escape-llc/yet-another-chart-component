@@ -1,5 +1,6 @@
 ﻿using eScape.Core;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -389,17 +390,17 @@ namespace eScapeLLC.UWP.Charts {
 		/// Manage data source enter/leave.
 		/// </summary>
 		/// <param name="sender"></param>
-		/// <param name="e"></param>
-		private void DataSources_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
-			_trace.Verbose($"DataSourcesChanged {e}");
-			if (e.OldItems != null) {
-				foreach (DataSource ds in e.OldItems) {
+		/// <param name="nccea"></param>
+		private void DataSources_CollectionChanged(object sender, NotifyCollectionChangedEventArgs nccea) {
+			_trace.Verbose($"DataSourcesChanged {nccea}");
+			if (nccea.OldItems != null) {
+				foreach (DataSource ds in nccea.OldItems) {
 					_trace.Verbose($"leave '{ds.Name}' {ds}");
 					ds.RefreshRequest -= DataSource_RefreshRequest;
 				}
 			}
-			if (e.NewItems != null) {
-				foreach (DataSource ds in e.NewItems) {
+			if (nccea.NewItems != null) {
+				foreach (DataSource ds in nccea.NewItems) {
 					_trace.Verbose($"enter '{ds.Name}' {ds}");
 					if (ds.Items != null && !ds.IsDirty && ds.Items.GetEnumerator().MoveNext()) {
 						// force this dirty so it refreshes
@@ -417,18 +418,18 @@ namespace eScapeLLC.UWP.Charts {
 		/// Reconfigure components that enter and leave.
 		/// </summary>
 		/// <param name="sender"></param>
-		/// <param name="e"></param>
-		void Components_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e) {
+		/// <param name="nccea"></param>
+		void Components_CollectionChanged(object sender, NotifyCollectionChangedEventArgs nccea) {
 			var celc = new DefaultEnterLeaveContext(Surface, Components, Layers, DataContext);
-			if (e.OldItems != null) {
-				foreach (ChartComponent cc in e.OldItems) {
+			if (nccea.OldItems != null) {
+				foreach (ChartComponent cc in nccea.OldItems) {
 					_trace.Verbose($"leave '{cc.Name}' {cc}");
 					cc.RefreshRequest -= ChartComponent_RefreshRequest;
 					ComponentLeave(celc, cc);
 				}
 			}
-			if (e.NewItems != null) {
-				foreach (ChartComponent cc in e.NewItems) {
+			if (nccea.NewItems != null) {
+				foreach (ChartComponent cc in nccea.NewItems) {
 					_trace.Verbose($"enter '{cc.Name}' {cc}");
 					cc.RefreshRequest += ChartComponent_RefreshRequest;
 					cc.DataContext = DataContext;
@@ -452,12 +453,27 @@ namespace eScapeLLC.UWP.Charts {
 		/// Render chart subject to current dirtiness.
 		/// This method is invoke-safe; it MAY be called from a different thread.
 		/// </summary>
-		/// <param name="ds"></param>
-		private async void DataSource_RefreshRequest(DataSource ds) {
+		/// <param name="ds">The data source.</param>
+		/// <param name="nccea">Collection change args.</param>
+		private async void DataSource_RefreshRequest(DataSource ds, NotifyCollectionChangedEventArgs nccea) {
 			_trace.Verbose($"refresh-request-ds '{ds.Name}' {ds}");
 			await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => {
 				if (Surface != null) {
-					RenderComponents(CurrentLayout);
+					switch(nccea.Action) {
+					// TODO dispatch other types of action
+					case NotifyCollectionChangedAction.Add:
+						IncrementalAdd(CurrentLayout, ds, nccea.NewStartingIndex, nccea.NewItems);
+						break;
+					case NotifyCollectionChangedAction.Remove:
+						IncrementalRemove(CurrentLayout, ds, nccea.OldStartingIndex, nccea.OldItems);
+						break;
+					case NotifyCollectionChangedAction.Move:
+					case NotifyCollectionChangedAction.Replace:
+					case NotifyCollectionChangedAction.Reset:
+					default:
+						RenderComponents(CurrentLayout);
+						break;
+					}
 				}
 			});
 		}
@@ -473,8 +489,13 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"refresh-request-cc '{cc.Name}' {cc} r:{rrea.Request} a:{rrea.Axis}");
 			await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => {
 				if (Surface == null) return;
-				if (cc is IDataSourceRenderer idsr) {
-					// TODO account for IProvideDataSourceRenderer
+				if(cc is IProvideDataSourceRenderer ipdsr) {
+					var ds = DataSources.SingleOrDefault(dds => dds.Name == ipdsr.Renderer.DataSourceName);
+					if (ds != null) {
+						ds.IsDirty = true;
+					}
+					RenderComponents(CurrentLayout);
+				} else if (cc is IDataSourceRenderer idsr) {
 					var ds = DataSources.SingleOrDefault(dds => dds.Name == idsr.DataSourceName);
 					if (ds != null) {
 						ds.IsDirty = true;
@@ -496,15 +517,15 @@ namespace eScapeLLC.UWP.Charts {
 		/// Manage dynamic legend updates.
 		/// </summary>
 		/// <param name="sender">Component sending update.</param>
-		/// <param name="args">Current state of legend.</param>
-		private void Ipld_LegendChanged(ChartComponent sender, LegendDynamicEventArgs args) {
-			foreach (var ldea in args.PreviousItems) {
-				if (!args.CurrentItems.Contains(ldea))
-					LegendItems.Remove(ldea);
+		/// <param name="ldea">Current state of legend.</param>
+		private void Ipld_LegendChanged(ChartComponent sender, LegendDynamicEventArgs ldea) {
+			foreach (var prev in ldea.PreviousItems) {
+				if (!ldea.CurrentItems.Contains(prev))
+					LegendItems.Remove(prev);
 			}
-			foreach (var ldea in args.CurrentItems) {
-				if (!LegendItems.Contains(ldea))
-					LegendItems.Add(ldea);
+			foreach (var curr in ldea.CurrentItems) {
+				if (!LegendItems.Contains(curr))
+					LegendItems.Add(curr);
 			}
 		}
 		#endregion
@@ -548,14 +569,6 @@ namespace eScapeLLC.UWP.Charts {
 		protected void Phase_AxisLimits(Func<ChartComponent,bool> pred) {
 			foreach (var cc in Components.Where(pred)) {
 				_trace.Verbose($"axis-limits '{cc.Name}' {cc}");
-				if(cc is IProvideCategoryExtents ipce) {
-					var axis = Axes.SingleOrDefault((ax) => ipce.CategoryAxisName == (ax as ChartComponent).Name);
-					_trace.Verbose($"axis-limits x-axis:{axis}");
-					if (axis != null) {
-						axis.UpdateLimits(ipce.CategoryMaximum);
-						axis.UpdateLimits(ipce.CategoryMinimum);
-					}
-				}
 				if(cc is IProvideValueExtents ipve) {
 					var axis = Axes.SingleOrDefault((ax) => ipve.ValueAxisName == (ax as ChartComponent).Name);
 					_trace.Verbose($"axis-limits y-axis:{axis}");
@@ -645,6 +658,56 @@ namespace eScapeLLC.UWP.Charts {
 			}
 		}
 		#endregion
+		#region incremental helpers
+		/// <summary>
+		/// Handle incremental remove of value(s).
+		/// </summary>
+		/// <param name="ls">The layout state.</param>
+		/// <param name="ds">The <see cref="DataSource"/>.</param>
+		/// <param name="startIndex">Starting index to remove from.</param>
+		/// <param name="items">The items affected.</param>
+		protected void IncrementalRemove(LayoutState ls, DataSource ds, int startIndex, IList items) {
+			_trace.Verbose($"refresh-incr-remove '{ds.Name}' {ds} @{startIndex} ct:{items.Count}");
+#if false
+			ls.IsTransformsOnly = false;
+			// skipping Phase_Layout
+			// this loop comprises the Render phase
+			// only select components attached to DS
+			foreach (var cc in Components.Where(xx => xx is IRequireDataSourceUpdates irsiu && irsiu.UpdateSourceName == ds.Name)) {
+				_trace.Verbose($"incr-remove '{cc.Name}' {cc}");
+				IRequireDataSourceUpdates irdsu = cc as IRequireDataSourceUpdates;
+				var ctx = ls.RenderFor(cc as ChartComponent, Surface, Components, DataContext);
+				irdsu.Remove(ctx, startIndex, items);
+			}
+			// trigger render on other components since values they track may have changed
+			foreach (IRequireRender cc in Components.Where((cc2) => !(cc2 is IChartAxis) && !(cc2 is IRequireDataSourceUpdates) && (cc2 is IRequireRender))) {
+				var ctx = ls.RenderFor(cc as ChartComponent, Surface, Components, DataContext);
+				cc.Render(ctx);
+			}
+			// other phases we need to run...
+			Phase_ResetAxes();
+			Phase_AxisLimits(cc2 => (cc2 is IProvideCategoryExtents || cc2 is IProvideValueExtents));
+			Phase_AxesFinalized(ls);
+			Phase_RenderAxes(ls);
+			Phase_Transforms(ls);
+#else
+			// FOR NOW just do what it used to do
+			RenderComponents(ls);
+#endif
+		}
+		/// <summary>
+		/// Handle incremental add of value(s).
+		/// </summary>
+		/// <param name="ls">The layout state.</param>
+		/// <param name="ds">The <see cref="DataSource"/>.</param>
+		/// <param name="startIndex">Starting index to remove from.</param>
+		/// <param name="items">The items affected.</param>
+		protected void IncrementalAdd(LayoutState ls, DataSource ds, int startIndex, IList items) {
+			_trace.Verbose($"refresh-incr-add '{ds.Name}' {ds} @{startIndex} ct:{items.Count}");
+			// FOR NOW just do what it used to do
+			RenderComponents(ls);
+		}
+		#endregion
 		#region helpers
 		/// <summary>
 		/// Report event(s).
@@ -705,7 +768,8 @@ namespace eScapeLLC.UWP.Charts {
 			// axis and DSRP are mutually-exclusive
 			if (cc is IChartAxis ica) {
 				Axes.Add(ica);
-			} else if (cc is IProvideDataSourceRenderer ipdsr) {
+			}
+			if (cc is IProvideDataSourceRenderer ipdsr) {
 				Register(ipdsr.Renderer);
 			} else if (cc is IDataSourceRenderer idsr) {
 				Register(idsr);
@@ -718,12 +782,13 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icelc">The context.</param>
 		/// <param name="cc">The component leaving chart.</param>
 		protected void ComponentLeave(IChartEnterLeaveContext icelc, ChartComponent cc) {
-			if (cc is IChartAxis ica) {
-				Axes.Remove(ica);
-			} else if (cc is IProvideDataSourceRenderer ipdsr) {
+			if (cc is IProvideDataSourceRenderer ipdsr) {
 				Unregister(ipdsr.Renderer);
 			} else if (cc is IDataSourceRenderer idsr) {
 				Unregister(idsr);
+			}
+			if (cc is IChartAxis ica) {
+				Axes.Remove(ica);
 			}
 			if (cc is IProvideLegendDynamic ipld) {
 				// detach the event
@@ -766,13 +831,13 @@ namespace eScapeLLC.UWP.Charts {
 				if (rrea.Axis != AxisUpdateState.None) {
 					// put axis limits into correct state for IRequireRender components
 					Phase_ResetAxes();
-					Phase_AxisLimits((cc2) => cc2 is DataSeries && (cc2 is IProvideCategoryExtents || cc2 is IProvideValueExtents));
+					Phase_AxisLimits((cc2) => cc2 is DataSeries && (cc2 is IProvideValueExtents));
 				}
 				var ctx = new DefaultRenderContext(Surface, Components, ls.LayoutDimensions, rect, ls.Layout.RemainingRect, DataContext) { IsTransformsOnly = false };
 				irr.Render(ctx);
 				if (rrea.Axis != AxisUpdateState.None) {
 					// axes MUST be re-evaluated because this thing changed.
-					Phase_AxisLimits((cc2) => !(cc2 is DataSeries) && (cc2 is IProvideCategoryExtents || cc2 is IProvideValueExtents));
+					Phase_AxisLimits((cc2) => !(cc2 is DataSeries) && (cc2 is IProvideValueExtents));
 					Phase_AxesFinalized(ls);
 					Phase_RenderAxes(ls);
 					Phase_Transforms(ls);
@@ -812,10 +877,10 @@ namespace eScapeLLC.UWP.Charts {
 			Phase_Layout(ls);
 			// Phase III: data source rendering pipeline (IDataSourceRenderer)
 			Phase_RenderDataSources(ls);
-			Phase_AxisLimits((cc2) => cc2 is DataSeries && (cc2 is IProvideCategoryExtents || cc2 is IProvideValueExtents));
+			Phase_AxisLimits((cc2) => cc2 is DataSeries && (cc2 is IProvideValueExtents));
 			// Phase IV: render non-axis components (IRequireRender)
 			Phase_RenderComponents(ls);
-			Phase_AxisLimits((cc2) => !(cc2 is DataSeries) && (cc2 is IProvideCategoryExtents || cc2 is IProvideValueExtents));
+			Phase_AxisLimits((cc2) => !(cc2 is DataSeries) && (cc2 is IProvideValueExtents));
 			// Phase V: axes finalized
 			Phase_AxesFinalized(ls);
 			// Phase VI: render axes (IRequireRender)

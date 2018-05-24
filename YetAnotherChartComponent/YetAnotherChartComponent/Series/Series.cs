@@ -75,19 +75,13 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// This class commits to a Category and Value axis, but no values.
 	/// </summary>
-	public abstract class DataSeriesWithAxes : DataSeries, IProvideValueExtents, IProvideCategoryExtents {
+	public abstract class DataSeriesWithAxes : DataSeries, IProvideValueExtents, IRequireCategoryAxis {
 		#region DPs
 		/// <summary>
 		/// Identifies <see cref="CategoryPath"/> dependency property.
 		/// </summary>
 		public static readonly DependencyProperty CategoryPathProperty = DependencyProperty.Register(
 			nameof(CategoryPath), typeof(string), typeof(DataSeriesWithAxes), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
-		);
-		/// <summary>
-		/// Identifies <see cref="CategoryLabelPath"/> dependency property.
-		/// </summary>
-		public static readonly DependencyProperty CategoryLabelPathProperty = DependencyProperty.Register(
-			nameof(CategoryLabelPath), typeof(string), typeof(DataSeriesWithAxes), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
 		);
 		#endregion
 		#region properties
@@ -96,13 +90,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// MAY be NULL, in which case the data-index is used instead.
 		/// </summary>
 		public String CategoryPath { get { return (String)GetValue(CategoryPathProperty); } set { SetValue(CategoryPathProperty, value); } }
-		/// <summary>
-		/// Binding path to the category axis label.
-		/// If multiple series are presenting the same data source, only one MUST HAVE this property set.
-		/// If CategoryMemberPath is NULL, the data-index is used.
-		/// MAY be NULL, in which case no labels are used on category axis.
-		/// </summary>
-		public String CategoryLabelPath { get { return (String)GetValue(CategoryLabelPathProperty); } set { SetValue(CategoryLabelPathProperty, value); } }
 		/// <summary>
 		/// Component name of value axis.
 		/// Referenced component MUST implement IChartAxis.
@@ -154,7 +141,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// <returns></returns>
 		protected override String DPName(DependencyProperty dp) {
 			if (dp == CategoryPathProperty) return "CategoryPath";
-			else if (dp == CategoryLabelPathProperty) return "CategoryLabelPath";
 			return dp.ToString();
 		}
 		/// <summary>

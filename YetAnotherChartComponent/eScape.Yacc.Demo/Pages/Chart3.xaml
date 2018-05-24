@@ -57,14 +57,15 @@
 				<yacc:DataSource x:Name="data" Items="{Binding Data}" ExternalRefresh="{Binding GroupCounter}"/>
 			</yacc:Chart.DataSources>
 			<yacc:Chart.Components>
-				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" PathStyle="{StaticResource Axes}"
+				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" DataSourceName="data" LabelPath="Label" 
+					PathStyle="{StaticResource Axes}"
 					LabelStyle="{StaticResource CategoryAxisLabel}" />
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}" LimitMinimum="-4.5" LimitMaximum="4.5"
 					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="F1" />
 				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource Grid}"
 					Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
-				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value1" CategoryLabelPath="Label" ClipToDataRegion="False"
-					Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" EnableDebugPaths="True"
+				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value1" ClipToDataRegion="False"
+					Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					PathStyle="{StaticResource Column_v1}" BarOffset=".25" BarWidth=".25" />
 				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value2"
 					Title="Value 2 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" ClipToDataRegion="False"

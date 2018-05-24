@@ -230,7 +230,7 @@ namespace eScapeLLC.UWP.Charts {
 					}
 				}
 			}
-			if (Source is IProvideCategoryExtents ipce) {
+			if (Source is IRequireCategoryAxis ipce) {
 				if (CategoryAxis == null && !String.IsNullOrEmpty(ipce.CategoryAxisName)) {
 					CategoryAxis = icrc.Find(ipce.CategoryAxisName) as IChartAxis;
 				} else {

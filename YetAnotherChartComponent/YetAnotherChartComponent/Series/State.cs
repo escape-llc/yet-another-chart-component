@@ -343,6 +343,43 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#endregion
 	#region RenderState implementations
+	#region RenderStateCore2<SIS,EL>
+		internal class RenderStateCore2<SIS, EL> where SIS : class where EL : FrameworkElement {
+		/// <summary>
+		/// Tracks the index from Render().
+		/// </summary>
+		internal int ix;
+		/// <summary>
+		/// Collects the item states created in Render().
+		/// Transfer to host in Postamble().
+		/// </summary>
+		internal readonly List<SIS> itemstate;
+		/// <summary>
+		/// Recycles the elements.
+		/// </summary>
+		internal readonly Recycler2<EL, SIS> recycler;
+		/// <summary>
+		/// The recycler's iterator to generate the elements.
+		/// </summary>
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="state">Starting state; SHOULD be empty.</param>
+		/// <param name="rc">The recycler.</param>
+		internal RenderStateCore2(List<SIS> state, Recycler2<EL, SIS> rc) {
+			itemstate = state;
+			recycler = rc;
+		}
+		/// <summary>
+		/// Get the next element from the recycler.
+		/// </summary>
+		/// <param name="state"></param>
+		/// <returns></returns>
+		internal Tuple<bool, EL> Next(SIS state) {
+			return recycler.Next(state);
+		}
+	}
+	#endregion
 	#region RenderStateCore<SIS,EL>
 	/// <summary>
 	/// Common state for implementations of <see cref="IDataSourceRenderer"/>.
@@ -405,10 +442,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		internal readonly BindingEvaluator by;
 		/// <summary>
-		/// Binds label; MAY be NULL.
-		/// </summary>
-		internal readonly BindingEvaluator bl;
-		/// <summary>
 		/// Binds custom y-label; MAY be NULL.
 		/// </summary>
 		internal readonly BindingEvaluator byl;
@@ -418,16 +451,14 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="state">Starting state; SHOULD be empty.</param>
 		/// <param name="rc">The recycler.</param>
 		/// <param name="bx">Evaluate x-value.</param>
-		/// <param name="bl">Evaluate label MAY be NULL.</param>
 		/// <param name="by">Evaluate y-value.</param>
 		/// <param name="byl">Evaluate custom y-label MAY be NULL.</param>
-		internal RenderState_ValueAndLabel(List<SIS> state, Recycler<EL> rc, BindingEvaluator bx, BindingEvaluator bl, BindingEvaluator by, BindingEvaluator byl) : base(state, rc) {
+		internal RenderState_ValueAndLabel(List<SIS> state, Recycler<EL> rc, BindingEvaluator bx, BindingEvaluator by, BindingEvaluator byl) : base(state, rc) {
 #pragma warning disable IDE0016 // Use 'throw' expression
 			if (by == null) throw new ArgumentNullException(nameof(by));
 #pragma warning restore IDE0016 // Use 'throw' expression
 			this.bx = bx;
 			this.by = by;
-			this.bl = bl;
 			this.byl = byl;
 		}
 	}

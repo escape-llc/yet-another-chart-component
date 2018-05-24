@@ -1,5 +1,6 @@
 ﻿using eScape.Core;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using Windows.UI.Xaml;
@@ -59,12 +60,41 @@ namespace eScapeLLC.UWP.Charts {
 		IDataSourceRenderer Renderer { get; }
 	}
 	#endregion
+	#region IRequireDataSourceUpdates
+	/// <summary>
+	/// Interface to be notified of incremental <see cref="DataSource"/> updates.
+	/// This is meant to be used with <see cref="System.Collections.ObjectModel.ObservableCollection{T}"/>.
+	/// </summary>
+	public interface IRequireDataSourceUpdates {
+		/// <summary>
+		/// The name of the <see cref="DataSource"/> that triggers incremental updates.
+		/// </summary>
+		String UpdateSourceName { get; }
+		/// <summary>
+		/// Remove series of items.
+		/// Also responsible for adjsting extents due to removed values.
+		/// </summary>
+		/// <param name="icrc">Render context.</param>
+		/// <param name="startAt">Starting index.</param>
+		/// <param name="items">For reference.</param>
+		void Remove(IChartRenderContext icrc, int startAt, IList items);
+		/// <summary>
+		/// Add series of items.
+		/// Also responsible for adjsting extents due to new values.
+		/// </summary>
+		/// <param name="icrc">Render context.</param>
+		/// <param name="startAt">Starting index.</param>
+		/// <param name="items">For reference.</param>
+		void Add(IChartRenderContext icrc, int startAt, IList items);
+	}
+	#endregion
 	#region DataSourceRefreshRequestEventHandler
 	/// <summary>
 	/// Refresh delegate.
 	/// </summary>
 	/// <param name="ds">Originating component.</param>
-	public delegate void DataSourceRefreshRequestEventHandler(DataSource ds);
+	/// <param name="nccea">Collection changed args.</param>
+	public delegate void DataSourceRefreshRequestEventHandler(DataSource ds, NotifyCollectionChangedEventArgs nccea);
 	#endregion
 	#region IDataSourceRenderContext
 	/// <summary>
@@ -109,7 +139,7 @@ namespace eScapeLLC.UWP.Charts {
 			DataSource ds = dobj as DataSource;
 			if(dpcea.NewValue is int bx) {
 				if (dpcea.NewValue != dpcea.OldValue && ds.Items != null) {
-					ds.Refresh();
+					ds.Refresh(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
 				}
 			}
 		}
@@ -123,7 +153,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (dpcea.OldValue != dpcea.NewValue) {
 				DetachCollectionChanged(ds, dpcea.OldValue);
 				AttachCollectionChanged(ds, dpcea.NewValue);
-				ds.Refresh();
+				ds.Refresh(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
 			}
 		}
 		private static void DetachCollectionChanged(DataSource ds, object dataSource) {
@@ -137,13 +167,9 @@ namespace eScapeLLC.UWP.Charts {
 			}
 		}
 		private void ItemsCollectionChanged(object sender, NotifyCollectionChangedEventArgs nccea) {
+			// collection has already been modified when we arrive here
 			_trace.Verbose($"cc {nccea.Action} nsi:[{nccea.NewStartingIndex}] {nccea.NewItems?.Count} osi:[{nccea.OldStartingIndex}] {nccea.OldItems?.Count}");
-			switch(nccea.Action) {
-			case NotifyCollectionChangedAction.Reset:
-			default:
-				Refresh();
-				break;
-			}
+			Refresh(nccea);
 		}
 		#endregion
 		#region properties
@@ -216,8 +242,7 @@ namespace eScapeLLC.UWP.Charts {
 					}
 					ix++;
 				}
-				// Phase IIIa: finalize all axes etc. before we finalize renderers
-				// this MUST occur so all renders see the same axes limits in postamble!
+				// Phase IIIa: post-traversal render bookkeeping
 				foreach (var idsr in _renderers) {
 					if (pmap.TryGetValue(idsr, out object state)) {
 						idsr.RenderComplete(state);
@@ -254,7 +279,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// Use this with sources that <b>don't</b> implement <see cref="INotifyCollectionChanged"/>.
 		/// ALSO use this if you are not using <see cref="ExternalRefresh"/> property.
 		/// </summary>
-		public void Refresh() { Dirty(); RefreshRequest?.Invoke(this); }
+		/// <param name="nccea">Type of change.</param>
+		public void Refresh(NotifyCollectionChangedEventArgs nccea) { Dirty(); RefreshRequest?.Invoke(this, nccea); }
 		#endregion
 	}
 	#endregion

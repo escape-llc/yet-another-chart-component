@@ -270,7 +270,10 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		class State : RenderState_ValueAndLabel<ItemState<Path>, Path> {
 			internal double totalv;
-			internal State(List<ItemState<Path>> sis, Recycler<Path> rc, params BindingEvaluator[] bes) : base(sis, rc, bes[0], bes[1], bes[2], bes[3]) { }
+			internal BindingEvaluator bl;
+			internal State(List<ItemState<Path>> sis, Recycler<Path> rc, params BindingEvaluator[] bes) : base(sis, rc, bes[0], bes[2], bes[3]) {
+				bl = bes[1];
+			}
 		}
 		object IDataSourceRenderer.Preamble(IChartRenderContext icrc) {
 			if (String.IsNullOrEmpty(ValuePath)) return null;

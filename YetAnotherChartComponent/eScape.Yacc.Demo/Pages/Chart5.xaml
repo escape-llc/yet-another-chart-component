@@ -48,13 +48,14 @@
 				<yacc:DataSource x:Name="data" Items="{Binding Data}"/>
 			</yacc:Chart.DataSources>
 			<yacc:Chart.Components>
-				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" PathStyle="{StaticResource Axes}"
+				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" DataSourceName="data" LabelPath="Label"
+					PathStyle="{StaticResource Axes}"
 					LabelStyle="{StaticResource CategoryAxisLabel}" />
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}"
 					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="F1" />
 				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource Grid}"
 					Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
-				<yacc:StackedColumnSeries x:Name="stack" DataSourceName="data" CategoryAxisName="xaxis" CategoryLabelPath="Label" ValueAxisName="yaxis"
+				<yacc:StackedColumnSeries x:Name="stack" DataSourceName="data" CategoryAxisName="xaxis" ValueAxisName="yaxis"
 					BarOffset=".25" BarWidth=".5" ClipToDataRegion="False">
 					<yacc:StackedColumnSeries.ColumnStack>
 						<yacc:ColumnStackItem Title="Value 1" ValuePath="Value1" PathStyle="{StaticResource Column_v1}"/>

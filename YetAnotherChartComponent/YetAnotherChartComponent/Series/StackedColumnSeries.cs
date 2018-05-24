@@ -275,11 +275,9 @@ namespace eScapeLLC.UWP.Charts {
 		class State : RenderStateCore<SeriesItemState, Path> {
 			internal readonly BindingEvaluator bx;
 			internal readonly BindingEvaluator[] bys;
-			internal readonly BindingEvaluator bl;
 			internal readonly BindingEvaluator byl;
-			internal State(List<SeriesItemState> sis, Recycler<Path> rc, BindingEvaluator bx, BindingEvaluator bl, BindingEvaluator byl, BindingEvaluator[] bys) :base(sis, rc) {
+			internal State(List<SeriesItemState> sis, Recycler<Path> rc, BindingEvaluator bx, BindingEvaluator byl, BindingEvaluator[] bys) :base(sis, rc) {
 				this.bx = bx;
-				this.bl = bl;
 				this.byl = byl;
 				this.bys = bys;
 			}
@@ -303,7 +301,6 @@ namespace eScapeLLC.UWP.Charts {
 			var recycler = new Recycler<Path>(paths, CreatePath);
 			return new State(new List<SeriesItemState>(), recycler,
 				!String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
-				!String.IsNullOrEmpty(CategoryLabelPath) ? new BindingEvaluator(CategoryLabelPath) : null,
 				!String.IsNullOrEmpty(ValueLabelPath) ? new BindingEvaluator(ValueLabelPath) : null,
 				bys
 			);
@@ -312,18 +309,13 @@ namespace eScapeLLC.UWP.Charts {
 			var st = state as State;
 			var valuex = st.bx != null ? (double)st.bx.For(item) : index;
 			st.ix = index;
-			var leftx = (st.bl == null ? CategoryAxis.For(valuex) : CategoryAxis.For(new Tuple<double, object>(valuex, st.bl.For(item))));
+			var leftx = CategoryAxis.For(valuex);
 			var barx = leftx + BarOffset;
 			var rightx = barx + BarWidth;
 			var sis = st.byl == null ? new SeriesItemState(index, leftx, barx) : new SeriesItemState_Custom(index, leftx, barx, st.byl.For(item));
 			for (int ix = 0; ix < st.bys.Length; ix++) {
 				var valuey = CoerceValue(item, st.bys[ix]);
 				if (double.IsNaN(valuey)) {
-					if (st.bl != null) {
-						// still map the X
-						CategoryAxis.For(new Tuple<double, object>(valuex, st.bl.For(item)));
-						UpdateLimits(valuex, double.NaN);
-					}
 					continue;
 				}
 				var colbase = valuey >= 0 ? sis.Max : sis.Min;

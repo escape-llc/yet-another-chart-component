@@ -133,12 +133,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// <returns>Axis-mapped value.</returns>
 		double For(double value);
 		/// <summary>
-		/// Map the value with label.
-		/// </summary>
-		/// <param name="valueWithLabel">Value with its label.</param>
-		/// <returns>Axis-mapped value.</returns>
-		double For(Tuple<double, object> valueWithLabel);
-		/// <summary>
 		/// Return the "scale" for this axis.
 		/// </summary>
 		/// <param name="dimension">Overall Dimension (in DC).</param>
@@ -399,6 +393,18 @@ namespace eScapeLLC.UWP.Charts {
 		void Render(IChartRenderContext icrc);
 	}
 	#endregion
+	#region IRequireCategoryAxis
+	/// <summary>
+	/// Requirement for Category-Axis mapping.
+	/// </summary>
+	public interface IRequireCategoryAxis {
+		/// <summary>
+		/// Name of the axis.
+		/// SHOULD be not-empty.
+		/// </summary>
+		String CategoryAxisName { get; }
+	}
+	#endregion
 	#region IRequireAfterAxesFinalized
 	/// <summary>
 	/// Requirement for callback after axis limits are finalized.
@@ -488,28 +494,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// SHOULD be not-empty.
 		/// </summary>
 		String ValueAxisName { get; }
-	}
-	#endregion
-	#region IProvideCategoryExtents
-	/// <summary>
-	/// Ability to provide Category-Axis extents.
-	/// </summary>
-	public interface IProvideCategoryExtents {
-		/// <summary>
-		/// The lowest value.
-		/// If unset, MUST be double.NaN.
-		/// </summary>
-		double CategoryMinimum { get; }
-		/// <summary>
-		/// The highest value.
-		/// If unset, MUST be double.NaN.
-		/// </summary>
-		double CategoryMaximum { get; }
-		/// <summary>
-		/// Name of the axis.
-		/// SHOULD be not-empty.
-		/// </summary>
-		String CategoryAxisName { get; }
 	}
 	#endregion
 	#region IProvideCustomTransform

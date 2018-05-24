@@ -30,9 +30,9 @@
 				<yacc:DataSource x:Name="data" Items="{Binding Data}"/>
 			</yacc:Chart.DataSources>
 			<yacc:Chart.Components>
-				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" />
-				<yacc:ColumnSeries x:Name="colv1" DataSourceName="data" ValuePath="Value1" CategoryLabelPath="Label" ClipToDataRegion="False"
-					Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" EnableDebugPaths="False"
+				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" DataSourceName="data" LabelPath="Label" />
+				<yacc:ColumnSeries x:Name="colv1" DataSourceName="data" ValuePath="Value1" ClipToDataRegion="False"
+					Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis"
 					BarOffset=".25" BarWidth=".25" />
 				<yacc:ColumnSeries x:Name="colv2" DataSourceName="data" ValuePath="Value2"
 					Title="Value 2 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" ClipToDataRegion="False"

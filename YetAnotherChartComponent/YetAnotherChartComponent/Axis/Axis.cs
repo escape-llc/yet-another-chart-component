@@ -256,12 +256,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// <returns>The "mapped" value. By default it's the identity.</returns>
 		public virtual double For(double value) { return value; }
 		/// <summary>
-		/// Map given value, and register label.
-		/// </summary>
-		/// <param name="valueWithLabel"></param>
-		/// <returns>Identity Tuple.Value1.</returns>
-		public virtual double For(Tuple<double, object> valueWithLabel) { return valueWithLabel.Item1; }
-		/// <summary>
 		/// Calculate the scale factor for this axis OR NaN.
 		/// </summary>
 		/// <param name="dimension"></param>
