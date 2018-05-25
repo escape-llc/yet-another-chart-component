@@ -1,5 +1,6 @@
 ﻿using eScape.Core;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Windows.Foundation;
@@ -15,7 +16,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// If there's no CategoryMemberPath defined (i.e. using data index) this component reserves one "extra" cell on the Category Axis, to present the last column(s).
 	/// Category axis cells start on the left and extend positive-X (in device units).  Each cell is one unit long.
 	/// </summary>
-	public class ColumnSeries : DataSeriesWithValue, IDataSourceRenderer, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
+	public class ColumnSeries : DataSeriesWithValue, IDataSourceRenderer, IRequireDataSourceUpdates, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("ColumnSeries", LogTools.Level.Error);
 		static LogTools.Flag _traceg = LogTools.Add("ColumnSeriesPaths", LogTools.Level.Off);
 		#region item state classes
@@ -245,6 +246,42 @@ namespace eScapeLLC.UWP.Charts {
 			Layer.Remove(st.recycler.Unused);
 			Layer.Add(st.recycler.Created);
 			Dirty = false;
+		}
+		#endregion
+		#region IRequireDataSourceUpdates
+		string IRequireDataSourceUpdates.UpdateSourceName => DataSourceName;
+		void IRequireDataSourceUpdates.Remove(IChartRenderContext icrc, int startAt, IList items) {
+			if (CategoryAxis == null || ValueAxis == null) return;
+			var unused = new List<FrameworkElement>();
+			for (int ix = 0; ix < items.Count; ix++) {
+				// remove requested item
+				if (ItemState[startAt].Element != null) {
+					unused.Add(ItemState[startAt].Element);
+				}
+				ItemState.RemoveAt(startAt);
+			}
+			// resequence remaining items
+			var bx = !String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null;
+			for (int ix = startAt; ix < ItemState.Count; ix++) {
+				var valuex = bx != null ? ItemState[ix].XValue : ix;
+				var leftx = CategoryAxis.For(valuex);
+				var barx = leftx + BarOffset;
+				var rightx = barx + BarWidth;
+				ItemState[ix].Move(ix, leftx, barx);
+				// update geometry
+				var rg = ItemState[ix].Element.Data as RectangleGeometry;
+				rg.Rect = new Rect(new Point(barx, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
+			}
+			// reconfigure axis limits
+			for (int ix = 0; ix < ItemState.Count; ix++) {
+				UpdateLimits(ItemState[ix].XValue, ItemState[ix].Value);
+			}
+			// finish up
+			Layer.Remove(unused);
+			Dirty = false;
+		}
+		void IRequireDataSourceUpdates.Add(IChartRenderContext icrc, int startAt, IList items) {
+			if (CategoryAxis == null || ValueAxis == null) return;
 		}
 		#endregion
 	}

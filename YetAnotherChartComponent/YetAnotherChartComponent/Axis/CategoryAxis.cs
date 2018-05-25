@@ -1,5 +1,6 @@
 ﻿using eScape.Core;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Windows.Foundation;
@@ -52,7 +53,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// Category axis cells start on the left and extend rightward (in device X-units).
 	/// The discrete category axis is a simple "positional-index" axis [0..N-1].  Each index defines a "cell" that allows "normalized" positioning [0..1) within the cell.
 	/// </summary>
-	public class CategoryAxis : AxisCommon, IRequireLayout, IDataSourceRenderer, IRequireTransforms, IRequireEnterLeave {
+	public class CategoryAxis : AxisCommon, IRequireLayout, IDataSourceRenderer, IRequireDataSourceUpdates, IRequireTransforms, IRequireEnterLeave {
 		static readonly LogTools.Flag _trace = LogTools.Add("CategoryAxis", LogTools.Level.Error);
 		#region ItemState
 		/// <summary>
@@ -246,6 +247,84 @@ namespace eScapeLLC.UWP.Charts {
 				_trace.Verbose($"{Name} sizeChanged loc:{loc} yv:{state.value} ns:{e.NewSize}");
 			}
 		}
+		/// <summary>
+		/// Rebuild the axis geometry based on current extents.
+		/// </summary>
+		void RebuildAxisGeometry() {
+			AxisGeometry.Figures.Clear();
+			var pf = PathHelper.Rectangle(Minimum, 0, Maximum, AxisLineThickness);
+			AxisGeometry.Figures.Add(pf);
+		}
+		/// <summary>
+		/// Factory method for <see cref="TextBlock"/> creation.
+		/// </summary>
+		/// <param name="state">Item state.</param>
+		/// <returns>New element.</returns>
+		TextBlock CreateElement(ItemState state) {
+			var tb = Theme.TextBlockTemplate.LoadContent() as TextBlock;
+			if (LabelStyle != null) {
+				BindTo(this, nameof(LabelStyle), tb, FrameworkElement.StyleProperty);
+			} else {
+				// already reported this, but need to do something
+				tb.FontSize = 10;
+				tb.Foreground = Axis.Fill;
+				tb.VerticalAlignment = VerticalAlignment.Center;
+				tb.HorizontalAlignment = HorizontalAlignment.Center;
+				tb.TextAlignment = TextAlignment.Center;
+			}
+			tb.SizeChanged += Element_SizeChanged;
+			return tb;
+		}
+		/// <summary>
+		/// Main flow of the render pipeline.
+		/// </summary>
+		/// <param name="sc"></param>
+		/// <param name="ist"></param>
+		/// <param name="recycler"></param>
+		void ElementPipeline(SelectorContext sc, ItemState ist, Recycler2<TextBlock,ItemState> recycler) {
+			sc.SetTick(ist.index);
+			var createit = true;
+			if (LabelSelector != null) {
+				var ox = LabelSelector.Convert(sc, typeof(bool), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
+				if (ox is bool bx) {
+					createit = bx;
+				} else {
+					createit = ox != null;
+				}
+			}
+			if (!createit) return;
+			var current = recycler.Next(ist);
+			if (current == null) return;
+			if (!current.Item1) {
+				// recycled: restore binding if we are using a LabelFormatter
+				if (LabelFormatter != null && LabelStyle != null) {
+					BindTo(this, nameof(LabelStyle), current.Item2, FrameworkElement.StyleProperty);
+				}
+			}
+			// default text
+			var text = ist.label == null
+				? String.Empty
+				: (String.IsNullOrEmpty(LabelFormatString)
+					? ist.label.ToString()
+					: String.Format(LabelFormatString, ist.label)
+					);
+			if (LabelFormatter != null) {
+				// call for Style, String override
+				var format = LabelFormatter.Convert(sc, typeof(Tuple<Style, String>), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
+				if (format is Tuple<Style, String> ovx) {
+					if (ovx.Item1 != null) {
+						current.Item2.Style = ovx.Item1;
+					}
+					if (ovx.Item2 != null) {
+						text = ovx.Item2;
+					}
+				}
+			}
+			// back-fill values
+			ist.tb = current.Item2;
+			ist.tb.Text = text;
+			sc.Generated(ist);
+		}
 		#endregion
 		#region extensions
 		#endregion
@@ -342,21 +421,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (String.IsNullOrEmpty(LabelPath)) return null;
 			var bl = new BindingEvaluator(LabelPath);
 			if (bl == null) return null;
-			var recycler = new Recycler2<TextBlock, ItemState>(AxisLabels.Where(tl=>tl.tb != null).Select(tl => tl.tb), (tpx) => {
-				var tb = Theme.TextBlockTemplate.LoadContent() as TextBlock;
-				if (LabelStyle != null) {
-					BindTo(this, nameof(LabelStyle), tb, FrameworkElement.StyleProperty);
-				} else {
-					// already reported this, but need to do something
-					tb.FontSize = 10;
-					tb.Foreground = Axis.Fill;
-					tb.VerticalAlignment = VerticalAlignment.Center;
-					tb.HorizontalAlignment = HorizontalAlignment.Center;
-					tb.TextAlignment = TextAlignment.Center;
-				}
-				tb.SizeChanged += Element_SizeChanged;
-				return tb;
-			});
+			var recycler = new Recycler2<TextBlock, ItemState>(AxisLabels.Where(tl=>tl.tb != null).Select(tl => tl.tb), CreateElement);
 			ResetLimits();
 			var widx = LabelStyle?.Find(FrameworkElement.WidthProperty);
 			return new State(new List<ItemState>(), recycler, icrc, widx == null, bl);
@@ -393,48 +458,7 @@ namespace eScapeLLC.UWP.Charts {
 			UpdateLimits(st.itemstate.Count);
 			// finish up layout process by checking with selector/formatter
 			foreach (var ist in st.itemstate) {
-				sc.SetTick(ist.index);
-				var createit = true;
-				if (LabelSelector != null) {
-					var ox = LabelSelector.Convert(sc, typeof(bool), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
-					if (ox is bool bx) {
-						createit = bx;
-					} else {
-						createit = ox != null;
-					}
-				}
-				if (!createit) continue;
-				var current = st.recycler.Next(ist);
-				if (current == null) break;
-				if (!current.Item1) {
-					// recycled: restore binding if we are using a LabelFormatter
-					if (LabelFormatter != null && LabelStyle != null) {
-						BindTo(this, nameof(LabelStyle), current.Item2, FrameworkElement.StyleProperty);
-					}
-				}
-				// default text
-				var text = ist.label == null
-					? String.Empty
-					: (String.IsNullOrEmpty(LabelFormatString)
-						? ist.label.ToString()
-						: String.Format(LabelFormatString, ist.label)
-						);
-				if (LabelFormatter != null) {
-					// call for Style, String override
-					var format = LabelFormatter.Convert(sc, typeof(Tuple<Style, String>), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
-					if (format is Tuple<Style, String> ovx) {
-						if (ovx.Item1 != null) {
-							current.Item2.Style = ovx.Item1;
-						}
-						if (ovx.Item2 != null) {
-							text = ovx.Item2;
-						}
-					}
-				}
-				// back-fill values
-				ist.tb = current.Item2;
-				ist.tb.Text = text;
-				sc.Generated(ist);
+				ElementPipeline(sc, ist, st.recycler);
 			}
 		}
 		/// <summary>
@@ -446,9 +470,63 @@ namespace eScapeLLC.UWP.Charts {
 			AxisLabels = st.itemstate;
 			Layer.Remove(st.recycler.Unused);
 			Layer.Add(st.recycler.Created);
-			AxisGeometry.Figures.Clear();
-			var pf = PathHelper.Rectangle(Minimum, 0, Maximum, AxisLineThickness);
-			AxisGeometry.Figures.Add(pf);
+			RebuildAxisGeometry();
+			Dirty = false;
+		}
+		#endregion
+		#region IRequireDataSourceUpdates
+		string IRequireDataSourceUpdates.UpdateSourceName => DataSourceName;
+		void IRequireDataSourceUpdates.Remove(IChartRenderContext icrc, int startAt, IList items) {
+			var remove = new List<FrameworkElement>();
+			for (int ix = 0; ix < items.Count; ix++) {
+				// remove requested item
+				if (AxisLabels[startAt].tb != null) {
+					remove.Add(AxisLabels[startAt].tb);
+				}
+				AxisLabels.RemoveAt(startAt);
+			}
+			// re-sequence remaining items
+			for (int ix = startAt; ix < AxisLabels.Count; ix++) {
+				AxisLabels[ix].index = ix;
+				AxisLabels[ix].value = ix;
+			}
+			// configure axis limits; just based on count-of-elements
+			UpdateLimits(0);
+			UpdateLimits(AxisLabels.Count);
+			// finish up
+			Layer.Remove(remove);
+			RebuildAxisGeometry();
+			Dirty = false;
+		}
+		void IRequireDataSourceUpdates.Add(IChartRenderContext icrc, int startAt, IList items) {
+			// mimic the DSRP sequence
+			var add = new List<TextBlock>();
+			var recycler = new Recycler2<TextBlock, ItemState>(add, CreateElement);
+			var widx = LabelStyle?.Find(FrameworkElement.WidthProperty);
+			var bl = new BindingEvaluator(LabelPath);
+			for (int ix = 0; ix < items.Count; ix++) {
+				// add requested item
+				var label = bl.For(items[ix]);
+				var istate = new ItemState() {
+					index = startAt + ix,
+					value = startAt + ix,
+					label = label,
+					usexau = widx == null
+				};
+				AxisLabels.Insert(startAt + ix, istate);
+			}
+			// re-sequence remaining items
+			for (int ix = startAt; ix < AxisLabels.Count; ix++) {
+				AxisLabels[ix].index = ix + items.Count;
+				AxisLabels[ix].value = ix + items.Count;
+			}
+			// render new items
+			// configure axis limits; just based on count-of-elements
+			UpdateLimits(0);
+			UpdateLimits(AxisLabels.Count);
+			// finish up
+			Layer.Add(recycler.Created);
+			RebuildAxisGeometry();
 			Dirty = false;
 		}
 		#endregion
