@@ -668,11 +668,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="items">The items affected.</param>
 		protected void IncrementalRemove(LayoutState ls, DataSource ds, int startIndex, IList items) {
 			_trace.Verbose($"refresh-incr-remove '{ds.Name}' {ds} @{startIndex} ct:{items.Count}");
-#if false
+#if true
 			ls.IsTransformsOnly = false;
 			// skipping Phase_Layout
 			// this loop comprises the Render phase
 			// only select components attached to DS
+			Phase_ResetAxes();
 			foreach (var cc in Components.Where(xx => xx is IRequireDataSourceUpdates irsiu && irsiu.UpdateSourceName == ds.Name)) {
 				_trace.Verbose($"incr-remove '{cc.Name}' {cc}");
 				IRequireDataSourceUpdates irdsu = cc as IRequireDataSourceUpdates;
@@ -685,8 +686,7 @@ namespace eScapeLLC.UWP.Charts {
 				cc.Render(ctx);
 			}
 			// other phases we need to run...
-			Phase_ResetAxes();
-			Phase_AxisLimits(cc2 => (cc2 is IProvideCategoryExtents || cc2 is IProvideValueExtents));
+			Phase_AxisLimits(cc2 => cc2 is IProvideValueExtents);
 			Phase_AxesFinalized(ls);
 			Phase_RenderAxes(ls);
 			Phase_Transforms(ls);

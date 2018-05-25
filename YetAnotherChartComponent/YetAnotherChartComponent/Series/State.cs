@@ -132,6 +132,13 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="xv">x-value.</param>
 		/// <param name="xvo">x-value after offset.</param>
 		public ItemStateCore(int idx, double xv, double xvo) { Index = idx; XValue = xv; XValueAfterOffset = xvo; }
+		/// <summary>
+		/// Re-locate this item to a new index.
+		/// </summary>
+		/// <param name="idx">Index.</param>
+		/// <param name="xv">x-value.</param>
+		/// <param name="xvo">x-value after offset.</param>
+		public void Move(int idx, double xv, double xvo) { Index = idx; XValue = xv; XValueAfterOffset = xvo; }
 	}
 	#endregion
 	#region ItemState<EL>
