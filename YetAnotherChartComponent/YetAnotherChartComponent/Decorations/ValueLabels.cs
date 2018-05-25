@@ -426,7 +426,7 @@ namespace eScapeLLC.UWP.Charts {
 						case RectanglePlacement rp:
 							var pt = rp.Transform(PlacementOffset);
 							_trace.Verbose($"rp c:{rp.Center} d:{rp.Direction} hd:{rp.HalfDimensions} pt:{pt}");
-							var sis = new SeriesItemState(siv.Index, siv.XValueIndex, siv.XValueIndex + CategoryAxisOffset, pt.Y, el.Item2, target.Channel) {
+							var sis = new SeriesItemState(siv.Index, siv.XValue, siv.XValue + CategoryAxisOffset, pt.Y, el.Item2, target.Channel) {
 								Direction = rp.Direction,
 								CustomValue = target is ISeriesItemValueCustom isivc ? isivc.CustomValue : null
 								};
@@ -435,14 +435,14 @@ namespace eScapeLLC.UWP.Charts {
 						case MidpointPlacement mp:
 							var pt2 = mp.Transform(PlacementOffset);
 							_trace.Verbose($"mp {mp.Midpoint} d:{mp.Direction} hd:{mp.HalfDimension} pt:{pt2}");
-							var sis2 = new SeriesItemState(siv.Index, siv.XValueIndex, pt2.X, pt2.Y, el.Item2, target.Channel) {
+							var sis2 = new SeriesItemState(siv.Index, siv.XValue, pt2.X, pt2.Y, el.Item2, target.Channel) {
 								Direction = mp.Direction,
 								CustomValue = target is ISeriesItemValueCustom isivc2 ? isivc2.CustomValue : null
 							};
 							itemstate.Add(sis2);
 							break;
 						default:
-							var sis3 = new SeriesItemState(siv.Index, siv.XValueIndex, siv.XValueIndex + CategoryAxisOffset, isivd.Value, el.Item2, target.Channel) {
+							var sis3 = new SeriesItemState(siv.Index, siv.XValue, siv.XValue + CategoryAxisOffset, isivd.Value, el.Item2, target.Channel) {
 								Direction = Placement.UP_RIGHT,
 								CustomValue = target is ISeriesItemValueCustom isivc3 ? isivc3.CustomValue : null
 							};
@@ -470,7 +470,7 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"{Name} transforms a:{icrc.Area} rx:{CategoryAxis?.Range} ry:{ValueAxis?.Range} matx:{matx}  ito:{icrc.IsTransformsOnly}");
 			if (matx == default(Matrix)) return;
 			foreach (var state in ItemState) {
-				state.CanvasLocation = matx.Transform(new Point(state.XValueOffset, state.Value));
+				state.CanvasLocation = matx.Transform(new Point(state.XValueAfterOffset, state.Value));
 				_trace.Verbose($"{Name} el:{state.Element} ds:{state.Element.DesiredSize} as:{state.Element.ActualWidth},{state.Element.ActualHeight}");
 				// Position element now because it WILL NOT invoke EVH if size didn't actually change
 				state.Locate(state.Element, LabelOffset);
@@ -487,7 +487,7 @@ namespace eScapeLLC.UWP.Charts {
 					//state.Element.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
 				}
 #endif
-				_trace.Verbose($"{Name} matx:{matx} pt:({state.XValueIndex},{state.Value}) dcc:{state.CanvasLocation}");
+				_trace.Verbose($"{Name} matx:{matx} pt:({state.XValue},{state.Value}) dcc:{state.CanvasLocation}");
 			}
 		}
 		#endregion

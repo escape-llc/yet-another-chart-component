@@ -204,16 +204,16 @@ namespace eScapeLLC.UWP.Charts {
 				if (sis is SeriesItemState_Custom sisc) {
 					var sis2 = new ISeriesItemValue[sis.Elements.Count];
 					for (int idx = 0; idx < sis.Elements.Count; idx++) {
-						sis2[idx] = new ChannelItemState_Custom(sis.Index, sis.XValueIndex, sis.XValueOffset, sis.Elements[idx].Item1, sisc.CustomValue, sis.Elements[idx].Item2, idx);
+						sis2[idx] = new ChannelItemState_Custom(sis.Index, sis.XValue, sis.XValueAfterOffset, sis.Elements[idx].Item1, sisc.CustomValue, sis.Elements[idx].Item2, idx);
 					}
-					var sivc = new ItemStateMultiChannelCore(sis.Index, sis.XValueIndex, sis.XValueOffset, sis2);
+					var sivc = new ItemStateMultiChannelCore(sis.Index, sis.XValue, sis.XValueAfterOffset, sis2);
 					yield return sivc;
 				} else {
 					var sis2 = new ISeriesItemValue[sis.Elements.Count];
 					for (int idx = 0; idx < sis.Elements.Count; idx++) {
-						sis2[idx] = new ChannelItemState(sis.Index, sis.XValueIndex, sis.XValueOffset, sis.Elements[idx].Item1, sis.Elements[idx].Item2, idx);
+						sis2[idx] = new ChannelItemState(sis.Index, sis.XValue, sis.XValueAfterOffset, sis.Elements[idx].Item1, sis.Elements[idx].Item2, idx);
 					}
-					var sivc = new ItemStateMultiChannelCore(sis.Index, sis.XValueIndex, sis.XValueOffset, sis2);
+					var sivc = new ItemStateMultiChannelCore(sis.Index, sis.XValue, sis.XValueAfterOffset, sis2);
 					yield return sivc;
 				}
 			}

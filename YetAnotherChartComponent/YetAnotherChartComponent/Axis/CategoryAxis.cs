@@ -37,7 +37,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public interface ICategoryAxisLabelSelectorContext : IAxisLabelSelectorContext {
 		/// <summary>
-		/// The list of all labels and their indices.
+		/// The list of all potential label value data.
 		/// </summary>
 		IList<ICategoryLabelState> AllLabels { get; }
 		/// <summary>
@@ -193,7 +193,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// List of active TextBlocks for labels.
 		/// </summary>
-		protected List<ItemState> TickLabels { get; set; }
+		protected List<ItemState> AxisLabels { get; set; }
 		/// <summary>
 		/// The layer to manage components.
 		/// </summary>
@@ -221,7 +221,7 @@ namespace eScapeLLC.UWP.Charts {
 			CommonInit();
 		}
 		private void CommonInit() {
-			TickLabels = new List<ItemState>();
+			AxisLabels = new List<ItemState>();
 			Axis = new Path();
 			AxisGeometry = new PathGeometry();
 			Axis.Data = AxisGeometry;
@@ -240,7 +240,7 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"{Name} sizeChanged ps:{e.PreviousSize} ns:{e.NewSize} text:{vm?.Text}");
 #endif
 			var fe = sender as FrameworkElement;
-			var state = TickLabels.SingleOrDefault((sis) => sis.tb == fe);
+			var state = AxisLabels.SingleOrDefault((sis) => sis.tb == fe);
 			if (state != null) {
 				var loc = state.UpdateLocation();
 				_trace.Verbose($"{Name} sizeChanged loc:{loc} yv:{state.value} ns:{e.NewSize}");
@@ -299,7 +299,7 @@ namespace eScapeLLC.UWP.Charts {
 			var matx = new Matrix(scalex, 0, 0, 1, icrc.Area.Left, icrc.Area.Top + AxisMargin);
 			AxisGeometry.Transform = new MatrixTransform() { Matrix = matx };
 			_trace.Verbose($"transforms sx:{scalex:F3} matx:{matx} a:{icrc.Area}");
-			foreach (var state in TickLabels) {
+			foreach (var state in AxisLabels) {
 				if (state.tb == null) continue;
 				state.scalex = scalex;
 				state.top = icrc.Area.Top + AxisLineThickness + 2 * AxisMargin;
@@ -315,7 +315,10 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region IDataSourceRenderer
-		private class State : RenderStateCore2<ItemState, TextBlock> {
+		/// <summary>
+		/// Internal render state.
+		/// </summary>
+		class State : RenderStateCore2<ItemState, TextBlock> {
 			/// <summary>
 			/// Remember whether we are using x-axis units or auto.
 			/// </summary>
@@ -339,7 +342,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (String.IsNullOrEmpty(LabelPath)) return null;
 			var bl = new BindingEvaluator(LabelPath);
 			if (bl == null) return null;
-			var recycler = new Recycler2<TextBlock, ItemState>(TickLabels.Where(tl=>tl.tb != null).Select(tl => tl.tb), (tpx) => {
+			var recycler = new Recycler2<TextBlock, ItemState>(AxisLabels.Where(tl=>tl.tb != null).Select(tl => tl.tb), (tpx) => {
 				var tb = Theme.TextBlockTemplate.LoadContent() as TextBlock;
 				if (LabelStyle != null) {
 					BindTo(this, nameof(LabelStyle), tb, FrameworkElement.StyleProperty);
@@ -366,6 +369,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="item"></param>
 		void IDataSourceRenderer.Render(object state, int index, object item) {
 			var st = state as State;
+			st.ix = index;
 			var label = st.bl.For(item);
 			var istate = new ItemState() {
 				index = index,
@@ -439,7 +443,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="state"></param>
 		void IDataSourceRenderer.Postamble(object state) {
 			var st = state as State;
-			TickLabels = st.itemstate;
+			AxisLabels = st.itemstate;
 			Layer.Remove(st.recycler.Unused);
 			Layer.Add(st.recycler.Created);
 			AxisGeometry.Figures.Clear();

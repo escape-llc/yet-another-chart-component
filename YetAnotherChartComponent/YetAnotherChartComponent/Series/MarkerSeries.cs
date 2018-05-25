@@ -111,7 +111,7 @@ namespace eScapeLLC.UWP.Charts {
 			var world = MatrixSupport.ModelFor(CategoryAxis, ValueAxis);
 			foreach (var state in ItemState) {
 				if (state is IItemStateMatrix ism) {
-					ism.World = MatrixSupport.Translate(world, state.XValueOffset, state.Value);
+					ism.World = MatrixSupport.Translate(world, state.XValueAfterOffset, state.Value);
 				}
 			}
 		}

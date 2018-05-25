@@ -6,7 +6,9 @@ namespace eScapeLLC.UWP.Charts {
 	#region DataSeries
 	/// <summary>
 	/// Base class of components that represent a data series.
-	/// This class commits to a Data source only.
+	/// This class commits to a <see cref="DataSourceName"/> only.
+	/// <para/>
+	/// The <see cref="Chart"/> class keys on this class for certain render pipeline phases.
 	/// </summary>
 	public abstract class DataSeries : ChartComponent {
 		#region DPs
@@ -35,7 +37,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="dp"></param>
 		/// <returns></returns>
 		protected virtual String DPName(DependencyProperty dp) {
-			if (dp == DataSourceNameProperty) return "DataSourceName";
+			if (dp == DataSourceNameProperty) return nameof(DataSourceName);
 			return dp.ToString();
 		}
 		/// <summary>
@@ -92,36 +94,32 @@ namespace eScapeLLC.UWP.Charts {
 		public String CategoryPath { get { return (String)GetValue(CategoryPathProperty); } set { SetValue(CategoryPathProperty, value); } }
 		/// <summary>
 		/// Component name of value axis.
-		/// Referenced component MUST implement IChartAxis.
+		/// Referenced component MUST implement <see cref="IChartAxis"/>.
 		/// </summary>
 		public String ValueAxisName { get; set; }
 		/// <summary>
 		/// Component name of category axis.
-		/// Referenced component MUST implement IChartAxis.
+		/// Referenced component MUST implement <see cref="IChartAxis"/>.
 		/// </summary>
 		public String CategoryAxisName { get; set; }
 		/// <summary>
 		/// The minimum value seen.
-		/// Only valid after axis extent transfer.
 		/// </summary>
 		public double Minimum { get; protected set; } = double.NaN;
 		/// <summary>
 		/// The maximum value seen.
-		/// Only valid after axis extent transfer.
 		/// </summary>
 		public double Maximum { get; protected set; } = double.NaN;
 		/// <summary>
 		/// The minimum category (value) seen.
-		/// Only valid after axis extent transfer.
 		/// </summary>
 		public double CategoryMinimum { get; protected set; } = double.NaN;
 		/// <summary>
 		/// The maximum category (value) seen.
-		/// Only valid after axis extent transfer.
 		/// </summary>
 		public double CategoryMaximum { get; protected set; } = double.NaN;
 		/// <summary>
-		/// Range of the values or NaN if ProcessData() was never called.
+		/// Range of the values or <see cref="double.NaN"/> if <see cref="UpdateLimits(double, double)"/>or <see cref="UpdateLimits(double, double[])"/> was never called.
 		/// </summary>
 		public double Range { get { return double.IsNaN(Minimum) || double.IsNaN(Maximum) ? double.NaN : Maximum - Minimum + 1; } }
 		/// <summary>
@@ -140,26 +138,37 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="dp"></param>
 		/// <returns></returns>
 		protected override String DPName(DependencyProperty dp) {
-			if (dp == CategoryPathProperty) return "CategoryPath";
+			if (dp == CategoryPathProperty) return nameof(CategoryPath);
 			return dp.ToString();
 		}
 		/// <summary>
-		/// Resolve axis references.
+		/// Resolve axis references with error info.
 		/// </summary>
 		/// <param name="icrc">The context.</param>
 		protected void EnsureAxes(IChartComponentContext icrc) {
-			if (ValueAxis == null && !String.IsNullOrEmpty(ValueAxisName)) {
-				ValueAxis = icrc.Find(ValueAxisName) as IChartAxis;
-			} else {
-				if (icrc is IChartErrorInfo icei) {
-					icei.Report(new ChartValidationResult(NameOrType(), $"Value axis '{ValueAxisName}' was not found", new[] { nameof(ValueAxis), nameof(ValueAxisName) }));
+			IChartErrorInfo icei = icrc as IChartErrorInfo;
+			if (ValueAxis == null) {
+				if (!String.IsNullOrEmpty(ValueAxisName)) {
+					ValueAxis = icrc.Find(ValueAxisName) as IChartAxis;
+					if (ValueAxis == null && icei != null) {
+						icei.Report(new ChartValidationResult(NameOrType(), $"Value axis '{ValueAxisName}' was not found", new[] { nameof(ValueAxis), nameof(ValueAxisName) }));
+					}
+				} else {
+					if (icei != null) {
+						icei.Report(new ChartValidationResult(NameOrType(), $"Property '{nameof(ValueAxisName)}' was not set", new[] { nameof(ValueAxis), nameof(ValueAxisName) }));
+					}
 				}
 			}
-			if (CategoryAxis == null && !String.IsNullOrEmpty(CategoryAxisName)) {
-				CategoryAxis = icrc.Find(CategoryAxisName) as IChartAxis;
-			} else {
-				if (icrc is IChartErrorInfo icei) {
-					icei.Report(new ChartValidationResult(NameOrType(), $"Category axis '{CategoryAxisName}' was not found", new[] { nameof(CategoryAxis), nameof(CategoryAxisName) }));
+			if (CategoryAxis == null) {
+				if (!String.IsNullOrEmpty(CategoryAxisName)) {
+					CategoryAxis = icrc.Find(CategoryAxisName) as IChartAxis;
+					if (CategoryAxis == null && icei != null) {
+						icei.Report(new ChartValidationResult(NameOrType(), $"Value axis '{CategoryAxisName}' was not found", new[] { nameof(CategoryAxis), nameof(CategoryAxisName) }));
+					}
+				} else {
+					if (icei != null) {
+						icei.Report(new ChartValidationResult(NameOrType(), $"Property '{nameof(CategoryAxisName)}' was not set", new[] { nameof(CategoryAxis), nameof(CategoryAxisName) }));
+					}
 				}
 			}
 		}
@@ -180,8 +189,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// Optimized for multiple y-axis values.
 		/// If a value is NaN, it is effectively ignored because NaN is NOT GT/LT ANY number, even itself.
 		/// </summary>
-		/// <param name="vx"></param>
-		/// <param name="vys"></param>
+		/// <param name="vx">Category. MAY be NaN.</param>
+		/// <param name="vys">Values.  MAY be NaN.</param>
 		protected void UpdateLimits(double vx, params double[] vys) {
 			if (double.IsNaN(CategoryMinimum) || vx < CategoryMinimum) { CategoryMinimum = vx; }
 			if (double.IsNaN(CategoryMaximum) || vx > CategoryMaximum) { CategoryMaximum = vx; }
@@ -204,8 +213,9 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region DataSeriesWithValue
 	/// <summary>
-	/// Derive from this series type when the series has a single value binding, e.g. Line, Column, Marker.
-	/// This class commits to the ValuePath and PathStyle of those elements.
+	/// Derive from this series type when the series has a single value binding, e.g. <see cref="LineSeries"/>, <see cref="ColumnSeries"/>, <see cref="MarkerSeries"/>.
+	/// This class commits to the <see cref="ValuePath"/>and <see cref="PathStyle"/> of those elements.
+	/// <para/>
 	/// Series type with multiple value bindings SHOULD use <see cref="DataSeries"/> instead.
 	/// </summary>
 	public abstract class DataSeriesWithValue : DataSeriesWithAxes, IProvideSeriesItemValues {
@@ -268,9 +278,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="dp"></param>
 		/// <returns></returns>
 		protected override String DPName(DependencyProperty dp) {
-			if (dp == ValuePathProperty) return "ValuePath";
-			else if (dp == PathStyleProperty) return "PathStyle";
-			else if (dp == TitleProperty) return "Title";
+			if (dp == ValuePathProperty) return nameof(ValuePath);
+			else if (dp == ValueLabelPathProperty) return nameof(ValueLabelPath);
+			else if (dp == PathStyleProperty) return nameof(PathStyle);
+			else if (dp == TitleProperty) return nameof(Title);
 			else return base.DPName(dp);
 		}
 		#endregion

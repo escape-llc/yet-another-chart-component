@@ -1,6 +1,7 @@
 ﻿using eScape.Core;
 using System;
 using System.Collections.Generic;
+using Windows.Foundation;
 using Windows.UI.Xaml;
 
 namespace eScapeLLC.UWP.Charts {
@@ -105,6 +106,25 @@ namespace eScapeLLC.UWP.Charts {
 			}
 		}
 		#endregion
+	}
+	#endregion
+	#region IAxisLabelSelectorContext
+	/// <summary>
+	/// Base context for axis label selector/formatter.
+	/// </summary>
+	public interface IAxisLabelSelectorContext {
+		/// <summary>
+		/// Current axis label index.
+		/// </summary>
+		int Index { get; }
+		/// <summary>
+		/// The axis presenting labels.
+		/// </summary>
+		IChartAxis Axis { get; }
+		/// <summary>
+		/// Axis rendering area in DC.
+		/// </summary>
+		Rect Area { get; }
 	}
 	#endregion
 	#region AxisCommon

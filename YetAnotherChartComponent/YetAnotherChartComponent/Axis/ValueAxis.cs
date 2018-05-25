@@ -10,25 +10,6 @@ using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
 
 namespace eScapeLLC.UWP.Charts {
-	#region IAxisLabelSelectorContext
-	/// <summary>
-	/// Base context for axis labels.
-	/// </summary>
-	public interface IAxisLabelSelectorContext {
-		/// <summary>
-		/// Current axis label index.
-		/// </summary>
-		int Index { get; }
-		/// <summary>
-		/// The axis presenting labels.
-		/// </summary>
-		IChartAxis Axis { get; }
-		/// <summary>
-		/// Axis rendering area in DC.
-		/// </summary>
-		Rect Area { get; }
-	}
-	#endregion
 	#region IValueAxisLabelSelectorContext
 	/// <summary>
 	/// Context passed to the <see cref="IValueConverter"/> for value axis <see cref="Style"/> selection etc.

@@ -160,17 +160,17 @@ namespace eScapeLLC.UWP.Charts {
 				if(state is SeriesItemState sis) {
 					var sis2 = new ISeriesItemValue[sis.Elements.Length];
 					for (int idx = 0; idx < sis.Elements.Length; idx++) {
-						sis2[idx] = new ItemState<PathFigure>(sis.Index, sis.XValueIndex, sis.XValueOffset, sis.Elements[idx].Item1, sis.Elements[idx].Item2, idx);
+						sis2[idx] = new ItemState<PathFigure>(sis.Index, sis.XValue, sis.XValueAfterOffset, sis.Elements[idx].Item1, sis.Elements[idx].Item2, idx);
 					}
-					var sivc = new ItemStateMultiChannelCore(sis.Index, sis.XValueIndex, sis.XValueOffset, sis2);
+					var sivc = new ItemStateMultiChannelCore(sis.Index, sis.XValue, sis.XValueAfterOffset, sis2);
 					yield return sivc;
 				}
 				else if(state is SeriesItemState_Custom sisc) {
 					var sis2 = new ISeriesItemValue[sisc.Elements.Length];
 					for (int idx = 0; idx < sisc.Elements.Length; idx++) {
-						sis2[idx] = new ItemStateCustom<PathFigure>(sisc.Index, sisc.XValueIndex, sisc.XValueOffset, sisc.Elements[idx].Item1, sisc.CustomValue, sisc.Elements[idx].Item2, idx);
+						sis2[idx] = new ItemStateCustom<PathFigure>(sisc.Index, sisc.XValue, sisc.XValueAfterOffset, sisc.Elements[idx].Item1, sisc.CustomValue, sisc.Elements[idx].Item2, idx);
 					}
-					var sivc = new ItemStateMultiChannelCore(sisc.Index, sisc.XValueIndex, sisc.XValueOffset, sis2);
+					var sivc = new ItemStateMultiChannelCore(sisc.Index, sisc.XValue, sisc.XValueAfterOffset, sis2);
 					yield return sivc;
 				}
 			}

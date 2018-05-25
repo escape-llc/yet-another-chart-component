@@ -79,7 +79,7 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region CanvasLayer
 	/// <summary>
-	/// Layer where each layer is bound to a different Canvas (COULD be IPanel).
+	/// Layer where each layer is bound to a different <see cref="Canvas"/> (COULD be <see cref="IPanel"/>).
 	/// This implementation relies on <see cref="Panel.Children"/> to track the elements.
 	/// </summary>
 	public class CanvasLayer : IChartLayer {
@@ -883,7 +883,7 @@ namespace eScapeLLC.UWP.Charts {
 			Phase_AxisLimits((cc2) => !(cc2 is DataSeries) && (cc2 is IProvideValueExtents));
 			// Phase V: axes finalized
 			Phase_AxesFinalized(ls);
-			// Phase VI: render axes (IRequireRender)
+			// Phase VI: render value axes (IRequireRender)
 			Phase_RenderAxes(ls);
 			// Phase VII: configure all transforms
 			Phase_Transforms(ls);
