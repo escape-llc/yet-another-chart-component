@@ -157,7 +157,7 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"grid range:{tc.Range} tintv:{tc.TickInterval}");
 			// TODO may want to include the LabelStyle's padding if defined
 			var padding = AxisLineThickness + 2 * AxisMargin;
-			var tbr = new Recycler<TextBlock>(TickLabels.Select(tl => tl.tb), () => {
+			var tbr = new Recycler2<TextBlock, ItemState>(TickLabels.Select(tl => tl.tb), (ist) => {
 				var tb = Theme.TextBlockTemplate.LoadContent() as TextBlock;
 				if (LabelStyle != null) {
 					BindTo(this, nameof(LabelStyle), tb, FrameworkElement.StyleProperty);
@@ -174,11 +174,10 @@ namespace eScapeLLC.UWP.Charts {
 				return tb;
 			});
 			var itemstate = new List<ItemState>();
-			var tbget = tbr.Items().GetEnumerator();
 			// materialize the ticks
 			var lx = tc.GetTicks().ToArray();
 			var sc = new SelectorContext(this, icrc.Area, lx, tc.TickInterval);
-			for(int ix = 0; ix < lx.Length; ix++) {
+			for (int ix = 0; ix < lx.Length; ix++) {
 				//_trace.Verbose($"grid vx:{tick}");
 				sc.SetTick(ix);
 				var createit = true;
@@ -192,27 +191,25 @@ namespace eScapeLLC.UWP.Charts {
 					}
 				}
 				if (!createit) continue;
-				if (tbget.MoveNext()) {
-					var tick = lx[ix];
-					var current = tbget.Current;
-					if(!current.Item1) {
-						// restore binding if we are using a LabelFormatter
-						if (LabelFormatter != null && LabelStyle != null) {
-							BindTo(this, nameof(LabelStyle), current.Item2, FrameworkElement.StyleProperty);
-						}
+				var current = tbr.Next(null);
+				var tick = lx[ix];
+				if (!current.Item1) {
+					// restore binding if we are using a LabelFormatter
+					if (LabelFormatter != null && LabelStyle != null) {
+						BindTo(this, nameof(LabelStyle), current.Item2, FrameworkElement.StyleProperty);
 					}
-					// default text
-					var text = tick.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
-					if (LabelFormatter != null) {
-						// call for Style, String override
-						var format = LabelFormatter.Convert(sc, typeof(Tuple<Style, String>), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
-						if (format is Tuple<Style, String> ovx) {
-							if (ovx.Item1 != null) {
-								current.Item2.Style = ovx.Item1;
-							}
-							if (ovx.Item2 != null) {
-								text = ovx.Item2;
-							}
+				}
+				// default text
+				var text = tick.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
+				if (LabelFormatter != null) {
+					// call for Style, String override
+					var format = LabelFormatter.Convert(sc, typeof(Tuple<Style, String>), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
+					if (format is Tuple<Style, String> ovx) {
+						if (ovx.Item1 != null) {
+							current.Item2.Style = ovx.Item1;
+						}
+						if (ovx.Item2 != null) {
+							text = ovx.Item2;
 						}
 					}
 					var state = new ItemState() { tb = current.Item2, value = tick };

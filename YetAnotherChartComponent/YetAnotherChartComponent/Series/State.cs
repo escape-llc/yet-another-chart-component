@@ -392,7 +392,7 @@ namespace eScapeLLC.UWP.Charts {
 		}
 	}
 	#endregion
-	#region RenderStateCore<SIS,EL>
+	#region RenderStateCore<SIS,EL> (deprecating)
 	/// <summary>
 	/// Common state for implementations of <see cref="IDataSourceRenderer"/>.
 	/// Contains no references to any values on either axis, just core bookkeeping.
@@ -400,6 +400,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	/// <typeparam name="SIS">Series item state type.</typeparam>
 	/// <typeparam name="EL">Recycled element type.</typeparam>
+	[Obsolete("Use RenderStateCore2<SIS,EL> and Recycler2<EL,SIS> instead", false)]
 	internal class RenderStateCore<SIS, EL> where SIS : class where EL : FrameworkElement {
 		/// <summary>
 		/// Tracks the index from Render().
@@ -444,7 +445,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	/// <typeparam name="SIS">Series item state type.</typeparam>
 	/// <typeparam name="EL">Recycled element type.</typeparam>
-	internal class RenderState_ValueAndLabel<SIS, EL> : RenderStateCore<SIS, EL> where SIS : class where EL : FrameworkElement {
+	internal class RenderState_ValueAndLabel<SIS, EL> : RenderStateCore2<SIS, EL> where SIS : class where EL : FrameworkElement {
 		/// <summary>
 		/// Binds x-value; MAY be NULL.
 		/// </summary>
@@ -465,7 +466,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="bx">Evaluate x-value.</param>
 		/// <param name="by">Evaluate y-value.</param>
 		/// <param name="byl">Evaluate custom y-label MAY be NULL.</param>
-		internal RenderState_ValueAndLabel(List<SIS> state, Recycler<EL> rc, BindingEvaluator bx, BindingEvaluator by, BindingEvaluator byl) : base(state, rc) {
+		internal RenderState_ValueAndLabel(List<SIS> state, Recycler2<EL,SIS> rc, BindingEvaluator bx, BindingEvaluator by, BindingEvaluator byl) : base(state, rc) {
 #pragma warning disable IDE0016 // Use 'throw' expression
 			if (by == null) throw new ArgumentNullException(nameof(by));
 #pragma warning restore IDE0016 // Use 'throw' expression
