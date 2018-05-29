@@ -181,7 +181,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Path factory for recycler.
 		/// </summary>
 		/// <returns></returns>
-		Path CreatePath() {
+		Path CreatePath(ItemState<Path> isp) {
 			var path = new Path();
 			BindTo(this, nameof(PathStyle), path, FrameworkElement.StyleProperty);
 			return path;
@@ -193,12 +193,32 @@ namespace eScapeLLC.UWP.Charts {
 			if (by == null) return null;
 			ResetLimits();
 			var paths = ItemState.Select(ms => ms.Element);
-			var recycler = new Recycler<Path>(paths, CreatePath);
+			var recycler = new Recycler2<Path, ItemState<Path>>(paths, CreatePath);
 			return new RenderState_ValueAndLabel<ItemState<Path>, Path>(new List<ItemState<Path>>(), recycler,
 				!String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
 				by,
 				!String.IsNullOrEmpty(ValueLabelPath) ? new BindingEvaluator(ValueLabelPath) : null
 			);
+		}
+		ItemState<Path> ElementPipeline(int index, double valuex, double valuey, object item, Recycler2<Path, ItemState<Path>> recycler, BindingEvaluator byl) {
+			var y1 = ValueAxis.For(valuey);
+			var y2 = ValueAxis.For(0);
+			var topy = Math.Max(y1, y2);
+			var bottomy = Math.Min(y1, y2);
+			var leftx = CategoryAxis.For(valuex);
+			var barx = leftx + BarOffset;
+			var rightx = barx + BarWidth;
+			_trace.Verbose($"{Name}[{index}] {valuey} ({barx},{topy}) ({rightx},{bottomy})");
+			var path = recycler.Next(null);
+			if (path == null) return null;
+			var rg = new RectangleGeometry() { Rect = new Rect(new Point(barx, topy), new Point(rightx, bottomy)) };
+			path.Item2.Data = rg;
+			if (byl == null) {
+				return new SeriesItemState_Double(index, leftx, barx, y1, path.Item2);
+			} else {
+				var cs = byl.For(item);
+				return new SeriesItemState_Custom(index, leftx, barx, y1, cs, path.Item2);
+			}
 		}
 		void IDataSourceRenderer.Render(object state, int index, object item) {
 			var st = state as RenderState_ValueAndLabel<ItemState<Path>, Path>;
@@ -210,35 +230,21 @@ namespace eScapeLLC.UWP.Charts {
 			if (double.IsNaN(valuey)) {
 				return;
 			}
-			var y1 = ValueAxis.For(valuey);
-			var y2 = ValueAxis.For(0);
-			var topy = Math.Max(y1, y2);
-			var bottomy = Math.Min(y1, y2);
-			var leftx = CategoryAxis.For(valuex);
-			var barx = leftx + BarOffset;
-			var rightx = barx + BarWidth;
-			_trace.Verbose($"{Name}[{index}] {valuey} ({barx},{topy}) ({rightx},{bottomy})");
-			var path = st.NextElement();
-			if (path == null) return;
-			var rg = new RectangleGeometry() { Rect = new Rect(new Point(barx, topy), new Point(rightx, bottomy)) };
-			path.Item2.Data = rg;
-			if (st.byl == null) {
-				st.itemstate.Add(new SeriesItemState_Double(index, leftx, barx, y1, path.Item2));
-			} else {
-				var cs = st.byl.For(item);
-				st.itemstate.Add(new SeriesItemState_Custom(index, leftx, barx, y1, cs, path.Item2));
-			}
+			var istate = ElementPipeline(index, valuex, valuey, item, st.recycler, st.byl);
+			if (istate != null) st.itemstate.Add(istate);
 		}
 		/// <summary>
-		/// Have to perform update here and not in Postamble because we are altering axis limits.
+		/// Nothing to do here.
 		/// </summary>
 		/// <param name="state"></param>
 		void IDataSourceRenderer.RenderComplete(object state) {
+#if NO_LONGER_NEEDED
 			var st = state as RenderState_ValueAndLabel<ItemState<Path>, Path>;
 			if (st.bx == null) {
 				// needs one extra "cell"
 				UpdateLimits(st.ix + 1, double.NaN);
 			}
+#endif
 		}
 		void IDataSourceRenderer.Postamble(object state) {
 			var st = state as RenderState_ValueAndLabel<ItemState<Path>, Path>;
@@ -260,21 +266,21 @@ namespace eScapeLLC.UWP.Charts {
 				}
 				ItemState.RemoveAt(startAt);
 			}
-			// resequence remaining items
+			// re-sequence remaining items
 			var bx = !String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null;
 			for (int ix = startAt; ix < ItemState.Count; ix++) {
 				var valuex = bx != null ? ItemState[ix].XValue : ix;
 				var leftx = CategoryAxis.For(valuex);
 				var barx = leftx + BarOffset;
-				var rightx = barx + BarWidth;
 				ItemState[ix].Move(ix, leftx, barx);
 				// update geometry
 				var rg = ItemState[ix].Element.Data as RectangleGeometry;
+				var rightx = barx + BarWidth;
 				rg.Rect = new Rect(new Point(barx, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
 			}
 			// reconfigure axis limits
 			for (int ix = 0; ix < ItemState.Count; ix++) {
-				UpdateLimits(ItemState[ix].XValue, ItemState[ix].Value);
+				UpdateLimits(ItemState[ix].XValue, ItemState[ix].Value, 0);
 			}
 			// finish up
 			Layer.Remove(unused);
@@ -282,6 +288,46 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		void IRequireDataSourceUpdates.Add(IChartRenderContext icrc, int startAt, IList items) {
 			if (CategoryAxis == null || ValueAxis == null) return;
+			var by = new BindingEvaluator(ValuePath);
+			if (by == null) return;
+			var bx = !String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null;
+			var byl = !String.IsNullOrEmpty(ValueLabelPath) ? new BindingEvaluator(ValueLabelPath) : null;
+			var recycler = new Recycler2<Path, ItemState<Path>>(new List<Path>(), CreatePath);
+			var reproc = new List<ItemState<Path>>();
+			for (int ix = 0; ix < items.Count; ix++) {
+				var valuey = CoerceValue(items[ix], by);
+				// short-circuit if it's NaN
+				if (double.IsNaN(valuey)) { continue; }
+				var valuex = bx != null ? (double)bx.For(items[ix]) : startAt + ix;
+				// add requested item
+				var istate = ElementPipeline(startAt + ix, valuex, valuey, items[ix], recycler, byl);
+				if (istate != null) {
+					ItemState.Insert(startAt + ix, istate);
+					reproc.Add(istate);
+				}
+			}
+			if (reproc.Count > 0) {
+				// re-sequence remaining items
+				for (int ix = startAt + reproc.Count; ix < ItemState.Count; ix++) {
+					var index = ix + reproc.Count();
+					var valuex = bx != null ? ItemState[ix].XValue : index;
+					var leftx = CategoryAxis.For(valuex);
+					var barx = leftx + BarOffset;
+					ItemState[ix].Move(index, leftx, barx);
+					// recalc geometry
+					var rg = ItemState[ix].Element.Data as RectangleGeometry;
+					var rightx = barx + BarWidth;
+					rg.Rect = new Rect(new Point(barx, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
+				}
+			}
+			// reconfigure axis limits
+			// they were reset, MUST do this regardless
+			for (int ix = 0; ix < ItemState.Count; ix++) {
+				UpdateLimits(ItemState[ix].XValue, ItemState[ix].Value, 0);
+			}
+			// finish up
+			Layer.Add(recycler.Created);
+			Dirty = false;
 		}
 		#endregion
 	}

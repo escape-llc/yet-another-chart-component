@@ -500,10 +500,10 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		void IRequireDataSourceUpdates.Add(IChartRenderContext icrc, int startAt, IList items) {
 			// mimic the DSRP sequence
-			var add = new List<TextBlock>();
-			var recycler = new Recycler2<TextBlock, ItemState>(add, CreateElement);
 			var widx = LabelStyle?.Find(FrameworkElement.WidthProperty);
 			var bl = new BindingEvaluator(LabelPath);
+			// keep a separate list; easier at the end
+			var reproc = new List<ItemState>();
 			for (int ix = 0; ix < items.Count; ix++) {
 				// add requested item
 				var label = bl.For(items[ix]);
@@ -514,13 +514,21 @@ namespace eScapeLLC.UWP.Charts {
 					usexau = widx == null
 				};
 				AxisLabels.Insert(startAt + ix, istate);
+				reproc.Add(istate);
 			}
 			// re-sequence remaining items
-			for (int ix = startAt; ix < AxisLabels.Count; ix++) {
+			for (int ix = startAt + reproc.Count; ix < AxisLabels.Count; ix++) {
 				AxisLabels[ix].index = ix + items.Count;
 				AxisLabels[ix].value = ix + items.Count;
 			}
 			// render new items
+			// run the element pipeline on the added items
+			var recycler = new Recycler2<TextBlock, ItemState>(new List<TextBlock>(), CreateElement);
+			var labels = new List<ICategoryLabelState>(AxisLabels);
+			var sc = new SelectorContext(this, icrc.SeriesArea, labels);
+			foreach (var istate in reproc) {
+				ElementPipeline(sc, istate, recycler);
+			}
 			// configure axis limits; just based on count-of-elements
 			UpdateLimits(0);
 			UpdateLimits(AxisLabels.Count);

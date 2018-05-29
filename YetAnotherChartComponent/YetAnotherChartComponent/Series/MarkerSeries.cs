@@ -149,7 +149,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Path factory for recycler.
 		/// </summary>
 		/// <returns></returns>
-		Path CreatePath() {
+		Path CreatePath(ItemState<Path> ist) {
 			var path = new Path();
 			BindTo(this, nameof(PathStyle), path, FrameworkElement.StyleProperty);
 			return path;
@@ -161,7 +161,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (by == null) return null;
 			ResetLimits();
 			var paths = ItemState.Select(ms => ms.Element);
-			var recycler = new Recycler<Path>(paths, CreatePath);
+			var recycler = new Recycler2<Path, ItemState<Path>>(paths, CreatePath);
 			return new RenderState_ValueAndLabel<ItemState<Path>, Path>(new List<ItemState<Path>>(), recycler,
 				!String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
 				by,
@@ -185,7 +185,7 @@ namespace eScapeLLC.UWP.Charts {
 			var mk = MarkerTemplate.LoadContent() as Geometry;
 			// TODO allow MK to be other things like (Path or Image).
 			// no path yet
-			var el = st.NextElement();
+			var el = st.recycler.Next(null);
 			if (el == null) return;
 			el.Item2.Data = mk;
 			if (st.byl == null) {

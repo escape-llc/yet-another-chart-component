@@ -262,7 +262,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Path factory for recycler.
 		/// </summary>
 		/// <returns></returns>
-		Path CreatePath() {
+		Path CreatePath(ItemState<Path> ist) {
 			var path = new Path {
 				Style = Generator.NextStyle()
 			};
@@ -271,7 +271,7 @@ namespace eScapeLLC.UWP.Charts {
 		class State : RenderState_ValueAndLabel<ItemState<Path>, Path> {
 			internal double totalv;
 			internal BindingEvaluator bl;
-			internal State(List<ItemState<Path>> sis, Recycler<Path> rc, params BindingEvaluator[] bes) : base(sis, rc, bes[0], bes[2], bes[3]) {
+			internal State(List<ItemState<Path>> sis, Recycler2<Path, ItemState<Path>> rc, params BindingEvaluator[] bes) : base(sis, rc, bes[0], bes[2], bes[3]) {
 				bl = bes[1];
 			}
 		}
@@ -281,7 +281,7 @@ namespace eScapeLLC.UWP.Charts {
 			// TODO report the binding error
 			if (by == null) return null;
 			var paths = ItemState.Select(ms => ms.Element);
-			var recycler = new Recycler<Path>(paths, CreatePath);
+			var recycler = new Recycler2<Path, ItemState<Path>>(paths, CreatePath);
 			Generator.Reset();
 			return new State(new List<ItemState<Path>>(), recycler,
 				null,
@@ -301,7 +301,7 @@ namespace eScapeLLC.UWP.Charts {
 			st.totalv += Math.Abs(valuey);
 			var label = st.bl == null ? String.Empty : st.bl.For(item).ToString();
 			_trace.Verbose($"{Name}[{index}] {valuey}");
-			var path = st.NextElement();
+			var path = st.recycler.Next(null);
 			if (path == null) return;
 			// start with empty geometry
 			path.Item2.Data = new PathGeometry();

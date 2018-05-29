@@ -49,6 +49,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// This implementation has <see cref="IEnumerator{T}"/> semantics.
 	/// </summary>
 	/// <typeparam name="T">Recycled element type.</typeparam>
+	[Obsolete("Use Recycler2<T,S> instead", false)]
 	public class Recycler<T> : RecyclerBase<T> {
 		#region data
 		readonly IEnumerable<T> _source;

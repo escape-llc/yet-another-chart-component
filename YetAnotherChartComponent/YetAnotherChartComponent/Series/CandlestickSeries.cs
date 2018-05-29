@@ -236,7 +236,7 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region IDataSourceRenderer
-		class State : RenderStateCore<ItemState<Path>, Path> {
+		class State : RenderStateCore2<ItemState<Path>, Path> {
 			// category and label
 			internal readonly BindingEvaluator bx;
 			// values
@@ -246,7 +246,7 @@ namespace eScapeLLC.UWP.Charts {
 			internal readonly BindingEvaluator bclose;
 			// value label
 			internal readonly BindingEvaluator bvl;
-			internal State(List<ItemState<Path>> sis, Recycler<Path> rc, params BindingEvaluator[] bes) :base(sis, rc) {
+			internal State(List<ItemState<Path>> sis, Recycler2<Path, ItemState<Path>> rc, params BindingEvaluator[] bes) :base(sis, rc) {
 				bx = bes[0];
 				bopen = bes[1];
 				bhigh = bes[2];
@@ -259,7 +259,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Path factory for recycler.
 		/// </summary>
 		/// <returns></returns>
-		Path CreatePath() {
+		Path CreatePath(ItemState<Path> ist) {
 			var path = new Path();
 			return path;
 		}
@@ -280,7 +280,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (bclose == null) return null;
 			ResetLimits();
 			var paths = ItemState.Select(ms => ms.Element);
-			var recycler = new Recycler<Path>(paths, CreatePath);
+			var recycler = new Recycler2<Path, ItemState<Path>>(paths, CreatePath);
 			return new State(new List<ItemState<Path>>(), recycler,
 				!String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
 				bopen, bhigh, blow, bclose,
@@ -315,7 +315,7 @@ namespace eScapeLLC.UWP.Charts {
 			var lowy = Math.Min(y3, y4);
 			_trace.Verbose($"{Name}[{index}] {valueO}/{valueH}/{valueL}/{valueC} ({barx},{topy}) ({rightx},{bottomy})");
 			// create geometry
-			var path = st.NextElement();
+			var path = st.recycler.Next(null);
 			if (path == null) return;
 			var pg = new PathGeometry();
 			// body (open/close)
