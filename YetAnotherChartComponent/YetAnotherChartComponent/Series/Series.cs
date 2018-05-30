@@ -42,6 +42,7 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		/// <summary>
 		/// Take the actual value from the source and coerce it to the double type, until we get full polymorphism on the y-value.
+		/// <para/>
 		/// Currently handles <see cref="double"/>, <see cref="int"/>, <see cref="short"/>,and Nullable{double,int,short} types.
 		/// </summary>
 		/// <param name="item">Source instance.</param>
@@ -179,10 +180,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="vx">Category. MAY be NaN.</param>
 		/// <param name="vy">Value.  MAY be NaN.</param>
 		protected void UpdateLimits(double vx, double vy) {
-			if (double.IsNaN(Minimum) || vy < Minimum) { Minimum = vy; }
-			if (double.IsNaN(Maximum) || vy > Maximum) { Maximum = vy; }
 			if (double.IsNaN(CategoryMinimum) || vx < CategoryMinimum) { CategoryMinimum = vx; }
 			if (double.IsNaN(CategoryMaximum) || vx > CategoryMaximum) { CategoryMaximum = vx; }
+			if (double.IsNaN(Minimum) || vy < Minimum) { Minimum = vy; }
+			if (double.IsNaN(Maximum) || vy > Maximum) { Maximum = vy; }
 		}
 		/// <summary>
 		/// Update value and category limits.

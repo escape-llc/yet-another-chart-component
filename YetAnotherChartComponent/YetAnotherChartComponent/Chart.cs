@@ -460,12 +460,11 @@ namespace eScapeLLC.UWP.Charts {
 			await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => {
 				if (Surface != null) {
 					switch(nccea.Action) {
-					// TODO dispatch other types of action
 					case NotifyCollectionChangedAction.Add:
-						IncrementalAdd(CurrentLayout, ds, nccea.NewStartingIndex, nccea.NewItems);
+						IncrementalUpdate(NotifyCollectionChangedAction.Add, CurrentLayout, ds, nccea.NewStartingIndex, nccea.NewItems);
 						break;
 					case NotifyCollectionChangedAction.Remove:
-						IncrementalRemove(CurrentLayout, ds, nccea.OldStartingIndex, nccea.OldItems);
+						IncrementalUpdate(NotifyCollectionChangedAction.Remove, CurrentLayout, ds, nccea.OldStartingIndex, nccea.OldItems);
 						break;
 					case NotifyCollectionChangedAction.Move:
 					case NotifyCollectionChangedAction.Replace:
@@ -571,7 +570,7 @@ namespace eScapeLLC.UWP.Charts {
 				_trace.Verbose($"axis-limits '{cc.Name}' {cc}");
 				if(cc is IProvideValueExtents ipve) {
 					var axis = Axes.SingleOrDefault((ax) => ipve.ValueAxisName == (ax as ChartComponent).Name);
-					_trace.Verbose($"axis-limits y-axis:{axis}");
+					_trace.Verbose($"axis-limits y-axis:{axis} min:{ipve.Minimum} max:{ipve.Maximum}");
 					if (axis != null) {
 						axis.UpdateLimits(ipve.Maximum);
 						axis.UpdateLimits(ipve.Minimum);
@@ -660,6 +659,51 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region incremental helpers
 		/// <summary>
+		/// Process incremental updates to a <see cref="DataSource"/>.
+		/// </summary>
+		/// <param name="ncca">The operation.  Only <see cref="NotifyCollectionChangedAction.Add"/> and <see cref="NotifyCollectionChangedAction.Remove"/> are supported.</param>
+		/// <param name="ls">Current layout state.</param>
+		/// <param name="ds">The <see cref="DataSource"/> that changed.</param>
+		/// <param name="startIndex">Starting index of update.</param>
+		/// <param name="items">Item(s) involved in the update.</param>
+		protected void IncrementalUpdate(NotifyCollectionChangedAction ncca, LayoutState ls, DataSource ds, int startIndex, IList items) {
+			_trace.Verbose($"incr-update {ncca} '{ds.Name}' {ds} @{startIndex} ct:{items.Count}");
+			ls.IsTransformsOnly = false;
+			// Phase I: reset axes
+			Phase_ResetAxes();
+			// Phase II: Phase_Layout (skipped)
+			// Phase III: this loop comprises the DSRP
+			foreach (var cc in Components.Where(xx => xx is IRequireDataSourceUpdates irsiu && irsiu.UpdateSourceName == ds.Name)) {
+				_trace.Verbose($"incr {ncca} '{cc.Name}' {cc}");
+				IRequireDataSourceUpdates irdsu = cc as IRequireDataSourceUpdates;
+				var ctx = ls.RenderFor(cc as ChartComponent, Surface, Components, DataContext);
+				switch (ncca) {
+				case NotifyCollectionChangedAction.Add:
+					irdsu.Add(ctx, startIndex, items);
+					break;
+				case NotifyCollectionChangedAction.Remove:
+					irdsu.Remove(ctx, startIndex, items);
+					break;
+				}
+			}
+			// TODO above stage MAY generate additional update events, e.g. to ISeriesItemValues, that MUST be collected and distributed
+			// TODO do it here and not allow things to directly connect to each other, so render pipeline stays under control
+			Phase_AxisLimits(cc2 => cc2 is IRequireDataSourceUpdates irsiu && irsiu.UpdateSourceName == ds.Name && cc2 is IProvideValueExtents);
+			// Phase IV: render non-axis components (IRequireRender)
+			// trigger render on other components since values they track may have changed
+			foreach (IRequireRender cc in Components.Where((cc2) => !(cc2 is IChartAxis) && !(cc2 is IRequireDataSourceUpdates irdsu && irdsu.UpdateSourceName == ds.Name) && (cc2 is IRequireRender))) {
+				var ctx = ls.RenderFor(cc as ChartComponent, Surface, Components, DataContext);
+				cc.Render(ctx);
+			}
+			Phase_AxisLimits(cc2 => !(cc2 is IRequireDataSourceUpdates irsiu && irsiu.UpdateSourceName == ds.Name) && cc2 is IProvideValueExtents);
+			// Phase V: axis-finalized
+			Phase_AxesFinalized(ls);
+			// Phase VI: render axes
+			Phase_RenderAxes(ls);
+			// Phase VII: transforms
+			Phase_Transforms(ls);
+		}
+		/// <summary>
 		/// Handle incremental remove of value(s).
 		/// </summary>
 		/// <param name="ls">The layout state.</param>
@@ -679,14 +723,15 @@ namespace eScapeLLC.UWP.Charts {
 				var ctx = ls.RenderFor(cc as ChartComponent, Surface, Components, DataContext);
 				irdsu.Remove(ctx, startIndex, items);
 			}
+			// data updates complete update axes now
+			Phase_AxisLimits(cc2 => cc2 is IProvideValueExtents);
+			Phase_AxesFinalized(ls);
 			// trigger render on other components since values they track may have changed
 			foreach (IRequireRender cc in Components.Where((cc2) => !(cc2 is IChartAxis) && !(cc2 is IRequireDataSourceUpdates) && (cc2 is IRequireRender))) {
 				var ctx = ls.RenderFor(cc as ChartComponent, Surface, Components, DataContext);
 				cc.Render(ctx);
 			}
-			// other phases we need to run...
-			Phase_AxisLimits(cc2 => cc2 is IProvideValueExtents);
-			Phase_AxesFinalized(ls);
+			// finish up
 			Phase_RenderAxes(ls);
 			Phase_Transforms(ls);
 		}
@@ -700,25 +745,31 @@ namespace eScapeLLC.UWP.Charts {
 		protected void IncrementalAdd(LayoutState ls, DataSource ds, int startIndex, IList items) {
 			_trace.Verbose($"refresh-incr-add '{ds.Name}' {ds} @{startIndex} ct:{items.Count}");
 			ls.IsTransformsOnly = false;
-			// skipping Phase_Layout
-			// this loop comprises the Render phase
-			// only select components attached to DS
+			// Phase I: reset axes
 			Phase_ResetAxes();
+			// Phase II: Phase_Layout (skipped)
+			// Phase III: this loop comprises the DSRP
 			foreach (var cc in Components.Where(xx => xx is IRequireDataSourceUpdates irsiu && irsiu.UpdateSourceName == ds.Name)) {
 				_trace.Verbose($"incr-add '{cc.Name}' {cc}");
 				IRequireDataSourceUpdates irdsu = cc as IRequireDataSourceUpdates;
 				var ctx = ls.RenderFor(cc as ChartComponent, Surface, Components, DataContext);
 				irdsu.Add(ctx, startIndex, items);
 			}
+			// TODO above stage MAY generate additional update events, e.g. to ISeriesItemValues, that MUST be collected and distributed
+			// TODO do it here and not allow things to directly connect to each other, so render pipeline stays under control
+			Phase_AxisLimits(cc2 => cc2 is IRequireDataSourceUpdates irsiu && irsiu.UpdateSourceName == ds.Name && cc2 is IProvideValueExtents);
+			// Phase IV: render non-axis components (IRequireRender)
 			// trigger render on other components since values they track may have changed
-			foreach (IRequireRender cc in Components.Where((cc2) => !(cc2 is IChartAxis) && !(cc2 is IRequireDataSourceUpdates) && (cc2 is IRequireRender))) {
+			foreach (IRequireRender cc in Components.Where((cc2) => !(cc2 is IChartAxis) && !(cc2 is IRequireDataSourceUpdates irdsu && irdsu.UpdateSourceName == ds.Name) && (cc2 is IRequireRender))) {
 				var ctx = ls.RenderFor(cc as ChartComponent, Surface, Components, DataContext);
 				cc.Render(ctx);
 			}
-			// other phases we need to run...
-			Phase_AxisLimits(cc2 => cc2 is IProvideValueExtents);
+			Phase_AxisLimits(cc2 => !(cc2 is IRequireDataSourceUpdates irsiu && irsiu.UpdateSourceName == ds.Name) && cc2 is IProvideValueExtents);
+			// Phase V: axis-finalized
 			Phase_AxesFinalized(ls);
+			// Phase VI: render axes
 			Phase_RenderAxes(ls);
+			// Phase VII: transforms
 			Phase_Transforms(ls);
 			// FOR NOW just do what it used to do
 			//RenderComponents(ls);

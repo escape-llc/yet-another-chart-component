@@ -272,11 +272,11 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region IDataSourceRenderer
-		class State : RenderStateCore2<SeriesItemState, Path> {
+		class State : RenderStateCore<SeriesItemState, Path> {
 			internal readonly BindingEvaluator bx;
 			internal readonly BindingEvaluator[] bys;
 			internal readonly BindingEvaluator byl;
-			internal State(List<SeriesItemState> sis, Recycler2<Path, SeriesItemState> rc, BindingEvaluator bx, BindingEvaluator byl, BindingEvaluator[] bys) :base(sis, rc) {
+			internal State(List<SeriesItemState> sis, Recycler<Path, SeriesItemState> rc, BindingEvaluator bx, BindingEvaluator byl, BindingEvaluator[] bys) :base(sis, rc) {
 				this.bx = bx;
 				this.byl = byl;
 				this.bys = bys;
@@ -298,7 +298,7 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			ResetLimits();
 			var paths = ItemState.Select(ms => ms.Elements).SelectMany(el=>el).Select(el=>el.Item2);
-			var recycler = new Recycler2<Path, SeriesItemState>(paths, CreatePath);
+			var recycler = new Recycler<Path, SeriesItemState>(paths, CreatePath);
 			return new State(new List<SeriesItemState>(), recycler,
 				!String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
 				!String.IsNullOrEmpty(ValueLabelPath) ? new BindingEvaluator(ValueLabelPath) : null,

@@ -363,7 +363,7 @@ namespace eScapeLLC.UWP.Charts {
 			if(Source is IProvideSeriesItemValues ipsiv) {
 				// preamble
 				var elements = ItemState.Select(ms => ms.Element);
-				var recycler = new Recycler2<FrameworkElement, ISeriesItemValueDouble>(elements, CreateElement);
+				var recycler = new Recycler<FrameworkElement, ISeriesItemValueDouble>(elements, CreateElement);
 				var itemstate = new List<SeriesItemState>();
 				// render
 				foreach (var siv in ipsiv.SeriesItemValues) {

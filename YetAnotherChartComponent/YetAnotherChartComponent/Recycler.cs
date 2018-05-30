@@ -42,63 +42,14 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 	}
 	#endregion
-	#region Recycler<T>
-	/// <summary>
-	/// Recycles an input list of instances, then provides new instances after those run out.
-	/// Does the bookkeeping to track unused and newly-provided instances.
-	/// This implementation has <see cref="IEnumerator{T}"/> semantics.
-	/// </summary>
-	/// <typeparam name="T">Recycled element type.</typeparam>
-	[Obsolete("Use Recycler2<T,S> instead", false)]
-	public class Recycler<T> : RecyclerBase<T> {
-		#region data
-		readonly IEnumerable<T> _source;
-		readonly Func<T> _factory;
-		#endregion
-		#region ctor
-		/// <summary>
-		/// Ctor.
-		/// </summary>
-		/// <param name="source">Initial list to reuse; MAY be empty.</param>
-		/// <param name="factory">Used to create new instances when SOURCE runs out.</param>
-		public Recycler(IEnumerable<T> source, Func<T> factory) : base(source) {
-#pragma warning disable IDE0016 // Use 'throw' expression
-			if (source == null) throw new ArgumentNullException(nameof(source));
-			if (factory == null) throw new ArgumentNullException(nameof(factory));
-#pragma warning restore IDE0016 // Use 'throw' expression
-			_source = source;
-			_factory = factory;
-		}
-		#endregion
-		#region public
-		/// <summary>
-		/// First exhaust the original source, then start creating new instances until caller stops.
-		/// Do the bookkeeping for used and created lists.
-		/// DO NOT use this to control looping!
-		/// </summary>
-		/// <returns>Item1: true=created, false=reused; Item2: Another instance.</returns>
-		public IEnumerable<Tuple<bool, T>> Items() {
-			foreach (var tx in _source) {
-				_unused.Remove(tx);
-				yield return new Tuple<bool, T>(false, tx);
-			}
-			while (true) {
-				var tx = _factory();
-				_created.Add(tx);
-				yield return new Tuple<bool, T>(true, tx);
-			}
-		}
-		#endregion
-	}
-	#endregion
 	#region Recycler2<T, S>
 	/// <summary>
-	/// Recycler that does not use <see cref="System.Collections.IEnumerator"/> to produce instances.
-	/// In addition, the <see cref="_factory"/> can receive a state parameter per call to <see cref="Next"/>.
+	/// Recycler that uses a factory method to produce instances.
+	/// The <see cref="_factory"/> can receive a state parameter per call to <see cref="Next"/>.
 	/// </summary>
 	/// <typeparam name="T">Recycled element type.</typeparam>
 	/// <typeparam name="S">Factory state type.</typeparam>
-	public class Recycler2<T, S> : RecyclerBase<T> {
+	public class Recycler<T, S> : RecyclerBase<T> {
 		#region data
 		readonly IEnumerator<T> _source;
 		readonly Func<S, T> _factory;
@@ -109,7 +60,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="source">Initial list to reuse; MAY be empty.</param>
 		/// <param name="factory">Used to create new instances when SOURCE runs out.</param>
-		public Recycler2(IEnumerable<T> source, Func<S, T> factory) : base(source) {
+		public Recycler(IEnumerable<T> source, Func<S, T> factory) : base(source) {
 			if (source == null) throw new ArgumentNullException(nameof(source));
 #pragma warning disable IDE0016 // Use 'throw' expression
 			if (factory == null) throw new ArgumentNullException(nameof(factory));

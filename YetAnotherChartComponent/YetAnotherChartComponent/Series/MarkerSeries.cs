@@ -51,6 +51,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// Data needed for current markers
 		/// </summary>
 		protected List<ItemState<Path>> ItemState { get; set; }
+		/// <summary>
+		/// Save the binding evaluators.
+		/// </summary>
+		Evaluators BindPaths { get; set; }
 		#endregion
 		#region DPs
 		/// <summary>
@@ -77,18 +81,25 @@ namespace eScapeLLC.UWP.Charts {
 			EnsureAxes(icelc as IChartComponentContext);
 			EnsureValuePath(icelc as IChartComponentContext);
 			Layer = icelc.CreateLayer();
-			_trace.Verbose($"enter v:{ValueAxisName}:{ValueAxis} c:{CategoryAxisName}:{CategoryAxis} d:{DataSourceName}");
+			_trace.Verbose($"{Name} enter v:{ValueAxisName}:{ValueAxis} c:{CategoryAxisName}:{CategoryAxis} d:{DataSourceName}");
 			AssignFromRef(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathMarkerSeries),
 				PathStyle == null, Theme != null, Theme.PathMarkerSeries != null,
 				() => PathStyle = Theme.PathMarkerSeries
 			);
+			BindPaths = new Evaluators(CategoryPath, ValuePath, ValueLabelPath);
+			if (!BindPaths.IsValid) {
+				if (icelc is IChartErrorInfo icei) {
+					icei.Report(new ChartValidationResult(NameOrType(), $"ValuePath: must be specified", new[] { nameof(ValuePath) }));
+				}
+			}
 		}
 		/// <summary>
 		/// Undo effects of Enter().
 		/// </summary>
 		/// <param name="icelc"></param>
 		void IRequireEnterLeave.Leave(IChartEnterLeaveContext icelc) {
-			_trace.Verbose($"leave");
+			_trace.Verbose($"{Name} leave");
+			BindPaths = null;
 			ValueAxis = null;
 			CategoryAxis = null;
 			icelc.DeleteLayer(Layer);
@@ -156,22 +167,16 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		object IDataSourceRenderer.Preamble(IChartRenderContext icrc) {
 			if (ValueAxis == null || CategoryAxis == null) return null;
-			if (String.IsNullOrEmpty(ValuePath)) return null;
-			var by = new BindingEvaluator(ValuePath);
-			if (by == null) return null;
+			if (BindPaths == null || !BindPaths.IsValid) return null;
 			ResetLimits();
 			var paths = ItemState.Select(ms => ms.Element);
-			var recycler = new Recycler2<Path, ItemState<Path>>(paths, CreatePath);
-			return new RenderState_ValueAndLabel<ItemState<Path>, Path>(new List<ItemState<Path>>(), recycler,
-				!String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
-				by,
-				!String.IsNullOrEmpty(ValueLabelPath) ? new BindingEvaluator(ValueLabelPath) : null
-			);
+			var recycler = new Recycler<Path, ItemState<Path>>(paths, CreatePath);
+			return new RenderState_ValueAndLabel<ItemState<Path>, Path>(new List<ItemState<Path>>(), recycler, BindPaths);
 		}
 		void IDataSourceRenderer.Render(object state, int index, object item) {
 			var st = state as RenderState_ValueAndLabel<ItemState<Path>, Path>;
-			var valuey = CoerceValue(item, st.by);
-			var valuex = st.bx != null ? (double)st.bx.For(item) : index;
+			var valuey = st.evs.ValueFor(item);
+			var valuex = st.evs.CategoryFor(item, index);
 			st.ix = index;
 			UpdateLimits(valuex, valuey);
 			// short-circuit if it's NaN
@@ -188,19 +193,21 @@ namespace eScapeLLC.UWP.Charts {
 			var el = st.recycler.Next(null);
 			if (el == null) return;
 			el.Item2.Data = mk;
-			if (st.byl == null) {
+			var cs = st.evs.LabelFor(item);
+			if (cs == null) {
 				st.itemstate.Add(new ItemState_Matrix<Path>(index, mappedx, markerx, mappedy, el.Item2));
 			} else {
-				var cs = st.byl.For(item);
 				st.itemstate.Add(new ItemStateCustom_Matrix<Path>(index, mappedx, markerx, mappedy, cs, el.Item2));
 			}
 		}
 		void IDataSourceRenderer.RenderComplete(object state) {
+#if false
 			var st = state as RenderState_ValueAndLabel<ItemState<Path>, Path>;
 			if (st.bx == null) {
 				// needs one extra "cell"
 				UpdateLimits(st.ix + 1, double.NaN);
 			}
+#endif
 		}
 		void IDataSourceRenderer.Postamble(object state) {
 			var st = state as RenderState_ValueAndLabel<ItemState<Path>, Path>;
