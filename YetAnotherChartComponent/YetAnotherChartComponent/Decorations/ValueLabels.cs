@@ -467,14 +467,14 @@ namespace eScapeLLC.UWP.Charts {
 		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
 			if (ItemState.Count == 0) return;
 			var matx = ObtainMatrix(icrc);
-			_trace.Verbose($"{Name} transforms a:{icrc.Area} rx:{CategoryAxis?.Range} ry:{ValueAxis?.Range} matx:{matx}  ito:{icrc.IsTransformsOnly}");
+			_trace.Verbose($"{Name} transforms a:{icrc.Area} rx:{CategoryAxis?.Range} ry:{ValueAxis?.Range} matx:{matx}  type:{icrc.Type}");
 			if (matx == default(Matrix)) return;
 			foreach (var state in ItemState) {
 				state.CanvasLocation = matx.Transform(new Point(state.XValueAfterOffset, state.Value));
 				_trace.Verbose($"{Name} el:{state.Element} ds:{state.Element.DesiredSize} as:{state.Element.ActualWidth},{state.Element.ActualHeight}");
 				// Position element now because it WILL NOT invoke EVH if size didn't actually change
 				state.Locate(state.Element, LabelOffset);
-				if (!icrc.IsTransformsOnly) {
+				if (icrc.Type != RenderType.TransformsOnly) {
 					// doing render so (try to) trigger the SizeChanged handler
 					state.Element.InvalidateMeasure();
 					state.Element.InvalidateArrange();

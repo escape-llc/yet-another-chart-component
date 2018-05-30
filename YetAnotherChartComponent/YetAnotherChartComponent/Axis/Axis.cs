@@ -136,7 +136,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// When limits are fixed, some chart elements may not appear due to clipping.
 	/// </summary>
 	public abstract class AxisCommon : ChartComponent, IChartAxis, IRequireChartTheme {
-		static LogTools.Flag _trace = LogTools.Add("AxisCommon", LogTools.Level.Error);
+		static readonly LogTools.Flag _trace = LogTools.Add("AxisCommon", LogTools.Level.Error);
 		#region properties
 		#region axis
 		/// <summary>

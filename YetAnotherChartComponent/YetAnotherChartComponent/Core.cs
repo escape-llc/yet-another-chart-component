@@ -281,6 +281,27 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region IChartRenderContext
 	/// <summary>
+	/// Which type of render pipeline is running.
+	/// </summary>
+	public enum RenderType {
+		/// <summary>
+		/// Full render.
+		/// </summary>
+		Full,
+		/// <summary>
+		/// Chart transforms-only render, or component transforms-only render.
+		/// </summary>
+		TransformsOnly,
+		/// <summary>
+		/// Component full render.
+		/// </summary>
+		Component,
+		/// <summary>
+		/// Incremental render.
+		/// </summary>
+		Incremental
+	}
+	/// <summary>
 	/// The context for <see cref="IRequireRender"/> and <see cref="IRequireTransforms"/> interfaces.
 	/// MAY also implement <see cref="IChartErrorInfo"/>.
 	/// MAY also implement <see cref="IChartComponentContext"/>.
@@ -301,7 +322,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Whether this pass is transforms-only.
 		/// </summary>
-		bool IsTransformsOnly { get; }
+		RenderType Type { get; }
 	}
 	#endregion
 	#region IChartEnterLeaveContext
