@@ -349,58 +349,102 @@ namespace eScapeLLC.UWP.Charts {
 	}
 	#endregion
 	#endregion
-	#region RenderState implementations
-	#region RenderStateCore2<SIS,EL>
+	#region Evaluators
+	/// <summary>
+	/// All the used <see cref="BindingEvaluator"/> in one place, evaluated once.
+	/// </summary>
+	internal class Evaluators {
+		#region data
 		/// <summary>
-		/// Render state that uses a <see cref="Recycler2{T, S}"/>.
+		/// Category (x-axis) path; NULL to use the index.
 		/// </summary>
-		/// <typeparam name="SIS">Series item state class.</typeparam>
-		/// <typeparam name="EL">UI element class.</typeparam>
-		internal class RenderStateCore2<SIS, EL> where SIS : class where EL : FrameworkElement {
+		public readonly BindingEvaluator bx;
 		/// <summary>
-		/// Tracks the index from Render().
+		/// Value (y-axis) path.  MUST NOT be NULL.
 		/// </summary>
-		internal int ix;
+		public readonly BindingEvaluator by;
 		/// <summary>
-		/// Collects the item states created in Render().
-		/// Transfer to host in Postamble().
+		/// Value label path.  MAY be NULL.
 		/// </summary>
-		internal readonly List<SIS> itemstate;
+		public readonly BindingEvaluator byl;
+		#endregion
+		#region properties
 		/// <summary>
-		/// Recycles the elements.
+		/// Return whether the <see cref="by"/> evaluator got initialized.
 		/// </summary>
-		internal readonly Recycler2<EL, SIS> recycler;
-		/// <summary>
-		/// The recycler's iterator to generate the elements.
-		/// </summary>
+		public bool IsValid { get { return by != null; } }
+		#endregion
+		#region ctors
 		/// <summary>
 		/// Ctor.
 		/// </summary>
-		/// <param name="state">Starting state; SHOULD be empty.</param>
-		/// <param name="rc">The recycler.</param>
-		internal RenderStateCore2(List<SIS> state, Recycler2<EL, SIS> rc) {
-			itemstate = state;
-			recycler = rc;
+		/// <param name="categoryPath">Path to the category value; MAY be NULL.</param>
+		/// <param name="valuePath">Path to the value value; MUST NOT be NULL.</param>
+		/// <param name="valueLabelPath">Path to the value label; MAY be NULL.</param>
+		public Evaluators(String categoryPath, String valuePath, String valueLabelPath) {
+			by = !String.IsNullOrEmpty(valuePath) ? new BindingEvaluator(valuePath) : null;
+			bx = !String.IsNullOrEmpty(categoryPath) ? new BindingEvaluator(categoryPath) : null;
+			byl = !String.IsNullOrEmpty(valueLabelPath) ? new BindingEvaluator(valueLabelPath) : null;
 		}
 		/// <summary>
-		/// Get the next element from the recycler.
+		/// Copy ctor.
 		/// </summary>
-		/// <param name="state"></param>
+		/// <param name="bx">Category evaluator.</param>
+		/// <param name="by">Value evaluator.</param>
+		/// <param name="byl">Value label evaluator.</param>
+		public Evaluators(BindingEvaluator bx, BindingEvaluator by, BindingEvaluator byl) { this.bx = bx; this.by = by; this.byl = byl; }
+		#endregion
+		#region public
+		/// <summary>
+		/// Use the <see cref="bx"/> evaluator to return the x-axis value, or index if it is NULL.
+		/// </summary>
+		/// <param name="ox">Object to evaluate.</param>
+		/// <param name="index">Index value if <see cref="bx"/> is NULL.</param>
 		/// <returns></returns>
-		internal Tuple<bool, EL> Next(SIS state) {
-			return recycler.Next(state);
+		public double CategoryFor(object ox, int index) {
+			var valuex = bx != null ? (double)bx.For(ox) : index;
+			return valuex;
 		}
+		/// <summary>
+		/// Use the <see cref="bx"/> evaluator to decide between two <see cref="double"/> values.
+		/// </summary>
+		/// <param name="dx">Return if <see cref="bx"/> is NOT NULL.</param>
+		/// <param name="index">Otherwise.</param>
+		/// <returns></returns>
+		public double CategoryValue(double dx, int index) {
+			var valuex = bx != null ? dx: index;
+			return valuex;
+		}
+		/// <summary>
+		/// Wrapper to call <see cref="DataSeries.CoerceValue(object, BindingEvaluator)"/>.
+		/// </summary>
+		/// <param name="item"></param>
+		/// <returns></returns>
+		public double ValueFor(object item) {
+			var valuey = DataSeries.CoerceValue(item, by);
+			return valuey;
+		}
+		public object LabelFor(object item) {
+			return byl?.For(item);
+		}
+		/// <summary>
+		/// Force results to be a <see cref="String"/>.
+		/// </summary>
+		/// <param name="item"></param>
+		/// <returns></returns>
+		public String LabelStringFor(object item) {
+			return byl != null ? byl.For(item)?.ToString() : String.Empty;
+		}
+		#endregion
 	}
 	#endregion
-	#region RenderStateCore<SIS,EL> (deprecating)
+	#region RenderState implementations
+	#region RenderStateCore<SIS,EL>
 	/// <summary>
-	/// Common state for implementations of <see cref="IDataSourceRenderer"/>.
-	/// Contains no references to any values on either axis, just core bookkeeping.
-	/// The "basic" case has a list of state elements, and a recycler for its UI elements.
+	/// Render state that uses a <see cref="Recycler{T, S}"/>.
 	/// </summary>
-	/// <typeparam name="SIS">Series item state type.</typeparam>
-	/// <typeparam name="EL">Recycled element type.</typeparam>
-	[Obsolete("Use RenderStateCore2<SIS,EL> and Recycler2<EL,SIS> instead", false)]
+	/// <typeparam name="SIS">Series item state class.</typeparam>
+	/// <typeparam name="EL">UI element class.</typeparam>
 	internal class RenderStateCore<SIS, EL> where SIS : class where EL : FrameworkElement {
 		/// <summary>
 		/// Tracks the index from Render().
@@ -414,28 +458,26 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Recycles the elements.
 		/// </summary>
-		internal readonly Recycler<EL> recycler;
+		internal readonly Recycler<EL, SIS> recycler;
 		/// <summary>
 		/// The recycler's iterator to generate the elements.
 		/// </summary>
-		internal readonly IEnumerator<Tuple<bool,EL>> elements;
 		/// <summary>
 		/// Ctor.
 		/// </summary>
 		/// <param name="state">Starting state; SHOULD be empty.</param>
 		/// <param name="rc">The recycler.</param>
-		internal RenderStateCore(List<SIS> state, Recycler<EL> rc) {
+		internal RenderStateCore(List<SIS> state, Recycler<EL, SIS> rc) {
 			itemstate = state;
 			recycler = rc;
-			elements = recycler.Items().GetEnumerator();
 		}
 		/// <summary>
-		/// Convenience method to call for the next element from the recycler's iterator.
+		/// Get the next element from the recycler.
 		/// </summary>
-		/// <returns>Next element or NULL.</returns>
-		internal Tuple<bool, EL> NextElement() {
-			if (elements.MoveNext()) return elements.Current;
-			else return null;
+		/// <param name="state"></param>
+		/// <returns></returns>
+		internal Tuple<bool, EL> Next(SIS state) {
+			return recycler.Next(state);
 		}
 	}
 	#endregion
@@ -445,34 +487,23 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	/// <typeparam name="SIS">Series item state type.</typeparam>
 	/// <typeparam name="EL">Recycled element type.</typeparam>
-	internal class RenderState_ValueAndLabel<SIS, EL> : RenderStateCore2<SIS, EL> where SIS : class where EL : FrameworkElement {
+	internal class RenderState_ValueAndLabel<SIS, EL> : RenderStateCore<SIS, EL> where SIS : class where EL : FrameworkElement {
 		/// <summary>
-		/// Binds x-value; MAY be NULL.
+		/// Evaluators for core values.
 		/// </summary>
-		internal readonly BindingEvaluator bx;
-		/// <summary>
-		/// Binds y-value.  MUST be non-NULL.
-		/// </summary>
-		internal readonly BindingEvaluator by;
-		/// <summary>
-		/// Binds custom y-label; MAY be NULL.
-		/// </summary>
-		internal readonly BindingEvaluator byl;
+		internal readonly Evaluators evs;
 		/// <summary>
 		/// Ctor.
 		/// </summary>
 		/// <param name="state">Starting state; SHOULD be empty.</param>
 		/// <param name="rc">The recycler.</param>
-		/// <param name="bx">Evaluate x-value.</param>
-		/// <param name="by">Evaluate y-value.</param>
-		/// <param name="byl">Evaluate custom y-label MAY be NULL.</param>
-		internal RenderState_ValueAndLabel(List<SIS> state, Recycler2<EL,SIS> rc, BindingEvaluator bx, BindingEvaluator by, BindingEvaluator byl) : base(state, rc) {
+		/// <param name="evs">Evaluators.</param>
+		internal RenderState_ValueAndLabel(List<SIS> state, Recycler<EL,SIS> rc, Evaluators evs) : base(state, rc) {
 #pragma warning disable IDE0016 // Use 'throw' expression
-			if (by == null) throw new ArgumentNullException(nameof(by));
+			if (evs == null) throw new ArgumentNullException(nameof(evs));
+			if (evs.by == null) throw new ArgumentNullException(nameof(evs.by));
 #pragma warning restore IDE0016 // Use 'throw' expression
-			this.bx = bx;
-			this.by = by;
-			this.byl = byl;
+			this.evs = evs;
 		}
 	}
 	#endregion

@@ -281,7 +281,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="sc"></param>
 		/// <param name="ist"></param>
 		/// <param name="recycler"></param>
-		void ElementPipeline(SelectorContext sc, ItemState ist, Recycler2<TextBlock,ItemState> recycler) {
+		void ElementPipeline(SelectorContext sc, ItemState ist, Recycler<TextBlock,ItemState> recycler) {
 			sc.SetTick(ist.index);
 			var createit = true;
 			if (LabelSelector != null) {
@@ -397,7 +397,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Internal render state.
 		/// </summary>
-		class State : RenderStateCore2<ItemState, TextBlock> {
+		class State : RenderStateCore<ItemState, TextBlock> {
 			/// <summary>
 			/// Remember whether we are using x-axis units or auto.
 			/// </summary>
@@ -407,7 +407,7 @@ namespace eScapeLLC.UWP.Charts {
 			/// </summary>
 			internal readonly BindingEvaluator bl;
 			internal readonly IChartRenderContext icrc;
-			internal State(List<ItemState> state, Recycler2<TextBlock, ItemState> rc, IChartRenderContext icrc, bool xau, BindingEvaluator bl) : base(state, rc) {
+			internal State(List<ItemState> state, Recycler<TextBlock, ItemState> rc, IChartRenderContext icrc, bool xau, BindingEvaluator bl) : base(state, rc) {
 				this.icrc = icrc;
 				usexau = xau;
 				this.bl = bl;
@@ -421,7 +421,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (String.IsNullOrEmpty(LabelPath)) return null;
 			var bl = new BindingEvaluator(LabelPath);
 			if (bl == null) return null;
-			var recycler = new Recycler2<TextBlock, ItemState>(AxisLabels.Where(tl=>tl.tb != null).Select(tl => tl.tb), CreateElement);
+			var recycler = new Recycler<TextBlock, ItemState>(AxisLabels.Where(tl=>tl.tb != null).Select(tl => tl.tb), CreateElement);
 			ResetLimits();
 			var widx = LabelStyle?.Find(FrameworkElement.WidthProperty);
 			return new State(new List<ItemState>(), recycler, icrc, widx == null, bl);
@@ -523,7 +523,7 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			// render new items
 			// run the element pipeline on the added items
-			var recycler = new Recycler2<TextBlock, ItemState>(new List<TextBlock>(), CreateElement);
+			var recycler = new Recycler<TextBlock, ItemState>(new List<TextBlock>(), CreateElement);
 			var labels = new List<ICategoryLabelState>(AxisLabels);
 			var sc = new SelectorContext(this, icrc.SeriesArea, labels);
 			foreach (var istate in reproc) {

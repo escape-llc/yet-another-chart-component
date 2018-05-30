@@ -271,7 +271,7 @@ namespace eScapeLLC.UWP.Charts {
 		class State : RenderState_ValueAndLabel<ItemState<Path>, Path> {
 			internal double totalv;
 			internal BindingEvaluator bl;
-			internal State(List<ItemState<Path>> sis, Recycler2<Path, ItemState<Path>> rc, params BindingEvaluator[] bes) : base(sis, rc, bes[0], bes[2], bes[3]) {
+			internal State(List<ItemState<Path>> sis, Recycler<Path, ItemState<Path>> rc, params BindingEvaluator[] bes) : base(sis, rc, new Evaluators(bes[0], bes[2], bes[3])) {
 				bl = bes[1];
 			}
 		}
@@ -281,7 +281,7 @@ namespace eScapeLLC.UWP.Charts {
 			// TODO report the binding error
 			if (by == null) return null;
 			var paths = ItemState.Select(ms => ms.Element);
-			var recycler = new Recycler2<Path, ItemState<Path>>(paths, CreatePath);
+			var recycler = new Recycler<Path, ItemState<Path>>(paths, CreatePath);
 			Generator.Reset();
 			return new State(new List<ItemState<Path>>(), recycler,
 				null,
@@ -293,8 +293,8 @@ namespace eScapeLLC.UWP.Charts {
 		void IDataSourceRenderer.Render(object state, int index, object item) {
 			var st = state as State;
 			st.ix = index;
-			var valuey = CoerceValue(item, st.by);
-			var valuex = st.bx != null ? (double)st.bx.For(item) : index;
+			var valuey = st.evs.ValueFor(item);
+			var valuex = st.evs.CategoryFor(item, index);
 			if (double.IsNaN(valuey)) {
 				return;
 			}
@@ -305,11 +305,11 @@ namespace eScapeLLC.UWP.Charts {
 			if (path == null) return;
 			// start with empty geometry
 			path.Item2.Data = new PathGeometry();
-			if (st.byl == null) {
+			var cs = st.evs.LabelFor(item);
+			if (cs == null) {
 				st.itemstate.Add(new SeriesItemState(index, valuex, valuex, valuey, path.Item2, index) { Label = label });
 			}
 			else {
-				var cs = st.byl.For(item);
 				st.itemstate.Add(new SeriesItemState_Custom(index, valuex, valuex, valuey, cs, path.Item2, index) { Label = label });
 			}
 		}

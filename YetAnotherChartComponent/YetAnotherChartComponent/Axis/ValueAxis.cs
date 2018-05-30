@@ -157,7 +157,7 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"grid range:{tc.Range} tintv:{tc.TickInterval}");
 			// TODO may want to include the LabelStyle's padding if defined
 			var padding = AxisLineThickness + 2 * AxisMargin;
-			var tbr = new Recycler2<TextBlock, ItemState>(TickLabels.Select(tl => tl.tb), (ist) => {
+			var tbr = new Recycler<TextBlock, ItemState>(TickLabels.Select(tl => tl.tb), (ist) => {
 				var tb = Theme.TextBlockTemplate.LoadContent() as TextBlock;
 				if (LabelStyle != null) {
 					BindTo(this, nameof(LabelStyle), tb, FrameworkElement.StyleProperty);
@@ -212,12 +212,12 @@ namespace eScapeLLC.UWP.Charts {
 							text = ovx.Item2;
 						}
 					}
-					var state = new ItemState() { tb = current.Item2, value = tick };
-					state.tb.Text = text;
-					state.SetLocation(icrc.Area.Left, tick);
-					sc.Generated(tick);
-					itemstate.Add(state);
 				}
+				var state = new ItemState() { tb = current.Item2, value = tick };
+				state.tb.Text = text;
+				state.SetLocation(icrc.Area.Left, tick);
+				sc.Generated(tick);
+				itemstate.Add(state);
 			}
 			// VT and internal bookkeeping
 			TickLabels = itemstate;
