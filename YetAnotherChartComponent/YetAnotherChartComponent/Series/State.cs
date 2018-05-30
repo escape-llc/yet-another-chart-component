@@ -424,14 +424,23 @@ namespace eScapeLLC.UWP.Charts {
 			var valuey = DataSeries.CoerceValue(item, by);
 			return valuey;
 		}
+		/// <summary>
+		/// Evaluate the label or NULL.
+		/// <para/>
+		/// If NULL, either <see cref="byl"/> was NULL, OR the evaluation result was NULL.
+		/// </summary>
+		/// <param name="item">Source instance.</param>
+		/// <returns>Evaluated value or NULL.</returns>
 		public object LabelFor(object item) {
 			return byl?.For(item);
 		}
 		/// <summary>
-		/// Force results to be a <see cref="String"/>.
+		/// Force (non-NULL) results to be a <see cref="String"/>.
+		/// <para/>
+		/// If <see cref="String.Empty"/>, <see cref="byl"/> was NULL. If NULL, the evaluation result was NULL.
 		/// </summary>
-		/// <param name="item"></param>
-		/// <returns></returns>
+		/// <param name="item">Source instance.</param>
+		/// <returns>Evaluated string, NULL, or <see cref="String.Empty"/>.</returns>
 		public String LabelStringFor(object item) {
 			return byl != null ? byl.For(item)?.ToString() : String.Empty;
 		}

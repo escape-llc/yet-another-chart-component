@@ -385,7 +385,7 @@ namespace eScapeLLC.UWP.Charts {
 				state.left = icrc.Area.Left;
 				var loc = state.UpdateLocation();
 				_trace.Verbose($"tb {state.tb.ActualWidth}x{state.tb.ActualHeight} v:{state.value} @:({loc.X},{loc.Y})");
-				if (!icrc.IsTransformsOnly) {
+				if (icrc.Type != RenderType.TransformsOnly) {
 					// doing render so (try to) trigger the SizeChanged handler
 					state.tb.InvalidateMeasure();
 					state.tb.InvalidateArrange();

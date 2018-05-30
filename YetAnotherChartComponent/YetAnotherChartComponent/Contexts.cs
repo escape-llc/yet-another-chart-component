@@ -45,6 +45,8 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 	}
 	#endregion
+	#region RenderType
+	#endregion
 	#region DefaultRenderContext
 	/// <summary>
 	/// Default impl for render context.
@@ -70,7 +72,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// True: is transforms only; False: full.
 		/// </summary>
-		public bool IsTransformsOnly { get; set; }
+		public RenderType Type { get; set; }
 		#endregion
 		#region ctor
 		/// <summary>

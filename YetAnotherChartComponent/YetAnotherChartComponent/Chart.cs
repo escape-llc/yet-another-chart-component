@@ -167,9 +167,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public DefaultLayoutContext Layout { get; set; }
 		/// <summary>
-		/// Value to provide for <see cref="IChartRenderContext.IsTransformsOnly"/>.
+		/// Value to provide for <see cref="IChartRenderContext.Type"/>.
 		/// </summary>
-		public bool IsTransformsOnly { get; set; }
+		public RenderType Type { get; set; }
 		#endregion
 		#region data
 		/// <summary>
@@ -223,7 +223,7 @@ namespace eScapeLLC.UWP.Charts {
 			var rect = Layout.For(cc);
 			var drc = new DefaultRenderContext(surf, ccs, LayoutDimensions, rect, Layout.RemainingRect, dc);
 			rendercache.Add(cc, drc);
-			drc.IsTransformsOnly = IsTransformsOnly;
+			drc.Type = Type;
 			return drc;
 		}
 		#endregion
@@ -668,7 +668,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="items">Item(s) involved in the update.</param>
 		protected void IncrementalUpdate(NotifyCollectionChangedAction ncca, LayoutState ls, DataSource ds, int startIndex, IList items) {
 			_trace.Verbose($"incr-update {ncca} '{ds.Name}' {ds} @{startIndex} ct:{items.Count}");
-			ls.IsTransformsOnly = false;
+			ls.Type = RenderType.Incremental;
 			// Phase I: reset axes
 			Phase_ResetAxes();
 			// Phase II: Phase_Layout (skipped)
@@ -712,7 +712,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="items">The items affected.</param>
 		protected void IncrementalRemove(LayoutState ls, DataSource ds, int startIndex, IList items) {
 			_trace.Verbose($"refresh-incr-remove '{ds.Name}' {ds} @{startIndex} ct:{items.Count}");
-			ls.IsTransformsOnly = false;
+			ls.Type = RenderType.Incremental;
 			// skipping Phase_Layout
 			// this loop comprises the Render phase
 			// only select components attached to DS
@@ -744,7 +744,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="items">The items affected.</param>
 		protected void IncrementalAdd(LayoutState ls, DataSource ds, int startIndex, IList items) {
 			_trace.Verbose($"refresh-incr-add '{ds.Name}' {ds} @{startIndex} ct:{items.Count}");
-			ls.IsTransformsOnly = false;
+			ls.Type = RenderType.Incremental;
 			// Phase I: reset axes
 			Phase_ResetAxes();
 			// Phase II: Phase_Layout (skipped)
@@ -882,7 +882,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (rrea.Component is IRequireTransforms irt) {
 				var rect = ls.Layout.For(rrea.Component);
 				_trace.Verbose($"component-transforms {rrea.Component} {rrea.Axis} {rect}");
-				var ctx = new DefaultRenderContext(Surface, Components, ls.LayoutDimensions, rect, ls.Layout.RemainingRect, DataContext) { IsTransformsOnly = true };
+				var ctx = new DefaultRenderContext(Surface, Components, ls.LayoutDimensions, rect, ls.Layout.RemainingRect, DataContext) { Type = RenderType.TransformsOnly };
 				irt.Transforms(ctx);
 			}
 		}
@@ -900,7 +900,7 @@ namespace eScapeLLC.UWP.Charts {
 					Phase_ResetAxes();
 					Phase_AxisLimits((cc2) => cc2 is DataSeries && (cc2 is IProvideValueExtents));
 				}
-				var ctx = new DefaultRenderContext(Surface, Components, ls.LayoutDimensions, rect, ls.Layout.RemainingRect, DataContext) { IsTransformsOnly = false };
+				var ctx = new DefaultRenderContext(Surface, Components, ls.LayoutDimensions, rect, ls.Layout.RemainingRect, DataContext) { Type = RenderType.Component };
 				irr.Render(ctx);
 				if (rrea.Axis != AxisUpdateState.None) {
 					// axes MUST be re-evaluated because this thing changed.
@@ -917,11 +917,11 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		/// <summary>
 		/// Adjust layout and transforms based on size change.
-		/// SETs <see cref="LayoutState.IsTransformsOnly"/> to TRUE.
+		/// SETs <see cref="LayoutState.Type"/> to TRUE.
 		/// </summary>
 		/// <param name="ls">Layout state.</param>
 		protected void TransformsLayout(LayoutState ls) {
-			ls.IsTransformsOnly = true;
+			ls.Type = RenderType.TransformsOnly;
 			ls.InitializeLayoutContext(Padding);
 			_trace.Verbose($"transforms-only starting {ls.LayoutRect}");
 			Phase_Layout(ls);
@@ -931,11 +931,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// Perform a full layout and rendering pass.
 		/// At least ONE component reported as dirty.
 		/// The full rendering sequence is: axis-reset, layout, render, transforms.
-		/// SETs <see cref="LayoutState.IsTransformsOnly"/> to FALSE.
+		/// SETs <see cref="LayoutState.Type"/> to FALSE.
 		/// </summary>
 		/// <param name="ls">Layout state.</param>
 		protected void FullLayout(LayoutState ls) {
-			ls.IsTransformsOnly = false;
+			ls.Type = RenderType.Full;
 			ls.InitializeLayoutContext(Padding);
 			_trace.Verbose($"full starting {ls.LayoutRect}");
 			// Phase I: reset axes
