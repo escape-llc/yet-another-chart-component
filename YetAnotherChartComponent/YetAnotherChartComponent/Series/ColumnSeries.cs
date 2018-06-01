@@ -87,6 +87,7 @@ namespace eScapeLLC.UWP.Charts {
 		protected List<ItemState<Path>> ItemState { get; set; }
 		/// <summary>
 		/// Save the binding evaluators.
+		/// TODO must re-create when any of the DPs change!
 		/// </summary>
 		Evaluators BindPaths { get; set; }
 		#endregion
@@ -241,11 +242,11 @@ namespace eScapeLLC.UWP.Charts {
 			var valuey = st.evs.ValueFor(item);
 			var valuex = st.evs.CategoryFor(item, index);
 			st.ix = index;
-			UpdateLimits(valuex, valuey, 0);
 			// short-circuit if it's NaN
 			if (double.IsNaN(valuey)) {
 				return;
 			}
+			UpdateLimits(valuex, valuey, 0);
 			var istate = ElementPipeline(index, valuex, valuey, item, st.recycler, st.evs.byl);
 			if (istate != null) st.itemstate.Add(istate);
 		}
@@ -318,7 +319,7 @@ namespace eScapeLLC.UWP.Charts {
 					var leftx = CategoryAxis.For(valuex);
 					var offsetx = leftx + BarOffset;
 					ItemState[ix].Move(index, leftx, offsetx);
-					// recalc geometry
+					// update geometry
 					var rg = ItemState[ix].Element.Data as RectangleGeometry;
 					var rightx = offsetx + BarWidth;
 					rg.Rect = new Rect(new Point(offsetx, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));

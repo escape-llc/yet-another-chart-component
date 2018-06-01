@@ -210,11 +210,11 @@ namespace eScapeLLC.UWP.Charts {
 			var valuey = st.evs.ValueFor(item);
 			var valuex = st.evs.CategoryFor(item, index);
 			st.ix = index;
-			UpdateLimits(valuex, valuey);
 			// short-circuit if it's NaN
 			if (double.IsNaN(valuey)) {
 				return;
 			}
+			UpdateLimits(valuex, valuey);
 			var istate = ElementPipeline(index, valuex, valuey, item, st.recycler, st.evs);
 			if(istate != null) st.itemstate.Add(istate);
 		}
@@ -247,12 +247,7 @@ namespace eScapeLLC.UWP.Charts {
 				var offsetx = leftx + MarkerOffset;
 				// TODO update index relative to existing value NOT ix
 				ItemState[ix].Move(ix, leftx, offsetx);
-				// NO update geometry; done in later stages of render pipeline
-#if false
-				var rg = ItemState[ix].Element.Data as RectangleGeometry;
-				var rightx = barx + MarkerWidth;
-				rg.Rect = new Rect(new Point(barx, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
-#endif
+				// NO geometry update ; done in later stages of render pipeline
 			}
 			// reconfigure axis limits
 			ResetLimits();
@@ -289,12 +284,7 @@ namespace eScapeLLC.UWP.Charts {
 					var leftx = CategoryAxis.For(valuex);
 					var offsetx = leftx + MarkerOffset;
 					ItemState[ix].Move(index, leftx, offsetx);
-					// NO update geometry; done in later stages of render pipeline
-#if false
-					var rg = ItemState[ix].Element.Data as RectangleGeometry;
-					var rightx = barx + MarkerWidth;
-					rg.Rect = new Rect(new Point(barx, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
-#endif
+					// NO geometry update; done in later stages of render pipeline
 				}
 			}
 			// reconfigure axis limits
