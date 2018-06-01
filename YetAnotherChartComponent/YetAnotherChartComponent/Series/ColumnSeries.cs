@@ -12,9 +12,7 @@ using Windows.UI.Xaml.Shapes;
 namespace eScapeLLC.UWP.Charts {
 	#region ColumnSeries
 	/// <summary>
-	/// Data series that generates a series of Rectangles on a single Path.
-	/// If there's no CategoryMemberPath defined (i.e. using data index) this component reserves one "extra" cell on the Category Axis, to present the last column(s).
-	/// Category axis cells start on the left and extend positive-X (in device units).  Each cell is one unit long.
+	/// Data series that generates a series of <see cref="RectangleGeometry"/> each on its own <see cref="Path"/>.
 	/// </summary>
 	public class ColumnSeries : DataSeriesWithValue, IDataSourceRenderer, IRequireDataSourceUpdates, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("ColumnSeries", LogTools.Level.Error);
@@ -277,12 +275,13 @@ namespace eScapeLLC.UWP.Charts {
 			for (int ix = startAt; ix < ItemState.Count; ix++) {
 				var valuex = BindPaths.CategoryValue(ItemState[ix].XValue, ix);
 				var leftx = CategoryAxis.For(valuex);
-				var barx = leftx + BarOffset;
-				ItemState[ix].Move(ix, leftx, barx);
+				var offsetx = leftx + BarOffset;
+				// TODO update index relative to existing value NOT ix
+				ItemState[ix].Move(ix, leftx, offsetx);
 				// update geometry
 				var rg = ItemState[ix].Element.Data as RectangleGeometry;
-				var rightx = barx + BarWidth;
-				rg.Rect = new Rect(new Point(barx, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
+				var rightx = offsetx + BarWidth;
+				rg.Rect = new Rect(new Point(offsetx, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
 			}
 			// reconfigure axis limits
 			ResetLimits();
@@ -314,15 +313,15 @@ namespace eScapeLLC.UWP.Charts {
 			if (reproc.Count > 0) {
 				// re-sequence remaining items
 				for (int ix = startAt + reproc.Count; ix < ItemState.Count; ix++) {
-					var index = ix + reproc.Count();
+					var index = ItemState[ix].Index + reproc.Count();
 					var valuex = BindPaths.CategoryValue(ItemState[ix].XValue, index);
 					var leftx = CategoryAxis.For(valuex);
-					var barx = leftx + BarOffset;
-					ItemState[ix].Move(index, leftx, barx);
+					var offsetx = leftx + BarOffset;
+					ItemState[ix].Move(index, leftx, offsetx);
 					// recalc geometry
 					var rg = ItemState[ix].Element.Data as RectangleGeometry;
-					var rightx = barx + BarWidth;
-					rg.Rect = new Rect(new Point(barx, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
+					var rightx = offsetx + BarWidth;
+					rg.Rect = new Rect(new Point(offsetx, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
 				}
 			}
 			// reconfigure axis limits
