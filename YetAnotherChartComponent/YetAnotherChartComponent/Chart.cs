@@ -667,7 +667,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="startIndex">Starting index of update.</param>
 		/// <param name="items">Item(s) involved in the update.</param>
 		protected void IncrementalUpdate(NotifyCollectionChangedAction ncca, LayoutState ls, DataSource ds, int startIndex, IList items) {
-			_trace.Verbose($"incr-update {ncca} '{ds.Name}' {ds} @{startIndex} ct:{items.Count}");
+			_trace.Verbose($"incr-update {ncca} '{ds.Name}' {ds} @{startIndex}+{items.Count}");
 			ls.Type = RenderType.Incremental;
 			// Phase I: reset axes
 			Phase_ResetAxes();
@@ -702,77 +702,6 @@ namespace eScapeLLC.UWP.Charts {
 			Phase_RenderAxes(ls);
 			// Phase VII: transforms
 			Phase_Transforms(ls);
-		}
-		/// <summary>
-		/// Handle incremental remove of value(s).
-		/// </summary>
-		/// <param name="ls">The layout state.</param>
-		/// <param name="ds">The <see cref="DataSource"/>.</param>
-		/// <param name="startIndex">Starting index to remove from.</param>
-		/// <param name="items">The items affected.</param>
-		protected void IncrementalRemove(LayoutState ls, DataSource ds, int startIndex, IList items) {
-			_trace.Verbose($"refresh-incr-remove '{ds.Name}' {ds} @{startIndex} ct:{items.Count}");
-			ls.Type = RenderType.Incremental;
-			// skipping Phase_Layout
-			// this loop comprises the Render phase
-			// only select components attached to DS
-			Phase_ResetAxes();
-			foreach (var cc in Components.Where(xx => xx is IRequireDataSourceUpdates irsiu && irsiu.UpdateSourceName == ds.Name)) {
-				_trace.Verbose($"incr-remove '{cc.Name}' {cc}");
-				IRequireDataSourceUpdates irdsu = cc as IRequireDataSourceUpdates;
-				var ctx = ls.RenderFor(cc as ChartComponent, Surface, Components, DataContext);
-				irdsu.Remove(ctx, startIndex, items);
-			}
-			// data updates complete update axes now
-			Phase_AxisLimits(cc2 => cc2 is IProvideValueExtents);
-			Phase_AxesFinalized(ls);
-			// trigger render on other components since values they track may have changed
-			foreach (IRequireRender cc in Components.Where((cc2) => !(cc2 is IChartAxis) && !(cc2 is IRequireDataSourceUpdates) && (cc2 is IRequireRender))) {
-				var ctx = ls.RenderFor(cc as ChartComponent, Surface, Components, DataContext);
-				cc.Render(ctx);
-			}
-			// finish up
-			Phase_RenderAxes(ls);
-			Phase_Transforms(ls);
-		}
-		/// <summary>
-		/// Handle incremental add of value(s).
-		/// </summary>
-		/// <param name="ls">The layout state.</param>
-		/// <param name="ds">The <see cref="DataSource"/>.</param>
-		/// <param name="startIndex">Starting index to add at.</param>
-		/// <param name="items">The items affected.</param>
-		protected void IncrementalAdd(LayoutState ls, DataSource ds, int startIndex, IList items) {
-			_trace.Verbose($"refresh-incr-add '{ds.Name}' {ds} @{startIndex} ct:{items.Count}");
-			ls.Type = RenderType.Incremental;
-			// Phase I: reset axes
-			Phase_ResetAxes();
-			// Phase II: Phase_Layout (skipped)
-			// Phase III: this loop comprises the DSRP
-			foreach (var cc in Components.Where(xx => xx is IRequireDataSourceUpdates irsiu && irsiu.UpdateSourceName == ds.Name)) {
-				_trace.Verbose($"incr-add '{cc.Name}' {cc}");
-				IRequireDataSourceUpdates irdsu = cc as IRequireDataSourceUpdates;
-				var ctx = ls.RenderFor(cc as ChartComponent, Surface, Components, DataContext);
-				irdsu.Add(ctx, startIndex, items);
-			}
-			// TODO above stage MAY generate additional update events, e.g. to ISeriesItemValues, that MUST be collected and distributed
-			// TODO do it here and not allow things to directly connect to each other, so render pipeline stays under control
-			Phase_AxisLimits(cc2 => cc2 is IRequireDataSourceUpdates irsiu && irsiu.UpdateSourceName == ds.Name && cc2 is IProvideValueExtents);
-			// Phase IV: render non-axis components (IRequireRender)
-			// trigger render on other components since values they track may have changed
-			foreach (IRequireRender cc in Components.Where((cc2) => !(cc2 is IChartAxis) && !(cc2 is IRequireDataSourceUpdates irdsu && irdsu.UpdateSourceName == ds.Name) && (cc2 is IRequireRender))) {
-				var ctx = ls.RenderFor(cc as ChartComponent, Surface, Components, DataContext);
-				cc.Render(ctx);
-			}
-			Phase_AxisLimits(cc2 => !(cc2 is IRequireDataSourceUpdates irsiu && irsiu.UpdateSourceName == ds.Name) && cc2 is IProvideValueExtents);
-			// Phase V: axis-finalized
-			Phase_AxesFinalized(ls);
-			// Phase VI: render axes
-			Phase_RenderAxes(ls);
-			// Phase VII: transforms
-			Phase_Transforms(ls);
-			// FOR NOW just do what it used to do
-			//RenderComponents(ls);
 		}
 		#endregion
 		#region helpers
