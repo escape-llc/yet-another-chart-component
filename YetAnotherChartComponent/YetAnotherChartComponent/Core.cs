@@ -320,7 +320,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		Rect SeriesArea { get; }
 		/// <summary>
-		/// Whether this pass is transforms-only.
+		/// Type of render pipeline.
 		/// </summary>
 		RenderType Type { get; }
 	}

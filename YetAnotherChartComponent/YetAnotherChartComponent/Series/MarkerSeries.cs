@@ -1,5 +1,6 @@
 ﻿using eScape.Core;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Windows.Foundation;
@@ -12,7 +13,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Series that places the given marker at each point.
 	/// </summary>
-	public class MarkerSeries : DataSeriesWithValue, IDataSourceRenderer, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireAfterAxesFinalized, IRequireTransforms {
+	public class MarkerSeries : DataSeriesWithValue, IDataSourceRenderer, IRequireDataSourceUpdates, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireAfterAxesFinalized, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("MarkerSeries", LogTools.Level.Error);
 		#region properties
 		/// <summary>
@@ -72,6 +73,49 @@ namespace eScapeLLC.UWP.Charts {
 			ItemState = new List<ItemState<Path>>();
 		}
 		#endregion
+		#region helpers
+		Legend Legend() {
+			return new Legend() { Title = Title, Fill = PathStyle.Find<Brush>(Path.FillProperty), Stroke = PathStyle.Find<Brush>(Path.StrokeProperty) };
+		}
+		/// <summary>
+		/// Path factory for recycler.
+		/// </summary>
+		/// <returns></returns>
+		Path CreatePath(ItemState<Path> ist) {
+			var path = new Path();
+			BindTo(this, nameof(PathStyle), path, FrameworkElement.StyleProperty);
+			return path;
+		}
+		/// <summary>
+		/// Core element creation.
+		/// </summary>
+		/// <param name="index"></param>
+		/// <param name="valuex"></param>
+		/// <param name="valuey"></param>
+		/// <param name="item"></param>
+		/// <param name="recycler"></param>
+		/// <param name="evs"></param>
+		/// <returns></returns>
+		ItemState<Path> ElementPipeline(int index, double valuex, double valuey, object item, Recycler<Path, ItemState<Path>> recycler, Evaluators evs) {
+			var mappedy = ValueAxis.For(valuey);
+			var mappedx = CategoryAxis.For(valuex);
+			var markerx = mappedx + MarkerOffset;
+			_trace.Verbose($"[{index}] {valuey} ({markerx},{mappedy})");
+			var mk = MarkerTemplate.LoadContent() as Geometry;
+			// TODO allow MK to be other things like (Path or Image).
+			// TODO allow a MarkerTemplateSelector and a value Selector/Formatter
+			// no path yet
+			var el = recycler.Next(null);
+			if (el == null) return null;
+			el.Item2.Data = mk;
+			var cs = evs.LabelFor(item);
+			if (cs == null) {
+				return new ItemState_Matrix<Path>(index, mappedx, markerx, mappedy, el.Item2);
+			} else {
+				return new ItemStateCustom_Matrix<Path>(index, mappedx, markerx, mappedy, cs, el.Item2);
+			}
+		}
+		#endregion
 		#region IRequireEnterLeave
 		/// <summary>
 		/// Initialize after entering VT.
@@ -110,9 +154,6 @@ namespace eScapeLLC.UWP.Charts {
 		private Legend _legend;
 		IEnumerable<Legend> IProvideLegend.LegendItems {
 			get { if (_legend == null) _legend = Legend(); return new[] { _legend }; }
-		}
-		Legend Legend() {
-			return new Legend() { Title = Title, Fill = PathStyle.Find<Brush>(Path.FillProperty), Stroke = PathStyle.Find<Brush>(Path.StrokeProperty) };
 		}
 		#endregion
 		#region IRequireAfterAxesFinalized
@@ -156,15 +197,6 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region IDataSourceRenderer
-		/// <summary>
-		/// Path factory for recycler.
-		/// </summary>
-		/// <returns></returns>
-		Path CreatePath(ItemState<Path> ist) {
-			var path = new Path();
-			BindTo(this, nameof(PathStyle), path, FrameworkElement.StyleProperty);
-			return path;
-		}
 		object IDataSourceRenderer.Preamble(IChartRenderContext icrc) {
 			if (ValueAxis == null || CategoryAxis == null) return null;
 			if (BindPaths == null || !BindPaths.IsValid) return null;
@@ -183,37 +215,96 @@ namespace eScapeLLC.UWP.Charts {
 			if (double.IsNaN(valuey)) {
 				return;
 			}
-			var mappedy = ValueAxis.For(valuey);
-			var mappedx = CategoryAxis.For(valuex);
-			var markerx = mappedx + MarkerOffset;
-			_trace.Verbose($"[{index}] {valuey} ({markerx},{mappedy})");
-			var mk = MarkerTemplate.LoadContent() as Geometry;
-			// TODO allow MK to be other things like (Path or Image).
-			// no path yet
-			var el = st.recycler.Next(null);
-			if (el == null) return;
-			el.Item2.Data = mk;
-			var cs = st.evs.LabelFor(item);
-			if (cs == null) {
-				st.itemstate.Add(new ItemState_Matrix<Path>(index, mappedx, markerx, mappedy, el.Item2));
-			} else {
-				st.itemstate.Add(new ItemStateCustom_Matrix<Path>(index, mappedx, markerx, mappedy, cs, el.Item2));
-			}
+			var istate = ElementPipeline(index, valuex, valuey, item, st.recycler, st.evs);
+			if(istate != null) st.itemstate.Add(istate);
 		}
-		void IDataSourceRenderer.RenderComplete(object state) {
-#if false
-			var st = state as RenderState_ValueAndLabel<ItemState<Path>, Path>;
-			if (st.bx == null) {
-				// needs one extra "cell"
-				UpdateLimits(st.ix + 1, double.NaN);
-			}
-#endif
-		}
+		void IDataSourceRenderer.RenderComplete(object state) { }
 		void IDataSourceRenderer.Postamble(object state) {
 			var st = state as RenderState_ValueAndLabel<ItemState<Path>, Path>;
 			ItemState = st.itemstate;
 			Layer.Remove(st.recycler.Unused);
 			Layer.Add(st.recycler.Created);
+			Dirty = false;
+		}
+		#endregion
+		#region IRequireDataSourceUpdates
+		string IRequireDataSourceUpdates.UpdateSourceName => DataSourceName;
+		void IRequireDataSourceUpdates.Remove(IChartRenderContext icrc, int startAt, IList items) {
+			if (CategoryAxis == null || ValueAxis == null) return;
+			if (BindPaths == null || !BindPaths.IsValid) return;
+			var unused = new List<FrameworkElement>();
+			for (int ix = 0; ix < items.Count; ix++) {
+				// remove requested item
+				if (ItemState[startAt].Element != null) {
+					unused.Add(ItemState[startAt].Element);
+				}
+				ItemState.RemoveAt(startAt);
+			}
+			// re-sequence remaining items
+			for (int ix = startAt; ix < ItemState.Count; ix++) {
+				var valuex = BindPaths.CategoryValue(ItemState[ix].XValue, ix);
+				var leftx = CategoryAxis.For(valuex);
+				var offsetx = leftx + MarkerOffset;
+				// TODO update index relative to existing value NOT ix
+				ItemState[ix].Move(ix, leftx, offsetx);
+				// NO update geometry; done in later stages of render pipeline
+#if false
+				var rg = ItemState[ix].Element.Data as RectangleGeometry;
+				var rightx = barx + MarkerWidth;
+				rg.Rect = new Rect(new Point(barx, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
+#endif
+			}
+			// reconfigure axis limits
+			ResetLimits();
+			for (int ix = 0; ix < ItemState.Count; ix++) {
+				//_trace.Verbose($"remove-incr update-limits x:{ItemState[ix].XValue} y:{ItemState[ix].Value}");
+				UpdateLimits(ItemState[ix].XValue, ItemState[ix].Value, 0);
+			}
+			// finish up
+			Layer.Remove(unused);
+			Dirty = false;
+		}
+		void IRequireDataSourceUpdates.Add(IChartRenderContext icrc, int startAt, IList items) {
+			if (CategoryAxis == null || ValueAxis == null) return;
+			if (BindPaths == null || !BindPaths.IsValid) return;
+			var recycler = new Recycler<Path, ItemState<Path>>(new List<Path>(), CreatePath);
+			var reproc = new List<ItemState<Path>>();
+			for (int ix = 0; ix < items.Count; ix++) {
+				var valuey = BindPaths.ValueFor(items[ix]);
+				// short-circuit if it's NaN
+				if (double.IsNaN(valuey)) { continue; }
+				var valuex = BindPaths.CategoryFor(items[ix], startAt + ix);
+				// add requested item
+				var istate = ElementPipeline(startAt + ix, valuex, valuey, items[ix], recycler, BindPaths);
+				if (istate != null) {
+					ItemState.Insert(startAt + ix, istate);
+					reproc.Add(istate);
+				}
+			}
+			if (reproc.Count > 0) {
+				// re-sequence remaining items
+				for (int ix = startAt + reproc.Count; ix < ItemState.Count; ix++) {
+					var index = ItemState[ix].Index + reproc.Count();
+					var valuex = BindPaths.CategoryValue(ItemState[ix].XValue, index);
+					var leftx = CategoryAxis.For(valuex);
+					var offsetx = leftx + MarkerOffset;
+					ItemState[ix].Move(index, leftx, offsetx);
+					// NO update geometry; done in later stages of render pipeline
+#if false
+					var rg = ItemState[ix].Element.Data as RectangleGeometry;
+					var rightx = barx + MarkerWidth;
+					rg.Rect = new Rect(new Point(barx, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
+#endif
+				}
+			}
+			// reconfigure axis limits
+			ResetLimits();
+			for (int ix = 0; ix < ItemState.Count; ix++) {
+				//_trace.Verbose($"add-incr update-limits x:{ItemState[ix].XValue} y:{ItemState[ix].Value}");
+				UpdateLimits(ItemState[ix].XValue, ItemState[ix].Value, 0);
+			}
+			// finish up
+			Layer.Add(recycler.Created);
 			Dirty = false;
 		}
 		#endregion
