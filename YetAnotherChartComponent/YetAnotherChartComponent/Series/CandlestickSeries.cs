@@ -34,6 +34,47 @@ namespace eScapeLLC.UWP.Charts {
 			internal SeriesItemState_Custom(int idx, double xv, double xvo, double yv, object cs, Path ele, Tuple<double, PathFigure>[] figs) : base(idx, xv, xvo, yv, cs, ele, 0) { Elements = figs; }
 		}
 		#endregion
+		#region Evaluators
+		class Evaluators {
+			// category and label (optional)
+			internal readonly BindingEvaluator bx;
+			// values (required)
+			internal readonly BindingEvaluator bopen;
+			internal readonly BindingEvaluator bhigh;
+			internal readonly BindingEvaluator blow;
+			internal readonly BindingEvaluator bclose;
+			// value label (optional)
+			internal readonly BindingEvaluator bvl;
+			public bool IsValid { get { return bopen != null && bhigh != null && blow != null && bclose != null; } }
+			/// <summary>
+			/// Ctor.
+			/// Initialize evaluators.
+			/// Does not fail; check <see cref="IsValid"/> to determine status.
+			/// </summary>
+			/// <param name="category"></param>
+			/// <param name="open"></param>
+			/// <param name="high"></param>
+			/// <param name="low"></param>
+			/// <param name="close"></param>
+			/// <param name="valueLabel"></param>
+			public Evaluators(string category, string open, string high, string low, string close, string valueLabel) {
+				bx = !String.IsNullOrEmpty(category) ? new BindingEvaluator(category) : null;
+				bopen = !String.IsNullOrEmpty(open) ? new BindingEvaluator(open) : null;
+				bhigh = !String.IsNullOrEmpty(high) ? new BindingEvaluator(high) : null;
+				blow = !String.IsNullOrEmpty(low) ? new BindingEvaluator(low) : null;
+				bclose = !String.IsNullOrEmpty(close) ? new BindingEvaluator(close) : null;
+				bvl = !String.IsNullOrEmpty(valueLabel) ? new BindingEvaluator(valueLabel) : null;
+			}
+		}
+		#endregion
+		#region render state
+		class State : RenderStateCore<ItemState<Path>, Path> {
+			internal readonly Evaluators evs;
+			internal State(List<ItemState<Path>> sis, Recycler<Path, ItemState<Path>> rc, Evaluators evs) : base(sis, rc) {
+				this.evs = evs;
+			}
+		}
+		#endregion
 		#region properties
 		/// <summary>
 		/// The title for the series.
@@ -95,6 +136,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Data needed for current markers
 		/// </summary>
 		protected List<ItemState<Path>> ItemState { get; set; }
+		Evaluators BindPaths { get; set; }
 		#endregion
 		#region DPs
 		/// <summary>
@@ -175,6 +217,61 @@ namespace eScapeLLC.UWP.Charts {
 				}
 			}
 		}
+		/// <summary>
+		/// Path factory for recycler.
+		/// </summary>
+		/// <returns></returns>
+		Path CreatePath(ItemState<Path> ist) {
+			var path = new Path();
+			return path;
+		}
+		ItemState<Path> ElementPipeline(
+			int index, double valuex, double valueO, double valueH, double valueL, double valueC,
+			object item, Recycler<Path, ItemState<Path>> recycler, BindingEvaluator bvl
+		) {
+			// map through axes
+			var y1 = ValueAxis.For(valueO);
+			var y2 = ValueAxis.For(valueC);
+			var y3 = ValueAxis.For(valueH);
+			var y4 = ValueAxis.For(valueL);
+			var leftx = CategoryAxis.For(valuex);
+			var offsetx = leftx + BarOffset;
+			var rightx = offsetx + BarWidth;
+			// force them to be a min/max
+			var topy = Math.Max(y1, y2);
+			var bottomy = Math.Min(y1, y2);
+			var highy = Math.Max(y3, y4);
+			var lowy = Math.Min(y3, y4);
+			_trace.Verbose($"{Name}[{index}] {valueO}/{valueH}/{valueL}/{valueC} ({offsetx},{topy}) ({rightx},{bottomy})");
+			// create geometry
+			var path = recycler.Next(null);
+			if (path == null) return null;
+			var pg = new PathGeometry();
+			// body (open/close)
+			var pf = PathHelper.Rectangle(offsetx, topy, rightx, bottomy);
+			pg.Figures.Add(pf);
+			// upper shadow (high)
+			var centerx = offsetx + (rightx - offsetx) / 2;
+			var upper = PathHelper.Line(centerx, topy, centerx, highy);
+			pg.Figures.Add(upper);
+			// lower shadow (low)
+			var lower = PathHelper.Line(centerx, bottomy, centerx, lowy);
+			pg.Figures.Add(lower);
+			path.Item2.Data = pg;
+			// establish the style for "forward" or "reverse" polarity
+			BindTo(this, valueO < valueC ? nameof(PathStyle) : nameof(ReversePathStyle), path.Item2, Path.StyleProperty);
+			var figs = new Tuple<double, PathFigure>[4];
+			figs[0] = new Tuple<double, PathFigure>(y1, pf);
+			figs[1] = new Tuple<double, PathFigure>(y2, pf);
+			figs[2] = new Tuple<double, PathFigure>(y3, upper);
+			figs[3] = new Tuple<double, PathFigure>(y4, lower);
+			if (bvl == null) {
+				return new SeriesItemState(index, leftx, offsetx, y1, path.Item2, figs);
+			} else {
+				var cs = bvl.For(item);
+				return new SeriesItemState_Custom(index, leftx, offsetx, y1, cs, path.Item2, figs);
+			}
+		}
 		#endregion
 		#region IProvideLegend
 		private Legend _legend;
@@ -202,6 +299,17 @@ namespace eScapeLLC.UWP.Charts {
 				ReversePathStyle == null, true, PathStyle != null,
 				() => ReversePathStyle = PathStyle
 			);
+			BindPaths = new Evaluators(CategoryPath, OpenValuePath, HighValuePath, LowValuePath, CloseValuePath, ValueLabelPath);
+			if (!BindPaths.IsValid) {
+				if (icelc is IChartErrorInfo icei) {
+					var props = new List<String>();
+					if (String.IsNullOrEmpty(OpenValuePath)) props.Add(nameof(OpenValuePath));
+					if (String.IsNullOrEmpty(HighValuePath)) props.Add(nameof(HighValuePath));
+					if (String.IsNullOrEmpty(LowValuePath)) props.Add(nameof(LowValuePath));
+					if (String.IsNullOrEmpty(CloseValuePath)) props.Add(nameof(CloseValuePath));
+					icei.Report(new ChartValidationResult(NameOrType(), $"{String.Join(",", props)}: must be specified", props));
+				}
+			}
 		}
 		/// <summary>
 		/// Undo effects of Enter().
@@ -209,6 +317,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icelc"></param>
 		public void Leave(IChartEnterLeaveContext icelc) {
 			_trace.Verbose($"leave");
+			BindPaths = null;
 			ValueAxis = null;
 			CategoryAxis = null;
 			icelc.DeleteLayer(Layer);
@@ -236,120 +345,32 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region IDataSourceRenderer
-		class State : RenderStateCore<ItemState<Path>, Path> {
-			// category and label
-			internal readonly BindingEvaluator bx;
-			// values
-			internal readonly BindingEvaluator bopen;
-			internal readonly BindingEvaluator bhigh;
-			internal readonly BindingEvaluator blow;
-			internal readonly BindingEvaluator bclose;
-			// value label
-			internal readonly BindingEvaluator bvl;
-			internal State(List<ItemState<Path>> sis, Recycler<Path, ItemState<Path>> rc, params BindingEvaluator[] bes) :base(sis, rc) {
-				bx = bes[0];
-				bopen = bes[1];
-				bhigh = bes[2];
-				blow = bes[3];
-				bclose = bes[4];
-				bvl = bes[5];
-			}
-		}
-		/// <summary>
-		/// Path factory for recycler.
-		/// </summary>
-		/// <returns></returns>
-		Path CreatePath(ItemState<Path> ist) {
-			var path = new Path();
-			return path;
-		}
 		object IDataSourceRenderer.Preamble(IChartRenderContext icrc) {
 			if (ValueAxis == null || CategoryAxis == null) return null;
-			if (String.IsNullOrEmpty(OpenValuePath)) return null;
-			if (String.IsNullOrEmpty(HighValuePath)) return null;
-			if (String.IsNullOrEmpty(LowValuePath)) return null;
-			if (String.IsNullOrEmpty(CloseValuePath)) return null;
-			var bopen = new BindingEvaluator(OpenValuePath);
-			var bhigh = new BindingEvaluator(HighValuePath);
-			var blow = new BindingEvaluator(LowValuePath);
-			var bclose = new BindingEvaluator(CloseValuePath);
-			// TODO report the binding error
-			if (bopen == null) return null;
-			if (bhigh == null) return null;
-			if (blow == null) return null;
-			if (bclose == null) return null;
+			if (BindPaths == null || !BindPaths.IsValid) return null;
 			ResetLimits();
 			var paths = ItemState.Select(ms => ms.Element);
 			var recycler = new Recycler<Path, ItemState<Path>>(paths, CreatePath);
-			return new State(new List<ItemState<Path>>(), recycler,
-				!String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
-				bopen, bhigh, blow, bclose,
-				!String.IsNullOrEmpty(ValueLabelPath) ? new BindingEvaluator(ValueLabelPath) : null);
+			return new State(new List<ItemState<Path>>(), recycler, BindPaths);
 		}
 		void IDataSourceRenderer.Render(object state, int index, object item) {
 			var st = state as State;
 			// "raw" values
-			var valueO = (double)st.bopen.For(item);
-			var valueH = (double)st.bhigh.For(item);
-			var valueL = (double)st.blow.For(item);
-			var valueC = (double)st.bclose.For(item);
-			var valuex = st.bx != null ? (double)st.bx.For(item) : index;
+			var valueO = (double)st.evs.bopen.For(item);
+			var valueH = (double)st.evs.bhigh.For(item);
+			var valueL = (double)st.evs.blow.For(item);
+			var valueC = (double)st.evs.bclose.For(item);
+			var valuex = st.evs.bx != null ? (double)st.evs.bx.For(item) : index;
 			UpdateLimits(valuex, valueO, valueH, valueL, valueC);
 			st.ix = index;
 			// short-circuit if any are NaN
 			if (double.IsNaN(valueO) || double.IsNaN(valueH) || double.IsNaN(valueL) || double.IsNaN(valueC)) {
 				return;
 			}
-			// map through axes
-			var y1 = ValueAxis.For(valueO);
-			var y2 = ValueAxis.For(valueC);
-			var y3 = ValueAxis.For(valueH);
-			var y4 = ValueAxis.For(valueL);
-			var leftx = CategoryAxis.For(valuex);
-			var barx = leftx + BarOffset;
-			var rightx = barx + BarWidth;
-			// force them to be a min/max
-			var topy = Math.Max(y1, y2);
-			var bottomy = Math.Min(y1, y2);
-			var highy = Math.Max(y3, y4);
-			var lowy = Math.Min(y3, y4);
-			_trace.Verbose($"{Name}[{index}] {valueO}/{valueH}/{valueL}/{valueC} ({barx},{topy}) ({rightx},{bottomy})");
-			// create geometry
-			var path = st.recycler.Next(null);
-			if (path == null) return;
-			var pg = new PathGeometry();
-			// body (open/close)
-			var pf = PathHelper.Rectangle(barx, topy, rightx, bottomy);
-			pg.Figures.Add(pf);
-			// upper shadow (high)
-			var centerx = barx + (rightx - barx) / 2;
-			var upper = PathHelper.Line(centerx, topy, centerx, highy);
-			pg.Figures.Add(upper);
-			// lower shadow (low)
-			var lower = PathHelper.Line(centerx, bottomy, centerx, lowy);
-			pg.Figures.Add(lower);
-			path.Item2.Data = pg;
-			// establish the style for "forward" or "reverse" polarity
-			BindTo(this, valueO < valueC ? nameof(PathStyle) : nameof(ReversePathStyle), path.Item2, Path.StyleProperty);
-			var figs = new Tuple<double, PathFigure>[4];
-			figs[0] = new Tuple<double, PathFigure>(y1, pf);
-			figs[1] = new Tuple<double, PathFigure>(y2, pf);
-			figs[2] = new Tuple<double, PathFigure>(y3, upper);
-			figs[3] = new Tuple<double, PathFigure>(y4, lower);
-			if (st.bvl == null) {
-				st.itemstate.Add(new SeriesItemState(index, leftx, barx, y1, path.Item2, figs));
-			} else {
-				var cs = st.bvl.For(item);
-				st.itemstate.Add(new SeriesItemState_Custom(index, leftx, barx, y1, cs, path.Item2, figs));
-			}
+			var istate = ElementPipeline(index, valuex, valueO, valueH, valueL, valueC, item, st.recycler, st.evs.bvl);
+			if (istate != null) st.itemstate.Add(istate);
 		}
-		void IDataSourceRenderer.RenderComplete(object state) {
-			var st = state as State;
-			if (st.bx == null) {
-				// needs one extra "cell"
-				UpdateLimits(st.ix + 1, double.NaN);
-			}
-		}
+		void IDataSourceRenderer.RenderComplete(object state) { }
 		void IDataSourceRenderer.Postamble(object state) {
 			var st = state as State;
 			ItemState = st.itemstate;
