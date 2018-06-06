@@ -78,13 +78,14 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="startAt">From incremental add.</param>
 		/// <param name="items">From incremental add.</param>
 		/// <param name="itemstate">From the series component.</param>
+		/// <param name="collect">Predicate for adding to the removed item list.  Return true to collect.</param>
 		/// <param name="resequence">Resequence remaining item(s).</param>
 		/// <returns>The list of removed item(s).</returns>
-		protected static List<IS> IncrementalRemove<EL, IS>(IChartRenderContext icrc, int startAt, IList items, List<IS> itemstate, Action<int, int, IS> resequence) where EL : DependencyObject where IS : ItemState<EL> {
+		protected static List<IS> IncrementalRemove<EL, IS>(IChartRenderContext icrc, int startAt, IList items, List<IS> itemstate, Func<IS, bool> collect, Action<int, int, IS> resequence) where EL : DependencyObject {
 			var reproc = new List<IS>();
 			for (int ix = 0; ix < items.Count; ix++) {
 				// remove requested item(s)
-				if (itemstate[startAt].Element != null) {
+				if (collect == null || collect(itemstate[startAt])) {
 					reproc.Add(itemstate[startAt]);
 				}
 				itemstate.RemoveAt(startAt);
