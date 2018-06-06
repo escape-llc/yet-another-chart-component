@@ -9,6 +9,7 @@ using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
 
 namespace eScapeLLC.UWP.Charts {
+	#region ColumnStackItem
 	/// <summary>
 	/// Represents an individual item in the stack.
 	/// </summary>
@@ -62,6 +63,8 @@ namespace eScapeLLC.UWP.Charts {
 	/// Formality for XAML happiness.
 	/// </summary>
 	public class ColumnStackItemCollection : ObservableCollection<ColumnStackItem> { }
+	#endregion
+	#region StackedColumnSeries
 	/// <summary>
 	/// Stacked column series.
 	/// Plots multiple series values on a stacked arrangement.
@@ -229,6 +232,52 @@ namespace eScapeLLC.UWP.Charts {
 				}
 			}
 		}
+		/// <summary>
+		/// Path factory for recycler.
+		/// </summary>
+		/// <returns></returns>
+		Path CreatePath(SeriesItemState sis) {
+			var path = new Path();
+			return path;
+		}
+		/// <summary>
+		/// Create the next series state.
+		/// </summary>
+		/// <param name="index"></param>
+		/// <param name="valuex"></param>
+		/// <param name="item"></param>
+		/// <param name="recycler"></param>
+		/// <param name="byl"></param>
+		/// <param name="bys"></param>
+		/// <returns>New instance or NULL.</returns>
+		SeriesItemState ElementPipeline(int index, double valuex, object item, Recycler<Path, SeriesItemState> recycler, Evaluators evs) {
+			var leftx = CategoryAxis.For(valuex);
+			var barx = leftx + BarOffset;
+			var rightx = barx + BarWidth;
+			var sis = evs.byl == null ? new SeriesItemState(index, leftx, barx) : new SeriesItemState_Custom(index, leftx, barx, evs.byl.For(item));
+			for (int ix = 0; ix < evs.bys.Length; ix++) {
+				var valuey = CoerceValue(item, evs.bys[ix]);
+				if (double.IsNaN(valuey)) {
+					continue;
+				}
+				var colbase = valuey >= 0 ? sis.Max : sis.Min;
+				var colend = colbase + valuey;
+				var y1 = ValueAxis.For(colend);
+				var y2 = ValueAxis.For(colbase);
+				var topy = Math.Max(y1, y2);
+				var bottomy = Math.Min(y1, y2);
+				sis.UpdateLimits(y1);
+				_trace.Verbose($"{Name}[{index},{ix}] {valuey} ({barx},{topy}) ({rightx},{bottomy}) sis ({sis.Min},{sis.Max})");
+				var path = recycler.Next(null);
+				if (path == null) return null;
+				var rg = new RectangleGeometry() { Rect = new Rect(new Point(barx, topy), new Point(rightx, bottomy)) };
+				path.Item2.Data = rg;
+				BindTo(ColumnStack[ix], "PathStyle", path.Item2, FrameworkElement.StyleProperty);
+				UpdateLimits(valuex, sis.Min, sis.Max);
+				sis.Elements.Add(new Tuple<double, Path>(valuey, path.Item2));
+			}
+			return sis;
+		}
 		#endregion
 		#region IProvideLegend
 		private Legend[] _legend;
@@ -283,23 +332,25 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region IDataSourceRenderer
-		class State : RenderStateCore<SeriesItemState, Path> {
+		class Evaluators {
 			internal readonly BindingEvaluator bx;
 			internal readonly BindingEvaluator[] bys;
 			internal readonly BindingEvaluator byl;
-			internal State(List<SeriesItemState> sis, Recycler<Path, SeriesItemState> rc, BindingEvaluator bx, BindingEvaluator byl, BindingEvaluator[] bys) :base(sis, rc) {
-				this.bx = bx;
-				this.byl = byl;
-				this.bys = bys;
+			public Evaluators(string categoryPath, string ValueLabelPath, IEnumerable<string> ColumnStack) {
+				bx = !String.IsNullOrEmpty(categoryPath) ? new BindingEvaluator(categoryPath) : null;
+				byl = !String.IsNullOrEmpty(ValueLabelPath) ? new BindingEvaluator(ValueLabelPath) : null;
+				bys = new BindingEvaluator[ColumnStack.Count()];
+				int ix = 0;
+				foreach(var cs in ColumnStack) {
+					bys[ix++] = String.IsNullOrEmpty(cs) ? null : new BindingEvaluator(cs);
+				}
 			}
 		}
-		/// <summary>
-		/// Path factory for recycler.
-		/// </summary>
-		/// <returns></returns>
-		Path CreatePath(SeriesItemState sis) {
-			var path = new Path();
-			return path;
+		class State : RenderStateCore<SeriesItemState, Path> {
+			internal readonly Evaluators evs;
+			internal State(List<SeriesItemState> sis, Recycler<Path, SeriesItemState> rc, Evaluators evs) :base(sis, rc) {
+				this.evs = evs;
+			}
 		}
 		object IDataSourceRenderer.Preamble(IChartRenderContext icrc) {
 			if (ValueAxis == null || CategoryAxis == null) return null;
@@ -310,52 +361,19 @@ namespace eScapeLLC.UWP.Charts {
 			ResetLimits();
 			var paths = ItemState.Select(ms => ms.Elements).SelectMany(el=>el).Select(el=>el.Item2);
 			var recycler = new Recycler<Path, SeriesItemState>(paths, CreatePath);
-			return new State(new List<SeriesItemState>(), recycler,
-				!String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
-				!String.IsNullOrEmpty(ValueLabelPath) ? new BindingEvaluator(ValueLabelPath) : null,
-				bys
-			);
+			var evs = new Evaluators(CategoryPath, ValueLabelPath, ColumnStack.Select(cs=>cs.ValuePath));
+			return new State(new List<SeriesItemState>(), recycler, evs);
 		}
 		void IDataSourceRenderer.Render(object state, int index, object item) {
 			var st = state as State;
-			var valuex = st.bx != null ? (double)st.bx.For(item) : index;
+			var valuex = st.evs.bx != null ? (double)st.evs.bx.For(item) : index;
 			st.ix = index;
-			var leftx = CategoryAxis.For(valuex);
-			var barx = leftx + BarOffset;
-			var rightx = barx + BarWidth;
-			var sis = st.byl == null ? new SeriesItemState(index, leftx, barx) : new SeriesItemState_Custom(index, leftx, barx, st.byl.For(item));
-			for (int ix = 0; ix < st.bys.Length; ix++) {
-				var valuey = CoerceValue(item, st.bys[ix]);
-				if (double.IsNaN(valuey)) {
-					continue;
-				}
-				var colbase = valuey >= 0 ? sis.Max : sis.Min;
-				var colend = colbase + valuey;
-				var y1 = ValueAxis.For(colend);
-				var y2 = ValueAxis.For(colbase);
-				var topy = Math.Max(y1, y2);
-				var bottomy = Math.Min(y1, y2);
-				sis.UpdateLimits(y1);
-				_trace.Verbose($"{Name}[{index},{ix}] {valuey} ({barx},{topy}) ({rightx},{bottomy}) sis ({sis.Min},{sis.Max})");
-				var path = st.recycler.Next(null);
-				if (path == null) return;
-				var rg = new RectangleGeometry() { Rect = new Rect(new Point(barx, topy), new Point(rightx, bottomy)) };
-				path.Item2.Data = rg;
-				BindTo(ColumnStack[ix], "PathStyle", path.Item2, FrameworkElement.StyleProperty);
-				UpdateLimits(valuex, sis.Min, sis.Max);
-				sis.Elements.Add(new Tuple<double, Path>(y1, path.Item2));
-			}
-			st.itemstate.Add(sis);
-		}
-
-		void IDataSourceRenderer.RenderComplete(object state) {
-			var st = state as State;
-			if (st.bx == null) {
-				// needs one extra "cell"
-				UpdateLimits(st.ix + 1, double.NaN);
+			var sis = ElementPipeline(index, valuex, item, st.recycler, st.evs);
+			if (sis != null) {
+				st.itemstate.Add(sis);
 			}
 		}
-
+		void IDataSourceRenderer.RenderComplete(object state) { }
 		void IDataSourceRenderer.Postamble(object state) {
 			var st = state as State;
 			ItemState = st.itemstate;
@@ -365,4 +383,5 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 	}
+	#endregion
 }
