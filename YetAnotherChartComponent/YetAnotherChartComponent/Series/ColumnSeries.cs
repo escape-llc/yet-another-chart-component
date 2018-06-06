@@ -101,6 +101,17 @@ namespace eScapeLLC.UWP.Charts {
 			ItemState = new List<ItemState<Path>>();
 		}
 		#endregion
+		#region extensions
+		/// <summary>
+		/// Implement for this class.
+		/// </summary>
+		protected override void ReconfigureLimits() {
+			ResetLimits();
+			for (int ix = 0; ix < ItemState.Count; ix++) {
+				UpdateLimits(ItemState[ix].XValue, ItemState[ix].Value, 0);
+			}
+		}
+		#endregion
 		#region helpers
 		/// <summary>
 		/// Core element processing.
@@ -264,73 +275,46 @@ namespace eScapeLLC.UWP.Charts {
 		void IRequireDataSourceUpdates.Remove(IChartRenderContext icrc, int startAt, IList items) {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			if (BindPaths == null || !BindPaths.IsValid) return;
-			var unused = new List<FrameworkElement>();
-			for (int ix = 0; ix < items.Count; ix++) {
-				// remove requested item
-				if (ItemState[startAt].Element != null) {
-					unused.Add(ItemState[startAt].Element);
-				}
-				ItemState.RemoveAt(startAt);
-			}
-			// re-sequence remaining items
-			for (int ix = startAt; ix < ItemState.Count; ix++) {
-				var valuex = BindPaths.CategoryValue(ItemState[ix].XValue, ix);
+			var reproc = IncrementalRemove<Path,ItemState<Path>>(icrc, startAt, items, ItemState, (ix, rpc, istate) => {
+				var valuex = BindPaths.CategoryValue(istate.XValue, ix);
 				var leftx = CategoryAxis.For(valuex);
 				var offsetx = leftx + BarOffset;
 				// TODO update index relative to existing value NOT ix
-				ItemState[ix].Move(ix, leftx, offsetx);
+				istate.Move(ix, leftx, offsetx);
 				// update geometry
-				var rg = ItemState[ix].Element.Data as RectangleGeometry;
+				var rg = istate.Element.Data as RectangleGeometry;
 				var rightx = offsetx + BarWidth;
 				rg.Rect = new Rect(new Point(offsetx, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
-			}
-			// reconfigure axis limits
-			ResetLimits();
-			for (int ix = 0; ix < ItemState.Count; ix++) {
-				//_trace.Verbose($"remove-incr update-limits x:{ItemState[ix].XValue} y:{ItemState[ix].Value}");
-				UpdateLimits(ItemState[ix].XValue, ItemState[ix].Value, 0);
-			}
+			});
+			ReconfigureLimits();
 			// finish up
-			Layer.Remove(unused);
+			Layer.Remove(reproc.Select(xx => xx.Element));
 			Dirty = false;
 		}
 		void IRequireDataSourceUpdates.Add(IChartRenderContext icrc, int startAt, IList items) {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			if (BindPaths == null || !BindPaths.IsValid) return;
 			var recycler = new Recycler<Path, ItemState<Path>>(new List<Path>(), CreatePath);
-			var reproc = new List<ItemState<Path>>();
-			for (int ix = 0; ix < items.Count; ix++) {
-				var valuey = BindPaths.ValueFor(items[ix]);
+			var reproc = IncrementalAdd<ItemState<Path>>(icrc, startAt, items, ItemState, (ix, item) => {
+				var valuey = BindPaths.ValueFor(item);
 				// short-circuit if it's NaN
-				if (double.IsNaN(valuey)) { continue; }
-				var valuex = BindPaths.CategoryFor(items[ix], startAt + ix);
+				if (double.IsNaN(valuey)) { return null; }
+				var valuex = BindPaths.CategoryFor(item, startAt + ix);
 				// add requested item
-				var istate = ElementPipeline(startAt + ix, valuex, valuey, items[ix], recycler, BindPaths.byl);
-				if (istate != null) {
-					ItemState.Insert(startAt + ix, istate);
-					reproc.Add(istate);
-				}
-			}
-			if (reproc.Count > 0) {
-				// re-sequence remaining items
-				for (int ix = startAt + reproc.Count; ix < ItemState.Count; ix++) {
-					var index = ItemState[ix].Index + reproc.Count();
-					var valuex = BindPaths.CategoryValue(ItemState[ix].XValue, index);
-					var leftx = CategoryAxis.For(valuex);
-					var offsetx = leftx + BarOffset;
-					ItemState[ix].Move(index, leftx, offsetx);
-					// update geometry
-					var rg = ItemState[ix].Element.Data as RectangleGeometry;
-					var rightx = offsetx + BarWidth;
-					rg.Rect = new Rect(new Point(offsetx, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
-				}
-			}
-			// reconfigure axis limits
-			ResetLimits();
-			for (int ix = 0; ix < ItemState.Count; ix++) {
-				//_trace.Verbose($"add-incr update-limits x:{ItemState[ix].XValue} y:{ItemState[ix].Value}");
-				UpdateLimits(ItemState[ix].XValue, ItemState[ix].Value, 0);
-			}
+				var istate = ElementPipeline(startAt + ix, valuex, valuey, item, recycler, BindPaths.byl);
+				return istate;
+			}, (ix, rpc, istate) => {
+				var index = istate.Index + rpc;
+				var valuex = BindPaths.CategoryValue(istate.XValue, index);
+				var leftx = CategoryAxis.For(valuex);
+				var offsetx = leftx + BarOffset;
+				istate.Move(index, leftx, offsetx);
+				// update geometry
+				var rg = istate.Element.Data as RectangleGeometry;
+				var rightx = offsetx + BarWidth;
+				rg.Rect = new Rect(new Point(offsetx, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
+			});
+			ReconfigureLimits();
 			// finish up
 			Layer.Add(recycler.Created);
 			Dirty = false;

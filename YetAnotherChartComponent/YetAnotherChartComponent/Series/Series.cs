@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using Windows.UI.Xaml;
 
@@ -41,12 +42,66 @@ namespace eScapeLLC.UWP.Charts {
 			return dp.ToString();
 		}
 		/// <summary>
+		/// Template version of incremental add.
+		/// </summary>
+		/// <typeparam name="IS">Item state type.</typeparam>
+		/// <param name="icrc">From incremental add.</param>
+		/// <param name="startAt">From incremental add.</param>
+		/// <param name="items">From incremental add.</param>
+		/// <param name="itemstate">From the series component.</param>
+		/// <param name="producestate">Produce the new item(s). MAY return NULL.  Signature(index, item).</param>
+		/// <param name="resequence">Resequence remaining item(s).  Signature(index, rcount, istate).</param>
+		/// <returns>The list of newly-produced item(s).</returns>
+		protected static List<IS> IncrementalAdd<IS>(IChartRenderContext icrc, int startAt, IList items, List<IS> itemstate, Func<int, object, IS> producestate, Action<int, int, IS> resequence) {
+			var reproc = new List<IS>();
+			for (int ix = 0; ix < items.Count; ix++) {
+				var istate = producestate(ix, items[ix]);
+				if (istate != null) {
+					itemstate.Insert(startAt + ix, istate);
+					reproc.Add(istate);
+				}
+			}
+			if (reproc.Count > 0) {
+				// re-sequence remaining items
+				for (int ix = startAt + reproc.Count; ix < itemstate.Count; ix++) {
+					resequence(ix, reproc.Count, itemstate[ix]);
+				}
+			}
+			return reproc;
+		}
+		/// <summary>
+		/// Template version of incremental remove.
+		/// </summary>
+		/// <typeparam name="EL">Chart element type.</typeparam>
+		/// <typeparam name="IS">Item state type.</typeparam>
+		/// <param name="icrc">From incremental add.</param>
+		/// <param name="startAt">From incremental add.</param>
+		/// <param name="items">From incremental add.</param>
+		/// <param name="itemstate">From the series component.</param>
+		/// <param name="resequence">Resequence remaining item(s).</param>
+		/// <returns>The list of removed item(s).</returns>
+		protected static List<IS> IncrementalRemove<EL, IS>(IChartRenderContext icrc, int startAt, IList items, List<IS> itemstate, Action<int, int, IS> resequence) where EL : DependencyObject where IS : ItemState<EL> {
+			var reproc = new List<IS>();
+			for (int ix = 0; ix < items.Count; ix++) {
+				// remove requested item(s)
+				if (itemstate[startAt].Element != null) {
+					reproc.Add(itemstate[startAt]);
+				}
+				itemstate.RemoveAt(startAt);
+			}
+			// re-sequence remaining items
+			for (int ix = startAt; ix < itemstate.Count; ix++) {
+				resequence(ix, reproc.Count, itemstate[ix]);
+			}
+			return reproc;
+		}
+		/// <summary>
 		/// Take the actual value from the source and coerce it to the double type, until we get full polymorphism on the y-value.
 		/// <para/>
 		/// Currently handles <see cref="double"/>, <see cref="int"/>, <see cref="short"/>,and Nullable{double,int,short} types.
 		/// </summary>
 		/// <param name="item">Source instance.</param>
-		/// <param name="be">Evaluator or NULL.  If NULL returns NaN.</param>
+		/// <param name="be">Evaluator or NULL.  If NULL returns <see cref="Double.NaN"/>.</param>
 		/// <returns>Coerced value or THROWs.</returns>
 		public static double CoerceValue(object item, BindingEvaluator be) {
 			if (be == null) return double.NaN;
@@ -76,7 +131,7 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region DataSeriesWithAxes
 	/// <summary>
-	/// This class commits to a Category and Value axis, but no values.
+	/// This class commits to a <see cref="CategoryAxis"/> and <see cref="ValueAxis"/>, but no values.
 	/// </summary>
 	public abstract class DataSeriesWithAxes : DataSeries, IProvideValueExtents, IRequireCategoryAxis {
 		#region DPs
@@ -89,17 +144,17 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region properties
 		/// <summary>
-		/// Binding path to the category axis value.
+		/// Binding path to the <see cref="CategoryAxis"/> value.
 		/// MAY be NULL, in which case the data-index is used instead.
 		/// </summary>
 		public String CategoryPath { get { return (String)GetValue(CategoryPathProperty); } set { SetValue(CategoryPathProperty, value); } }
 		/// <summary>
-		/// Component name of value axis.
+		/// Component name of <see cref="ValueAxis"/>.
 		/// Referenced component MUST implement <see cref="IChartAxis"/>.
 		/// </summary>
 		public String ValueAxisName { get; set; }
 		/// <summary>
-		/// Component name of category axis.
+		/// Component name of <see cref="CategoryAxis"/>.
 		/// Referenced component MUST implement <see cref="IChartAxis"/>.
 		/// </summary>
 		public String CategoryAxisName { get; set; }
@@ -122,7 +177,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Range of the values or <see cref="double.NaN"/> if <see cref="UpdateLimits(double, double)"/>or <see cref="UpdateLimits(double, double[])"/> was never called.
 		/// </summary>
-		public double Range { get { return double.IsNaN(Minimum) || double.IsNaN(Maximum) ? double.NaN : Maximum - Minimum + 1; } }
+		public double Range { get { return double.IsNaN(Minimum) || double.IsNaN(Maximum) ? double.NaN : Maximum - Minimum; } }
 		/// <summary>
 		/// Dereferenced value axis.
 		/// </summary>
@@ -131,6 +186,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// Dereferenced category axis.
 		/// </summary>
 		protected IChartAxis CategoryAxis { get; set; }
+		#endregion
+		#region extension points
+		/// <summary>
+		/// Reset and recalculate series limits.
+		/// </summary>
+		protected abstract void ReconfigureLimits();
 		#endregion
 		#region helpers
 		/// <summary>
@@ -175,7 +236,7 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		/// <summary>
 		/// Update value and category limits.
-		/// If a value is NaN, it is effectively ignored because NaN is NOT GT/LT ANY number, even itself.
+		/// If a value is <see cref="double.NaN"/>, it is effectively ignored because NaN is NOT GT/LT ANY number, even itself.
 		/// </summary>
 		/// <param name="vx">Category. MAY be NaN.</param>
 		/// <param name="vy">Value.  MAY be NaN.</param>
@@ -187,12 +248,21 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		/// <summary>
 		/// Update value and category limits.
-		/// Optimized for multiple y-axis values.
-		/// If a value is NaN, it is effectively ignored because NaN is NOT GT/LT ANY number, even itself.
+		/// Syntactic convenience for multiple y-axis values.
+		/// If a value is <see cref="double.NaN"/>, it is effectively ignored because NaN is NOT GT/LT ANY number, even itself.
 		/// </summary>
 		/// <param name="vx">Category. MAY be NaN.</param>
-		/// <param name="vys">Values.  MAY be NaN.</param>
+		/// <param name="vys">Values.  MAY contain NaN.</param>
 		protected void UpdateLimits(double vx, params double[] vys) {
+			UpdateLimits(vx, (IEnumerable<double>)vys);
+		}
+		/// <summary>
+		/// Update value and category limits.
+		/// If a value is <see cref="double.NaN"/>, it is effectively ignored because NaN is NOT GT/LT ANY number, even itself.
+		/// </summary>
+		/// <param name="vx">Category. MAY be NaN.</param>
+		/// <param name="vys">Values.  MAY contain NaN.</param>
+		protected void UpdateLimits(double vx, IEnumerable<double> vys) {
 			if (double.IsNaN(CategoryMinimum) || vx < CategoryMinimum) { CategoryMinimum = vx; }
 			if (double.IsNaN(CategoryMaximum) || vx > CategoryMaximum) { CategoryMaximum = vx; }
 			foreach (var vy in vys) {
@@ -201,8 +271,8 @@ namespace eScapeLLC.UWP.Charts {
 			}
 		}
 		/// <summary>
-		/// Reset the value and category limits.
-		/// Sets Dirty = true.
+		/// Reset the value and category limits to <see cref="double.NaN"/>.
+		/// Sets <see cref="ChartComponent.Dirty"/> = true.
 		/// </summary>
 		protected void ResetLimits() {
 			Minimum = double.NaN; Maximum = double.NaN;
@@ -215,9 +285,10 @@ namespace eScapeLLC.UWP.Charts {
 	#region DataSeriesWithValue
 	/// <summary>
 	/// Derive from this series type when the series has a single value binding, e.g. <see cref="LineSeries"/>, <see cref="ColumnSeries"/>, <see cref="MarkerSeries"/>.
-	/// This class commits to the <see cref="ValuePath"/>and <see cref="PathStyle"/> of those elements.
 	/// <para/>
-	/// Series type with multiple value bindings SHOULD use <see cref="DataSeries"/> instead.
+	/// This class commits to the <see cref="ValuePath"/> and <see cref="PathStyle"/> of those elements.
+	/// <para/>
+	/// Series type with multiple value bindings SHOULD use <see cref="DataSeriesWithAxes"/> instead.
 	/// </summary>
 	public abstract class DataSeriesWithValue : DataSeriesWithAxes, IProvideSeriesItemValues {
 		#region DPs
@@ -268,7 +339,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public String ValueLabelPath { get { return (String)GetValue(ValueLabelPathProperty); } set { SetValue(ValueLabelPathProperty, value); } }
 		/// <summary>
-		/// Force an override of IProvideSeriesItemValues property.
+		/// Force an override of the <see cref="IProvideSeriesItemValues"/> property.
 		/// </summary>
 		public abstract IEnumerable<ISeriesItem> SeriesItemValues { get; }
 		#endregion

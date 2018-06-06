@@ -58,6 +58,17 @@ namespace eScapeLLC.UWP.Charts {
 			ItemState = new List<ItemState<Path>>();
 		}
 		#endregion
+		#region extensions
+		/// <summary>
+		/// Implement for this class.
+		/// </summary>
+		protected override void ReconfigureLimits() {
+			ResetLimits();
+			for (int ix = 0; ix < ItemState.Count; ix++) {
+				UpdateLimits(ItemState[ix].XValue, ItemState[ix].Value);
+			}
+		}
+		#endregion
 		#region IRequireEnterLeave
 		/// <summary>
 		/// Initialize after entering VT.
