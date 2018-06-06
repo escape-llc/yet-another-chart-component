@@ -419,7 +419,7 @@ namespace eScapeLLC.UWP.Charts {
 		void IRequireDataSourceUpdates.Remove(IChartRenderContext icrc, int startAt, IList items) {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			if (BindPaths == null || !BindPaths.IsValid) return;
-			var reproc = IncrementalRemove<Path, SeriesItemState>(icrc, startAt, items, ItemState, null, (ix, rpc, istate) => {
+			var reproc = IncrementalRemove<SeriesItemState>(icrc, startAt, items, ItemState, null, (ix, rpc, istate) => {
 				var valuex = BindPaths.CategoryValue(istate.XValue, ix);
 				var leftx = CategoryAxis.For(valuex);
 				var offsetx = leftx + BarOffset;
