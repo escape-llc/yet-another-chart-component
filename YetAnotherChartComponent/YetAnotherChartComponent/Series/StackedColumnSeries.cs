@@ -197,6 +197,17 @@ namespace eScapeLLC.UWP.Charts {
 			ItemState = new List<SeriesItemState>();
 		}
 		#endregion
+		#region extensions
+		/// <summary>
+		/// Implement for this class.
+		/// </summary>
+		protected override void ReconfigureLimits() {
+			ResetLimits();
+			for (int ix = 0; ix < ItemState.Count; ix++) {
+				UpdateLimits(ItemState[ix].XValue, ItemState[ix].Elements.Select(xx => xx.Item1));
+			}
+		}
+		#endregion
 		#region helpers
 		IEnumerable<ISeriesItem> UnwrapItemState(IEnumerable<SeriesItemState> siss) {
 			foreach (var sis in siss) {

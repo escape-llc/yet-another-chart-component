@@ -1,5 +1,6 @@
 ﻿using eScape.Core;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Windows.UI.Xaml;
@@ -10,28 +11,72 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Render a "candle stick" series, typically used for OHLC data.
 	/// </summary>
-	public class CandlestickSeries : DataSeriesWithAxes, IDataSourceRenderer, IProvideLegend, IProvideSeriesItemValues, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
+	public class CandlestickSeries : DataSeriesWithAxes, IDataSourceRenderer, IRequireDataSourceUpdates, IProvideLegend, IProvideSeriesItemValues, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("CandlestickSeries", LogTools.Level.Error);
 		#region SeriesItemState
+		internal interface IFigureData {
+			Tuple<double,PathFigure>[] Elements { get; }
+			void UpdateGeometry(double leftx, double offsetx, double rightx);
+		}
 		/// <summary>
 		/// Item state.
 		/// </summary>
-		protected class SeriesItemState : ItemState_Matrix<Path> {
+		protected class SeriesItemState : ItemState_Matrix<Path>, IFigureData {
 			/// <summary>
 			/// The list of paths created for the figure.
 			/// </summary>
 			internal Tuple<double, PathFigure>[] Elements { get; private set; }
 			internal SeriesItemState(int idx, double xv, double xvo, double yv, Path ele, Tuple<double, PathFigure>[] figs) : base(idx, xv, xvo, yv, ele, 0) { Elements = figs; }
+			Tuple<double, PathFigure>[] IFigureData.Elements => Elements;
+			void IFigureData.UpdateGeometry(double leftx, double offsetx, double rightx) {
+				var pg = SeriesItemState_Custom.UpdateGeometry(leftx, offsetx, rightx, Elements);
+				Element.Data = pg;
+			}
 		}
 		/// <summary>
 		/// Custom item state.
 		/// </summary>
-		protected class SeriesItemState_Custom : ItemStateCustom_Matrix<Path> {
+		protected class SeriesItemState_Custom : ItemStateCustom_Matrix<Path>, IFigureData {
 			/// <summary>
 			/// The list of paths created for the figure.
 			/// </summary>
 			internal Tuple<double, PathFigure>[] Elements { get; private set; }
 			internal SeriesItemState_Custom(int idx, double xv, double xvo, double yv, object cs, Path ele, Tuple<double, PathFigure>[] figs) : base(idx, xv, xvo, yv, cs, ele, 0) { Elements = figs; }
+			Tuple<double, PathFigure>[] IFigureData.Elements => Elements;
+			void IFigureData.UpdateGeometry(double leftx, double offsetx, double rightx) {
+				var pg = UpdateGeometry(leftx, offsetx, rightx, Elements);
+				Element.Data = pg;
+			}
+			/// <summary>
+			/// Update figures in-place, and return a <see cref="PathGeometry"/> with the new figures.
+			/// </summary>
+			/// <param name="leftx"></param>
+			/// <param name="offsetx"></param>
+			/// <param name="rightx"></param>
+			/// <param name="figs">Array of figures to update.</param>
+			/// <returns>New <see cref="PathGeometry"/> matching the new values.</returns>
+			internal static PathGeometry UpdateGeometry(double leftx, double offsetx, double rightx, Tuple<double,PathFigure>[] figs) {
+				var topy = Math.Max(figs[0].Item1, figs[1].Item1);
+				var bottomy = Math.Min(figs[0].Item1, figs[1].Item1);
+				var highy = Math.Max(figs[2].Item1, figs[3].Item1);
+				var lowy = Math.Min(figs[2].Item1, figs[3].Item1);
+				// body (open/close)
+				var body = PathHelper.Rectangle(offsetx, topy, rightx, bottomy);
+				// upper shadow (high)
+				var centerx = offsetx + (rightx - offsetx) / 2;
+				var upper = PathHelper.Line(centerx, topy, centerx, highy);
+				// lower shadow (low)
+				var lower = PathHelper.Line(centerx, bottomy, centerx, lowy);
+				figs[0] = new Tuple<double, PathFigure>(figs[0].Item1, body);
+				figs[1] = new Tuple<double, PathFigure>(figs[1].Item1, body);
+				figs[2] = new Tuple<double, PathFigure>(figs[2].Item1, upper);
+				figs[3] = new Tuple<double, PathFigure>(figs[3].Item1, lower);
+				var pg = new PathGeometry();
+				pg.Figures.Add(body);
+				pg.Figures.Add(upper);
+				pg.Figures.Add(lower);
+				return pg;
+			}
 		}
 		#endregion
 		#region Evaluators
@@ -45,7 +90,10 @@ namespace eScapeLLC.UWP.Charts {
 			internal readonly BindingEvaluator bclose;
 			// value label (optional)
 			internal readonly BindingEvaluator bvl;
+			#region properties
 			public bool IsValid { get { return bopen != null && bhigh != null && blow != null && bclose != null; } }
+			#endregion
+			#region ctor
 			/// <summary>
 			/// Ctor.
 			/// Initialize evaluators.
@@ -65,6 +113,45 @@ namespace eScapeLLC.UWP.Charts {
 				bclose = !String.IsNullOrEmpty(close) ? new BindingEvaluator(close) : null;
 				bvl = !String.IsNullOrEmpty(valueLabel) ? new BindingEvaluator(valueLabel) : null;
 			}
+			#endregion
+			#region public
+			/// <summary>
+			/// Use the <see cref="bx"/> evaluator to return the x-axis value, or index if it is NULL.
+			/// </summary>
+			/// <param name="ox">Object to evaluate.</param>
+			/// <param name="index">Index value if <see cref="bx"/> is NULL.</param>
+			/// <returns></returns>
+			public double CategoryFor(object ox, int index) {
+				var valuex = bx != null ? (double)bx.For(ox) : index;
+				return valuex;
+			}
+			/// <summary>
+			/// Use the <see cref="bx"/> evaluator to decide between two <see cref="double"/> values.
+			/// </summary>
+			/// <param name="dx">Return if <see cref="bx"/> is NOT NULL.</param>
+			/// <param name="index">Otherwise.</param>
+			/// <returns></returns>
+			public double CategoryValue(double dx, int index) {
+				var valuex = bx != null ? dx : index;
+				return valuex;
+			}
+			public double OpenFor(object item) {
+				var value = DataSeries.CoerceValue(item, bopen);
+				return value;
+			}
+			public double HighFor(object item) {
+				var value = DataSeries.CoerceValue(item, bhigh);
+				return value;
+			}
+			public double LowFor(object item) {
+				var value = DataSeries.CoerceValue(item, blow);
+				return value;
+			}
+			public double CloseFor(object item) {
+				var value = DataSeries.CoerceValue(item, bclose);
+				return value;
+			}
+			#endregion
 		}
 		#endregion
 		#region render state
@@ -136,6 +223,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// Data needed for current markers
 		/// </summary>
 		protected List<ItemState<Path>> ItemState { get; set; }
+		/// <summary>
+		/// Create <see cref="BindingEvaluator"/> instances one time.
+		/// TODO must re-create when any of the DPs change!
+		/// </summary>
 		Evaluators BindPaths { get; set; }
 		#endregion
 		#region DPs
@@ -196,7 +287,23 @@ namespace eScapeLLC.UWP.Charts {
 			ItemState = new List<ItemState<Path>>();
 		}
 		#endregion
+		#region extensions
+		/// <summary>
+		/// Implement for this class.
+		/// </summary>
+		protected override void ReconfigureLimits() {
+			ResetLimits();
+			for (int ix = 0; ix < ItemState.Count; ix++) {
+				if (ItemState[ix] is IFigureData sis) {
+					UpdateLimits(ItemState[ix].XValue, sis.Elements[0].Item1, sis.Elements[1].Item1, sis.Elements[2].Item1, sis.Elements[3].Item1);
+				}
+			}
+		}
+		#endregion
 		#region helpers
+		Legend Legend() {
+			return new Legend() { Title = Title, Fill = PathStyle.Find<Brush>(Path.FillProperty), Stroke = PathStyle.Find<Brush>(Path.StrokeProperty) };
+		}
 		IEnumerable<ISeriesItem> UnwrapItemState(IEnumerable<ItemState<Path>> siss) {
 			foreach (var state in siss) {
 				if(state is SeriesItemState sis) {
@@ -225,7 +332,7 @@ namespace eScapeLLC.UWP.Charts {
 			var path = new Path();
 			return path;
 		}
-		ItemState<Path> ElementPipeline(
+		ItemState<Path> ElementPipeline (
 			int index, double valuex, double valueO, double valueH, double valueL, double valueC,
 			object item, Recycler<Path, ItemState<Path>> recycler, BindingEvaluator bvl
 		) {
@@ -248,8 +355,8 @@ namespace eScapeLLC.UWP.Charts {
 			if (path == null) return null;
 			var pg = new PathGeometry();
 			// body (open/close)
-			var pf = PathHelper.Rectangle(offsetx, topy, rightx, bottomy);
-			pg.Figures.Add(pf);
+			var body = PathHelper.Rectangle(offsetx, topy, rightx, bottomy);
+			pg.Figures.Add(body);
 			// upper shadow (high)
 			var centerx = offsetx + (rightx - offsetx) / 2;
 			var upper = PathHelper.Line(centerx, topy, centerx, highy);
@@ -261,8 +368,8 @@ namespace eScapeLLC.UWP.Charts {
 			// establish the style for "forward" or "reverse" polarity
 			BindTo(this, valueO < valueC ? nameof(PathStyle) : nameof(ReversePathStyle), path.Item2, Path.StyleProperty);
 			var figs = new Tuple<double, PathFigure>[4];
-			figs[0] = new Tuple<double, PathFigure>(y1, pf);
-			figs[1] = new Tuple<double, PathFigure>(y2, pf);
+			figs[0] = new Tuple<double, PathFigure>(y1, body);
+			figs[1] = new Tuple<double, PathFigure>(y2, body);
 			figs[2] = new Tuple<double, PathFigure>(y3, upper);
 			figs[3] = new Tuple<double, PathFigure>(y4, lower);
 			if (bvl == null) {
@@ -277,9 +384,6 @@ namespace eScapeLLC.UWP.Charts {
 		private Legend _legend;
 		IEnumerable<Legend> IProvideLegend.LegendItems {
 			get { if (_legend == null) _legend = Legend(); return new[] { _legend }; }
-		}
-		Legend Legend() {
-			return new Legend() { Title = Title, Fill = PathStyle.Find<Brush>(Path.FillProperty), Stroke = PathStyle.Find<Brush>(Path.StrokeProperty) };
 		}
 		#endregion
 		#region IRequireEnterLeave
@@ -361,12 +465,12 @@ namespace eScapeLLC.UWP.Charts {
 			var valueL = (double)st.evs.blow.For(item);
 			var valueC = (double)st.evs.bclose.For(item);
 			var valuex = st.evs.bx != null ? (double)st.evs.bx.For(item) : index;
-			UpdateLimits(valuex, valueO, valueH, valueL, valueC);
 			st.ix = index;
 			// short-circuit if any are NaN
 			if (double.IsNaN(valueO) || double.IsNaN(valueH) || double.IsNaN(valueL) || double.IsNaN(valueC)) {
 				return;
 			}
+			UpdateLimits(valuex, valueO, valueH, valueL, valueC);
 			var istate = ElementPipeline(index, valuex, valueO, valueH, valueL, valueC, item, st.recycler, st.evs.bvl);
 			if (istate != null) st.itemstate.Add(istate);
 		}
@@ -376,6 +480,55 @@ namespace eScapeLLC.UWP.Charts {
 			ItemState = st.itemstate;
 			Layer.Remove(st.recycler.Unused);
 			Layer.Add(st.recycler.Created);
+			Dirty = false;
+		}
+		#endregion
+		#region IRequireDataSourceUpdates
+		string IRequireDataSourceUpdates.UpdateSourceName => DataSourceName;
+		void IRequireDataSourceUpdates.Remove(IChartRenderContext icrc, int startAt, IList items) {
+			if (CategoryAxis == null || ValueAxis == null) return;
+			if (BindPaths == null || !BindPaths.IsValid) return;
+			var reproc = IncrementalRemove<Path, ItemState<Path>>(icrc, startAt, items, ItemState, (ix, rpc, istate) => {
+				var valuex = BindPaths.CategoryValue(istate.XValue, ix);
+				var leftx = CategoryAxis.For(valuex);
+				var offsetx = leftx + BarOffset;
+				var rightx = offsetx + BarWidth;
+				// TODO update index relative to existing value NOT ix
+				istate.Move(ix, leftx, offsetx);
+				(istate as IFigureData).UpdateGeometry(leftx, offsetx, rightx);
+			});
+			ReconfigureLimits();
+			// finish up
+			Layer.Remove(reproc.Select(xx => xx.Element));
+			Dirty = false;
+		}
+		void IRequireDataSourceUpdates.Add(IChartRenderContext icrc, int startAt, IList items) {
+			if (CategoryAxis == null || ValueAxis == null) return;
+			if (BindPaths == null || !BindPaths.IsValid) return;
+			var recycler = new Recycler<Path, ItemState<Path>>(new List<Path>(), CreatePath);
+			var reproc = IncrementalAdd<ItemState<Path>>(icrc, startAt, items, ItemState, (ix, item) => {
+				var valueO = BindPaths.OpenFor(item);
+				var valueH = BindPaths.HighFor(item);
+				var valueL = BindPaths.LowFor(item);
+				var valueC = BindPaths.CloseFor(item);
+				// short-circuit if it's NaN
+				if (double.IsNaN(valueO) || double.IsNaN(valueH) || double.IsNaN(valueL) || double.IsNaN(valueC)) { return null; }
+				var valuex = BindPaths.CategoryFor(item, startAt + ix);
+				// add requested item
+				var istate = ElementPipeline(startAt + ix, valuex, valueO, valueH, valueL, valueC, item, recycler, BindPaths.bvl);
+				return istate;
+			}, (ix, rpc, istate) => {
+				var index = istate.Index + rpc;
+				var valuex = BindPaths.CategoryValue(istate.XValue, index);
+				var leftx = CategoryAxis.For(valuex);
+				var offsetx = leftx + BarOffset;
+				var rightx = offsetx + BarWidth;
+				istate.Move(index, leftx, offsetx);
+				(istate as IFigureData).UpdateGeometry(leftx, offsetx, rightx);
+			});
+			ReconfigureLimits();
+			// finish up
+			Layer.Add(recycler.Created);
 			Dirty = false;
 		}
 		#endregion
