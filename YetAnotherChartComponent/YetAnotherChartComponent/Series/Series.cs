@@ -72,7 +72,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Template version of incremental remove.
 		/// </summary>
-		/// <typeparam name="EL">Chart element type.</typeparam>
 		/// <typeparam name="IS">Item state type.</typeparam>
 		/// <param name="icrc">From incremental add.</param>
 		/// <param name="startAt">From incremental add.</param>
@@ -81,7 +80,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="collect">Predicate for adding to the removed item list.  Return true to collect.</param>
 		/// <param name="resequence">Resequence remaining item(s).</param>
 		/// <returns>The list of removed item(s).</returns>
-		protected static List<IS> IncrementalRemove<EL, IS>(IChartRenderContext icrc, int startAt, IList items, List<IS> itemstate, Func<IS, bool> collect, Action<int, int, IS> resequence) where EL : DependencyObject {
+		protected static List<IS> IncrementalRemove<IS>(IChartRenderContext icrc, int startAt, IList items, List<IS> itemstate, Func<IS, bool> collect, Action<int, int, IS> resequence) {
 			var reproc = new List<IS>();
 			for (int ix = 0; ix < items.Count; ix++) {
 				// remove requested item(s)
