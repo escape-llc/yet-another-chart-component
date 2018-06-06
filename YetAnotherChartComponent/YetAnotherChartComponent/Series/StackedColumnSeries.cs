@@ -1,5 +1,6 @@
 ﻿using eScape.Core;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -69,9 +70,9 @@ namespace eScapeLLC.UWP.Charts {
 	/// Stacked column series.
 	/// Plots multiple series values on a stacked arrangement.
 	/// </summary>
-	public class StackedColumnSeries :DataSeriesWithAxes, IProvideLegend, IProvideSeriesItemValues, IRequireChartTheme, IRequireEnterLeave, IDataSourceRenderer, IRequireTransforms {
+	public class StackedColumnSeries : DataSeriesWithAxes, IProvideLegend, IProvideSeriesItemValues, IRequireChartTheme, IRequireEnterLeave, IDataSourceRenderer, IRequireDataSourceUpdates, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("StackedColumnSeries", LogTools.Level.Error);
-		#region SeriesItemState
+		#region Series and Channel item state
 		/// <summary>
 		/// Item state.
 		/// </summary>
@@ -100,10 +101,10 @@ namespace eScapeLLC.UWP.Charts {
 			/// <summary>
 			/// Ctor.
 			/// </summary>
-			/// <param name="idx"></param>
-			/// <param name="xv"></param>
-			/// <param name="xvo"></param>
-			public SeriesItemState(int idx, double xv, double xvo) :base(idx, xv, xvo){ }
+			/// <param name="idx">Index.</param>
+			/// <param name="xv">x-value.</param>
+			/// <param name="xvo">x-value after offset.</param>
+			public SeriesItemState(int idx, double xv, double xvo) : base(idx, xv, xvo) { }
 		}
 		/// <summary>
 		/// Custom state version.
@@ -116,11 +117,11 @@ namespace eScapeLLC.UWP.Charts {
 			/// <summary>
 			/// Ctor.
 			/// </summary>
-			/// <param name="idx"></param>
-			/// <param name="xv"></param>
-			/// <param name="xvo"></param>
-			/// <param name="cs"></param>
-			public SeriesItemState_Custom(int idx, double xv, double xvo, object cs) :base(idx, xv, xvo) { CustomValue = cs; }
+			/// <param name="idx">Index.</param>
+			/// <param name="xv">x-value.</param>
+			/// <param name="xvo">x-value after offset.</param>
+			/// <param name="cs">Custom state.</param>
+			public SeriesItemState_Custom(int idx, double xv, double xvo, object cs) : base(idx, xv, xvo) { CustomValue = cs; }
 		}
 		/// <summary>
 		/// Wrapper for the channel items.
@@ -143,6 +144,54 @@ namespace eScapeLLC.UWP.Charts {
 			/// <returns></returns>
 			protected override Placement CreatePlacement() { return new RectanglePlacement(Value >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, (Element.Data as RectangleGeometry).Rect); }
 			internal ChannelItemState_Custom(int idx, double xv, double xvo, double yv, object cs, Path ele, int ch) : base(idx, xv, xvo, yv, cs, ele, ch) { }
+		}
+		#endregion
+		#region Evaluators
+		class Evaluators {
+			internal readonly BindingEvaluator bx;
+			internal readonly BindingEvaluator[] bys;
+			internal readonly BindingEvaluator byl;
+			public Evaluators(string categoryPath, string valueLabelPath, IEnumerable<string> columnValuePaths) {
+				bx = !String.IsNullOrEmpty(categoryPath) ? new BindingEvaluator(categoryPath) : null;
+				byl = !String.IsNullOrEmpty(valueLabelPath) ? new BindingEvaluator(valueLabelPath) : null;
+				bys = new BindingEvaluator[columnValuePaths.Count()];
+				int ix = 0;
+				foreach (var cs in columnValuePaths) {
+					bys[ix++] = String.IsNullOrEmpty(cs) ? null : new BindingEvaluator(cs);
+				}
+			}
+			/// <summary>
+			/// Valid if ALL the column values have a <see cref="BindingEvaluator"/>.
+			/// </summary>
+			public bool IsValid { get { return bys.All(xx => xx != null); } }
+			/// <summary>
+			/// Use the <see cref="bx"/> evaluator to return the x-axis value, or index if it is NULL.
+			/// </summary>
+			/// <param name="ox">Object to evaluate.</param>
+			/// <param name="index">Index value if <see cref="bx"/> is NULL.</param>
+			/// <returns></returns>
+			public double CategoryFor(object ox, int index) {
+				var valuex = bx != null ? (double)bx.For(ox) : index;
+				return valuex;
+			}
+			/// <summary>
+			/// Use the <see cref="bx"/> evaluator to decide between two <see cref="double"/> values.
+			/// </summary>
+			/// <param name="dx">Return if <see cref="bx"/> is NOT NULL.</param>
+			/// <param name="index">Otherwise.</param>
+			/// <returns></returns>
+			public double CategoryValue(double dx, int index) {
+				var valuex = bx != null ? dx : index;
+				return valuex;
+			}
+		}
+		#endregion
+		#region Render state
+		class State : RenderStateCore<SeriesItemState, Path> {
+			internal readonly Evaluators evs;
+			internal State(List<SeriesItemState> sis, Recycler<Path, SeriesItemState> rc, Evaluators evs) : base(sis, rc) {
+				this.evs = evs;
+			}
 		}
 		#endregion
 		#region properties
@@ -182,6 +231,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// Data needed for current markers
 		/// </summary>
 		protected List<SeriesItemState> ItemState { get; set; }
+		/// <summary>
+		/// Evaluate only once.
+		/// </summary>
+		Evaluators BindPaths { get; set; }
 		#endregion
 		#region DPs
 		/// <summary>
@@ -207,7 +260,7 @@ namespace eScapeLLC.UWP.Charts {
 		protected override void ReconfigureLimits() {
 			ResetLimits();
 			for (int ix = 0; ix < ItemState.Count; ix++) {
-				UpdateLimits(ItemState[ix].XValue, ItemState[ix].Elements.Select(xx => xx.Item1));
+				UpdateLimits(ItemState[ix].XValue, ItemState[ix].Min, ItemState[ix].Max);
 			}
 		}
 		#endregion
@@ -247,8 +300,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="valuex"></param>
 		/// <param name="item"></param>
 		/// <param name="recycler"></param>
-		/// <param name="byl"></param>
-		/// <param name="bys"></param>
+		/// <param name="evs"></param>
 		/// <returns>New instance or NULL.</returns>
 		SeriesItemState ElementPipeline(int index, double valuex, object item, Recycler<Path, SeriesItemState> recycler, Evaluators evs) {
 			var leftx = CategoryAxis.For(valuex);
@@ -286,7 +338,7 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		Legend[] Legend() {
 			var items = new List<Legend>();
-			foreach(var stk in ColumnStack) {
+			foreach (var stk in ColumnStack) {
 				items.Add(new Legend() { Title = stk.Title, Fill = stk.PathStyle.Find<Brush>(Path.FillProperty), Stroke = stk.PathStyle.Find<Brush>(Path.StrokeProperty) });
 			}
 			return items.ToArray();
@@ -297,16 +349,20 @@ namespace eScapeLLC.UWP.Charts {
 			EnsureAxes(icelc as IChartComponentContext);
 			Layer = icelc.CreateLayer();
 			_trace.Verbose($"{Name} enter v:{ValueAxisName} {ValueAxis} c:{CategoryAxisName} {CategoryAxis} d:{DataSourceName}");
-			for (int ix = 0; ix < ColumnStack.Count; ix++) {
-				if(String.IsNullOrEmpty(ColumnStack[ix].ValuePath)) {
-					if(icelc is IChartErrorInfo icei) {
-						icei.Report(new ChartValidationResult(NameOrType(), $"ValuePath[{ix}] was not set, NO values are generated", new[] { $"ValuePath[{ix}]" }));
+			BindPaths = new Evaluators(CategoryPath, ValueLabelPath, ColumnStack.Select(cs => cs.ValuePath));
+			if (!BindPaths.IsValid) {
+				for (int ix = 0; ix < ColumnStack.Count; ix++) {
+					if (String.IsNullOrEmpty(ColumnStack[ix].ValuePath)) {
+						if (icelc is IChartErrorInfo icei) {
+							icei.Report(new ChartValidationResult(NameOrType(), $"ValuePath[{ix}] was not set, NO values are generated", new[] { $"ValuePath[{ix}]" }));
+						}
 					}
 				}
 			}
 		}
 		void IRequireEnterLeave.Leave(IChartEnterLeaveContext icelc) {
 			_trace.Verbose($"{Name} leave");
+			BindPaths = null;
 			ValueAxis = null;
 			CategoryAxis = null;
 			icelc.DeleteLayer(Layer);
@@ -332,37 +388,13 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region IDataSourceRenderer
-		class Evaluators {
-			internal readonly BindingEvaluator bx;
-			internal readonly BindingEvaluator[] bys;
-			internal readonly BindingEvaluator byl;
-			public Evaluators(string categoryPath, string ValueLabelPath, IEnumerable<string> ColumnStack) {
-				bx = !String.IsNullOrEmpty(categoryPath) ? new BindingEvaluator(categoryPath) : null;
-				byl = !String.IsNullOrEmpty(ValueLabelPath) ? new BindingEvaluator(ValueLabelPath) : null;
-				bys = new BindingEvaluator[ColumnStack.Count()];
-				int ix = 0;
-				foreach(var cs in ColumnStack) {
-					bys[ix++] = String.IsNullOrEmpty(cs) ? null : new BindingEvaluator(cs);
-				}
-			}
-		}
-		class State : RenderStateCore<SeriesItemState, Path> {
-			internal readonly Evaluators evs;
-			internal State(List<SeriesItemState> sis, Recycler<Path, SeriesItemState> rc, Evaluators evs) :base(sis, rc) {
-				this.evs = evs;
-			}
-		}
 		object IDataSourceRenderer.Preamble(IChartRenderContext icrc) {
 			if (ValueAxis == null || CategoryAxis == null) return null;
-			var bys = new BindingEvaluator[ColumnStack.Count];
-			for (int ix = 0; ix < ColumnStack.Count; ix++) {
-				bys[ix] = String.IsNullOrEmpty(ColumnStack[ix].ValuePath) ? null : new BindingEvaluator(ColumnStack[ix].ValuePath);
-			}
+			if (BindPaths == null || !BindPaths.IsValid) return null;
 			ResetLimits();
-			var paths = ItemState.Select(ms => ms.Elements).SelectMany(el=>el).Select(el=>el.Item2);
+			var paths = ItemState.Select(ms => ms.Elements).SelectMany(el => el).Select(el => el.Item2);
 			var recycler = new Recycler<Path, SeriesItemState>(paths, CreatePath);
-			var evs = new Evaluators(CategoryPath, ValueLabelPath, ColumnStack.Select(cs=>cs.ValuePath));
-			return new State(new List<SeriesItemState>(), recycler, evs);
+			return new State(new List<SeriesItemState>(), recycler, BindPaths);
 		}
 		void IDataSourceRenderer.Render(object state, int index, object item) {
 			var st = state as State;
@@ -379,6 +411,57 @@ namespace eScapeLLC.UWP.Charts {
 			ItemState = st.itemstate;
 			Layer.Remove(st.recycler.Unused);
 			Layer.Add(st.recycler.Created);
+			Dirty = false;
+		}
+		#endregion
+		#region IRequireDataSourceUpdates
+		string IRequireDataSourceUpdates.UpdateSourceName => DataSourceName;
+		void IRequireDataSourceUpdates.Remove(IChartRenderContext icrc, int startAt, IList items) {
+			if (CategoryAxis == null || ValueAxis == null) return;
+			if (BindPaths == null || !BindPaths.IsValid) return;
+			var reproc = IncrementalRemove<Path, SeriesItemState>(icrc, startAt, items, ItemState, null, (ix, rpc, istate) => {
+				var valuex = BindPaths.CategoryValue(istate.XValue, ix);
+				var leftx = CategoryAxis.For(valuex);
+				var offsetx = leftx + BarOffset;
+				// TODO update index relative to existing value NOT ix
+				istate.Move(ix, leftx, offsetx);
+				foreach (var el in istate.Elements) {
+					var rg = el.Item2.Data as RectangleGeometry;
+					var rightx = offsetx + BarWidth;
+					rg.Rect = new Rect(new Point(offsetx, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
+				}
+			});
+			ReconfigureLimits();
+			// finish up
+			var paths = reproc.Select(ms => ms.Elements).SelectMany(el => el).Select(el => el.Item2);
+			Layer.Remove(paths);
+			Dirty = false;
+		}
+		void IRequireDataSourceUpdates.Add(IChartRenderContext icrc, int startAt, IList items) {
+			if (CategoryAxis == null || ValueAxis == null) return;
+			if (BindPaths == null || !BindPaths.IsValid) return;
+			var recycler = new Recycler<Path, SeriesItemState>(new List<Path>(), CreatePath);
+			var reproc = IncrementalAdd<SeriesItemState>(icrc, startAt, items, ItemState, (ix, item) => {
+				var valuex = BindPaths.CategoryFor(item, startAt + ix);
+				// add requested item
+				var istate = ElementPipeline(startAt + ix, valuex, item, recycler, BindPaths);
+				return istate;
+			}, (ix, rpc, istate) => {
+				var index = istate.Index + rpc;
+				var valuex = BindPaths.CategoryValue(istate.XValue, index);
+				var leftx = CategoryAxis.For(valuex);
+				var offsetx = leftx + BarOffset;
+				istate.Move(index, leftx, offsetx);
+				// update geometry
+				foreach (var el in istate.Elements) {
+					var rg = el.Item2.Data as RectangleGeometry;
+					var rightx = offsetx + BarWidth;
+					rg.Rect = new Rect(new Point(offsetx, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
+				}
+			});
+			ReconfigureLimits();
+			// finish up
+			Layer.Add(recycler.Created);
 			Dirty = false;
 		}
 		#endregion

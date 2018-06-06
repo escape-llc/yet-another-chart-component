@@ -275,7 +275,7 @@ namespace eScapeLLC.UWP.Charts {
 		void IRequireDataSourceUpdates.Remove(IChartRenderContext icrc, int startAt, IList items) {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			if (BindPaths == null || !BindPaths.IsValid) return;
-			var reproc = IncrementalRemove<Path,ItemState<Path>>(icrc, startAt, items, ItemState, (ix, rpc, istate) => {
+			var reproc = IncrementalRemove<Path,ItemState<Path>>(icrc, startAt, items, ItemState, istate => istate.Element != null, (ix, rpc, istate) => {
 				var valuex = BindPaths.CategoryValue(istate.XValue, ix);
 				var leftx = CategoryAxis.For(valuex);
 				var offsetx = leftx + BarOffset;
