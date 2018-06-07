@@ -1,6 +1,8 @@
 ﻿using eScape.Core;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media;
@@ -10,8 +12,10 @@ namespace eScapeLLC.UWP.Charts {
 	#region LineSeries
 	/// <summary>
 	/// Data series that generates a Polyline path.
+	/// This series type tracks <see cref="double.NaN"/> values in <see cref="ItemState"/> explicitly, so it can accurately represent "gaps"
+	/// by using multiple line segments.
 	/// </summary>
-	public class LineSeries : DataSeriesWithValue, IDataSourceRenderer, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
+	public class LineSeries : DataSeriesWithValue, IDataSourceRenderer, IRequireDataSourceUpdates, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("LineSeries", LogTools.Level.Error);
 		#region properties
 		/// <summary>
@@ -43,6 +47,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// Data needed for current markers
 		/// </summary>
 		protected List<ItemState<Path>> ItemState { get; set; }
+		/// <summary>
+		/// Save all binding info one time.
+		/// </summary>
+		Evaluators BindPaths { get; set; }
 		#endregion
 		#region DPs
 		#endregion
@@ -69,6 +77,67 @@ namespace eScapeLLC.UWP.Charts {
 			}
 		}
 		#endregion
+		#region helpers
+		/// <summary>
+		/// Prepare the item state, but no <see cref="Geometry"/>.
+		/// </summary>
+		/// <param name="index"></param>
+		/// <param name="valuex"></param>
+		/// <param name="valuey"></param>
+		/// <param name="item"></param>
+		/// <param name="evs"></param>
+		/// <returns></returns>
+		ItemState<Path> ElementPipeline(int index, double valuex, double valuey, object item, Evaluators evs) {
+			var mappedy = ValueAxis.For(valuey);
+			var mappedx = CategoryAxis.For(valuex);
+			var linex = mappedx + CategoryAxisOffset;
+			_trace.Verbose($"{Name}[{index}] v:({valuex},{valuey}) m:({linex},{mappedy})");
+			var cs = evs.LabelFor(item);
+			if (cs == null) {
+				return new ItemState<Path>(index, mappedx, linex, mappedy, Segments);
+			} else {
+				return new ItemStateCustom<Path>(index, mappedx, linex, mappedy, cs, Segments);
+			}
+		}
+		/// <summary>
+		/// Create or augment a <see cref="PathFigure"/> as necessary.
+		/// </summary>
+		/// <param name="st">Render state.</param>
+		/// <param name="istate">Next item to render.</param>
+		void BuildFigure(State st, ItemState<Path> istate) {
+			if (st.first) {
+				// we need a new path figure
+				st.pf = new PathFigure();
+				st.allfigures.Add(st.pf);
+				st.pf.StartPoint = new Point(istate.XValueAfterOffset, istate.Value);
+				st.first = false;
+			} else {
+				st.pf.Segments.Add(new LineSegment() { Point = new Point(istate.XValueAfterOffset, istate.Value) });
+			}
+		}
+		/// <summary>
+		/// Completely rebuild the <see cref="Path"/> for this series.
+		/// </summary>
+		void UpdateGeometry() {
+			var st = new State() {
+				evs = BindPaths,
+				first = true
+			};
+			foreach (var istate in ItemState) {
+				if (double.IsNaN(istate.Value)) {
+					// we are skipping one, so the next one is a start point
+					st.first = true;
+				}
+				BuildFigure(st, istate);
+			}
+			Geometry.Figures.Clear();
+			foreach (var pf in st.allfigures) {
+				if (pf.Segments.Count > 0) {
+					Geometry.Figures.Add(pf);
+				}
+			}
+		}
+		#endregion
 		#region IRequireEnterLeave
 		/// <summary>
 		/// Initialize after entering VT.
@@ -84,6 +153,10 @@ namespace eScapeLLC.UWP.Charts {
 				() => PathStyle = Theme.PathLineSeries
 			);
 			BindTo(this, nameof(PathStyle), Segments, FrameworkElement.StyleProperty);
+			BindPaths = new Evaluators(CategoryPath, ValuePath, ValueLabelPath);
+			if(!BindPaths.IsValid) {
+				// report
+			}
 		}
 		/// <summary>
 		/// Undo effects of Enter().
@@ -91,6 +164,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icelc"></param>
 		void IRequireEnterLeave.Leave(IChartEnterLeaveContext icelc) {
 			_trace.Verbose($"leave");
+			BindPaths = null;
 			ValueAxis = null;
 			CategoryAxis = null;
 			icelc.DeleteLayer(Layer);
@@ -124,71 +198,86 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region IDataSourceRenderer
 		class State {
-			internal BindingEvaluator bx;
-			internal BindingEvaluator by;
-			internal BindingEvaluator byl;
-			internal List<ItemState<Path>> itemstate;
+			internal Evaluators evs;
+			internal List<ItemState<Path>> itemstate = new List<ItemState<Path>>();
 			internal PathFigure pf;
 			internal bool first = true;
+			internal List<PathFigure> allfigures = new List<PathFigure>();
 			internal int ix;
 		}
 		object IDataSourceRenderer.Preamble(IChartRenderContext icrc) {
 			if (ValueAxis == null || CategoryAxis == null) return null;
-			if (String.IsNullOrEmpty(ValuePath)) return null;
-			var by = new BindingEvaluator(ValuePath);
-			if (by == null) return null;
+			if (BindPaths == null || !BindPaths.IsValid) return null;
 			ResetLimits();
 			return new State() {
-				bx = !String.IsNullOrEmpty(CategoryPath) ? new BindingEvaluator(CategoryPath) : null,
-				by = by,
-				byl = !String.IsNullOrEmpty(ValueLabelPath) ? new BindingEvaluator(ValueLabelPath) : null,
-				pf = new PathFigure(),
-				itemstate = new List<ItemState<Path>>()
+				evs = BindPaths
 			};
 		}
 		void IDataSourceRenderer.Render(object state, int index, object item) {
 			var st = state as State;
-			var valuey = CoerceValue(item, st.by);
-			var valuex = st.bx != null ? (double)st.bx.For(item) : index;
+			var valuey = st.evs.ValueFor(item);
+			var valuex = st.evs.CategoryFor(item, index);
 			st.ix = index;
 			UpdateLimits(valuex, valuey);
-			// short-circuit if it's NaN
+			var istate = ElementPipeline(index, valuex, valuey, item, BindPaths);
 			if (double.IsNaN(valuey)) {
-				return;
+				// we are skipping one, so the next one is a start point
+				st.first = true;
 			}
-			var mappedy = ValueAxis.For(valuey);
-			var mappedx = CategoryAxis.For(valuex);
-			var linex = mappedx + CategoryAxisOffset;
-			_trace.Verbose($"{Name}[{index}] v:({valuex},{valuey}) m:({linex},{mappedy})");
-			if (st.first) {
-				// TODO handle multiple-sample "gaps", e.g. successive NaN values.
-				// TODO handle multiple start-points.
-				st.pf.StartPoint = new Point(linex, mappedy);
-				st.first = false;
-			} else {
-				st.pf.Segments.Add(new LineSegment() { Point = new Point(linex, mappedy) });
-			}
-			if (st.byl == null) {
-				st.itemstate.Add(new ItemState<Path>(index, mappedx, linex, mappedy, Segments));
-			} else {
-				var cs = st.byl.For(item);
-				st.itemstate.Add(new ItemStateCustom<Path>(index, mappedx, linex, mappedy, cs, Segments));
-			}
+			BuildFigure(st, istate);
+			st.itemstate.Add(istate);
 		}
-		void IDataSourceRenderer.RenderComplete(object state) {
-			var st = state as State;
-			if (st.bx == null) {
-				// needs one extra "cell"
-				UpdateLimits(st.ix + 1, double.NaN);
-			}
-		}
+		void IDataSourceRenderer.RenderComplete(object state) { }
 		void IDataSourceRenderer.Postamble(object state) {
 			var st = state as State;
 			Geometry.Figures.Clear();
-			if (st.pf.Segments.Count > 0) {
-				Geometry.Figures.Add(st.pf);
+			foreach (var pf in st.allfigures) {
+				if (pf.Segments.Count > 0) {
+					Geometry.Figures.Add(pf);
+				}
 			}
 			ItemState = st.itemstate;
+			Dirty = false;
+		}
+		#endregion
+		#region IRequireDataSourceUpdates
+		string IRequireDataSourceUpdates.UpdateSourceName => DataSourceName;
+		void IRequireDataSourceUpdates.Remove(IChartRenderContext icrc, int startAt, IList items) {
+			if (CategoryAxis == null || ValueAxis == null) return;
+			if (BindPaths == null || !BindPaths.IsValid) return;
+			var reproc = IncrementalRemove<ItemState<Path>>(icrc, startAt, items, ItemState, istate => istate.Element != null, (ix, rpc, istate) => {
+				var valuex = BindPaths.CategoryValue(istate.XValue, ix);
+				var leftx = CategoryAxis.For(valuex);
+				var offsetx = leftx + CategoryAxisOffset;
+				// TODO update index relative to existing value NOT ix
+				istate.Move(ix, leftx, offsetx);
+			});
+			// finish up
+			ReconfigureLimits();
+			UpdateGeometry();
+			Dirty = false;
+		}
+		void IRequireDataSourceUpdates.Add(IChartRenderContext icrc, int startAt, IList items) {
+			if (CategoryAxis == null || ValueAxis == null) return;
+			if (BindPaths == null || !BindPaths.IsValid) return;
+			var reproc = IncrementalAdd<ItemState<Path>>(icrc, startAt, items, ItemState, (ix, item) => {
+				var valuey = BindPaths.ValueFor(item);
+				// short-circuit if it's NaN
+				if (double.IsNaN(valuey)) { return null; }
+				var valuex = BindPaths.CategoryFor(item, startAt + ix);
+				// add requested item
+				var istate = ElementPipeline(startAt + ix, valuex, valuey, item, BindPaths);
+				return istate;
+			}, (ix, rpc, istate) => {
+				var index = istate.Index + rpc;
+				var valuex = BindPaths.CategoryValue(istate.XValue, index);
+				var leftx = CategoryAxis.For(valuex);
+				var offsetx = leftx + CategoryAxisOffset;
+				istate.Move(index, leftx, offsetx);
+			});
+			// finish up
+			ReconfigureLimits();
+			UpdateGeometry();
 			Dirty = false;
 		}
 		#endregion
