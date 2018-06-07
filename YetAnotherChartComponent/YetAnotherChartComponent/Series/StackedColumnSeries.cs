@@ -99,6 +99,18 @@ namespace eScapeLLC.UWP.Charts {
 				if (vx > Max) Max = vx;
 			}
 			/// <summary>
+			/// Update the location of the <see cref="Geometry"/>.
+			/// </summary>
+			/// <param name="offsetx"></param>
+			/// <param name="bw"></param>
+			public void UpdateGeometry(double offsetx, double bw) {
+				foreach (var el in Elements) {
+					var rg = el.Item2.Data as RectangleGeometry;
+					var rightx = offsetx + bw;
+					rg.Rect = new Rect(new Point(offsetx, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
+				}
+			}
+			/// <summary>
 			/// Ctor.
 			/// </summary>
 			/// <param name="idx">Index.</param>
@@ -423,13 +435,9 @@ namespace eScapeLLC.UWP.Charts {
 				var valuex = BindPaths.CategoryValue(istate.XValue, ix);
 				var leftx = CategoryAxis.For(valuex);
 				var offsetx = leftx + BarOffset;
-				// TODO update index relative to existing value NOT ix
+				// TODO update index relative to existing value, NOT ix
 				istate.Move(ix, leftx, offsetx);
-				foreach (var el in istate.Elements) {
-					var rg = el.Item2.Data as RectangleGeometry;
-					var rightx = offsetx + BarWidth;
-					rg.Rect = new Rect(new Point(offsetx, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
-				}
+				istate.UpdateGeometry(offsetx, BarWidth);
 			});
 			ReconfigureLimits();
 			// finish up
@@ -452,12 +460,7 @@ namespace eScapeLLC.UWP.Charts {
 				var leftx = CategoryAxis.For(valuex);
 				var offsetx = leftx + BarOffset;
 				istate.Move(index, leftx, offsetx);
-				// update geometry
-				foreach (var el in istate.Elements) {
-					var rg = el.Item2.Data as RectangleGeometry;
-					var rightx = offsetx + BarWidth;
-					rg.Rect = new Rect(new Point(offsetx, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
-				}
+				istate.UpdateGeometry(offsetx, BarWidth);
 			});
 			ReconfigureLimits();
 			// finish up
