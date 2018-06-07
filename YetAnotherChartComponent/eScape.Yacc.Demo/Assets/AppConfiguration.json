@@ -4,7 +4,7 @@
 		"CandlestickSeries": "Error",
 		"CategoryAxis": "Error",
 		"Chart": "Verbose",
-		"ColumnSeries": "Error",
+		"ColumnSeries": "Verbose",
 		"ColumnSeriesPaths": "Off",
 		"DataSource": "Verbose",
 		"HorizontalBand": "Error",
@@ -13,7 +13,7 @@
 		"MarkerSeries": "Error",
 		"PieSeries": "Error",
 		"StackedColumnSeries": "Error",
-		"ValueAxis": "Error",
+		"ValueAxis": "Verbose",
 		"ValueLabels": "Error"
 	}
 }
