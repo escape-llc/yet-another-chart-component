@@ -212,6 +212,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Provide a render context for given component.
 		/// Created contexts are cached until <see cref="InitializeLayoutContext"/> is called.
+		/// <para/>
+		/// Sets the <see cref="DefaultRenderContext.Type"/> to the current value of <see cref="Type"/>.
 		/// </summary>
 		/// <param name="cc">Component to provide context for.</param>
 		/// <param name="surf">For ctor.</param>
@@ -219,7 +221,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="dc">For ctor.</param>
 		/// <returns>New or cached instance.</returns>
 		public DefaultRenderContext RenderFor(ChartComponent cc, Canvas surf, ObservableCollection<ChartComponent> ccs, object dc) {
-			if (rendercache.ContainsKey(cc)) return rendercache[cc];
+			if (rendercache.ContainsKey(cc)) {
+				var rc = rendercache[cc];
+				rc.Type = Type;
+				return rc;
+			}
 			var rect = Layout.For(cc);
 			var drc = new DefaultRenderContext(surf, ccs, LayoutDimensions, rect, Layout.RemainingRect, dc);
 			rendercache.Add(cc, drc);
