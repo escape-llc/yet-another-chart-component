@@ -2,7 +2,7 @@
 Yet another chart component.  Also a play on the venerable "yacc" parser-generator tool.  Yes, I've used it, and know all about LR(1) parsers!
 
 ## Demo It!
-The demo application in the solution is now available in [Windows Store](https://www.microsoft.com/store/apps/9P9XC6Z7R3BW) so you don't have to build it from source.
+The demo application in the solution is available in [Windows Store](https://www.microsoft.com/store/apps/9P9XC6Z7R3BW) so you don't have to build it from source.
 
 ## Get It!
 From *Package Manager Console*:
