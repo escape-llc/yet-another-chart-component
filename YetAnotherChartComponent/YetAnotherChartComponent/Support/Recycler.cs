@@ -68,6 +68,12 @@ namespace eScapeLLC.UWP.Charts {
 			_source = source.GetEnumerator();
 			_factory = factory;
 		}
+		/// <summary>
+		/// Ctor.
+		/// Makes an empty source, so it only creates new items.
+		/// </summary>
+		/// <param name="factory"></param>
+		public Recycler(Func<S, T> factory) :this(new List<T>(), factory) {}
 		#endregion
 		#region public
 		/// <summary>
