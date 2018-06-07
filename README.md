@@ -35,8 +35,30 @@ Please check out the [Wiki](../../wiki) to learn more about the guts of YACC and
 Please consult the [other](../../issues) [features](../../projects) of this github repository to find out the current state of affairs, [*or to contribute*](../../pulls).
 
 # Nuget Releases
-## 1.0.0
-Initial release.
+## 1.5.0
+More features and fixes.  Contains *breaking changes* so be sure to check the milestone page!
+
+See the [Milestone page](https://github.com/escape-llc/yet-another-chart-component/milestone/6?closed=1).
+
+## 1.4.1
+Fixes due to sizing causing `ArgumentException`.
+
+See the [Milestone page](https://github.com/escape-llc/yet-another-chart-component/milestone/7?closed=1).
+
+## 1.4.0
+More features and fixes.
+
+See the [Milestone page](https://github.com/escape-llc/yet-another-chart-component/milestone/5?closed=1).
+
+## 1.3.0
+More features and fixes.
+
+See the [Milestone page](https://github.com/escape-llc/yet-another-chart-component/milestone/4?closed=1).
+
+## 1.2.0
+More features and fixes.
+
+Since we were more organized this release, please see the [Milestone page](https://github.com/escape-llc/yet-another-chart-component/milestone/3?closed=1).
 
 ## 1.1.0
 Some breaking changes, sorry about that!  As always, consult the demo chart XAML; it's currently the *reference*.
@@ -54,27 +76,5 @@ Some breaking changes, sorry about that!  As always, consult the demo chart XAML
 * Lots of internal fixes/improvements you won't notice.
 * Other new properties.  Sorry, rely on auto-complete in VS for now.
 
-## 1.2.0
-More features and fixes.
-
-Since we were more organized this release, please see the [Milestone page](https://github.com/escape-llc/yet-another-chart-component/milestone/3?closed=1) for a list of included items.
-
-## 1.3.0
-More features and fixes.
-
-See the [Milestone page](https://github.com/escape-llc/yet-another-chart-component/milestone/4?closed=1) for a list of included items.
-
-## 1.4.0
-More features and fixes.
-
-See the [Milestone page](https://github.com/escape-llc/yet-another-chart-component/milestone/5?closed=1) for a list of included items.
-
-## 1.4.1
-Fixes due to sizing causing `ArgumentException`.
-
-See the [Milestone page](https://github.com/escape-llc/yet-another-chart-component/milestone/7?closed=1) for a list of included items.
-
-## 1.5.0
-More features and fixes.  Contains *breaking changes* so be sure to check the milestone page!
-
-See the [Milestone page](https://github.com/escape-llc/yet-another-chart-component/milestone/6?closed=1) for a list of included items.
+## 1.0.0
+Initial release.
