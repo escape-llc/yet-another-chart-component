@@ -75,6 +75,6 @@ Fixes due to sizing causing `ArgumentException`.
 See the [Milestone page](https://github.com/escape-llc/yet-another-chart-component/milestone/7?closed=1) for a list of included items.
 
 ## 1.5.0
-More features and fixes.
+More features and fixes.  Contains *breaking changes* so be sure to check the milestone page!
 
 See the [Milestone page](https://github.com/escape-llc/yet-another-chart-component/milestone/6?closed=1) for a list of included items.
