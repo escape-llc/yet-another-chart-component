@@ -42,60 +42,6 @@ namespace eScapeLLC.UWP.Charts {
 			return dp.ToString();
 		}
 		/// <summary>
-		/// Template version of incremental add.
-		/// </summary>
-		/// <typeparam name="IS">Item state type.</typeparam>
-		/// <param name="icrc">From incremental add.</param>
-		/// <param name="startAt">From incremental add.</param>
-		/// <param name="items">From incremental add.</param>
-		/// <param name="itemstate">From the series component.</param>
-		/// <param name="producestate">Produce the new item(s). MAY return NULL.  Signature(index, item).</param>
-		/// <param name="resequence">Resequence remaining item(s).  Signature(index, rcount, istate).</param>
-		/// <returns>The list of newly-produced item(s).</returns>
-		protected static List<IS> IncrementalAdd<IS>(IChartRenderContext icrc, int startAt, IList items, List<IS> itemstate, Func<int, object, IS> producestate, Action<int, int, IS> resequence) {
-			var reproc = new List<IS>();
-			for (int ix = 0; ix < items.Count; ix++) {
-				var istate = producestate(ix, items[ix]);
-				if (istate != null) {
-					itemstate.Insert(startAt + ix, istate);
-					reproc.Add(istate);
-				}
-			}
-			if (reproc.Count > 0) {
-				// re-sequence remaining items
-				for (int ix = startAt + reproc.Count; ix < itemstate.Count; ix++) {
-					resequence(ix, reproc.Count, itemstate[ix]);
-				}
-			}
-			return reproc;
-		}
-		/// <summary>
-		/// Template version of incremental remove.
-		/// </summary>
-		/// <typeparam name="IS">Item state type.</typeparam>
-		/// <param name="icrc">From incremental add.</param>
-		/// <param name="startAt">From incremental add.</param>
-		/// <param name="items">From incremental add.</param>
-		/// <param name="itemstate">From the series component.</param>
-		/// <param name="collect">Predicate for adding to the removed item list.  Return true to collect.</param>
-		/// <param name="resequence">Resequence remaining item(s).</param>
-		/// <returns>The list of removed item(s).</returns>
-		protected static List<IS> IncrementalRemove<IS>(IChartRenderContext icrc, int startAt, IList items, List<IS> itemstate, Func<IS, bool> collect, Action<int, int, IS> resequence) {
-			var reproc = new List<IS>();
-			for (int ix = 0; ix < items.Count; ix++) {
-				// remove requested item(s)
-				if (collect == null || collect(itemstate[startAt])) {
-					reproc.Add(itemstate[startAt]);
-				}
-				itemstate.RemoveAt(startAt);
-			}
-			// re-sequence remaining items
-			for (int ix = startAt; ix < itemstate.Count; ix++) {
-				resequence(ix, reproc.Count, itemstate[ix]);
-			}
-			return reproc;
-		}
-		/// <summary>
 		/// Take the actual value from the source and coerce it to the double type, until we get full polymorphism on the y-value.
 		/// <para/>
 		/// Currently handles <see cref="double"/>, <see cref="int"/>, <see cref="short"/>,and Nullable{double,int,short} types.
