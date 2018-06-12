@@ -1,6 +1,7 @@
 ﻿#undef COMPOSITION_ENABLED
 using eScape.Core;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Windows.Foundation;
@@ -324,6 +325,42 @@ namespace eScapeLLC.UWP.Charts {
 			}
 		}
 		#endregion
+		#region evhs
+		/// <summary>
+		/// Forward incremental updates.
+		/// </summary>
+		/// <param name="sender">The Source.</param>
+		/// <param name="e">Incremental update info.</param>
+		private void Ipsiu_ItemUpdates(object sender, SeriesItemUpdateEventArgs e) {
+			_trace.Verbose($"itemUpdates {Name} {e.Action} @{e.StartAt}+{e.Items.Count}");
+			switch(e.Action) {
+			case System.Collections.Specialized.NotifyCollectionChangedAction.Add:
+				break;
+			case System.Collections.Specialized.NotifyCollectionChangedAction.Remove:
+				var reproc = IncrementalRemove<SeriesItemState>(e.StartAt, e.Items as IList, ItemState, null, (rpc, istate) => {
+					// TODO must track the originating series item (to capture updated values after incr-update)
+					// TODO position depends upon placement data
+					// var index = istate.Index - rpc;
+					//istate.Move(index, leftx, offsetx);
+					// update geometry
+					var rg = istate.Element as TextBlock;
+				});
+				Layer.Remove(reproc.Select(xx => xx.Element));
+				break;
+			}
+		}
+		/// <summary>
+		/// Cascade visibility changes.
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="dp"></param>
+		private void PropertyChanged_Visibility(DependencyObject sender, DependencyProperty dp) {
+			_trace.Verbose($"inst.vizChanged {Name} {Visibility}");
+			if (dp == VisibilityProperty) {
+				UpdateVisibility(Visibility);
+			}
+		}
+		#endregion
 		#region IRequireEnterLeave
 		long token;
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
@@ -333,20 +370,18 @@ namespace eScapeLLC.UWP.Charts {
 				LabelStyle == null, Theme != null, Theme.LabelAxisTop != null,
 				() => LabelStyle = Theme.LabelAxisTop
 			);
+			if(Source is IProvideSeriesItemUpdates ipsiu) {
+				ipsiu.ItemUpdates += Ipsiu_ItemUpdates;
+			}
 			_trace.Verbose($"{Name} enter s:{SourceName} {Source} v:{ValueAxis} c:{CategoryAxis}");
 			token = RegisterPropertyChangedCallback(UIElement.VisibilityProperty, PropertyChanged_Visibility);
 		}
-
-		private void PropertyChanged_Visibility(DependencyObject sender, DependencyProperty dp) {
-			_trace.Verbose($"inst.vizChanged {Name} {Visibility}");
-			if (dp == VisibilityProperty) {
-				UpdateVisibility(Visibility);
-			}
-		}
-
 		void IRequireEnterLeave.Leave(IChartEnterLeaveContext icelc) {
 			_trace.Verbose($"{Name} leave");
 			UnregisterPropertyChangedCallback(VisibilityProperty, token);
+			if (Source is IProvideSeriesItemUpdates ipsiu) {
+				ipsiu.ItemUpdates -= Ipsiu_ItemUpdates;
+			}
 			ValueAxis = null;
 			CategoryAxis = null;
 			Source = null;
@@ -360,9 +395,13 @@ namespace eScapeLLC.UWP.Charts {
 			// already reported an error so this should be no surprise
 				return;
 			}
+			if(Source is IProvideSeriesItemUpdates && icrc.Type == RenderType.Incremental) {
+				// already handled it
+				return;
+			}
 			if(Source is IProvideSeriesItemValues ipsiv) {
 				// preamble
-				var elements = ItemState.Select(ms => ms.Element);
+				var elements = ItemState.Select(ms => ms.Element).Where(el => el != null);
 				var recycler = new Recycler<FrameworkElement, ISeriesItemValueDouble>(elements, CreateElement);
 				var itemstate = new List<SeriesItemState>();
 				// render
@@ -390,9 +429,7 @@ namespace eScapeLLC.UWP.Charts {
 							}
 						}
 						if (!createit) continue;
-						// TODO it returns whether to continue with item creation for this value
 						var el = recycler.Next(isivd);
-						if (el == null) continue;
 						if (!el.Item1 && el.Item2.DataContext is TextShim shim) {
 							// recycling; update values
 							var txt = isivd.Value.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);

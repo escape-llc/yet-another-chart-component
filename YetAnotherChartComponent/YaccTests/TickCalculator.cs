@@ -1,15 +1,13 @@
 ﻿using eScapeLLC.UWP.Charts;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using Windows.Foundation;
 
 namespace Yacc.Tests {
 	[TestClass]
 	public class UnitTest_TickCalculator {
 		public TestContext TestContext { get; set; }
-		[TestMethod]
+		[TestMethod, TestCategory("ticks")]
 		public void FlameTest_CrossZero_1s() {
 			double max = 5.25;
 			double min = -3.5;
@@ -30,7 +28,7 @@ namespace Yacc.Tests {
 			Assert.AreEqual(4, ticks[7], "ticks[7] failed");
 			Assert.AreEqual(5, ticks[8], "ticks[8] failed");
 		}
-		[TestMethod]
+		[TestMethod, TestCategory("ticks")]
 		public void FlameTest2_CrossZero_10s() {
 			double max = 50.25;
 			double min = -30.5;
@@ -51,7 +49,7 @@ namespace Yacc.Tests {
 			Assert.AreEqual(40, ticks[7], "ticks[7] failed");
 			Assert.AreEqual(50, ticks[8], "ticks[8] failed");
 		}
-		[TestMethod]
+		[TestMethod, TestCategory("ticks")]
 		public void FlameTest_CrossZero_Tenths() {
 			double max = .525;
 			double min = -.35;
@@ -73,7 +71,7 @@ namespace Yacc.Tests {
 			Assert.AreEqual(.4, ticks[7], "ticks[7] failed");
 			Assert.AreEqual(.5, ticks[8], "ticks[8] failed");
 		}
-		[TestMethod]
+		[TestMethod, TestCategory("ticks")]
 		public void FlameTest_PositiveOnly_Tenths() {
 			double max = 5.25;
 			double min = 3.5;
@@ -104,7 +102,7 @@ namespace Yacc.Tests {
 			Assert.IsTrue(TickCalculator.Equals(3.6, ticks[16], epi), "ticks[16] failed");
 			Assert.IsTrue(TickCalculator.Equals(3.5, ticks[17], epi), "ticks[17] failed");
 		}
-		[TestMethod]
+		[TestMethod, TestCategory("ticks")]
 		public void FlameTest_NegativeOnly_Tenths() {
 			double max = -3.5;
 			double min = -5.25;
