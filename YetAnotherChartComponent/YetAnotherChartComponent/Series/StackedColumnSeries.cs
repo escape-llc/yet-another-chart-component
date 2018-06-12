@@ -431,12 +431,13 @@ namespace eScapeLLC.UWP.Charts {
 		void IRequireDataSourceUpdates.Remove(IChartRenderContext icrc, int startAt, IList items) {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			if (BindPaths == null || !BindPaths.IsValid) return;
-			var reproc = IncrementalRemove<SeriesItemState>(icrc, startAt, items, ItemState, null, (ix, rpc, istate) => {
-				var valuex = BindPaths.CategoryValue(istate.XValue, ix);
+			var reproc = IncrementalRemove<SeriesItemState>(startAt, items, ItemState, null, (rpc, istate) => {
+				var index = istate.Index - rpc;
+				var valuex = BindPaths.CategoryValue(istate.XValue, index);
 				var leftx = CategoryAxis.For(valuex);
 				var offsetx = leftx + BarOffset;
 				// TODO update index relative to existing value, NOT ix
-				istate.Move(ix, leftx, offsetx);
+				istate.Move(index, leftx, offsetx);
 				istate.UpdateGeometry(offsetx, BarWidth);
 			});
 			ReconfigureLimits();
@@ -449,12 +450,12 @@ namespace eScapeLLC.UWP.Charts {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			if (BindPaths == null || !BindPaths.IsValid) return;
 			var recycler = new Recycler<Path, SeriesItemState>(new List<Path>(), CreatePath);
-			var reproc = IncrementalAdd<SeriesItemState>(icrc, startAt, items, ItemState, (ix, item) => {
+			var reproc = IncrementalAdd<SeriesItemState>(startAt, items, ItemState, (ix, item) => {
 				var valuex = BindPaths.CategoryFor(item, startAt + ix);
 				// add requested item
 				var istate = ElementPipeline(startAt + ix, valuex, item, recycler, BindPaths);
 				return istate;
-			}, (ix, rpc, istate) => {
+			}, (rpc, istate) => {
 				var index = istate.Index + rpc;
 				var valuex = BindPaths.CategoryValue(istate.XValue, index);
 				var leftx = CategoryAxis.For(valuex);

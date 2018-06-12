@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Data;
 
@@ -114,26 +115,29 @@ namespace eScapeLLC.UWP.Charts {
 		/// Template version of incremental add.
 		/// </summary>
 		/// <typeparam name="IS">Item state type.</typeparam>
-		/// <param name="icrc">From incremental add.</param>
 		/// <param name="startAt">From incremental add.</param>
 		/// <param name="items">From incremental add.</param>
 		/// <param name="itemstate">From the series component.</param>
 		/// <param name="producestate">Produce the new item(s). MAY return NULL.  Signature(index, item).</param>
 		/// <param name="resequence">Resequence remaining item(s).  Signature(index, rcount, istate).</param>
-		/// <returns>The list of newly-produced item(s).</returns>
-		protected static List<IS> IncrementalAdd<IS>(IChartRenderContext icrc, int startAt, IList items, List<IS> itemstate, Func<int, object, IS> producestate, Action<int, int, IS> resequence) {
+		/// <returns>The list of newly-produced item(s).  If this has any items, the itemstate list was sorted.</returns>
+		public static List<IS> IncrementalAdd<IS>(int startAt, IList items, List<IS> itemstate, Func<int, object, IS> producestate, Action<int, IS> resequence) where IS: ISeriesItem {
 			var reproc = new List<IS>();
 			for (int ix = 0; ix < items.Count; ix++) {
-				var istate = producestate(ix, items[ix]);
+				var istate = producestate(startAt + ix, items[ix]);
 				if (istate != null) {
-					itemstate.Insert(startAt + ix, istate);
 					reproc.Add(istate);
 				}
 			}
+			// adjust indices based on added items
+			foreach (var itx in itemstate.Where(ix => ix.Index >= startAt)) {
+				resequence(items.Count, itx);
+			}
 			if (reproc.Count > 0) {
-				// re-sequence remaining items
-				for (int ix = startAt + reproc.Count; ix < itemstate.Count; ix++) {
-					resequence(ix, reproc.Count, itemstate[ix]);
+				// add collected items and re-sort by index
+				itemstate.AddRange(reproc);
+				if (itemstate.Count > 1) {
+					itemstate.Sort((i1, i2) => i1.Index.CompareTo(i2.Index));
 				}
 			}
 			return reproc;
@@ -142,25 +146,26 @@ namespace eScapeLLC.UWP.Charts {
 		/// Template version of incremental remove.
 		/// </summary>
 		/// <typeparam name="IS">Item state type.</typeparam>
-		/// <param name="icrc">From incremental add.</param>
 		/// <param name="startAt">From incremental add.</param>
 		/// <param name="items">From incremental add.</param>
 		/// <param name="itemstate">From the series component.</param>
 		/// <param name="collect">Predicate for adding to the removed item list.  Return true to collect.</param>
 		/// <param name="resequence">Resequence remaining item(s).</param>
 		/// <returns>The list of removed item(s).</returns>
-		protected static List<IS> IncrementalRemove<IS>(IChartRenderContext icrc, int startAt, IList items, List<IS> itemstate, Func<IS, bool> collect, Action<int, int, IS> resequence) {
+		public static List<IS> IncrementalRemove<IS>(int startAt, IList items, List<IS> itemstate, Func<IS, bool> collect, Action<int, IS> resequence) where IS: ISeriesItem {
 			var reproc = new List<IS>();
 			for (int ix = 0; ix < items.Count; ix++) {
-				// remove requested item(s)
-				if (collect == null || collect(itemstate[startAt])) {
-					reproc.Add(itemstate[startAt]);
+				var remx = itemstate.SingleOrDefault(iix => iix.Index == startAt + ix);
+				if (remx != null) {
+					// remove requested item(s)
+					if (collect == null || collect(remx)) {
+						reproc.Add(remx);
+					}
+					itemstate.Remove(remx);
 				}
-				itemstate.RemoveAt(startAt);
 			}
-			// re-sequence remaining items
-			for (int ix = startAt; ix < itemstate.Count; ix++) {
-				resequence(ix, reproc.Count, itemstate[ix]);
+			foreach (var itx in itemstate.Where(ix => ix.Index >= startAt)) {
+				resequence(items.Count, itx);
 			}
 			return reproc;
 		}

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
@@ -71,6 +72,46 @@ namespace eScapeLLC.UWP.Charts {
 		IEnumerable<ISeriesItemValue> YValues { get; }
 	}
 	#endregion
+	#region IProvideSeriesItemUpdates
+	/// <summary>
+	/// Event sent by a <see cref="DataSeries"/> when its tracked items has an incremental update.
+	/// </summary>
+	public sealed class SeriesItemUpdateEventArgs : EventArgs {
+		/// <summary>
+		/// Render context in effect.
+		/// </summary>
+		public IChartRenderContext Render { get; private set; }
+		/// <summary>
+		/// Triggering action.
+		/// </summary>
+		public NotifyCollectionChangedAction Action { get; private set; }
+		/// <summary>
+		/// Starting index.
+		/// </summary>
+		public int StartAt { get; private set; }
+		/// <summary>
+		/// Items involved.
+		/// </summary>
+		public IList<ISeriesItem> Items { get; private set; }
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="icrc">Render context.</param>
+		/// <param name="ncca">The action.</param>
+		/// <param name="startat">Starting index.</param>
+		/// <param name="isis">Items affected.</param>
+		public SeriesItemUpdateEventArgs(IChartRenderContext icrc, NotifyCollectionChangedAction ncca, int startat, IEnumerable<ISeriesItem> isis) { Render = icrc; Action = ncca; StartAt = startat; Items = new List<ISeriesItem>(isis); }
+	}
+	/// <summary>
+	/// Ability to provide incremental updates for <see cref="ISeriesItem"/> state.
+	/// </summary>
+	public interface IProvideSeriesItemUpdates {
+		/// <summary>
+		/// Register for incremental updates.
+		/// </summary>
+		event EventHandler<SeriesItemUpdateEventArgs> ItemUpdates;
+	}
+	#endregion
 	#region IProvideSeriesItemValues
 	/// <summary>
 	/// Ability to provide access to the current series item state.
@@ -139,7 +180,20 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="xv">x-value.</param>
 		/// <param name="xvo">x-value after offset.</param>
 		public void Move(int idx, double xv, double xvo) { Index = idx; XValue = xv; XValueAfterOffset = xvo; }
-	}
+		/// <summary>
+		/// Shift this item by given count.
+		/// </summary>
+		/// <param name="rpc">Shift count.</param>
+		/// <param name="valuexf"></param>
+		/// <param name="leftxf"></param>
+		/// <param name="offset"></param>
+		public void Shift(int rpc, Func<ItemStateCore, double> valuexf, Func<double, double> leftxf, double offset) {
+			var valuex = valuexf(this);
+			var leftx = leftxf(valuex);
+			var offsetx = leftx + offset;
+			Move(Index + rpc, leftx, offsetx);
+		}
+}
 	#endregion
 	#region ItemState<EL>
 	/// <summary>

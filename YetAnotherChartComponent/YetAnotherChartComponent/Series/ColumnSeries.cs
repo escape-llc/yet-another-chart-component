@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using Windows.Foundation;
 using Windows.UI;
@@ -14,7 +15,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Data series that generates a series of <see cref="RectangleGeometry"/> each on its own <see cref="Path"/>.
 	/// </summary>
-	public class ColumnSeries : DataSeriesWithValue, IDataSourceRenderer, IRequireDataSourceUpdates, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
+	public class ColumnSeries : DataSeriesWithValue, IDataSourceRenderer, IRequireDataSourceUpdates, IProvideSeriesItemUpdates, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("ColumnSeries", LogTools.Level.Error);
 		static LogTools.Flag _traceg = LogTools.Add("ColumnSeriesPaths", LogTools.Level.Off);
 		#region item state classes
@@ -153,6 +154,24 @@ namespace eScapeLLC.UWP.Charts {
 			BindTo(this, nameof(PathStyle), path, FrameworkElement.StyleProperty);
 			return path;
 		}
+		/// <summary>
+		/// Invoke the items update event, trapping and reporting any <see cref="Exception"/> via <see cref="IChartErrorInfo"/>.
+		/// </summary>
+		/// <param name="icrc">Passed to args.</param>
+		/// <param name="ncca">Passed to args.</param>
+		/// <param name="startAt">Passed to args.</param>
+		/// <param name="reproc">Passed to args.</param>
+		void RaiseItemsUpdated(IChartRenderContext icrc, NotifyCollectionChangedAction ncca, int startAt, List<ItemState<Path>> reproc) {
+			try {
+				var args = new SeriesItemUpdateEventArgs(icrc, ncca, startAt, reproc);
+				ItemUpdates?.Invoke(this, args);
+			} catch (Exception ex) {
+				_trace.Error($"{Name} SeriesItemUpdate({ncca}).unhandled: {ex.Message}");
+				if (icrc is IChartErrorInfo icei) {
+					icei.Report(new ChartValidationResult(Name, $"SeriesItemUpdate({ncca}) failed: {ex.Message}"));
+				}
+			}
+		}
 		#endregion
 		#region IRequireEnterLeave
 		/// <summary>
@@ -230,6 +249,12 @@ namespace eScapeLLC.UWP.Charts {
 			}
 		}
 		#endregion
+		#region IProvideSeriesItemUpdates
+		/// <summary>
+		/// Made public so it's easier to implement (auto).
+		/// </summary>
+		public event EventHandler<SeriesItemUpdateEventArgs> ItemUpdates;
+		#endregion
 		#region IProvideLegend
 		private Legend _legend;
 		IEnumerable<Legend> IProvideLegend.LegendItems {
@@ -244,7 +269,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (ValueAxis == null || CategoryAxis == null) return null;
 			if (BindPaths == null || !BindPaths.IsValid) return null;
 			ResetLimits();
-			var paths = ItemState.Select(ms => ms.Element);
+			var paths = ItemState.Select(ms => ms.Element).Where(el => el != null);
 			var recycler = new Recycler<Path, ItemState<Path>>(paths, CreatePath);
 			return new RenderState_ValueAndLabel<ItemState<Path>, Path>(new List<ItemState<Path>>(), recycler, BindPaths);
 		}
@@ -275,36 +300,8 @@ namespace eScapeLLC.UWP.Charts {
 		void IRequireDataSourceUpdates.Remove(IChartRenderContext icrc, int startAt, IList items) {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			if (BindPaths == null || !BindPaths.IsValid) return;
-			var reproc = IncrementalRemove<ItemState<Path>>(icrc, startAt, items, ItemState, istate => istate.Element != null, (ix, rpc, istate) => {
-				var valuex = BindPaths.CategoryValue(istate.XValue, ix);
-				var leftx = CategoryAxis.For(valuex);
-				var offsetx = leftx + BarOffset;
-				// TODO update index relative to existing value NOT ix
-				istate.Move(ix, leftx, offsetx);
-				// update geometry
-				var rg = istate.Element.Data as RectangleGeometry;
-				var rightx = offsetx + BarWidth;
-				rg.Rect = new Rect(new Point(offsetx, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
-			});
-			ReconfigureLimits();
-			// finish up
-			Layer.Remove(reproc.Select(xx => xx.Element));
-			Dirty = false;
-		}
-		void IRequireDataSourceUpdates.Add(IChartRenderContext icrc, int startAt, IList items) {
-			if (CategoryAxis == null || ValueAxis == null) return;
-			if (BindPaths == null || !BindPaths.IsValid) return;
-			var recycler = new Recycler<Path, ItemState<Path>>(new List<Path>(), CreatePath);
-			var reproc = IncrementalAdd<ItemState<Path>>(icrc, startAt, items, ItemState, (ix, item) => {
-				var valuey = BindPaths.ValueFor(item);
-				// short-circuit if it's NaN
-				if (double.IsNaN(valuey)) { return null; }
-				var valuex = BindPaths.CategoryFor(item, startAt + ix);
-				// add requested item
-				var istate = ElementPipeline(startAt + ix, valuex, valuey, item, recycler, BindPaths.byl);
-				return istate;
-			}, (ix, rpc, istate) => {
-				var index = istate.Index + rpc;
+			var reproc = IncrementalRemove<ItemState<Path>>(startAt, items, ItemState, istate => istate.Element != null, (rpc, istate) => {
+				var index = istate.Index - rpc;
 				var valuex = BindPaths.CategoryValue(istate.XValue, index);
 				var leftx = CategoryAxis.For(valuex);
 				var offsetx = leftx + BarOffset;
@@ -316,8 +313,39 @@ namespace eScapeLLC.UWP.Charts {
 			});
 			ReconfigureLimits();
 			// finish up
+			Layer.Remove(reproc.Select(xx => xx.Element).Where(el => el != null));
+			Dirty = false;
+			RaiseItemsUpdated(icrc, NotifyCollectionChangedAction.Remove, startAt, reproc);
+		}
+		void IRequireDataSourceUpdates.Add(IChartRenderContext icrc, int startAt, IList items) {
+			if (CategoryAxis == null || ValueAxis == null) return;
+			if (BindPaths == null || !BindPaths.IsValid) return;
+			var recycler = new Recycler<Path, ItemState<Path>>(CreatePath);
+			var reproc = IncrementalAdd<ItemState<Path>>(startAt, items, ItemState, (ix, item) => {
+				var valuey = BindPaths.ValueFor(item);
+				// short-circuit if it's NaN
+				if (double.IsNaN(valuey)) { return null; }
+				var valuex = BindPaths.CategoryFor(item, startAt + ix);
+				// add requested item
+				var istate = ElementPipeline(startAt + ix, valuex, valuey, item, recycler, BindPaths.byl);
+				return istate;
+			}, (rpc, istate) => {
+				var index = istate.Index + rpc;
+				var valuex = BindPaths.CategoryValue(istate.XValue, index);
+				var leftx = CategoryAxis.For(valuex);
+				var offsetx = leftx + BarOffset;
+				//istate.Shift(rpc, (st)=>BindPaths.CategoryValue(st.XValue, st.Index + rpc),(vx)=>CategoryAxis.For(vx));
+				istate.Move(index, leftx, offsetx);
+				// update geometry
+				var rg = istate.Element.Data as RectangleGeometry;
+				var rightx = offsetx + BarWidth;
+				rg.Rect = new Rect(new Point(offsetx, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
+			});
+			ReconfigureLimits();
+			// finish up
 			Layer.Add(recycler.Created);
 			Dirty = false;
+			RaiseItemsUpdated(icrc, NotifyCollectionChangedAction.Add, startAt, reproc);
 		}
 		#endregion
 	}

@@ -2,8 +2,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.VisualStudio.TestTools.UnitTesting.AppContainer;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using Windows.Foundation;
 using Windows.UI.Xaml.Media;
 
@@ -15,7 +13,7 @@ namespace Yacc.Tests {
 		/// Confirms that positive y-axis is increasing "downward" as in Device Coordinates.
 		/// Also confirms ZERO is a valid dimension.
 		/// </summary>
-		[TestMethod]
+		[TestMethod, TestCategory("platform")]
 		public void Rect_PositiveYAxis() {
 			var rect = new Rect(new Point(0, 0), new Point(0, 10));
 			TestContext.WriteLine("rect {0}", rect);
@@ -33,7 +31,7 @@ namespace Yacc.Tests {
 		/// Presumably this is done because it STORES the dimensions plus TL and NOT the two points given.
 		/// IST: the ctor parameters are only called "first point" and "second point" so they are not necessarily TL/BR in order.
 		/// </summary>
-		[TestMethod]
+		[TestMethod, TestCategory("platform")]
 		public void Rect_NegativeYAxis() {
 			var rect = new Rect(new Point(0, 0), new Point(0, -10));
 			TestContext.WriteLine("rect {0}", rect);
@@ -45,7 +43,10 @@ namespace Yacc.Tests {
 			Assert.AreEqual(0, rect.Bottom, "bottom failed");
 			Assert.AreEqual(0, rect.Right, "right failed");
 		}
-		[TestMethod]
+		/// <summary>
+		/// Emphasize more negative means "visually higher" (it's the Top).
+		/// </summary>
+		[TestMethod, TestCategory("platform")]
 		public void Rect_AllNegativeYAxis() {
 			var rect = new Rect(new Point(0, -20), new Point(0, -10));
 			TestContext.WriteLine("rect {0}", rect);
@@ -57,9 +58,25 @@ namespace Yacc.Tests {
 			Assert.AreEqual(0, rect.Right, "right failed");
 		}
 		/// <summary>
+		/// Emphasize swapping "first" and "second" points means nothing to resulting Rect.
+		/// </summary>
+		[TestMethod, TestCategory("platform")]
+		public void Rect_FirstPoint_SecondPoint() {
+			var firstp = new Point(0, -10);
+			var secondp = new Point(0, -20);
+			var rect = new Rect(firstp, secondp);
+			TestContext.WriteLine("1st {1}  2nd {2}  rect {0}", rect, firstp, secondp);
+			Assert.AreEqual(10, rect.Height, "height failed");
+			Assert.AreEqual(0, rect.Width, "width failed");
+			Assert.AreEqual(-20, rect.Top, "top failed");
+			Assert.AreEqual(0, rect.Left, "left failed");
+			Assert.AreEqual(-10, rect.Bottom, "bottom failed");
+			Assert.AreEqual(0, rect.Right, "right failed");
+		}
+		/// <summary>
 		/// As in DC, negative X-axis works as expected, increasing "rightward".
 		/// </summary>
-		[TestMethod]
+		[TestMethod, TestCategory("platform")]
 		public void Rect_NegativeXAxis() {
 			var rect = new Rect(new Point(0, 0), new Point(-10, 0));
 			TestContext.WriteLine("rect {0}", rect);
@@ -74,7 +91,7 @@ namespace Yacc.Tests {
 		/// <summary>
 		/// Not-a-Number is very special: it does not compare to anything!
 		/// </summary>
-		[TestMethod]
+		[TestMethod, TestCategory("platform")]
 		public void NotANumber_DoesntCompareToAnything() {
 			Assert.IsFalse(double.NaN < 0, "less-than failed");
 			Assert.IsFalse(double.NaN == 0, "equal failed");
@@ -84,7 +101,7 @@ namespace Yacc.Tests {
 		/// <summary>
 		/// Not-a-Number is very special: it does not compare to ITSELF!
 		/// </summary>
-		[TestMethod]
+		[TestMethod, TestCategory("platform")]
 		public void NotANumber_DoesntCompareToItself() {
 			var nan = double.NaN;
 			Assert.IsFalse(double.NaN < nan, "less-than failed");
@@ -180,7 +197,7 @@ namespace Yacc.Tests {
 		}
 		#endregion
 		#region transform flame tests
-		[TestMethod]
+		[TestMethod, TestCategory("matrix")]
 		public void Matrix_Projection() {
 			var point = Projection.Transform(Origin);
 			var point2 = Projection.Transform(TestPoint_ndc);
@@ -190,19 +207,19 @@ namespace Yacc.Tests {
 			Assert.AreEqual(Bounds.Left + Bounds.Width * TestPoint_ndc.X, point2.X, "X failed.2");
 			Assert.AreEqual(Bounds.Top + Bounds.Height * TestPoint_ndc.Y, point2.Y, "Y failed.2");
 		}
-		[TestMethod]
+		[TestMethod, TestCategory("matrix")]
 		public void Matrix_World1() {
 			var point = World1.Transform(TestPoint);
 			AssertDouble(0.5, point.X, "X failed");
 			AssertDouble(0, point.Y, "Y failed");
 		}
-		[TestMethod]
+		[TestMethod, TestCategory("matrix")]
 		public void Matrix_World2() {
 			var point = World2.Transform(TestPoint);
 			AssertDouble((XX - X_MIN2)/X_RANGE2, point.X, "X failed");
 			AssertDouble(0, point.Y, "Y failed");
 		}
-		[TestMethod]
+		[TestMethod, TestCategory("matrix")]
 		public void World1_NomalizesAxes() {
 			var point = World1.Transform(W1UL);
 			AssertDouble(0, point.X, "UL.X1 failed");
@@ -214,7 +231,7 @@ namespace Yacc.Tests {
 			AssertDouble(.5, point.X, "mid.X failed");
 			AssertDouble(.5, point.Y, "mid.Y failed");
 		}
-		[UITestMethod]
+		[UITestMethod, TestCategory("matrix")]
 		public void World1_CombineModelProjection() {
 			var gt = new TransformGroup();
 			gt.Children.Add(new MatrixTransform() { Matrix = World1 });
@@ -229,7 +246,7 @@ namespace Yacc.Tests {
 		}
 		#endregion
 		#region inverse
-		[TestMethod]
+		[TestMethod, TestCategory("matrix")]
 		public void Matrix_Inverse_Projection() {
 			var point = Projection.Transform(Origin);
 			Assert.AreEqual(Bounds.Left, point.X, "X failed");
@@ -240,7 +257,7 @@ namespace Yacc.Tests {
 			Assert.AreEqual(Origin.X, ppoint.X, "X failed");
 			Assert.AreEqual(Origin.Y, ppoint.Y, "Y failed");
 		}
-		[UITestMethod]
+		[UITestMethod, TestCategory("matrix")]
 		public void Matrix_Inverse_MatchesMatrixTransform() {
 			var invproj = MatrixSupport.Invert(Projection);
 			var mat = new MatrixTransform() { Matrix = Projection };
@@ -252,7 +269,7 @@ namespace Yacc.Tests {
 		}
 		#endregion
 		#region multiply
-		[TestMethod]
+		[TestMethod, TestCategory("matrix")]
 		public void Matrix_Multiply_World1() {
 			var modelproj = MatrixSupport.Multiply(Projection, World1);
 			TestContext.WriteLine($"modelproj {modelproj}");
@@ -260,7 +277,7 @@ namespace Yacc.Tests {
 			Assert.AreEqual(Bounds.Left, point.X, "X failed");
 			Assert.AreEqual(Bounds.Top, point.Y, "Y failed");
 		}
-		[UITestMethod]
+		[UITestMethod, TestCategory("matrix")]
 		public void Matrix_Multiply_MatchesTransformGroup() {
 			var gt = new TransformGroup();
 			gt.Children.Add(new MatrixTransform() { Matrix = World1 });
@@ -272,7 +289,7 @@ namespace Yacc.Tests {
 		}
 		#endregion
 		#region translate transform
-		[UITestMethod]
+		[UITestMethod, TestCategory("matrix")]
 		public void Matrix_Translate_MatchesTransformGroup() {
 			var gt = new TransformGroup();
 			gt.Children.Add(new TranslateTransform() { X = TestPoint.X, Y = TestPoint.Y });
@@ -282,7 +299,7 @@ namespace Yacc.Tests {
 			TestContext.WriteLine($"modeltrans {modeltrans}");
 			MatrixEqual(gt.Value, modeltrans);
 		}
-		[TestMethod]
+		[TestMethod, TestCategory("matrix")]
 		public void Matrix_Translate_Transform() {
 			var wtrans = MatrixSupport.Translate(World1, TestPoint.X, TestPoint.Y);
 			TestContext.WriteLine($"modeltrans {wtrans}");
@@ -302,7 +319,7 @@ namespace Yacc.Tests {
 		/// <summary>
 		/// The M matrix must have the coordinates "baked in".
 		/// </summary>
-		[TestMethod]
+		[TestMethod, TestCategory("matrix")]
 		public void World1_MarkerTransform_Flame() {
 			const double DIMENSION = 5;
 			// must "walk out" the marker dimensions to DC
@@ -333,7 +350,7 @@ namespace Yacc.Tests {
 			Assert.AreEqual(Bounds.Left + mkhalf, lr.X, "lr.X failed");
 			Assert.AreEqual(Bounds.Top + zerodp + 2.5, lr.Y, "lr.Y failed");
 		}
-		[TestMethod]
+		[TestMethod, TestCategory("matrix")]
 		public void World1_MarkerTransform_ForPoint() {
 			var world1t = MatrixSupport.Translate(World1, TestPoint.X, TestPoint.Y);
 			TestContext.WriteLine($"world1t {world1t}");
