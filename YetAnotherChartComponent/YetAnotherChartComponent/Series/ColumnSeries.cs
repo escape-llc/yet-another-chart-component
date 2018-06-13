@@ -138,10 +138,10 @@ namespace eScapeLLC.UWP.Charts {
 			var rg = new RectangleGeometry() { Rect = new Rect(new Point(barx, topy), new Point(rightx, bottomy)) };
 			path.Item2.Data = rg;
 			if (byl == null) {
-				return new SeriesItemState_Double(index, leftx, barx, y1, path.Item2);
+				return new SeriesItemState_Double(index, leftx, BarOffset, y1, path.Item2);
 			} else {
 				var cs = byl.For(item);
-				return new SeriesItemState_Custom(index, leftx, barx, y1, cs, path.Item2);
+				return new SeriesItemState_Custom(index, leftx, BarOffset, y1, cs, path.Item2);
 			}
 		}
 		/// <summary>
@@ -301,7 +301,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			if (BindPaths == null || !BindPaths.IsValid) return;
 			var reproc = IncrementalRemove<ItemState<Path>>(startAt, items, ItemState, istate => istate.Element != null, (rpc, istate) => {
-				istate.Shift(-rpc, BindPaths, CategoryAxis, BarOffset);
+				istate.Shift(-rpc, BindPaths, CategoryAxis);
 				// update geometry
 				var rg = istate.Element.Data as RectangleGeometry;
 				var rightx = istate.XValueAfterOffset + BarWidth;
@@ -326,7 +326,7 @@ namespace eScapeLLC.UWP.Charts {
 				var istate = ElementPipeline(ix, valuex, valuey, item, recycler, BindPaths.byl);
 				return istate;
 			}, (rpc, istate) => {
-				istate.Shift(rpc, BindPaths, CategoryAxis, BarOffset);
+				istate.Shift(rpc, BindPaths, CategoryAxis);
 				// update geometry
 				var rg = istate.Element.Data as RectangleGeometry;
 				var rightx = istate.XValueAfterOffset + BarWidth;

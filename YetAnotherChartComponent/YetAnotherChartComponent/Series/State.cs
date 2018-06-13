@@ -21,6 +21,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		double XValue { get; }
 		/// <summary>
+		/// Category axis offset.
+		/// </summary>
+		double XOffset { get; }
+		/// <summary>
 		/// The category axis value after applying offset, e.g. <see cref="MarkerSeries.MarkerOffset"/>.
 		/// </summary>
 		double XValueAfterOffset { get; }
@@ -163,35 +167,37 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public double XValue { get; private set; }
 		/// <summary>
+		/// The offset component.
+		/// </summary>
+		public double XOffset { get; private set; }
+		/// <summary>
 		/// The x value after intra-unit offset.
 		/// </summary>
-		public double XValueAfterOffset { get; private set; }
+		public double XValueAfterOffset { get { return XValue + XOffset; } }
 		/// <summary>
 		/// Ctor.
 		/// </summary>
 		/// <param name="idx">Index.</param>
 		/// <param name="xv">x-value.</param>
-		/// <param name="xvo">x-value after offset.</param>
-		public ItemStateCore(int idx, double xv, double xvo) { Index = idx; XValue = xv; XValueAfterOffset = xvo; }
+		/// <param name="xvo">x-value offset.</param>
+		public ItemStateCore(int idx, double xv, double xvo) { Index = idx; XValue = xv; XOffset = xvo; }
 		/// <summary>
 		/// Re-locate this item to a new index.
 		/// </summary>
 		/// <param name="idx">Index.</param>
 		/// <param name="xv">x-value.</param>
-		/// <param name="xvo">x-value after offset.</param>
-		public void Move(int idx, double xv, double xvo) { Index = idx; XValue = xv; XValueAfterOffset = xvo; }
+		public void Move(int idx, double xv) { Index = idx; XValue = xv; }
 		/// <summary>
 		/// Shift this item by given count.
+		/// Recalculates <see cref="Index"/>, <see cref="XValue"/>, and <see cref="XValueAfterOffset"/>.
 		/// </summary>
 		/// <param name="rpc">Shift count.</param>
 		/// <param name="ieval">Evaluator to use.</param>
 		/// <param name="axis">Axis to map category-axis value.</param>
-		/// <param name="offset">x-value offset.</param>
-		public void Shift(int rpc, IEvaluator ieval, IChartAxis axis, double offset) {
+		public void Shift(int rpc, IEvaluator ieval, IChartAxis axis) {
 			Index = Index + rpc;
 			var xv = ieval.CategoryValue(XValue, Index);
 			XValue = axis.For(xv);
-			XValueAfterOffset = XValue + offset;
 		}
 }
 	#endregion
@@ -219,7 +225,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="idx">Index.</param>
 		/// <param name="xv">x-value.</param>
-		/// <param name="xvo">x-value after offset.</param>
+		/// <param name="xvo">x-value offset.</param>
 		/// <param name="yv">y-value.</param>
 		/// <param name="ele">Generated element.</param>
 		/// <param name="ch">Value channel; default to zero.</param>
@@ -327,7 +333,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="idx">Index.</param>
 		/// <param name="xv">x-value.</param>
-		/// <param name="xvo">x-value after offset.</param>
+		/// <param name="xvo">x-value offset.</param>
 		/// <param name="isis">Channel details.  THIS takes ownership.</param>
 		public ItemStateMultiChannelCore(int idx, double xv, double xvo, ISeriesItemValue[] isis) : base(idx, xv, xvo) { YValues = isis; }
 	}

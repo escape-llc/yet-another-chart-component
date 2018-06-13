@@ -94,9 +94,9 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"{Name}[{index}] v:({valuex},{valuey}) m:({linex},{mappedy})");
 			var cs = evs.LabelFor(item);
 			if (cs == null) {
-				return new ItemState<Path>(index, mappedx, linex, mappedy, Segments);
+				return new ItemState<Path>(index, mappedx, CategoryAxisOffset, mappedy, Segments);
 			} else {
-				return new ItemStateCustom<Path>(index, mappedx, linex, mappedy, cs, Segments);
+				return new ItemStateCustom<Path>(index, mappedx, CategoryAxisOffset, mappedy, cs, Segments);
 			}
 		}
 		/// <summary>
@@ -249,8 +249,7 @@ namespace eScapeLLC.UWP.Charts {
 				var index = istate.Index - rpc;
 				var valuex = BindPaths.CategoryValue(istate.XValue, index);
 				var leftx = CategoryAxis.For(valuex);
-				var offsetx = leftx + CategoryAxisOffset;
-				istate.Move(index, leftx, offsetx);
+				istate.Move(index, leftx);
 			});
 			// finish up
 			ReconfigureLimits();
@@ -273,7 +272,7 @@ namespace eScapeLLC.UWP.Charts {
 				var valuex = BindPaths.CategoryValue(istate.XValue, index);
 				var leftx = CategoryAxis.For(valuex);
 				var offsetx = leftx + CategoryAxisOffset;
-				istate.Move(index, leftx, offsetx);
+				istate.Move(index, leftx);
 			});
 			// finish up
 			ReconfigureLimits();
