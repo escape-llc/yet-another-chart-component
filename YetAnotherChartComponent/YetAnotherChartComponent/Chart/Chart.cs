@@ -682,7 +682,7 @@ namespace eScapeLLC.UWP.Charts {
 			foreach (var cc in Components.Where(xx => xx is IRequireDataSourceUpdates irsiu && irsiu.UpdateSourceName == ds.Name)) {
 				_trace.Verbose($"incr {ncca} '{cc.Name}' {cc}");
 				IRequireDataSourceUpdates irdsu = cc as IRequireDataSourceUpdates;
-				var ctx = ls.RenderFor(cc as ChartComponent, Surface, Components, DataContext);
+				var ctx = ls.RenderFor(cc, Surface, Components, DataContext);
 				switch (ncca) {
 				case NotifyCollectionChangedAction.Add:
 					irdsu.Add(ctx, startIndex, items);

@@ -451,9 +451,9 @@ namespace eScapeLLC.UWP.Charts {
 			if (BindPaths == null || !BindPaths.IsValid) return;
 			var recycler = new Recycler<Path, SeriesItemState>(new List<Path>(), CreatePath);
 			var reproc = IncrementalAdd<SeriesItemState>(startAt, items, ItemState, (ix, item) => {
-				var valuex = BindPaths.CategoryFor(item, startAt + ix);
+				var valuex = BindPaths.CategoryFor(item, ix);
 				// add requested item
-				var istate = ElementPipeline(startAt + ix, valuex, item, recycler, BindPaths);
+				var istate = ElementPipeline(ix, valuex, item, recycler, BindPaths);
 				return istate;
 			}, (rpc, istate) => {
 				var index = istate.Index + rpc;

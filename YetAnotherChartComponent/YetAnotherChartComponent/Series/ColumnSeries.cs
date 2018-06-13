@@ -168,7 +168,7 @@ namespace eScapeLLC.UWP.Charts {
 			} catch (Exception ex) {
 				_trace.Error($"{Name} SeriesItemUpdate({ncca}).unhandled: {ex.Message}");
 				if (icrc is IChartErrorInfo icei) {
-					icei.Report(new ChartValidationResult(Name, $"SeriesItemUpdate({ncca}) failed: {ex.Message}"));
+					icei.Report(new ChartValidationResult(NameOrType(), $"SeriesItemUpdate({ncca}) failed: {ex.Message}"));
 				}
 			}
 		}
@@ -301,15 +301,11 @@ namespace eScapeLLC.UWP.Charts {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			if (BindPaths == null || !BindPaths.IsValid) return;
 			var reproc = IncrementalRemove<ItemState<Path>>(startAt, items, ItemState, istate => istate.Element != null, (rpc, istate) => {
-				var index = istate.Index - rpc;
-				var valuex = BindPaths.CategoryValue(istate.XValue, index);
-				var leftx = CategoryAxis.For(valuex);
-				var offsetx = leftx + BarOffset;
-				istate.Move(index, leftx, offsetx);
+				istate.Shift(-rpc, BindPaths, CategoryAxis, BarOffset);
 				// update geometry
 				var rg = istate.Element.Data as RectangleGeometry;
-				var rightx = offsetx + BarWidth;
-				rg.Rect = new Rect(new Point(offsetx, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
+				var rightx = istate.XValueAfterOffset + BarWidth;
+				rg.Rect = new Rect(new Point(istate.XValueAfterOffset, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
 			});
 			ReconfigureLimits();
 			// finish up
@@ -325,21 +321,16 @@ namespace eScapeLLC.UWP.Charts {
 				var valuey = BindPaths.ValueFor(item);
 				// short-circuit if it's NaN
 				if (double.IsNaN(valuey)) { return null; }
-				var valuex = BindPaths.CategoryFor(item, startAt + ix);
+				var valuex = BindPaths.CategoryFor(item, ix);
 				// add requested item
-				var istate = ElementPipeline(startAt + ix, valuex, valuey, item, recycler, BindPaths.byl);
+				var istate = ElementPipeline(ix, valuex, valuey, item, recycler, BindPaths.byl);
 				return istate;
 			}, (rpc, istate) => {
-				var index = istate.Index + rpc;
-				var valuex = BindPaths.CategoryValue(istate.XValue, index);
-				var leftx = CategoryAxis.For(valuex);
-				var offsetx = leftx + BarOffset;
-				//istate.Shift(rpc, (st)=>BindPaths.CategoryValue(st.XValue, st.Index + rpc),(vx)=>CategoryAxis.For(vx));
-				istate.Move(index, leftx, offsetx);
+				istate.Shift(rpc, BindPaths, CategoryAxis, BarOffset);
 				// update geometry
 				var rg = istate.Element.Data as RectangleGeometry;
-				var rightx = offsetx + BarWidth;
-				rg.Rect = new Rect(new Point(offsetx, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
+				var rightx = istate.XValueAfterOffset + BarWidth;
+				rg.Rect = new Rect(new Point(istate.XValueAfterOffset, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
 			});
 			ReconfigureLimits();
 			// finish up

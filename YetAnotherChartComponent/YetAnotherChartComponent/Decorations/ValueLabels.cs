@@ -371,7 +371,9 @@ namespace eScapeLLC.UWP.Charts {
 				() => LabelStyle = Theme.LabelAxisTop
 			);
 			if(Source is IProvideSeriesItemUpdates ipsiu) {
+			#if false
 				ipsiu.ItemUpdates += Ipsiu_ItemUpdates;
+			#endif
 			}
 			_trace.Verbose($"{Name} enter s:{SourceName} {Source} v:{ValueAxis} c:{CategoryAxis}");
 			token = RegisterPropertyChangedCallback(UIElement.VisibilityProperty, PropertyChanged_Visibility);
@@ -380,7 +382,9 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"{Name} leave");
 			UnregisterPropertyChangedCallback(VisibilityProperty, token);
 			if (Source is IProvideSeriesItemUpdates ipsiu) {
+			#if false
 				ipsiu.ItemUpdates -= Ipsiu_ItemUpdates;
+			#endif
 			}
 			ValueAxis = null;
 			CategoryAxis = null;
@@ -395,10 +399,12 @@ namespace eScapeLLC.UWP.Charts {
 			// already reported an error so this should be no surprise
 				return;
 			}
+			#if false
 			if(Source is IProvideSeriesItemUpdates && icrc.Type == RenderType.Incremental) {
 				// already handled it
 				return;
 			}
+			#endif
 			if(Source is IProvideSeriesItemValues ipsiv) {
 				// preamble
 				var elements = ItemState.Select(ms => ms.Element).Where(el => el != null);

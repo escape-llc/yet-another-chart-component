@@ -244,11 +244,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			if (BindPaths == null || !BindPaths.IsValid) return;
 			var reproc = IncrementalRemove<ItemState<Path>>(startAt, items, ItemState, istate => istate.Element != null, (rpc, istate) => {
-				var index = istate.Index - rpc;
-				var valuex = BindPaths.CategoryValue(istate.XValue, index);
-				var leftx = CategoryAxis.For(valuex);
-				var offsetx = leftx + MarkerOffset;
-				istate.Move(index, leftx, offsetx);
+				istate.Shift(-rpc, BindPaths, CategoryAxis, MarkerOffset);
 				// NO geometry update ; done in later stages of render pipeline
 			});
 			ReconfigureLimits();
@@ -259,21 +255,17 @@ namespace eScapeLLC.UWP.Charts {
 		void IRequireDataSourceUpdates.Add(IChartRenderContext icrc, int startAt, IList items) {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			if (BindPaths == null || !BindPaths.IsValid) return;
-			var recycler = new Recycler<Path, ItemState<Path>>(new List<Path>(), CreatePath);
+			var recycler = new Recycler<Path, ItemState<Path>>(CreatePath);
 			var reproc = IncrementalAdd<ItemState<Path>>(startAt, items, ItemState, (ix, item) => {
 				var valuey = BindPaths.ValueFor(item);
 				// short-circuit if it's NaN
 				if (double.IsNaN(valuey)) { return null; }
-				var valuex = BindPaths.CategoryFor(item, startAt + ix);
+				var valuex = BindPaths.CategoryFor(item, ix);
 				// add requested item
-				var istate = ElementPipeline(startAt + ix, valuex, valuey, item, recycler, BindPaths);
+				var istate = ElementPipeline(ix, valuex, valuey, item, recycler, BindPaths);
 				return istate;
 			}, (rpc, istate) => {
-				var index = istate.Index + rpc;
-				var valuex = BindPaths.CategoryValue(istate.XValue, index);
-				var leftx = CategoryAxis.For(valuex);
-				var offsetx = leftx + MarkerOffset;
-				istate.Move(index, leftx, offsetx);
+				istate.Shift(rpc, BindPaths, CategoryAxis, MarkerOffset);
 				// NO geometry update; done in later stages of render pipeline
 			});
 			ReconfigureLimits();

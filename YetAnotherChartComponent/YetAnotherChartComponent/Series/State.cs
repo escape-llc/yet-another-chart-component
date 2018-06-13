@@ -184,14 +184,14 @@ namespace eScapeLLC.UWP.Charts {
 		/// Shift this item by given count.
 		/// </summary>
 		/// <param name="rpc">Shift count.</param>
-		/// <param name="valuexf"></param>
-		/// <param name="leftxf"></param>
-		/// <param name="offset"></param>
-		public void Shift(int rpc, Func<ItemStateCore, double> valuexf, Func<double, double> leftxf, double offset) {
-			var valuex = valuexf(this);
-			var leftx = leftxf(valuex);
-			var offsetx = leftx + offset;
-			Move(Index + rpc, leftx, offsetx);
+		/// <param name="ieval">Evaluator to use.</param>
+		/// <param name="axis">Axis to map category-axis value.</param>
+		/// <param name="offset">x-value offset.</param>
+		public void Shift(int rpc, IEvaluator ieval, IChartAxis axis, double offset) {
+			Index = Index + rpc;
+			var xv = ieval.CategoryValue(XValue, Index);
+			XValue = axis.For(xv);
+			XValueAfterOffset = XValue + offset;
 		}
 }
 	#endregion
@@ -405,9 +405,34 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region Evaluators
 	/// <summary>
+	/// Ability to evaluate data objects for chart values.
+	/// </summary>
+	public interface IEvaluator {
+		/// <summary>
+		/// Interpret the category-axis value or index, depending on whether it's defined.
+		/// </summary>
+		/// <param name="ox">Data object to evaluate if a binding is defined.</param>
+		/// <param name="index">Index to use if no binding is defined.</param>
+		/// <returns></returns>
+		double CategoryFor(object ox, int index);
+		/// <summary>
+		/// Interpret the category-axis value or index, depending on whether it's defined.
+		/// </summary>
+		/// <param name="dx">Existing value.</param>
+		/// <param name="index">Index.</param>
+		/// <returns></returns>
+		double CategoryValue(double dx, int index);
+		/// <summary>
+		/// Extract the value-axis value.
+		/// </summary>
+		/// <param name="ox"></param>
+		/// <returns></returns>
+		double ValueFor(object ox);
+	}
+	/// <summary>
 	/// All the used <see cref="BindingEvaluator"/> in one place, evaluated once.
 	/// </summary>
-	internal class Evaluators {
+	internal class Evaluators : IEvaluator {
 		#region data
 		/// <summary>
 		/// Category (x-axis) path; NULL to use the index.
