@@ -513,9 +513,9 @@ namespace eScapeLLC.UWP.Charts {
 				var valueC = BindPaths.CloseFor(item);
 				// short-circuit if it's NaN
 				if (double.IsNaN(valueO) || double.IsNaN(valueH) || double.IsNaN(valueL) || double.IsNaN(valueC)) { return null; }
-				var valuex = BindPaths.CategoryFor(item, startAt + ix);
+				var valuex = BindPaths.CategoryFor(item, ix);
 				// add requested item
-				var istate = ElementPipeline(startAt + ix, valuex, valueO, valueH, valueL, valueC, item, recycler, BindPaths.bvl);
+				var istate = ElementPipeline(ix, valuex, valueO, valueH, valueL, valueC, item, recycler, BindPaths.bvl);
 				return istate;
 			}, (rpc, istate) => {
 				var index = istate.Index + rpc;

@@ -264,9 +264,9 @@ namespace eScapeLLC.UWP.Charts {
 				var valuey = BindPaths.ValueFor(item);
 				// short-circuit if it's NaN
 				if (double.IsNaN(valuey)) { return null; }
-				var valuex = BindPaths.CategoryFor(item, startAt + ix);
+				var valuex = BindPaths.CategoryFor(item, ix);
 				// add requested item
-				var istate = ElementPipeline(startAt + ix, valuex, valuey, item, BindPaths);
+				var istate = ElementPipeline(ix, valuex, valuey, item, BindPaths);
 				return istate;
 			}, (rpc, istate) => {
 				var index = istate.Index + rpc;
