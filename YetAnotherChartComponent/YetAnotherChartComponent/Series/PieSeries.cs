@@ -60,9 +60,9 @@ namespace eScapeLLC.UWP.Charts {
 			/// </summary>
 			public ISeriesItem Unwrap() {
 				var sis2 = new ISeriesItemValue[2];
-				sis2[0] = new ChannelItemState(Index, XValue, XValueAfterOffset, Value, PlacementAngle, RADIUS / 2, Element, 0);
-				sis2[1] = new ChannelItemState(Index, XValue, XValueAfterOffset, Percent, PlacementAngle, RADIUS / 2, Element, 1);
-				var sivc = new ItemStateMultiChannelCore(Index, XValue, XValueAfterOffset, sis2);
+				sis2[0] = new ChannelItemState(Index, XValue, XOffset, Value, PlacementAngle, RADIUS / 2, Element, 0);
+				sis2[1] = new ChannelItemState(Index, XValue, XOffset, Percent, PlacementAngle, RADIUS / 2, Element, 1);
+				var sivc = new ItemStateMultiChannelCore(Index, XValue, XOffset, sis2);
 				return sivc;
 			}
 			internal SeriesItemState(int idx, double xv, double xvo, double yv, Path ele, int ch) : base(idx, xv, xvo, yv, ele, ch) { }

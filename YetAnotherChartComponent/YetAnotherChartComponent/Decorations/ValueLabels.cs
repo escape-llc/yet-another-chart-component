@@ -469,7 +469,7 @@ namespace eScapeLLC.UWP.Charts {
 						case RectanglePlacement rp:
 							var pt = rp.Transform(PlacementOffset);
 							_trace.Verbose($"rp c:{rp.Center} d:{rp.Direction} hd:{rp.HalfDimensions} pt:{pt}");
-							var sis = new SeriesItemState(siv.Index, siv.XValue, siv.XValue + CategoryAxisOffset, pt.Y, el.Item2, target.Channel) {
+							var sis = new SeriesItemState(siv.Index, siv.XValue, CategoryAxisOffset, pt.Y, el.Item2, target.Channel) {
 								Direction = rp.Direction,
 								CustomValue = target is ISeriesItemValueCustom isivc ? isivc.CustomValue : null
 								};
@@ -485,7 +485,7 @@ namespace eScapeLLC.UWP.Charts {
 							itemstate.Add(sis2);
 							break;
 						default:
-							var sis3 = new SeriesItemState(siv.Index, siv.XValue, siv.XValue + CategoryAxisOffset, isivd.Value, el.Item2, target.Channel) {
+							var sis3 = new SeriesItemState(siv.Index, siv.XValue, CategoryAxisOffset, isivd.Value, el.Item2, target.Channel) {
 								Direction = Placement.UP_RIGHT,
 								CustomValue = target is ISeriesItemValueCustom isivc3 ? isivc3.CustomValue : null
 							};

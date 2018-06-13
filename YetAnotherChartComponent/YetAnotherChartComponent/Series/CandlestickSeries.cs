@@ -309,17 +309,17 @@ namespace eScapeLLC.UWP.Charts {
 				if(state is SeriesItemState sis) {
 					var sis2 = new ISeriesItemValue[sis.Elements.Length];
 					for (int idx = 0; idx < sis.Elements.Length; idx++) {
-						sis2[idx] = new ItemState<PathFigure>(sis.Index, sis.XValue, sis.XValueAfterOffset, sis.Elements[idx].Item1, sis.Elements[idx].Item2, idx);
+						sis2[idx] = new ItemState<PathFigure>(sis.Index, sis.XValue, sis.XOffset, sis.Elements[idx].Item1, sis.Elements[idx].Item2, idx);
 					}
-					var sivc = new ItemStateMultiChannelCore(sis.Index, sis.XValue, sis.XValueAfterOffset, sis2);
+					var sivc = new ItemStateMultiChannelCore(sis.Index, sis.XValue, sis.XOffset, sis2);
 					yield return sivc;
 				}
 				else if(state is SeriesItemState_Custom sisc) {
 					var sis2 = new ISeriesItemValue[sisc.Elements.Length];
 					for (int idx = 0; idx < sisc.Elements.Length; idx++) {
-						sis2[idx] = new ItemStateCustom<PathFigure>(sisc.Index, sisc.XValue, sisc.XValueAfterOffset, sisc.Elements[idx].Item1, sisc.CustomValue, sisc.Elements[idx].Item2, idx);
+						sis2[idx] = new ItemStateCustom<PathFigure>(sisc.Index, sisc.XValue, sisc.XOffset, sisc.Elements[idx].Item1, sisc.CustomValue, sisc.Elements[idx].Item2, idx);
 					}
-					var sivc = new ItemStateMultiChannelCore(sisc.Index, sisc.XValue, sisc.XValueAfterOffset, sis2);
+					var sivc = new ItemStateMultiChannelCore(sisc.Index, sisc.XValue, sisc.XOffset, sis2);
 					yield return sivc;
 				}
 			}
@@ -373,10 +373,10 @@ namespace eScapeLLC.UWP.Charts {
 			figs[2] = new Tuple<double, PathFigure>(y3, upper);
 			figs[3] = new Tuple<double, PathFigure>(y4, lower);
 			if (bvl == null) {
-				return new SeriesItemState(index, leftx, offsetx, y1, path.Item2, figs);
+				return new SeriesItemState(index, leftx, BarOffset, y1, path.Item2, figs);
 			} else {
 				var cs = bvl.For(item);
-				return new SeriesItemState_Custom(index, leftx, offsetx, y1, cs, path.Item2, figs);
+				return new SeriesItemState_Custom(index, leftx, BarOffset, y1, cs, path.Item2, figs);
 			}
 		}
 		#endregion
@@ -492,10 +492,9 @@ namespace eScapeLLC.UWP.Charts {
 				var index = istate.Index - rpc;
 				var valuex = BindPaths.CategoryValue(istate.XValue, index);
 				var leftx = CategoryAxis.For(valuex);
-				var offsetx = leftx + BarOffset;
-				istate.Move(index, leftx, offsetx);
-				var rightx = offsetx + BarWidth;
-				(istate as IFigureData).UpdateGeometry(leftx, offsetx, rightx);
+				istate.Move(index, leftx);
+				var rightx = istate.XValueAfterOffset + BarWidth;
+				(istate as IFigureData).UpdateGeometry(leftx, istate.XValueAfterOffset, rightx);
 			});
 			ReconfigureLimits();
 			// finish up
@@ -522,7 +521,7 @@ namespace eScapeLLC.UWP.Charts {
 				var valuex = BindPaths.CategoryValue(istate.XValue, index);
 				var leftx = CategoryAxis.For(valuex);
 				var offsetx = leftx + BarOffset;
-				istate.Move(index, leftx, offsetx);
+				istate.Move(index, leftx);
 				var rightx = offsetx + BarWidth;
 				(istate as IFigureData).UpdateGeometry(leftx, offsetx, rightx);
 			});

@@ -115,7 +115,7 @@ namespace eScapeLLC.UWP.Charts {
 			/// </summary>
 			/// <param name="idx">Index.</param>
 			/// <param name="xv">x-value.</param>
-			/// <param name="xvo">x-value after offset.</param>
+			/// <param name="xvo">x-value offset.</param>
 			public SeriesItemState(int idx, double xv, double xvo) : base(idx, xv, xvo) { }
 		}
 		/// <summary>
@@ -318,7 +318,7 @@ namespace eScapeLLC.UWP.Charts {
 			var leftx = CategoryAxis.For(valuex);
 			var barx = leftx + BarOffset;
 			var rightx = barx + BarWidth;
-			var sis = evs.byl == null ? new SeriesItemState(index, leftx, barx) : new SeriesItemState_Custom(index, leftx, barx, evs.byl.For(item));
+			var sis = evs.byl == null ? new SeriesItemState(index, leftx, BarOffset) : new SeriesItemState_Custom(index, leftx, barx, evs.byl.For(item));
 			for (int ix = 0; ix < evs.bys.Length; ix++) {
 				var valuey = CoerceValue(item, evs.bys[ix]);
 				if (double.IsNaN(valuey)) {
@@ -437,7 +437,7 @@ namespace eScapeLLC.UWP.Charts {
 				var leftx = CategoryAxis.For(valuex);
 				var offsetx = leftx + BarOffset;
 				// TODO update index relative to existing value, NOT ix
-				istate.Move(index, leftx, offsetx);
+				istate.Move(index, leftx);
 				istate.UpdateGeometry(offsetx, BarWidth);
 			});
 			ReconfigureLimits();
@@ -460,7 +460,7 @@ namespace eScapeLLC.UWP.Charts {
 				var valuex = BindPaths.CategoryValue(istate.XValue, index);
 				var leftx = CategoryAxis.For(valuex);
 				var offsetx = leftx + BarOffset;
-				istate.Move(index, leftx, offsetx);
+				istate.Move(index, leftx);
 				istate.UpdateGeometry(offsetx, BarWidth);
 			});
 			ReconfigureLimits();
