@@ -93,5 +93,14 @@
 				ItemsSource="{Binding ElementName=chart,Path=LegendItems}"
 				ItemTemplate="{StaticResource LegendItem}"/>
 		</Border>
+		<TextBlock x:Name="counter" Style="{StaticResource Title}"
+			RelativePanel.AlignTopWith="chart" RelativePanel.AlignLeftWith="chart">
+			<TextBlock.Inlines>
+				<Run Text="Child count: "/>
+				<Bold>
+					<Run Text="{x:Bind CurrentChildCount,Mode=OneWay}"/>
+				</Bold>
+			</TextBlock.Inlines>
+		</TextBlock>
 	</RelativePanel>
 </core:BasicPage>
