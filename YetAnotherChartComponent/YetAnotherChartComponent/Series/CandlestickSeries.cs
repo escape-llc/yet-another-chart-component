@@ -16,7 +16,7 @@ namespace eScapeLLC.UWP.Charts {
 		#region SeriesItemState
 		internal interface IFigureData {
 			Tuple<double,PathFigure>[] Elements { get; }
-			void UpdateGeometry(double leftx, double offsetx, double rightx);
+			void UpdateGeometry(double width);
 		}
 		/// <summary>
 		/// Item state.
@@ -26,10 +26,11 @@ namespace eScapeLLC.UWP.Charts {
 			/// The list of paths created for the figure.
 			/// </summary>
 			internal Tuple<double, PathFigure>[] Elements { get; private set; }
-			internal SeriesItemState(int idx, double xv, double xvo, double yv, Path ele, Tuple<double, PathFigure>[] figs) : base(idx, xv, xvo, yv, ele, 0) { Elements = figs; }
+			internal SeriesItemState(int idx, double xv, double xo, double yv, Path ele, Tuple<double, PathFigure>[] figs) : base(idx, xv, xo, yv, ele, 0) { Elements = figs; }
 			Tuple<double, PathFigure>[] IFigureData.Elements => Elements;
-			void IFigureData.UpdateGeometry(double leftx, double offsetx, double rightx) {
-				var pg = SeriesItemState_Custom.UpdateGeometry(leftx, offsetx, rightx, Elements);
+			void IFigureData.UpdateGeometry(double width) {
+				var rightx = XValueAfterOffset + width;
+				var pg = SeriesItemState_Custom.UpdateGeometry(XValue, XValueAfterOffset, rightx, Elements);
 				Element.Data = pg;
 			}
 		}
@@ -41,10 +42,11 @@ namespace eScapeLLC.UWP.Charts {
 			/// The list of paths created for the figure.
 			/// </summary>
 			internal Tuple<double, PathFigure>[] Elements { get; private set; }
-			internal SeriesItemState_Custom(int idx, double xv, double xvo, double yv, object cs, Path ele, Tuple<double, PathFigure>[] figs) : base(idx, xv, xvo, yv, cs, ele, 0) { Elements = figs; }
+			internal SeriesItemState_Custom(int idx, double xv, double xo, double yv, object cs, Path ele, Tuple<double, PathFigure>[] figs) : base(idx, xv, xo, yv, cs, ele, 0) { Elements = figs; }
 			Tuple<double, PathFigure>[] IFigureData.Elements => Elements;
-			void IFigureData.UpdateGeometry(double leftx, double offsetx, double rightx) {
-				var pg = UpdateGeometry(leftx, offsetx, rightx, Elements);
+			void IFigureData.UpdateGeometry(double width) {
+				var rightx = XValueAfterOffset + width;
+				var pg = UpdateGeometry(XValue, XValueAfterOffset, rightx, Elements);
 				Element.Data = pg;
 			}
 			/// <summary>
@@ -80,7 +82,7 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region Evaluators
-		class Evaluators {
+		class Evaluators : IEvaluator {
 			// category and label (optional)
 			internal readonly BindingEvaluator bx;
 			// values (required)
@@ -151,6 +153,7 @@ namespace eScapeLLC.UWP.Charts {
 				var value = DataSeries.CoerceValue(item, bclose);
 				return value;
 			}
+			public double ValueFor(object item) { throw new NotImplementedException("Use OHLC"); }
 			#endregion
 		}
 		#endregion
@@ -379,6 +382,13 @@ namespace eScapeLLC.UWP.Charts {
 				return new SeriesItemState_Custom(index, leftx, BarOffset, y1, cs, path.Item2, figs);
 			}
 		}
+		/// <summary>
+		/// Recalculate geometry based on current values.
+		/// </summary>
+		/// <param name="st">State to update.</param>
+		void UpdateGeometry(ItemStateCore st) {
+			(st as IFigureData).UpdateGeometry(BarWidth);
+		}
 		#endregion
 		#region IProvideLegend
 		private Legend _legend;
@@ -489,12 +499,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			if (BindPaths == null || !BindPaths.IsValid) return;
 			var reproc = IncrementalRemove<ItemState<Path>>(startAt, items, ItemState, istate => istate.Element != null, (rpc, istate) => {
-				var index = istate.Index - rpc;
-				var valuex = BindPaths.CategoryValue(istate.XValue, index);
-				var leftx = CategoryAxis.For(valuex);
-				istate.Move(index, leftx);
-				var rightx = istate.XValueAfterOffset + BarWidth;
-				(istate as IFigureData).UpdateGeometry(leftx, istate.XValueAfterOffset, rightx);
+				istate.Shift(-rpc, BindPaths, CategoryAxis, UpdateGeometry);
 			});
 			ReconfigureLimits();
 			// finish up
@@ -517,13 +522,7 @@ namespace eScapeLLC.UWP.Charts {
 				var istate = ElementPipeline(ix, valuex, valueO, valueH, valueL, valueC, item, recycler, BindPaths.bvl);
 				return istate;
 			}, (rpc, istate) => {
-				var index = istate.Index + rpc;
-				var valuex = BindPaths.CategoryValue(istate.XValue, index);
-				var leftx = CategoryAxis.For(valuex);
-				var offsetx = leftx + BarOffset;
-				istate.Move(index, leftx);
-				var rightx = offsetx + BarWidth;
-				(istate as IFigureData).UpdateGeometry(leftx, offsetx, rightx);
+				istate.Shift(rpc, BindPaths, CategoryAxis, UpdateGeometry);
 			});
 			ReconfigureLimits();
 			// finish up
