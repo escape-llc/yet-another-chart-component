@@ -101,13 +101,12 @@ namespace eScapeLLC.UWP.Charts {
 			/// <summary>
 			/// Update the location of the <see cref="Geometry"/>.
 			/// </summary>
-			/// <param name="offsetx"></param>
 			/// <param name="bw"></param>
-			public void UpdateGeometry(double offsetx, double bw) {
+			public void UpdateGeometry(double bw) {
 				foreach (var el in Elements) {
 					var rg = el.Item2.Data as RectangleGeometry;
-					var rightx = offsetx + bw;
-					rg.Rect = new Rect(new Point(offsetx, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
+					var rightx = XValueAfterOffset + bw;
+					rg.Rect = new Rect(new Point(XValueAfterOffset, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
 				}
 			}
 			/// <summary>
@@ -159,7 +158,7 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region Evaluators
-		class Evaluators {
+		class Evaluators : IEvaluator {
 			internal readonly BindingEvaluator bx;
 			internal readonly BindingEvaluator[] bys;
 			internal readonly BindingEvaluator byl;
@@ -195,6 +194,9 @@ namespace eScapeLLC.UWP.Charts {
 			public double CategoryValue(double dx, int index) {
 				var valuex = bx != null ? dx : index;
 				return valuex;
+			}
+			public double ValueFor(object ox) {
+				throw new NotImplementedException();
 			}
 		}
 		#endregion
@@ -342,6 +344,13 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			return sis;
 		}
+		/// <summary>
+		/// Cascade geometry update.
+		/// </summary>
+		/// <param name="st">State to update.</param>
+		void UpdateGeometry(ItemStateCore st) {
+			(st as SeriesItemState).UpdateGeometry(BarWidth);
+		}
 		#endregion
 		#region IProvideLegend
 		private Legend[] _legend;
@@ -432,13 +441,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			if (BindPaths == null || !BindPaths.IsValid) return;
 			var reproc = IncrementalRemove<SeriesItemState>(startAt, items, ItemState, null, (rpc, istate) => {
-				var index = istate.Index - rpc;
-				var valuex = BindPaths.CategoryValue(istate.XValue, index);
-				var leftx = CategoryAxis.For(valuex);
-				var offsetx = leftx + BarOffset;
-				// TODO update index relative to existing value, NOT ix
-				istate.Move(index, leftx);
-				istate.UpdateGeometry(offsetx, BarWidth);
+				istate.Shift(-rpc, BindPaths, CategoryAxis, UpdateGeometry);
 			});
 			ReconfigureLimits();
 			// finish up
@@ -456,12 +459,7 @@ namespace eScapeLLC.UWP.Charts {
 				var istate = ElementPipeline(ix, valuex, item, recycler, BindPaths);
 				return istate;
 			}, (rpc, istate) => {
-				var index = istate.Index + rpc;
-				var valuex = BindPaths.CategoryValue(istate.XValue, index);
-				var leftx = CategoryAxis.For(valuex);
-				var offsetx = leftx + BarOffset;
-				istate.Move(index, leftx);
-				istate.UpdateGeometry(offsetx, BarWidth);
+				istate.Shift(rpc, BindPaths, CategoryAxis, UpdateGeometry);
 			});
 			ReconfigureLimits();
 			// finish up
