@@ -7,7 +7,8 @@ namespace Yacc.Tests {
 	public class TestItem : ISeriesItem, ISeriesItemValue {
 		public int Index { get; set; }
 		public double XValue { get; set; }
-		public double XValueAfterOffset { get; set; }
+		public double XOffset { get; set; }
+		public double XValueAfterOffset { get { return XValue + XOffset; } }
 		public double Value { get; set; }
 		public int Channel => 0;
 	}
@@ -30,7 +31,6 @@ namespace Yacc.Tests {
 			return new TestItem() {
 				Index = ix,
 				XValue = (dso as DataSourceObject).Xvalue,
-				XValueAfterOffset = (dso as DataSourceObject).Xvalue,
 				Value = (dso as DataSourceObject).Yvalue
 			};
 		}
@@ -38,7 +38,6 @@ namespace Yacc.Tests {
 			return new TestItem() {
 				Index = ix,
 				XValue = ix,
-				XValueAfterOffset = ix,
 				Value = ix
 			};
 		}
