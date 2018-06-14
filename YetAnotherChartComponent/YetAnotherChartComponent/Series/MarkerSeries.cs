@@ -244,7 +244,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			if (BindPaths == null || !BindPaths.IsValid) return;
 			var reproc = IncrementalRemove<ItemState<Path>>(startAt, items, ItemState, istate => istate.Element != null, (rpc, istate) => {
-				istate.Shift(-rpc, BindPaths, CategoryAxis);
+				istate.Shift(-rpc, BindPaths, CategoryAxis, null);
 				// NO geometry update ; done in later stages of render pipeline
 			});
 			ReconfigureLimits();
@@ -265,7 +265,7 @@ namespace eScapeLLC.UWP.Charts {
 				var istate = ElementPipeline(ix, valuex, valuey, item, recycler, BindPaths);
 				return istate;
 			}, (rpc, istate) => {
-				istate.Shift(rpc, BindPaths, CategoryAxis);
+				istate.Shift(rpc, BindPaths, CategoryAxis, null);
 				// NO geometry update; done in later stages of render pipeline
 			});
 			ReconfigureLimits();
