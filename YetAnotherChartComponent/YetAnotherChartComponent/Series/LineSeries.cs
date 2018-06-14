@@ -127,8 +127,9 @@ namespace eScapeLLC.UWP.Charts {
 				if (double.IsNaN(istate.Value)) {
 					// we are skipping one, so the next one is a start point
 					st.first = true;
+				} else {
+					BuildFigure(st, istate);
 				}
-				BuildFigure(st, istate);
 			}
 			Geometry.Figures.Clear();
 			foreach (var pf in st.allfigures) {
@@ -223,8 +224,9 @@ namespace eScapeLLC.UWP.Charts {
 			if (double.IsNaN(valuey)) {
 				// we are skipping one, so the next one is a start point
 				st.first = true;
+			} else {
+				BuildFigure(st, istate);
 			}
-			BuildFigure(st, istate);
 			st.itemstate.Add(istate);
 		}
 		void IDataSourceRenderer.RenderComplete(object state) { }
@@ -246,10 +248,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			if (BindPaths == null || !BindPaths.IsValid) return;
 			var reproc = IncrementalRemove<ItemState<Path>>(startAt, items, ItemState, istate => istate.Element != null, (rpc, istate) => {
-				var index = istate.Index - rpc;
-				var valuex = BindPaths.CategoryValue(istate.XValue, index);
-				var leftx = CategoryAxis.For(valuex);
-				istate.Move(index, leftx);
+				istate.Shift(-rpc, BindPaths, CategoryAxis, null);
 			});
 			// finish up
 			ReconfigureLimits();
@@ -268,11 +267,7 @@ namespace eScapeLLC.UWP.Charts {
 				var istate = ElementPipeline(ix, valuex, valuey, item, BindPaths);
 				return istate;
 			}, (rpc, istate) => {
-				var index = istate.Index + rpc;
-				var valuex = BindPaths.CategoryValue(istate.XValue, index);
-				var leftx = CategoryAxis.For(valuex);
-				var offsetx = leftx + CategoryAxisOffset;
-				istate.Move(index, leftx);
+				istate.Shift(rpc, BindPaths, CategoryAxis, null);
 			});
 			// finish up
 			ReconfigureLimits();
