@@ -149,7 +149,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="startAt">From incremental add.</param>
 		/// <param name="items">From incremental add.</param>
 		/// <param name="itemstate">From the series component.</param>
-		/// <param name="collect">Predicate for adding to the removed item list.  Return true to collect.</param>
+		/// <param name="collect">Predicate for adding to the removed item list.  Return true to collect.  MAY be NULL to collect all.</param>
 		/// <param name="resequence">Resequence remaining item(s).</param>
 		/// <returns>The list of removed item(s).</returns>
 		public static List<IS> IncrementalRemove<IS>(int startAt, IList items, List<IS> itemstate, Func<IS, bool> collect, Action<int, IS> resequence) where IS: ISeriesItem {
