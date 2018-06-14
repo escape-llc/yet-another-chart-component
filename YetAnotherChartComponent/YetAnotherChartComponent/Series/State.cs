@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using Windows.UI.Xaml;
+using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
 
@@ -186,13 +187,16 @@ namespace eScapeLLC.UWP.Charts {
 		/// Recalculates <see cref="Index"/> and <see cref="XValue"/>.
 		/// </summary>
 		/// <param name="count">Shift count.</param>
-		/// <param name="ieval">Evaluator to use.</param>
+		/// <param name="ice">Evaluator to use.  MAY be NULL to skip <see cref="XValue"/> update.</param>
 		/// <param name="axis">Axis to map category-axis value.</param>
 		/// <param name="callback">Post-update callback.  MAY be null.</param>
-		public void Shift(int count, IEvaluator ieval, IChartAxis axis, Action<ItemStateCore> callback) {
+		public void Shift(int count, ICategoryEvaluator ice, IChartAxis axis, Action<ItemStateCore> callback) {
 			Index = Index + count;
-			var xv = ieval.CategoryValue(XValue, Index);
-			XValue = axis.For(xv);
+			if (ice != null) {
+				// if using INDEX, the XValue "moves" along with this item, otherwise NOT
+				var xv = ice.CategoryValue(XValue, Index);
+				XValue = axis.For(xv);
+			}
 			callback?.Invoke(this);
 		}
 	}
@@ -407,11 +411,12 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region Evaluators
 	/// <summary>
-	/// Ability to evaluate data objects for chart values.
+	/// Ability to evaluate data objects for chart category values.
+	/// The category value is either its INDEX or the value obtained via <see cref="Binding"/> if one is defined.
 	/// </summary>
-	public interface IEvaluator {
+	public interface ICategoryEvaluator {
 		/// <summary>
-		/// Interpret the category-axis value or index, depending on whether it's defined.
+		/// Interpret the category-axis object or index, depending on whether it's defined.
 		/// </summary>
 		/// <param name="ox">Data object to evaluate if a binding is defined.</param>
 		/// <param name="index">Index to use if no binding is defined.</param>
@@ -424,6 +429,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="index">Index.</param>
 		/// <returns></returns>
 		double CategoryValue(double dx, int index);
+	}
+	/// <summary>
+	/// Ability to evaluate data objects for chart values.
+	/// </summary>
+	public interface IValueEvaluator {
 		/// <summary>
 		/// Extract the value-axis value.
 		/// </summary>
@@ -434,7 +444,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// The package of <see cref="BindingEvaluator"/> in one place, evaluated once.
 	/// </summary>
-	internal class Evaluators : IEvaluator {
+	internal class Evaluators : ICategoryEvaluator, IValueEvaluator {
 		#region data
 		/// <summary>
 		/// Category (x-axis) path; NULL to use the index.
