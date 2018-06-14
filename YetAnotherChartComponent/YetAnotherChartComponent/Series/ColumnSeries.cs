@@ -155,6 +155,14 @@ namespace eScapeLLC.UWP.Charts {
 			return path;
 		}
 		/// <summary>
+		/// Rebuild geometry based on current geometry and updated state.
+		/// </summary>
+		/// <param name="st">Updated state.</param>
+		void UpdateGeometry(ItemStateCore st) {
+			var rg = (st as ItemState<Path>).Element.Data as RectangleGeometry;
+			rg.Rect = new Rect(new Point(st.XValueAfterOffset, rg.Rect.Top), new Point(st.XValueAfterOffset + BarWidth, rg.Rect.Bottom));
+		}
+		/// <summary>
 		/// Invoke the items update event, trapping and reporting any <see cref="Exception"/> via <see cref="IChartErrorInfo"/>.
 		/// </summary>
 		/// <param name="icrc">Passed to args.</param>
@@ -301,11 +309,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			if (BindPaths == null || !BindPaths.IsValid) return;
 			var reproc = IncrementalRemove<ItemState<Path>>(startAt, items, ItemState, istate => istate.Element != null, (rpc, istate) => {
-				istate.Shift(-rpc, BindPaths, CategoryAxis);
-				// update geometry
-				var rg = istate.Element.Data as RectangleGeometry;
-				var rightx = istate.XValueAfterOffset + BarWidth;
-				rg.Rect = new Rect(new Point(istate.XValueAfterOffset, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
+				istate.Shift(-rpc, BindPaths, CategoryAxis, UpdateGeometry);
 			});
 			ReconfigureLimits();
 			// finish up
@@ -326,11 +330,7 @@ namespace eScapeLLC.UWP.Charts {
 				var istate = ElementPipeline(ix, valuex, valuey, item, recycler, BindPaths.byl);
 				return istate;
 			}, (rpc, istate) => {
-				istate.Shift(rpc, BindPaths, CategoryAxis);
-				// update geometry
-				var rg = istate.Element.Data as RectangleGeometry;
-				var rightx = istate.XValueAfterOffset + BarWidth;
-				rg.Rect = new Rect(new Point(istate.XValueAfterOffset, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
+				istate.Shift(rpc, BindPaths, CategoryAxis, UpdateGeometry);
 			});
 			ReconfigureLimits();
 			// finish up
