@@ -545,7 +545,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		LayoutDirty,
 		/// <summary>
-		/// A value that generates Geometry has changed.
+		/// A value that generates <see cref="Geometry"/> has changed.
 		/// Implies TransformsDirty.
 		/// </summary>
 		ValueDirty,
@@ -653,8 +653,18 @@ namespace eScapeLLC.UWP.Charts {
 	/// Utility class to facilitate runtime binding evaluation.
 	/// </summary>
 	public class BindingEvaluator : DependencyObject {
+		#region data
 		private readonly PropertyPath _pp;
 		private readonly RelativeSource _rs;
+		#endregion
+		#region DPs
+		/// <summary>
+		/// Dependency property used to evaluate values.
+		/// Note there is NO backing "Evaluator" property!
+		/// </summary>
+		public static readonly DependencyProperty EvaluatorProperty = DependencyProperty.Register("Evaluator", typeof(object), typeof(BindingEvaluator), null);
+		#endregion
+		#region ctor
 		/// <summary>
 		/// Ctor.
 		/// Initializes <see cref="_pp"/>  and <see cref="_rs"/>.
@@ -666,10 +676,8 @@ namespace eScapeLLC.UWP.Charts {
 			_pp = isrel ? null : new PropertyPath(path);
 			_rs = isrel ? new RelativeSource() { Mode = RelativeSourceMode.Self } : null;
 		}
-		/// <summary>
-		/// Dependency property used to evaluate values.
-		/// </summary>
-		public static readonly DependencyProperty EvaluatorProperty = DependencyProperty.Register("Evaluator", typeof(object), typeof(BindingEvaluator), null);
+		#endregion
+		#region public
 		/// <summary>
 		/// Returns value of binding on provided object.
 		/// If the <see cref="PropertyPath.Path"/> is "." then a <see cref="RelativeSource"/> binding is configured.
@@ -686,6 +694,7 @@ namespace eScapeLLC.UWP.Charts {
 			BindingOperations.SetBinding(this, EvaluatorProperty, binding);
 			return GetValue(EvaluatorProperty);
 		}
+		#endregion
 	}
 	#endregion
 	#region PathHelper
@@ -696,12 +705,14 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Build Closed PathFigure for given rectangle.
 		/// Does not check for coordinates' min/max because the Geometry Transform is not known here.
+		/// Goes "around" in CCW direction.
+		/// Start(LT), Segments(LB, RB, RT), Closed(True)
 		/// </summary>
-		/// <param name="left"></param>
-		/// <param name="top"></param>
-		/// <param name="right"></param>
-		/// <param name="bottom"></param>
-		/// <returns></returns>
+		/// <param name="left">X1.</param>
+		/// <param name="top">Y1.</param>
+		/// <param name="right">X2.</param>
+		/// <param name="bottom">Y2.</param>
+		/// <returns>New instance.</returns>
 		public static PathFigure Rectangle(double left, double top, double right, double bottom) {
 			var pf = new PathFigure { StartPoint = new Windows.Foundation.Point(left, top) };
 			var ls = new LineSegment() { Point = new Windows.Foundation.Point(left, bottom) };
@@ -716,11 +727,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Build Open PathFigure for given line segment.
 		/// </summary>
-		/// <param name="startx"></param>
-		/// <param name="starty"></param>
-		/// <param name="endx"></param>
-		/// <param name="endy"></param>
-		/// <returns></returns>
+		/// <param name="startx">X1.</param>
+		/// <param name="starty">Y1.</param>
+		/// <param name="endx">X2.</param>
+		/// <param name="endy">Y2.</param>
+		/// <returns>New instance.</returns>
 		public static PathFigure Line(double startx, double starty, double endx, double endy) {
 			var pf = new PathFigure { StartPoint = new Windows.Foundation.Point(startx, starty) };
 			var ls = new LineSegment() { Point = new Windows.Foundation.Point(startx, endy) };
