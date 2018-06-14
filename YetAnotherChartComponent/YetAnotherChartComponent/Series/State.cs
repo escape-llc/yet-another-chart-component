@@ -167,11 +167,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public double XValue { get; private set; }
 		/// <summary>
-		/// The offset component.
+		/// The intra-unit offset component for e.g. <see cref="CategoryAxis"/>.
 		/// </summary>
 		public double XOffset { get; private set; }
 		/// <summary>
-		/// The x value after intra-unit offset.
+		/// Calculated x value after intra-unit offset.
 		/// </summary>
 		public double XValueAfterOffset { get { return XValue + XOffset; } }
 		/// <summary>
@@ -179,27 +179,23 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="idx">Index.</param>
 		/// <param name="xv">x-value.</param>
-		/// <param name="xvo">x-value offset.</param>
-		public ItemStateCore(int idx, double xv, double xvo) { Index = idx; XValue = xv; XOffset = xvo; }
-		/// <summary>
-		/// Re-locate this item to a new index.
-		/// </summary>
-		/// <param name="idx">Index.</param>
-		/// <param name="xv">x-value.</param>
-		public void Move(int idx, double xv) { Index = idx; XValue = xv; }
+		/// <param name="xo">x-offset.  Used for intra-unit offset like in a <see cref="CategoryAxis"/>.</param>
+		public ItemStateCore(int idx, double xv, double xo) { Index = idx; XValue = xv; XOffset = xo; }
 		/// <summary>
 		/// Shift this item by given count.
-		/// Recalculates <see cref="Index"/>, <see cref="XValue"/>, and <see cref="XValueAfterOffset"/>.
+		/// Recalculates <see cref="Index"/> and <see cref="XValue"/>.
 		/// </summary>
-		/// <param name="rpc">Shift count.</param>
+		/// <param name="count">Shift count.</param>
 		/// <param name="ieval">Evaluator to use.</param>
 		/// <param name="axis">Axis to map category-axis value.</param>
-		public void Shift(int rpc, IEvaluator ieval, IChartAxis axis) {
-			Index = Index + rpc;
+		/// <param name="callback">Post-update callback.  MAY be null.</param>
+		public void Shift(int count, IEvaluator ieval, IChartAxis axis, Action<ItemStateCore> callback) {
+			Index = Index + count;
 			var xv = ieval.CategoryValue(XValue, Index);
 			XValue = axis.For(xv);
+			callback?.Invoke(this);
 		}
-}
+	}
 	#endregion
 	#region ItemState<EL>
 	/// <summary>
@@ -225,11 +221,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="idx">Index.</param>
 		/// <param name="xv">x-value.</param>
-		/// <param name="xvo">x-value offset.</param>
+		/// <param name="xo">x-offset.</param>
 		/// <param name="yv">y-value.</param>
 		/// <param name="ele">Generated element.</param>
 		/// <param name="ch">Value channel; default to zero.</param>
-		public ItemState(int idx, double xv, double xvo, double yv, EL ele, int ch = 0) : base(idx, xv, xvo) {
+		public ItemState(int idx, double xv, double xo, double yv, EL ele, int ch = 0) : base(idx, xv, xo) {
 			Value = yv;
 			Element = ele;
 			Channel = ch;
@@ -251,12 +247,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="idx">Index.</param>
 		/// <param name="xv">x-value.</param>
-		/// <param name="xvo">x-value after offset.</param>
+		/// <param name="xo">x-offset.</param>
 		/// <param name="yv">y-value.</param>
 		/// <param name="cs">Custom state.</param>
 		/// <param name="ele">Generated element.</param>
 		/// <param name="ch">Channel; default to zero.</param>
-		public ItemStateCustom(int idx, double xv, double xvo, double yv, object cs, EL ele, int ch = 0) : base(idx, xv, xvo, yv, ele, ch) {
+		public ItemStateCustom(int idx, double xv, double xo, double yv, object cs, EL ele, int ch = 0) : base(idx, xv, xo, yv, ele, ch) {
 			CustomValue = cs;
 		}
 	}
@@ -278,11 +274,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="idx">Index.</param>
 		/// <param name="xv">x-value.</param>
-		/// <param name="xvo">x-value after offset.</param>
+		/// <param name="xo">x-offset.</param>
 		/// <param name="yv">y-value.</param>
 		/// <param name="ele">Generated element.</param>
 		/// <param name="ch">Value channel; default to zero.</param>
-		public ItemStateWithPlacement(int idx, double xv, double xvo, double yv, EL ele, int ch = 0) : base(idx, xv, xvo, yv, ele, ch) { }
+		public ItemStateWithPlacement(int idx, double xv, double xo, double yv, EL ele, int ch = 0) : base(idx, xv, xo, yv, ele, ch) { }
 		/// <summary>
 		/// Override to create placement.
 		/// </summary>
@@ -306,12 +302,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="idx">Index.</param>
 		/// <param name="xv">x-value.</param>
-		/// <param name="xvo">x-value after offset.</param>
+		/// <param name="xo">x-offset.</param>
 		/// <param name="yv">y-value.</param>
 		/// <param name="cs">Custom state.</param>
 		/// <param name="ele">Generated element.</param>
 		/// <param name="ch">Channel; default to zero.</param>
-		public ItemStateCustomWithPlacement(int idx, double xv, double xvo, double yv, object cs, EL ele, int ch = 0) : base(idx, xv, xvo, yv, cs, ele, ch) { }
+		public ItemStateCustomWithPlacement(int idx, double xv, double xo, double yv, object cs, EL ele, int ch = 0) : base(idx, xv, xo, yv, cs, ele, ch) { }
 		/// <summary>
 		/// Override to create placement.
 		/// </summary>
@@ -333,9 +329,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="idx">Index.</param>
 		/// <param name="xv">x-value.</param>
-		/// <param name="xvo">x-value offset.</param>
+		/// <param name="xo">x-offset.</param>
 		/// <param name="isis">Channel details.  THIS takes ownership.</param>
-		public ItemStateMultiChannelCore(int idx, double xv, double xvo, ISeriesItemValue[] isis) : base(idx, xv, xvo) { YValues = isis; }
+		public ItemStateMultiChannelCore(int idx, double xv, double xo, ISeriesItemValue[] isis) : base(idx, xv, xo) { YValues = isis; }
 	}
 	#endregion
 	#region ItemState_Matrix<EL>
@@ -349,11 +345,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="idx">Index.</param>
 		/// <param name="xv">x-value.</param>
-		/// <param name="xvo">x-value after offset.</param>
+		/// <param name="xo">x-offset.</param>
 		/// <param name="yv">y-value.</param>
 		/// <param name="ele">Generated element.</param>
 		/// <param name="ch">Value channel; default to zero.</param>
-		public ItemState_Matrix(int idx, double xv, double xvo, double yv, EL ele, int ch = 0) : base(idx, xv, xvo, yv, ele, ch) { }
+		public ItemState_Matrix(int idx, double xv, double xo, double yv, EL ele, int ch = 0) : base(idx, xv, xo, yv, ele, ch) { }
 		/// <summary>
 		/// Alternate matrix for the M matrix.
 		/// Used when establishing a local transform for <see cref="ItemState{E}.Element"/>.
@@ -372,12 +368,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="idx">Index.</param>
 		/// <param name="xv">x-value.</param>
-		/// <param name="xvo">x-value after offset.</param>
+		/// <param name="xo">x-offset.</param>
 		/// <param name="yv">y-value.</param>
 		/// <param name="cs">Custom state.</param>
 		/// <param name="ele">Generated element.</param>
 		/// <param name="ch">Value channel; default to zero.</param>
-		public ItemStateCustom_Matrix(int idx, double xv, double xvo, double yv, object cs, EL ele, int ch = 0) : base(idx, xv, xvo, yv, cs, ele, ch) { }
+		public ItemStateCustom_Matrix(int idx, double xv, double xo, double yv, object cs, EL ele, int ch = 0) : base(idx, xv, xo, yv, cs, ele, ch) { }
 		/// <summary>
 		/// Alternate matrix for the M matrix.
 		/// Used when establishing a local transform for <see cref="ItemState{E}.Element"/>.
@@ -401,11 +397,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="idx">Index.</param>
 		/// <param name="xv">x-value.</param>
-		/// <param name="xvo">x-value after offset.</param>
+		/// <param name="xo">x-offset.</param>
 		/// <param name="yv">y-value.</param>
 		/// <param name="ele">Generated element.</param>
 		/// <param name="ch">Value channel; default to zero.</param>
-		public ItemState_MatrixAndGeometry(int idx, double xv, double xvo, double yv, Path ele, int ch = 0) : base(idx, xv, xvo, yv, ele, ch) { }
+		public ItemState_MatrixAndGeometry(int idx, double xv, double xo, double yv, Path ele, int ch = 0) : base(idx, xv, xo, yv, ele, ch) { }
 	}
 	#endregion
 	#endregion
@@ -436,7 +432,7 @@ namespace eScapeLLC.UWP.Charts {
 		double ValueFor(object ox);
 	}
 	/// <summary>
-	/// All the used <see cref="BindingEvaluator"/> in one place, evaluated once.
+	/// The package of <see cref="BindingEvaluator"/> in one place, evaluated once.
 	/// </summary>
 	internal class Evaluators : IEvaluator {
 		#region data
