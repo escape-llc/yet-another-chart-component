@@ -11,29 +11,34 @@ namespace eScapeLLC.UWP.Charts.UniversalApiContract.v3 {
 	/// XAML and <see cref="Visual"/> sync:
 	/// In general, SHOULD only modify the XAML version of properties (Offset, Opacity, Size), because that is the "natural" direction it flows.
 	/// Changing a <see cref="Visual"/> directly can de-synchronize it with its XAML "partner" and cause issues.
-	/// 
+	/// <para/>
 	/// The following is a "handy" reference for accessing APIs.
+	/// <para/>
 	/// APIs in v1:
 	/// class <see cref="Compositor"/>
 	/// CreateContainerVisual	CreateCubicBezierEasingFunction	CreateEffectFactory	CreateExpressionAnimation
 	/// CreateInsetClip	CreateLinearEasingFunction	CreatePropertySet	CreateScalarKeyFrameAnimation
 	/// CreateTargetForCurrentView	CreateVector(2/3/4)KeyFrameAnimation
 	/// class <see cref="ElementCompositionPreview"/>
+	/// <para/>
 	/// APIs in v2:
 	/// class <see cref="Compositor"/>
 	/// CreateColorBrush	CreateColorKeyFrameAnimation	CreateQuaternionKeyFrameAnimation	CreateScopedBatch
 	/// CreateSpriteVisual	CreateSurfaceBrush	GetCommitBatch
 	/// class <see cref="ElementCompositionPreview"/>
 	/// GetElementChildVisual	GetElementVisual	GetScrollViewerManipulationPropertySet	SetElementChildVisual
+	/// <para/>
 	/// APIs in v3:
 	/// class <see cref="Compositor"/>
 	/// CreateAmbientLight	CreateAnimationGroup	CreateBackdropBrush	CreateDistantLight	CreateDropShadow
 	/// CreateImplictAnimationCollection	CreateLayerVisual	CreateMaskBrush	CreateNineGridBrush	CreatePointLight
 	/// CreateSpotLight	CreateStepEasingFunction
+	/// <para/>
 	/// APIs in v4:
 	/// CreateHostbackdropBrush
 	/// class <see cref="ElementCompositionPreview"/>
 	/// GetPointerPositionPropertySet	SetImplicitHideAnimation	SetImplicitShowAnimation	SetIsTranslationEnabled
+	/// <para/>
 	/// APIs in v5, v6:
 	/// Not Listed.
 	/// </summary>
@@ -47,11 +52,14 @@ namespace eScapeLLC.UWP.Charts.UniversalApiContract.v3 {
 		/// Version base APIs appear in.
 		/// </summary>
 		public const int VERSION = 3;
-		static readonly bool _supported = ApiInformation.IsApiContractPresent(CONTRACT, VERSION);
 		/// <summary>
 		/// Get whether we have API support.
 		/// </summary>
-		public static bool IsSupported { get => _supported; }
+		public static bool IsSupported { get; } = ApiInformation.IsApiContractPresent(CONTRACT, VERSION);
+		/// <summary>
+		/// Globally set the duration of the offset animation.
+		/// </summary>
+		public static int OffsetAnimationDuration { get; set; } = 250;
 		#endregion
 		#region internal (doesn't check CONTRACT)
 		/// <summary>
@@ -59,13 +67,14 @@ namespace eScapeLLC.UWP.Charts.UniversalApiContract.v3 {
 		/// Doesn't check for CONTRACT.
 		/// </summary>
 		/// <param name="compositor"></param>
+		/// <param name="offsetDuration">Duration of offset animation in MS.</param>
 		/// <returns>New instance.</returns>
-		private static CompositionAnimationGroup CreateAnimationGroup(Compositor compositor) {
+		private static CompositionAnimationGroup CreateAnimationGroup(Compositor compositor, int offsetDuration) {
 			// Define Offset Animation for the Animation group
 			var offsetAnimation = compositor.CreateVector3KeyFrameAnimation();
 			offsetAnimation.Target = nameof(Visual.Offset);
 			offsetAnimation.InsertExpressionKeyFrame(1.0f, "this.FinalValue");
-			offsetAnimation.Duration = TimeSpan.FromMilliseconds(250);
+			offsetAnimation.Duration = TimeSpan.FromMilliseconds(offsetDuration);
 			var animationGroup = compositor.CreateAnimationGroup();
 			animationGroup.Add(offsetAnimation);
 			return animationGroup;
@@ -83,7 +92,7 @@ namespace eScapeLLC.UWP.Charts.UniversalApiContract.v3 {
 			var compositor = elementVisual.Compositor;
 			var elementImplicitAnimation = compositor.CreateImplicitAnimationCollection();
 			// Define trigger and animation that should play when the trigger is triggered. 
-			elementImplicitAnimation[nameof(Visual.Offset)] = CreateAnimationGroup(compositor);
+			elementImplicitAnimation[nameof(Visual.Offset)] = CreateAnimationGroup(compositor, OffsetAnimationDuration);
 			elementVisual.ImplicitAnimations = elementImplicitAnimation;
 		}
 		/// <summary>
