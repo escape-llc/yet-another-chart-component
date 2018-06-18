@@ -33,7 +33,7 @@ namespace Yacc.Demo.Pages {
 			// start out with placeholders so chart "appears" empty and "scrolls" to the left
 			var list = new List<Observation2>();
 			for (int ix = 0; ix < 30; ix++) list.Add(Observation2.PLACEHOLDER);
-			var vm = new TimedObservationsVM(Dispatcher, list);
+			var vm = new TimedObservations2VM(Dispatcher, list);
 			vm.ResetCounter();
 			return vm;
 		}
