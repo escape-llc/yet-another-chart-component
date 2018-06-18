@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Linq;
 using Windows.Foundation;
 using Windows.UI.Xaml;
@@ -70,7 +71,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// Stacked column series.
 	/// Plots multiple series values on a stacked arrangement.
 	/// </summary>
-	public class StackedColumnSeries : DataSeriesWithAxes, IProvideLegend, IProvideSeriesItemValues, IRequireChartTheme, IRequireEnterLeave, IDataSourceRenderer, IRequireDataSourceUpdates, IRequireTransforms {
+	public class StackedColumnSeries : DataSeriesWithAxes, IProvideSeriesItemValues, IProvideSeriesItemUpdates, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IDataSourceRenderer, IRequireDataSourceUpdates, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("StackedColumnSeries", LogTools.Level.Error);
 		#region Series and Channel item state
 		/// <summary>
@@ -349,6 +350,12 @@ namespace eScapeLLC.UWP.Charts {
 			(st as SeriesItemState).UpdateGeometry(BarWidth);
 		}
 		#endregion
+		#region IProvideSeriesItemUpdates
+		/// <summary>
+		/// Made public so it's easier to implement (auto).
+		/// </summary>
+		public event EventHandler<SeriesItemUpdateEventArgs> ItemUpdates;
+		#endregion
 		#region IProvideLegend
 		private Legend[] _legend;
 		IEnumerable<Legend> IProvideLegend.LegendItems {
@@ -445,6 +452,7 @@ namespace eScapeLLC.UWP.Charts {
 			var paths = reproc.Select(ms => ms.Elements).SelectMany(el => el).Select(el => el.Item2);
 			Layer.Remove(paths);
 			Dirty = false;
+			RaiseItemsUpdated(ItemUpdates, icrc, NotifyCollectionChangedAction.Remove, startAt, reproc);
 		}
 		void IRequireDataSourceUpdates.Add(IChartRenderContext icrc, int startAt, IList items) {
 			if (CategoryAxis == null || ValueAxis == null) return;
@@ -462,6 +470,7 @@ namespace eScapeLLC.UWP.Charts {
 			// finish up
 			Layer.Add(recycler.Created);
 			Dirty = false;
+			RaiseItemsUpdated(ItemUpdates, icrc, NotifyCollectionChangedAction.Add, startAt, reproc);
 		}
 		#endregion
 	}

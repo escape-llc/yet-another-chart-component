@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media;
@@ -11,7 +12,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Render a "candle stick" series, typically used for OHLC data.
 	/// </summary>
-	public class CandlestickSeries : DataSeriesWithAxes, IDataSourceRenderer, IRequireDataSourceUpdates, IProvideLegend, IProvideSeriesItemValues, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
+	public class CandlestickSeries : DataSeriesWithAxes, IDataSourceRenderer, IRequireDataSourceUpdates, IProvideLegend, IProvideSeriesItemValues, IProvideSeriesItemUpdates, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("CandlestickSeries", LogTools.Level.Error);
 		#region SeriesItemState
 		internal interface IFigureData {
@@ -389,6 +390,12 @@ namespace eScapeLLC.UWP.Charts {
 			(st as IFigureData).UpdateGeometry(BarWidth);
 		}
 		#endregion
+		#region IProvideSeriesItemUpdates
+		/// <summary>
+		/// Made public so it's easier to implement (auto).
+		/// </summary>
+		public event EventHandler<SeriesItemUpdateEventArgs> ItemUpdates;
+		#endregion
 		#region IProvideLegend
 		private Legend _legend;
 		IEnumerable<Legend> IProvideLegend.LegendItems {
@@ -504,6 +511,7 @@ namespace eScapeLLC.UWP.Charts {
 			// finish up
 			Layer.Remove(reproc.Select(xx => xx.Element));
 			Dirty = false;
+			RaiseItemsUpdated(ItemUpdates, icrc, NotifyCollectionChangedAction.Remove, startAt, reproc);
 		}
 		void IRequireDataSourceUpdates.Add(IChartRenderContext icrc, int startAt, IList items) {
 			if (CategoryAxis == null || ValueAxis == null) return;
@@ -527,6 +535,7 @@ namespace eScapeLLC.UWP.Charts {
 			// finish up
 			Layer.Add(recycler.Created);
 			Dirty = false;
+			RaiseItemsUpdated(ItemUpdates, icrc, NotifyCollectionChangedAction.Add, startAt, reproc);
 		}
 		#endregion
 	}
