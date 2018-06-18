@@ -152,13 +152,28 @@ namespace eScapeLLC.UWP.Charts {
 		G Geometry { get; set; }
 	}
 	#endregion
+	#region IProvideOriginalState
+	/// <summary>
+	/// Signal that this state item actually is wrapping a "stable" item.
+	/// This is for components that dynamically "wrap" their internal state up each time it's requested.
+	/// This is required for components that support incremental updates!
+	/// </summary>
+	public interface IProvideOriginalState {
+		/// <summary>
+		/// The Wrapped "stable" item this instance is wrapping.
+		/// </summary>
+		ISeriesItem Original { get; }
+	}
+	#endregion
 	#endregion
 	#region ItemState implementations
 	#region ItemStateDependentCore
 	/// <summary>
 	/// Item state that "tracks" a dependent source <see cref="ISeriesItem"/>.
+	/// This is used by components that track <see cref="IProvideSeriesItemUpdates"/> events.
 	/// </summary>
 	public class ItemStateDependentCore : ISeriesItem {
+		#region properties
 		/// <summary>
 		/// Delegated to <see cref="ISeriesItem.Index"/>.
 		/// </summary>
@@ -179,6 +194,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// The <see cref="ISeriesItem"/> this item depends on.
 		/// </summary>
 		public ISeriesItem Source { get; private set; }
+		#endregion
+		#region ctor
 		/// <summary>
 		/// Ctor.
 		/// Offset initialized from <see cref="Source"/>.
@@ -196,7 +213,10 @@ namespace eScapeLLC.UWP.Charts {
 			Source = source;
 			XOffset = xo;
 		}
+		#endregion
 	}
+	#endregion
+	#region ItemStateDependent<EL>
 	/// <summary>
 	/// Dependent item state for single value.
 	/// This is used when one element-per-item is generated, so it can be re-adjusted in Transforms et al.
@@ -418,12 +438,135 @@ namespace eScapeLLC.UWP.Charts {
 		public ItemStateMultiChannelCore(int idx, double xv, double xo, ISeriesItemValue[] isis) : base(idx, xv, xo) { YValues = isis; }
 	}
 	#endregion
-	#region ItemState_Matrix<EL>
+	#region ItemStateMultiChannelWrapper
 	/// <summary>
-	/// Item state with transformation matrix.
+	/// Wraps a multi-channel value.
 	/// </summary>
-	/// <typeparam name="EL">The Element type.</typeparam>
-	public class ItemState_Matrix<EL> : ItemState<EL>, IItemStateMatrix where EL : FrameworkElement {
+	public class ItemStateMultiChannelWrapper : ISeriesItem, ISeriesItemValues, IProvideOriginalState {
+		#region properties
+		/// <summary>
+		/// Delegated to <see cref="ISeriesItem.Index"/>.
+		/// </summary>
+		public int Index => Source.Index;
+		/// <summary>
+		/// Delegated to <see cref="ISeriesItem.XValue"/>.
+		/// </summary>
+		public double XValue => Source.XValue;
+		/// <summary>
+		/// Explicit x-axis-unit offset.
+		/// </summary>
+		public double XOffset { get; protected set; }
+		/// <summary>
+		/// Calculated from <see cref="XValue "/> and  <see cref="XOffset"/>.
+		/// </summary>
+		public double XValueAfterOffset => XValue + XOffset;
+		/// <summary>
+		/// The <see cref="ISeriesItem"/> this item wraps.
+		/// </summary>
+		public ISeriesItem Source { get; private set; }
+		/// <summary>
+		/// Unwrapped instance.
+		/// </summary>
+		public ISeriesItem Original => Source;
+		/// <summary>
+		/// Return all the channels.
+		/// </summary>
+		public IEnumerable<ISeriesItemValue> YValues { get; private set; }
+		#endregion
+		#region ctor
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="wrap">Wrap item.</param>
+		/// <param name="isis">Channel details.  SHOULD be <see cref="ItemStateValueWrapper"/> et al.  THIS takes ownership.</param>
+		public ItemStateMultiChannelWrapper(ISeriesItem wrap, ISeriesItemValue[] isis) {
+			if (wrap == null) throw new ArgumentNullException(nameof(wrap));
+			if (isis == null) throw new ArgumentNullException(nameof(isis));
+			Source = wrap;
+			YValues = isis;
+		}
+		#endregion
+	}
+	#endregion
+	#region ItemStateValueWrapper
+	/// <summary>
+	/// Wraps a single channel of a multi-channel value (represented by <see cref="ItemStateMultiChannelWrapper"/>).
+	/// </summary>
+	public class ItemStateValueWrapper : ISeriesItem, ISeriesItemValueDouble, IProvideOriginalState {
+		#region properties
+		/// <summary>
+		/// Delegated to <see cref="Original"/>.
+		/// </summary>
+		public int Index => Original.Index;
+		/// <summary>
+		/// Delegated to <see cref="Original"/>.
+		/// </summary>
+		public double XValue => Original.XValue;
+		/// <summary>
+		/// Delegated to <see cref="Original"/>.
+		/// </summary>
+		public double XOffset => Original.XOffset;
+		/// <summary>
+		/// Delegated to <see cref="Original"/>.
+		/// </summary>
+		public double XValueAfterOffset => XValue + XOffset;
+		/// <summary>
+		/// The channel number.
+		/// </summary>
+		public int Channel { get; private set; }
+		/// <summary>
+		/// The unwrapped item.
+		/// </summary>
+		public ISeriesItem Original { get; private set; }
+		/// <summary>
+		/// The value.
+		/// </summary>
+		public double Value { get; private set; }
+		#endregion
+		#region ctor
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="wrap">Wrap item.</param>
+		/// <param name="yv">Y value.</param>
+		/// <param name="ch">Channel number.</param>
+		public ItemStateValueWrapper(ISeriesItem wrap, double yv, int ch) {
+			if (wrap == null) throw new ArgumentNullException(nameof(wrap));
+			Original = wrap;
+			Value = yv;
+			Channel = ch;
+		}
+		#endregion
+	}
+	#endregion
+	#region ItemStateValueCustomWrapper
+	/// <summary>
+	/// Wraps a single channel of a multi-channel value (represented by <see cref="ItemStateMultiChannelWrapper"/>).
+	/// Custom value version.
+	/// </summary>
+	public class ItemStateValueCustomWrapper : ItemStateValueWrapper, ISeriesItemValueCustom {
+		/// <summary>
+		/// <see cref="ISeriesItemValueCustom"/>.
+		/// </summary>
+		public object CustomValue { get; private set; }
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="wrap">Wrap item.</param>
+		/// <param name="yv">Y value.</param>
+		/// <param name="cv">Custom value.</param>
+		/// <param name="ch">Channel number.</param>
+		public ItemStateValueCustomWrapper(ISeriesItem wrap, double yv, object cv, int ch) : base(wrap, yv, ch) {
+			CustomValue = cv;
+		}
+	}
+	#endregion
+	#region ItemState_Matrix<EL>
+		/// <summary>
+		/// Item state with transformation matrix.
+		/// </summary>
+		/// <typeparam name="EL">The Element type.</typeparam>
+		public class ItemState_Matrix<EL> : ItemState<EL>, IItemStateMatrix where EL : FrameworkElement {
 		/// <summary>
 		/// Ctor.
 		/// </summary>
