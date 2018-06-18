@@ -162,24 +162,6 @@ namespace eScapeLLC.UWP.Charts {
 			var rg = (st as ItemState<Path>).Element.Data as RectangleGeometry;
 			rg.Rect = new Rect(new Point(st.XValueAfterOffset, rg.Rect.Top), new Point(st.XValueAfterOffset + BarWidth, rg.Rect.Bottom));
 		}
-		/// <summary>
-		/// Invoke the items update event, trapping and reporting any <see cref="Exception"/> via <see cref="IChartErrorInfo"/>.
-		/// </summary>
-		/// <param name="icrc">Passed to args.</param>
-		/// <param name="ncca">Passed to args.</param>
-		/// <param name="startAt">Passed to args.</param>
-		/// <param name="reproc">Passed to args.</param>
-		void RaiseItemsUpdated(IChartRenderContext icrc, NotifyCollectionChangedAction ncca, int startAt, List<ItemState<Path>> reproc) {
-			try {
-				var args = new SeriesItemUpdateEventArgs(icrc, ncca, startAt, reproc);
-				ItemUpdates?.Invoke(this, args);
-			} catch (Exception ex) {
-				_trace.Error($"{Name} SeriesItemUpdate({ncca}).unhandled: {ex.Message}");
-				if (icrc is IChartErrorInfo icei) {
-					icei.Report(new ChartValidationResult(NameOrType(), $"SeriesItemUpdate({ncca}) failed: {ex.Message}"));
-				}
-			}
-		}
 		#endregion
 		#region IRequireEnterLeave
 		/// <summary>
@@ -315,7 +297,7 @@ namespace eScapeLLC.UWP.Charts {
 			// finish up
 			Layer.Remove(reproc.Select(xx => xx.Element).Where(el => el != null));
 			Dirty = false;
-			RaiseItemsUpdated(icrc, NotifyCollectionChangedAction.Remove, startAt, reproc);
+			RaiseItemsUpdated(ItemUpdates, icrc, NotifyCollectionChangedAction.Remove, startAt, reproc);
 		}
 		void IRequireDataSourceUpdates.Add(IChartRenderContext icrc, int startAt, IList items) {
 			if (CategoryAxis == null || ValueAxis == null) return;
@@ -336,7 +318,7 @@ namespace eScapeLLC.UWP.Charts {
 			// finish up
 			Layer.Add(recycler.Created);
 			Dirty = false;
-			RaiseItemsUpdated(icrc, NotifyCollectionChangedAction.Add, startAt, reproc);
+			RaiseItemsUpdated(ItemUpdates, icrc, NotifyCollectionChangedAction.Add, startAt, reproc);
 		}
 		#endregion
 	}
