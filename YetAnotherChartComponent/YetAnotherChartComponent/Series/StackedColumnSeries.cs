@@ -158,7 +158,7 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region Evaluators
-		class Evaluators : IEvaluator {
+		class Evaluators : ICategoryEvaluator {
 			internal readonly BindingEvaluator bx;
 			internal readonly BindingEvaluator[] bys;
 			internal readonly BindingEvaluator byl;
@@ -194,9 +194,6 @@ namespace eScapeLLC.UWP.Charts {
 			public double CategoryValue(double dx, int index) {
 				var valuex = bx != null ? dx : index;
 				return valuex;
-			}
-			public double ValueFor(object ox) {
-				throw new NotImplementedException();
 			}
 		}
 		#endregion
