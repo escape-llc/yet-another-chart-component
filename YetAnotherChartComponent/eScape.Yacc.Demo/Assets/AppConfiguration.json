@@ -3,9 +3,10 @@
 		"AxisCommon": "Error",
 		"CandlestickSeries": "Error",
 		"CategoryAxis": "Error",
-		"Chart": "Verbose",
-		"ColumnSeries": "Verbose",
+		"Chart": "Error",
+		"ColumnSeries": "Error",
 		"ColumnSeriesPaths": "Off",
+		"DataSeries": "Error",
 		"DataSource": "Verbose",
 		"HorizontalBand": "Error",
 		"HorizontalRule": "Error",
@@ -13,7 +14,7 @@
 		"MarkerSeries": "Error",
 		"PieSeries": "Error",
 		"StackedColumnSeries": "Error",
-		"ValueAxis": "Verbose",
+		"ValueAxis": "Error",
 		"ValueLabels": "Error"
 	}
 }
