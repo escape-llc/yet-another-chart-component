@@ -82,7 +82,7 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region Evaluators
-		class Evaluators : IEvaluator {
+		class Evaluators : ICategoryEvaluator {
 			// category and label (optional)
 			internal readonly BindingEvaluator bx;
 			// values (required)
@@ -153,7 +153,6 @@ namespace eScapeLLC.UWP.Charts {
 				var value = DataSeries.CoerceValue(item, bclose);
 				return value;
 			}
-			public double ValueFor(object item) { throw new NotImplementedException("Use OHLC"); }
 			#endregion
 		}
 		#endregion
