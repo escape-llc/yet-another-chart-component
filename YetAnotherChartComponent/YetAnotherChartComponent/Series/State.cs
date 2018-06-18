@@ -154,6 +154,86 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#endregion
 	#region ItemState implementations
+	#region ItemStateDependentCore
+	/// <summary>
+	/// Item state that "tracks" a dependent source <see cref="ISeriesItem"/>.
+	/// </summary>
+	public class ItemStateDependentCore : ISeriesItem {
+		/// <summary>
+		/// Delegated to <see cref="ISeriesItem.Index"/>.
+		/// </summary>
+		public int Index => Source.Index;
+		/// <summary>
+		/// Delegated to <see cref="ISeriesItem.XValue"/>.
+		/// </summary>
+		public double XValue => Source.XValue;
+		/// <summary>
+		/// Explicit x-axis-unit offset.
+		/// </summary>
+		public double XOffset { get; protected set; }
+		/// <summary>
+		/// Calculated from <see cref="XValue "/> and  <see cref="XOffset"/>.
+		/// </summary>
+		public double XValueAfterOffset => XValue + XOffset;
+		/// <summary>
+		/// The <see cref="ISeriesItem"/> this item depends on.
+		/// </summary>
+		public ISeriesItem Source { get; private set; }
+		/// <summary>
+		/// Ctor.
+		/// Offset initialized from <see cref="Source"/>.
+		/// </summary>
+		/// <param name="source">The source <see cref="ISeriesItem"/>.</param>
+		public ItemStateDependentCore(ISeriesItem source) :this(source, source.XOffset) { }
+		/// <summary>
+		/// Ctor.
+		/// With explicit offset.
+		/// </summary>
+		/// <param name="source">The source <see cref="ISeriesItem"/>.</param>
+		/// <param name="xo"></param>
+		public ItemStateDependentCore(ISeriesItem source, double xo) {
+			if (source == null) throw new ArgumentNullException(nameof(source));
+			Source = source;
+			XOffset = xo;
+		}
+	}
+	/// <summary>
+	/// Dependent item state for single value.
+	/// This is used when one element-per-item is generated, so it can be re-adjusted in Transforms et al.
+	/// </summary>
+	/// <typeparam name="EL">The element type.</typeparam>
+	public class ItemStateDependent<EL> : ItemStateDependentCore, ISeriesItem, ISeriesItemValueDouble where EL: DependencyObject {
+		/// <summary>
+		/// The generated element.
+		/// </summary>
+		public EL Element { get; private set; }
+		/// <summary>
+		/// The y value.
+		/// </summary>
+		public double Value { get; protected set; }
+		/// <summary>
+		/// Delegated to <see cref="ValueSource"/>.Channel.
+		/// </summary>
+		public int Channel => ValueSource.Channel;
+		/// <summary>
+		/// The value item.  MUST be different than the source, when there are multiple channels available.
+		/// </summary>
+		public ISeriesItemValueDouble ValueSource { get; private set; }
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="source">Source item.</param>
+		/// <param name="isivd">The value item.</param>
+		/// <param name="xo">The x-offset.</param>
+		/// <param name="yv">y-value item.</param>
+		/// <param name="ele">Generated element.</param>
+		public ItemStateDependent(ISeriesItem source, ISeriesItemValueDouble isivd, double xo, double yv, EL ele) : base(source, xo) {
+			Value = yv;
+			ValueSource = isivd;
+			Element = ele;
+		}
+	}
+	#endregion
 	#region ItemStateCore
 	/// <summary>
 	/// Simplest item state to start from.
