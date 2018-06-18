@@ -233,7 +233,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Provide item values.
 		/// </summary>
-		public IEnumerable<ISeriesItem> SeriesItemValues => UnwrapItemState(ItemState.AsReadOnly());
+		public IEnumerable<ISeriesItem> SeriesItemValues => WrapItemState(ItemState.AsReadOnly());
 		/// <summary>
 		/// The layer for components.
 		/// </summary>
@@ -276,22 +276,22 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region helpers
-		IEnumerable<ISeriesItem> UnwrapItemState(IEnumerable<SeriesItemState> siss) {
+		IEnumerable<ISeriesItem> WrapItemState(IEnumerable<SeriesItemState> siss) {
 			foreach (var sis in siss) {
 				// IST check Custom first it's a subclass!
 				if (sis is SeriesItemState_Custom sisc) {
 					var sis2 = new ISeriesItemValue[sis.Elements.Count];
 					for (int idx = 0; idx < sis.Elements.Count; idx++) {
-						sis2[idx] = new ChannelItemState_Custom(sis.Index, sis.XValue, sis.XValueAfterOffset, sis.Elements[idx].Item1, sisc.CustomValue, sis.Elements[idx].Item2, idx);
+						sis2[idx] = new ChannelItemState_Custom(sis.Index, sis.XValue, sis.XOffset, sis.Elements[idx].Item1, sisc.CustomValue, sis.Elements[idx].Item2, idx);
 					}
-					var sivc = new ItemStateMultiChannelCore(sis.Index, sis.XValue, sis.XValueAfterOffset, sis2);
+					var sivc = new ItemStateMultiChannelWrapper(sis, sis2);
 					yield return sivc;
 				} else {
 					var sis2 = new ISeriesItemValue[sis.Elements.Count];
 					for (int idx = 0; idx < sis.Elements.Count; idx++) {
-						sis2[idx] = new ChannelItemState(sis.Index, sis.XValue, sis.XValueAfterOffset, sis.Elements[idx].Item1, sis.Elements[idx].Item2, idx);
+						sis2[idx] = new ChannelItemState(sis.Index, sis.XValue, sis.XOffset, sis.Elements[idx].Item1, sis.Elements[idx].Item2, idx);
 					}
-					var sivc = new ItemStateMultiChannelCore(sis.Index, sis.XValue, sis.XValueAfterOffset, sis2);
+					var sivc = new ItemStateMultiChannelWrapper(sis, sis2);
 					yield return sivc;
 				}
 			}
