@@ -358,21 +358,23 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="isivd">The item.</param>
 		/// <param name="offset">Placement offset.</param>
-		/// <param name="xv">Default x-coordinate, depending on placement found.</param>
-		/// <returns>Item1=location,Item2=direction.</returns>
-		static Tuple<Point,Point> GetPlacement(ISeriesItemValueDouble isivd, Point offset, double xv) {
+		/// <param name="xo">Default x-offset, depending on placement found.</param>
+		/// <returns>Item1=location(.X=XOffset,.Y=Value);Item2=direction.</returns>
+		static Tuple<Point,Point> GetPlacement(ISeriesItemValueDouble isivd, Point offset, double xo) {
 			var pmt = (isivd as IProvidePlacement)?.Placement;
 			switch (pmt) {
 			case RectanglePlacement rp:
 				var pt = rp.Transform(offset);
 				_trace.Verbose($"rp c:{rp.Center} d:{rp.Direction} hd:{rp.HalfDimensions} pt:{pt}");
-				return new Tuple<Point,Point>(new Point(xv, pt.Y), rp.Direction);
+				return new Tuple<Point,Point>(new Point(xo, pt.Y), rp.Direction);
 			case MidpointPlacement mp:
 				var pt2 = mp.Transform(offset);
+				// convert into XOffset!
+				pt2.X = pt2.X - (isivd as ISeriesItem).XValue;
 				_trace.Verbose($"mp {mp.Midpoint} d:{mp.Direction} hd:{mp.HalfDimension} pt:{pt2}");
 				return new Tuple<Point, Point>(pt2, mp.Direction);
 			default:
-				return new Tuple<Point, Point>(new Point(xv, isivd.Value), Placement.UP_RIGHT);
+				return new Tuple<Point, Point>(new Point(xo, isivd.Value), Placement.UP_RIGHT);
 			}
 		}
 		/// <summary>
@@ -468,7 +470,8 @@ namespace eScapeLLC.UWP.Charts {
 		void IncrementalRemove(int startAt, IList<ISeriesItem> items) {
 			var reproc = new List<SeriesItemState>();
 			foreach (var item in items) {
-				var target = ItemState.SingleOrDefault(xx => xx.Source == item && xx.Channel == ValueFor(item)?.Channel);
+				var source = item is IProvideOriginalState ipws ? ipws.Original : item;
+				var target = ItemState.SingleOrDefault(xx => xx.Source == source && xx.Channel == ValueFor(item)?.Channel);
 				if (target != null) {
 					// found one remove it
 					ItemState.Remove(target);
