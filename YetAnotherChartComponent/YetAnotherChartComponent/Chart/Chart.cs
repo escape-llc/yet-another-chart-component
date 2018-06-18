@@ -590,7 +590,7 @@ namespace eScapeLLC.UWP.Charts {
 				_trace.Verbose($"axis-limits '{cc.Name}' {cc}");
 				if(cc is IProvideValueExtents ipve) {
 					var axis = Axes.SingleOrDefault((ax) => ipve.ValueAxisName == (ax as ChartComponent).Name);
-					_trace.Verbose($"axis-limits y-axis:{axis} min:{ipve.Minimum} max:{ipve.Maximum}");
+					_trace.Verbose($"axis-limits y-axis:{axis} min:{ipve.Minimum:F3} max:{ipve.Maximum:F3}");
 					if (axis != null) {
 						axis.UpdateLimits(ipve.Maximum);
 						axis.UpdateLimits(ipve.Minimum);
