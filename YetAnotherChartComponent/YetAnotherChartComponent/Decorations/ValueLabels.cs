@@ -1,7 +1,6 @@
 ﻿#undef COMPOSITION_ENABLED
 using eScape.Core;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Windows.Foundation;
@@ -36,16 +35,46 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// The item state.
 		/// </summary>
-		protected class SeriesItemState : ItemState<FrameworkElement> {
-			internal Point Direction { get; set; }
-			internal Point CanvasLocation { get; set; }
-			internal object CustomValue { get; set; }
-			internal SeriesItemState(int idx, double xv, double xvo, double yv, FrameworkElement ele, int ch) : base(idx, xv, xvo, yv, ele, ch) { }
+		protected class SeriesItemState : ItemStateDependent<FrameworkElement> {
+			internal Point Direction { get; private set; }
+			internal Point CanvasLocation { get; private set; }
+			internal object CustomValue { get; private set; }
+			internal SeriesItemState(ISeriesItem isi, ISeriesItemValueDouble isivd, Point loc, Point dir, FrameworkElement ele, object cv)
+			: base(isi, isivd, loc.X, loc.Y, ele) {
+				Direction = dir;
+				CustomValue = cv;
+			}
+			/// <summary>
+			/// Set <see cref="CanvasLocation"/> and the canvas properties based on actual size.
+			/// </summary>
+			/// <param name="matx">Use to calculate the new <see cref="CanvasLocation"/>.</param>
+			/// <param name="fe">Use for actual size.</param>
+			/// <param name="offs">Additional offset from <see cref="CanvasLocation"/> in direction of <see cref="Direction"/>.</param>
+			internal void Locate(Matrix matx, FrameworkElement fe, Point offs) {
+				CanvasLocation = matx.Transform(new Point(XValueAfterOffset, Value));
+				Locate(fe, offs);
+			}
+			/// <summary>
+			/// Re-locate based on current <see cref="CanvasLocation"/> and actual size.
+			/// </summary>
+			/// <param name="fe">Use for actual size.</param>
+			/// <param name="offs">Additional offset from <see cref="CanvasLocation"/> in direction of <see cref="Direction"/>.</param>
 			internal void Locate(FrameworkElement fe, Point offs) {
 				var hw = fe.ActualWidth / 2;
 				var hh = fe.ActualHeight / 2;
 				fe.SetValue(Canvas.LeftProperty, CanvasLocation.X - hw + hw * offs.X * Direction.X);
 				fe.SetValue(Canvas.TopProperty, CanvasLocation.Y - hh + hh * offs.Y * Direction.Y);
+			}
+			/// <summary>
+			/// Recalculate placement values and update state.
+			/// </summary>
+			/// <param name="offs"></param>
+			/// <param name="aoffset"></param>
+			internal void UpdatePlacement(Point offs, double aoffset) {
+				var pmt = GetPlacement(ValueSource, offs, aoffset);
+				XOffset = pmt.Item1.X;
+				Value = pmt.Item1.Y;
+				Direction = pmt.Item2;
 			}
 		}
 		#endregion
@@ -253,7 +282,8 @@ namespace eScapeLLC.UWP.Charts {
 			}
 		}
 		/// <summary>
-		/// Get the transform from the source, or based on axes, whichever hits first.
+		/// Get the transform from <see cref="IProvideCustomTransform"/>, or based on axes, whichever hits first.
+		/// If there's no <see cref="ValueAxis"/> return Identity matrix.
 		/// </summary>
 		/// <param name="icrc">Use for the area.</param>
 		/// <returns>Matrix or DEFAULT.</returns>
@@ -308,6 +338,153 @@ namespace eScapeLLC.UWP.Charts {
 			return new TextShim() { Visibility = Visibility, Text = txt };
 		}
 		/// <summary>
+		/// Extract value info that matches our <see cref="ValueChannel"/>.
+		/// </summary>
+		/// <param name="siv">Candidate.</param>
+		/// <returns>Matching value or NULL.</returns>
+		ISeriesItemValueDouble ValueFor(ISeriesItem siv) {
+			ISeriesItemValue target = null;
+			if (siv is ISeriesItemValue isiv) {
+				if (isiv.Channel == ValueChannel) {
+					target = isiv;
+				}
+			} else if (siv is ISeriesItemValues isivs) {
+				target = isivs.YValues.SingleOrDefault(yv => yv.Channel == ValueChannel);
+			}
+			return target as ISeriesItemValueDouble;
+		}
+		/// <summary>
+		/// Extract placement info.
+		/// </summary>
+		/// <param name="isivd">The item.</param>
+		/// <param name="offset">Placement offset.</param>
+		/// <param name="xv">Default x-coordinate, depending on placement found.</param>
+		/// <returns>Item1=location,Item2=direction.</returns>
+		static Tuple<Point,Point> GetPlacement(ISeriesItemValueDouble isivd, Point offset, double xv) {
+			var pmt = (isivd as IProvidePlacement)?.Placement;
+			switch (pmt) {
+			case RectanglePlacement rp:
+				var pt = rp.Transform(offset);
+				_trace.Verbose($"rp c:{rp.Center} d:{rp.Direction} hd:{rp.HalfDimensions} pt:{pt}");
+				return new Tuple<Point,Point>(new Point(xv, pt.Y), rp.Direction);
+			case MidpointPlacement mp:
+				var pt2 = mp.Transform(offset);
+				_trace.Verbose($"mp {mp.Midpoint} d:{mp.Direction} hd:{mp.HalfDimension} pt:{pt2}");
+				return new Tuple<Point, Point>(pt2, mp.Direction);
+			default:
+				return new Tuple<Point, Point>(new Point(xv, isivd.Value), Placement.UP_RIGHT);
+			}
+		}
+		/// <summary>
+		/// Item state factory method.
+		/// </summary>
+		/// <param name="ipsiv">Used in contexts.</param>
+		/// <param name="siv">The item to track.</param>
+		/// <param name="recycler">For element creation.</param>
+		/// <returns>New instance or NULL.</returns>
+		SeriesItemState ElementPipeline(IProvideSeriesItemValues ipsiv, ISeriesItem siv, Recycler<FrameworkElement, ISeriesItemValueDouble> recycler) {
+			ISeriesItemValueDouble target = ValueFor(siv);
+			if (target != null && !double.IsNaN(target.Value)) {
+				var createit = true;
+				if (LabelSelector != null) {
+					// apply LabelSelector
+					var ctx = new SelectorContext(ipsiv, target);
+					var ox = LabelSelector.Convert(ctx, typeof(bool), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
+					if (ox is bool bx) {
+						createit = bx;
+					} else {
+						createit = ox != null;
+					}
+				}
+				if (!createit) return null;
+				var el = recycler.Next(target);
+				if (!el.Item1 && el.Item2.DataContext is TextShim shim) {
+					// recycling; update values
+					var txt = target.Value.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
+					shim.Visibility = Visibility;
+					shim.Text = txt;
+					if (shim is ObjectShim oshim && target is ISeriesItemValueCustom isivc2) {
+						oshim.CustomValue = isivc2.CustomValue;
+					}
+					// restore binding if we are using a LabelFormatter
+					if (LabelFormatter != null && LabelStyle != null) {
+						BindTo(this, nameof(LabelStyle), el.Item2, FrameworkElement.StyleProperty);
+					}
+				}
+				if (LabelFormatter != null) {
+					var ctx = new SelectorContext(ipsiv, target);
+					// TODO could call for typeof(object) and replace CustomValue
+					var format = LabelFormatter.Convert(ctx, typeof(Tuple<Style, String>), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
+					if (format is Tuple<Style, String> ovx) {
+						if (ovx.Item1 != null) {
+							el.Item2.Style = ovx.Item1;
+						}
+						if (ovx.Item2 != null) {
+							if (el.Item2.DataContext is TextShim ts) {
+								ts.Text = ovx.Item2;
+							}
+						}
+					}
+				}
+				var place = GetPlacement(target, PlacementOffset, CategoryAxisOffset);
+				var cv = target is ISeriesItemValueCustom isivc ? isivc.CustomValue : null;
+				return new SeriesItemState(siv, target, place.Item1, place.Item2, el.Item2, cv);
+			}
+			return null;
+		}
+		/// <summary>
+		/// Handle bookkeeping for incremental add.
+		/// </summary>
+		/// <param name="startAt">Starting index.</param>
+		/// <param name="items">Items affected.</param>
+		void IncrementalAdd(int startAt, IList<ISeriesItem> items) {
+			var reproc = new List<SeriesItemState>();
+			var recycler = new Recycler<FrameworkElement, ISeriesItemValueDouble>(CreateElement);
+			foreach (var item in items) {
+				var target = ElementPipeline(Source as IProvideSeriesItemValues, item, recycler);
+				if (target != null) {
+					reproc.Add(target);
+				}
+			}
+			// adjust indices based on removed items
+			foreach (var itx in ItemState.Where(ix => ix.Index >= startAt)) {
+				itx.UpdatePlacement(PlacementOffset, CategoryAxisOffset);
+			}
+			if (reproc.Count > 0) {
+				// add collected items and re-sort by index
+				ItemState.AddRange(reproc);
+				if (ItemState.Count > 1) {
+					ItemState.Sort((i1, i2) => i1.Index.CompareTo(i2.Index));
+				}
+			}
+			Layer.Add(recycler.Created);
+			// everything else will re-calc in Transforms()
+		}
+		/// <summary>
+		/// Handle bookkeeping for incremental remove.
+		/// </summary>
+		/// <param name="startAt">Starting index.</param>
+		/// <param name="items">Items affected.</param>
+		void IncrementalRemove(int startAt, IList<ISeriesItem> items) {
+			var reproc = new List<SeriesItemState>();
+			foreach (var item in items) {
+				var target = ItemState.SingleOrDefault(xx => xx.Source == item && xx.Channel == ValueFor(item)?.Channel);
+				if (target != null) {
+					// found one remove it
+					ItemState.Remove(target);
+					reproc.Add(target);
+				}
+			}
+			// adjust indices based on removed items
+			foreach (var itx in ItemState.Where(ix => ix.Index >= startAt)) {
+				itx.UpdatePlacement(PlacementOffset, CategoryAxisOffset);
+			}
+			Layer.Remove(reproc.Select(xx => xx.Element));
+			// everything else will re-calc in Transforms()
+		}
+		#endregion
+		#region evhs
+		/// <summary>
 		/// Follow-up handler to re-position the label element at exactly the right spot after it's done with (asynchronous) measure/arrange.
 		/// </summary>
 		/// <param name="sender"></param>
@@ -324,28 +501,19 @@ namespace eScapeLLC.UWP.Charts {
 				state.Locate(fe, LabelOffset);
 			}
 		}
-		#endregion
-		#region evhs
 		/// <summary>
 		/// Forward incremental updates.
 		/// </summary>
 		/// <param name="sender">The Source.</param>
 		/// <param name="e">Incremental update info.</param>
 		private void Ipsiu_ItemUpdates(object sender, SeriesItemUpdateEventArgs e) {
-			_trace.Verbose($"itemUpdates {Name} {e.Action} @{e.StartAt}+{e.Items.Count}");
+			_trace.Verbose($"itemUpdates '{Name}' {e.Action} @{e.StartAt}+{e.Items.Count}");
 			switch(e.Action) {
 			case System.Collections.Specialized.NotifyCollectionChangedAction.Add:
+				IncrementalAdd(e.StartAt, e.Items);
 				break;
 			case System.Collections.Specialized.NotifyCollectionChangedAction.Remove:
-				var reproc = IncrementalRemove<SeriesItemState>(e.StartAt, e.Items as IList, ItemState, null, (rpc, istate) => {
-					// TODO must track the originating series item (to capture updated values after incr-update)
-					// TODO position depends upon placement data
-					// var index = istate.Index - rpc;
-					//istate.Move(index, leftx, offsetx);
-					// update geometry
-					var rg = istate.Element as TextBlock;
-				});
-				Layer.Remove(reproc.Select(xx => xx.Element));
+				IncrementalRemove(e.StartAt, e.Items);
 				break;
 			}
 		}
@@ -371,9 +539,7 @@ namespace eScapeLLC.UWP.Charts {
 				() => LabelStyle = Theme.LabelAxisTop
 			);
 			if(Source is IProvideSeriesItemUpdates ipsiu) {
-			#if false
 				ipsiu.ItemUpdates += Ipsiu_ItemUpdates;
-			#endif
 			}
 			_trace.Verbose($"{Name} enter s:{SourceName} {Source} v:{ValueAxis} c:{CategoryAxis}");
 			token = RegisterPropertyChangedCallback(UIElement.VisibilityProperty, PropertyChanged_Visibility);
@@ -382,9 +548,7 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"{Name} leave");
 			UnregisterPropertyChangedCallback(VisibilityProperty, token);
 			if (Source is IProvideSeriesItemUpdates ipsiu) {
-			#if false
 				ipsiu.ItemUpdates -= Ipsiu_ItemUpdates;
-			#endif
 			}
 			ValueAxis = null;
 			CategoryAxis = null;
@@ -399,7 +563,7 @@ namespace eScapeLLC.UWP.Charts {
 			// already reported an error so this should be no surprise
 				return;
 			}
-			#if false
+			#if true
 			if(Source is IProvideSeriesItemUpdates && icrc.Type == RenderType.Incremental) {
 				// already handled it
 				return;
@@ -412,86 +576,9 @@ namespace eScapeLLC.UWP.Charts {
 				var itemstate = new List<SeriesItemState>();
 				// render
 				foreach (var siv in ipsiv.SeriesItemValues) {
-					ISeriesItemValue target = null;
-					if (siv is ISeriesItemValue isiv) {
-						if (isiv.Channel == ValueChannel) {
-							target = isiv;
-						}
-					}
-					else if(siv is ISeriesItemValues isivs) {
-						target = isivs.YValues.SingleOrDefault(yv => yv.Channel == ValueChannel);
-					}
-					if(target is ISeriesItemValueDouble isivd && !double.IsNaN(isivd.Value)) {
-						var createit = true;
-						if(LabelSelector != null) {
-							// apply LabelSelector
-							var ctx = new SelectorContext(ipsiv, target);
-							var ox = LabelSelector.Convert(ctx, typeof(bool), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
-							if(ox is bool bx) {
-								createit = bx;
-							}
-							else {
-								createit = ox != null;
-							}
-						}
-						if (!createit) continue;
-						var el = recycler.Next(isivd);
-						if (!el.Item1 && el.Item2.DataContext is TextShim shim) {
-							// recycling; update values
-							var txt = isivd.Value.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
-							shim.Visibility = Visibility;
-							shim.Text = txt;
-							if(shim is ObjectShim oshim && isivd is ISeriesItemValueCustom isivc) {
-								oshim.CustomValue = isivc.CustomValue;
-							}
-							// restore binding if we are using a LabelFormatter
-							if (LabelFormatter != null && LabelStyle != null) {
-								BindTo(this, nameof(LabelStyle), el.Item2, FrameworkElement.StyleProperty);
-							}
-						}
-						if (LabelFormatter != null) {
-							var ctx = new SelectorContext(ipsiv, target);
-							// TODO could call for typeof(object) and replace CustomValue
-							var format = LabelFormatter.Convert(ctx, typeof(Tuple<Style, String>), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
-							if (format is Tuple<Style, String> ovx) {
-								if (ovx.Item1 != null) {
-									el.Item2.Style = ovx.Item1;
-								}
-								if (ovx.Item2 != null) {
-									if (el.Item2.DataContext is TextShim ts) {
-										ts.Text = ovx.Item2;
-									}
-								}
-							}
-						}
-						var pmt = (target as IProvidePlacement)?.Placement;
-						switch(pmt) {
-						case RectanglePlacement rp:
-							var pt = rp.Transform(PlacementOffset);
-							_trace.Verbose($"rp c:{rp.Center} d:{rp.Direction} hd:{rp.HalfDimensions} pt:{pt}");
-							var sis = new SeriesItemState(siv.Index, siv.XValue, CategoryAxisOffset, pt.Y, el.Item2, target.Channel) {
-								Direction = rp.Direction,
-								CustomValue = target is ISeriesItemValueCustom isivc ? isivc.CustomValue : null
-								};
-							itemstate.Add(sis);
-							break;
-						case MidpointPlacement mp:
-							var pt2 = mp.Transform(PlacementOffset);
-							_trace.Verbose($"mp {mp.Midpoint} d:{mp.Direction} hd:{mp.HalfDimension} pt:{pt2}");
-							var sis2 = new SeriesItemState(siv.Index, siv.XValue, pt2.X, pt2.Y, el.Item2, target.Channel) {
-								Direction = mp.Direction,
-								CustomValue = target is ISeriesItemValueCustom isivc2 ? isivc2.CustomValue : null
-							};
-							itemstate.Add(sis2);
-							break;
-						default:
-							var sis3 = new SeriesItemState(siv.Index, siv.XValue, CategoryAxisOffset, isivd.Value, el.Item2, target.Channel) {
-								Direction = Placement.UP_RIGHT,
-								CustomValue = target is ISeriesItemValueCustom isivc3 ? isivc3.CustomValue : null
-							};
-							itemstate.Add(sis3);
-							break;
-						}
+					var istate = ElementPipeline(ipsiv, siv, recycler);
+					if(istate != null) {
+						itemstate.Add(istate);
 					}
 				}
 				// postamble
@@ -513,10 +600,9 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"{Name} transforms a:{icrc.Area} rx:{CategoryAxis?.Range} ry:{ValueAxis?.Range} matx:{matx}  type:{icrc.Type}");
 			if (matx == default(Matrix)) return;
 			foreach (var state in ItemState) {
-				state.CanvasLocation = matx.Transform(new Point(state.XValueAfterOffset, state.Value));
 				_trace.Verbose($"{Name} el:{state.Element} ds:{state.Element.DesiredSize} as:{state.Element.ActualWidth},{state.Element.ActualHeight}");
-				// Position element now because it WILL NOT invoke EVH if size didn't actually change
-				state.Locate(state.Element, LabelOffset);
+				// Recalc and Position element now because it WILL NOT invoke EVH if size didn't actually change
+				state.Locate(matx, state.Element, LabelOffset);
 				if (icrc.Type != RenderType.TransformsOnly) {
 					// doing render so (try to) trigger the SizeChanged handler
 					state.Element.InvalidateMeasure();
