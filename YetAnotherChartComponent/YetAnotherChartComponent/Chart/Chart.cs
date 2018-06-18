@@ -68,11 +68,14 @@ namespace eScapeLLC.UWP.Charts {
 		/// Remove the elements this layer is tracking in the common parent.
 		/// </summary>
 		void IChartLayer.Clear() {
-			foreach (var fe in elements) {
-				canvas.Children.Remove(fe);
-				UniversalApiContract.v3.CompositionSupport.DetachAnimations(fe);
+			try {
+				foreach (var fe in elements) {
+					canvas.Children.Remove(fe);
+					UniversalApiContract.v3.CompositionSupport.DetachAnimations(fe);
+				}
+			} finally {
+				elements.Clear();
 			}
-			elements.Clear();
 		}
 		#endregion
 	}
@@ -120,9 +123,20 @@ namespace eScapeLLC.UWP.Charts {
 			canvas.SetValue(FrameworkElement.WidthProperty, target.Width);
 			canvas.SetValue(FrameworkElement.HeightProperty, target.Height);
 		}
-		void IChartLayer.Remove(FrameworkElement fe) { canvas.Children.Remove(fe); }
+		void IChartLayer.Remove(FrameworkElement fe) {
+			canvas.Children.Remove(fe);
+			UniversalApiContract.v3.CompositionSupport.DetachAnimations(fe);
+		}
 		void IChartLayer.Remove(IEnumerable<FrameworkElement> fes) { foreach (var fe in fes) (this as IChartLayer).Remove(fe); }
-		void IChartLayer.Clear() { canvas.Children.Clear(); }
+		void IChartLayer.Clear() {
+			try {
+				foreach (var fe in canvas.Children) {
+					UniversalApiContract.v3.CompositionSupport.DetachAnimations(fe);
+				}
+			} finally {
+				canvas.Children.Clear();
+			}
+		}
 		#endregion
 	}
 	#endregion
