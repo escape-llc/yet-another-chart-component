@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using Windows.Foundation;
 using Windows.UI.Xaml;
@@ -13,7 +14,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Series that places the given marker at each point.
 	/// </summary>
-	public class MarkerSeries : DataSeriesWithValue, IDataSourceRenderer, IRequireDataSourceUpdates, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireAfterAxesFinalized, IRequireTransforms {
+	public class MarkerSeries : DataSeriesWithValue, IDataSourceRenderer, IRequireDataSourceUpdates, IProvideSeriesItemUpdates, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireAfterAxesFinalized, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("MarkerSeries", LogTools.Level.Error);
 		#region properties
 		/// <summary>
@@ -126,6 +127,12 @@ namespace eScapeLLC.UWP.Charts {
 				return new ItemStateCustom_Matrix<Path>(index, mappedx, MarkerOffset, mappedy, cs, el.Item2);
 			}
 		}
+		#endregion
+		#region IProvideSeriesItemUpdates
+		/// <summary>
+		/// Made public so it's easier to implement (auto).
+		/// </summary>
+		public event EventHandler<SeriesItemUpdateEventArgs> ItemUpdates;
 		#endregion
 		#region IRequireEnterLeave
 		/// <summary>
@@ -251,6 +258,7 @@ namespace eScapeLLC.UWP.Charts {
 			// finish up
 			Layer.Remove(reproc.Select(xx => xx.Element));
 			Dirty = false;
+			RaiseItemsUpdated(ItemUpdates, icrc, NotifyCollectionChangedAction.Remove, startAt, reproc);
 		}
 		void IRequireDataSourceUpdates.Add(IChartRenderContext icrc, int startAt, IList items) {
 			if (CategoryAxis == null || ValueAxis == null) return;
@@ -272,6 +280,7 @@ namespace eScapeLLC.UWP.Charts {
 			// finish up
 			Layer.Add(recycler.Created);
 			Dirty = false;
+			RaiseItemsUpdated(ItemUpdates, icrc, NotifyCollectionChangedAction.Add, startAt, reproc);
 		}
 		#endregion
 	}
