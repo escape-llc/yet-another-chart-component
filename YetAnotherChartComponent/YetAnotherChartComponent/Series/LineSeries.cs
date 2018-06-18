@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using Windows.Foundation;
 using Windows.UI.Xaml;
@@ -15,7 +16,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// This series type tracks <see cref="double.NaN"/> values in <see cref="ItemState"/> explicitly, so it can accurately represent "gaps"
 	/// by using multiple line segments.
 	/// </summary>
-	public class LineSeries : DataSeriesWithValue, IDataSourceRenderer, IRequireDataSourceUpdates, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
+	public class LineSeries : DataSeriesWithValue, IDataSourceRenderer, IRequireDataSourceUpdates, IProvideSeriesItemUpdates, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("LineSeries", LogTools.Level.Error);
 		#region properties
 		/// <summary>
@@ -139,6 +140,12 @@ namespace eScapeLLC.UWP.Charts {
 			}
 		}
 		#endregion
+		#region IProvideSeriesItemUpdates
+		/// <summary>
+		/// Made public so it's easier to implement (auto).
+		/// </summary>
+		public event EventHandler<SeriesItemUpdateEventArgs> ItemUpdates;
+		#endregion
 		#region IRequireEnterLeave
 		/// <summary>
 		/// Initialize after entering VT.
@@ -254,6 +261,7 @@ namespace eScapeLLC.UWP.Charts {
 			ReconfigureLimits();
 			UpdateGeometry();
 			Dirty = false;
+			RaiseItemsUpdated(ItemUpdates, icrc, NotifyCollectionChangedAction.Remove, startAt, reproc);
 		}
 		void IRequireDataSourceUpdates.Add(IChartRenderContext icrc, int startAt, IList items) {
 			if (CategoryAxis == null || ValueAxis == null) return;
@@ -273,6 +281,7 @@ namespace eScapeLLC.UWP.Charts {
 			ReconfigureLimits();
 			UpdateGeometry();
 			Dirty = false;
+			RaiseItemsUpdated(ItemUpdates, icrc, NotifyCollectionChangedAction.Add, startAt, reproc);
 		}
 		#endregion
 	}
