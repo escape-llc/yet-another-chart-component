@@ -1,4 +1,4 @@
-﻿#undef COMPOSITION_ENABLED
+﻿#define COMPOSITION_ENABLED
 using eScape.Core;
 using System;
 using System.Collections.Generic;
@@ -68,8 +68,8 @@ namespace eScapeLLC.UWP.Charts {
 			/// <summary>
 			/// Recalculate placement values and update state.
 			/// </summary>
-			/// <param name="offs"></param>
-			/// <param name="aoffset"></param>
+			/// <param name="offs">Placement offset.</param>
+			/// <param name="aoffset">Axis unit offset.</param>
 			internal void UpdatePlacement(Point offs, double aoffset) {
 				var pmt = GetPlacement(ValueSource, offs, aoffset);
 				XOffset = pmt.Item1.X;
