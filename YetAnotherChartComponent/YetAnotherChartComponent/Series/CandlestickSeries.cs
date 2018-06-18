@@ -216,7 +216,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Provide item values.
 		/// </summary>
-		public IEnumerable<ISeriesItem> SeriesItemValues => UnwrapItemState(ItemState.AsReadOnly());
+		public IEnumerable<ISeriesItem> SeriesItemValues => WrapItemState(ItemState.AsReadOnly());
 		/// <summary>
 		/// The layer for components.
 		/// </summary>
@@ -306,22 +306,22 @@ namespace eScapeLLC.UWP.Charts {
 		Legend Legend() {
 			return new Legend() { Title = Title, Fill = PathStyle.Find<Brush>(Path.FillProperty), Stroke = PathStyle.Find<Brush>(Path.StrokeProperty) };
 		}
-		IEnumerable<ISeriesItem> UnwrapItemState(IEnumerable<ItemState<Path>> siss) {
+		IEnumerable<ISeriesItem> WrapItemState(IEnumerable<ItemState<Path>> siss) {
 			foreach (var state in siss) {
 				if(state is SeriesItemState sis) {
 					var sis2 = new ISeriesItemValue[sis.Elements.Length];
 					for (int idx = 0; idx < sis.Elements.Length; idx++) {
-						sis2[idx] = new ItemState<PathFigure>(sis.Index, sis.XValue, sis.XOffset, sis.Elements[idx].Item1, sis.Elements[idx].Item2, idx);
+						sis2[idx] = new ItemStateValueWrapper(sis, sis.Elements[idx].Item1, idx);
 					}
-					var sivc = new ItemStateMultiChannelCore(sis.Index, sis.XValue, sis.XOffset, sis2);
+					var sivc = new ItemStateMultiChannelWrapper(sis, sis2);
 					yield return sivc;
 				}
 				else if(state is SeriesItemState_Custom sisc) {
 					var sis2 = new ISeriesItemValue[sisc.Elements.Length];
 					for (int idx = 0; idx < sisc.Elements.Length; idx++) {
-						sis2[idx] = new ItemStateCustom<PathFigure>(sisc.Index, sisc.XValue, sisc.XOffset, sisc.Elements[idx].Item1, sisc.CustomValue, sisc.Elements[idx].Item2, idx);
+						sis2[idx] = new ItemStateValueCustomWrapper(sisc, sisc.Elements[idx].Item1, sisc.CustomValue, idx);
 					}
-					var sivc = new ItemStateMultiChannelCore(sisc.Index, sisc.XValue, sisc.XOffset, sis2);
+					var sivc = new ItemStateMultiChannelWrapper(sisc, sis2);
 					yield return sivc;
 				}
 			}
