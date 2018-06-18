@@ -37,7 +37,7 @@ namespace eScapeLLC.UWP.Charts {
 			/// Create the item data.
 			/// </summary>
 			/// <returns>New instance.</returns>
-			ISeriesItem Unwrap();
+			ISeriesItem Wrap();
 		}
 		/// <summary>
 		/// The item state.
@@ -56,9 +56,9 @@ namespace eScapeLLC.UWP.Charts {
 			/// </summary>
 			public double PlacementAngle { get; set; }
 			/// <summary>
-			/// See <see cref="ISeriesItemCommon.Unwrap"/>.
+			/// See <see cref="ISeriesItemCommon.Wrap"/>.
 			/// </summary>
-			public ISeriesItem Unwrap() {
+			public ISeriesItem Wrap() {
 				var sis2 = new ISeriesItemValue[2];
 				sis2[0] = new ChannelItemState(Index, XValue, XOffset, Value, PlacementAngle, RADIUS / 2, Element, 0);
 				sis2[1] = new ChannelItemState(Index, XValue, XOffset, Percent, PlacementAngle, RADIUS / 2, Element, 1);
@@ -84,9 +84,9 @@ namespace eScapeLLC.UWP.Charts {
 			/// </summary>
 			public double PlacementAngle { get; set; }
 			/// <summary>
-			/// See <see cref="ISeriesItemCommon.Unwrap"/>.
+			/// See <see cref="ISeriesItemCommon.Wrap"/>.
 			/// </summary>
-			public ISeriesItem Unwrap() {
+			public ISeriesItem Wrap() {
 				var sis2 = new ISeriesItemValue[2];
 				sis2[0] = new ChannelItemState_Custom(Index, XValue, XOffset, Value, PlacementAngle, RADIUS / 2, CustomValue, Element, 0);
 				sis2[1] = new ChannelItemState_Custom(Index, XValue, XOffset, Percent, PlacementAngle, RADIUS / 2, CustomValue, Element, 1);
@@ -154,7 +154,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Provide item values.
 		/// </summary>
-		public IEnumerable<ISeriesItem> SeriesItemValues => UnwrapItemState(ItemState.AsReadOnly());
+		public IEnumerable<ISeriesItem> SeriesItemValues => WrapItemState(ItemState.AsReadOnly());
 		/// <summary>
 		/// The current set of legend items.
 		/// </summary>
@@ -208,10 +208,10 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region helpers
-		IEnumerable<ISeriesItem> UnwrapItemState(IEnumerable<ItemState<Path>> siss) {
+		IEnumerable<ISeriesItem> WrapItemState(IEnumerable<ItemState<Path>> siss) {
 			foreach (var state in siss) {
 				if (state is ISeriesItemCommon sis) {
-					yield return sis.Unwrap();
+					yield return sis.Wrap();
 				}
 			}
 		}
