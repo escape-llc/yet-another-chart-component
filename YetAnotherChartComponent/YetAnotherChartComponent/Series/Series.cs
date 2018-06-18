@@ -44,7 +44,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="ncca">Passed to args.</param>
 		/// <param name="startAt">Passed to args.</param>
 		/// <param name="reproc">Passed to args.</param>
-		protected void RaiseItemsUpdated(EventHandler<SeriesItemUpdateEventArgs> eh, IChartRenderContext icrc, NotifyCollectionChangedAction ncca, int startAt, List<ItemState<Path>> reproc) {
+		protected void RaiseItemsUpdated(EventHandler<SeriesItemUpdateEventArgs> eh, IChartRenderContext icrc, NotifyCollectionChangedAction ncca, int startAt, IEnumerable<ISeriesItem> reproc) {
 			try {
 				var args = new SeriesItemUpdateEventArgs(icrc, ncca, startAt, reproc);
 				eh?.Invoke(this, args);
