@@ -10,7 +10,6 @@ using System.Windows.Input;
 using Windows.ApplicationModel;
 using Windows.Data.Json;
 using Windows.UI.Core;
-using Windows.UI.Xaml.Controls;
 using Yacc.Demo.Pages;
 
 namespace Yacc.Demo.VM {
@@ -135,7 +134,7 @@ namespace Yacc.Demo.VM {
 		}
 	}
 	#endregion
-	#region TimedObservationsVM
+	#region Observation2
 	/// <summary>
 	/// Simple extension to hold more values.
 	/// </summary>
@@ -208,23 +207,13 @@ namespace Yacc.Demo.VM {
 			Changed(nameof(Data));
 		}
 	}
+	#endregion
+	#region TimedObservationsCore
 	/// <summary>
-	/// This VM demonstrates how to use a NOT observable collection, to avoid extra "churn" caused by individual add/remove operations.
-	/// This also allows the path recycling to stabilize once chart reaches Window Size elements.
+	/// Common base for VMs that add elements based on a timer.
 	/// </summary>
-	public class TimedObservationsVM : CoreViewModel, IRequireRefresh, IRequireRelease {
-		readonly Random rnd = new Random();
-		/// <summary>
-		/// In this VM, the group counter is bound to the DataSource.ExternalRefresh DP.
-		/// Whenever the list is done changing, an <see cref="INotifyPropertyChanged"/> is triggered.
-		/// NOTE that we are in manual control of when that happens (see <see cref="TimerCallback"/>)
-		/// </summary>
-		public int GroupCounter { get; private set; }
-		/// <summary>
-		/// The list of data.
-		/// NOTE this does NOT implement <see cref="INotifyCollectionChanged"/>.
-		/// </summary>
-		public List<Observation2> Data { get; private set; }
+	public abstract class TimedObservationsCore : CoreViewModel, IRequireRefresh, IRequireRelease {
+		protected readonly Random rnd = new Random();
 		/// <summary>
 		/// Command to toggle the timer.
 		/// </summary>
@@ -237,15 +226,14 @@ namespace Yacc.Demo.VM {
 		/// Size to maintain the collection at.
 		/// </summary>
 		public int WindowSize { get; set; } = 30;
+		/// <summary>
+		/// Reflects state of timer.
+		/// </summary>
 		public bool IsRunning { get; private set; }
 		protected Timer Timer { get; set; }
-		public TimedObservationsVM(CoreDispatcher dx) :this(dx, new List<Observation2>()) {}
-		public TimedObservationsVM(CoreDispatcher dx, List<Observation2> data) :base(dx) {
-			Data = data;
+		public TimedObservationsCore(CoreDispatcher dx) : base(dx) {
 			Toggle = new DelegateCommand((ox) => { if (IsRunning) StopTimer(); else StartTimer(); }, (ox) => true);
-			GroupCounter = Data.Count;
 		}
-		public void ResetCounter() { GroupCounter = 0; }
 		void StartTimer() {
 			try {
 				if (Timer == null) {
@@ -253,8 +241,7 @@ namespace Yacc.Demo.VM {
 				} else {
 					Timer.Change(Speed, Speed);
 				}
-			}
-			finally {
+			} finally {
 				IsRunning = true;
 				Changed(nameof(IsRunning));
 			}
@@ -262,34 +249,33 @@ namespace Yacc.Demo.VM {
 		void StopTimer() {
 			try {
 				if (Timer != null) Timer.Change(Timeout.Infinite, Timeout.Infinite);
-			}
-			finally {
+			} finally {
 				IsRunning = false;
 				Changed(nameof(IsRunning));
 			}
 		}
-		protected async void TimerCallback(object ox) {
-			await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, ()=> {
-				RemoveHead();
-				AddTail();
-				// Since we're not using ObservableCollection, we MUST trigger a refresh when we're done changing the list
-				Changed(nameof(GroupCounter));
-			});
-		}
-		void AddTail() {
-			GroupCounter++;
-			var v1 =  4 + .5 - rnd.NextDouble();
+		/// <summary>
+		/// Fabricate the "next" observation.
+		/// </summary>
+		/// <param name="label"></param>
+		/// <returns></returns>
+		protected Observation2 Next(string label) {
+			var v1 = 4 + .5 - rnd.NextDouble();
 			var v2 = 3 + .5 - rnd.NextDouble();
 			var v3 = -2 + .5 - rnd.NextDouble();
 			var v4 = -4 + .5 - rnd.NextDouble();
 			var v5 = 10 * rnd.NextDouble();
-			var obs = new Observation2($"[{GroupCounter}]", v1, v2, v3, v4, (int)v5);
-			Data.Add(obs);
+			var obs = new Observation2(label, v1, v2, v3, v4, (int)v5);
+			return obs;
 		}
-		void RemoveHead() {
-			if (Data.Count > WindowSize) {
-				Data.RemoveAt(0);
-			}
+		/// <summary>
+		/// Do the stuff when the timer tick goes off.
+		/// </summary>
+		protected abstract void DoTimerCallback();
+		async void TimerCallback(object ox) {
+			await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+				DoTimerCallback();
+			});
 		}
 		async Task IRequireRefresh.RefreshAsync() {
 			await Task.Delay(500);
@@ -297,9 +283,92 @@ namespace Yacc.Demo.VM {
 		}
 		void IRequireRelease.Release() {
 			try {
-				if(Timer != null) Timer.Dispose();
+				if (Timer != null) Timer.Dispose();
 			} finally {
 				Timer = null;
+			}
+		}
+	}
+	#endregion
+	#region TimedObservationsVM
+	/// <summary>
+	/// This VM demonstrates how to use a NOT <see cref="ObservableCollection{T}"/>, and leverages the <see cref="DataSource.ExternalRefresh"/> mechanism.
+	/// Path recycling stabilizes once chart reaches <see cref="WindowSize"/> elements.
+	/// </summary>
+	public class TimedObservationsVM : TimedObservationsCore {
+		/// <summary>
+		/// In this VM, the group counter is bound to the <see cref="DataSource.ExternalRefresh"/> DP.
+		/// Whenever the list is done changing, an <see cref="INotifyPropertyChanged"/> is triggered.
+		/// <para/>
+		/// NOTE that we are in manual control of when that happens (see <see cref="DoTimerCallback"/>)
+		/// </summary>
+		public int GroupCounter { get; private set; }
+		/// <summary>
+		/// The list of data.
+		/// NOTE this DOES NOT implement <see cref="INotifyCollectionChanged"/>.
+		/// </summary>
+		public List<Observation2> Data { get; private set; }
+		public TimedObservationsVM(CoreDispatcher dx) :this(dx, new List<Observation2>()) {}
+		public TimedObservationsVM(CoreDispatcher dx, List<Observation2> data) :base(dx) {
+			Data = data;
+			GroupCounter = Data.Count;
+		}
+		public void ResetCounter() { GroupCounter = 0; }
+		/// <summary>
+		/// Since we're NOT using <see cref="ObservableCollection{T}"/>, we MUST trigger a refresh when we're done changing the list!
+		/// </summary>
+		protected override void DoTimerCallback() {
+			RemoveHead();
+			AddTail();
+			Changed(nameof(GroupCounter));
+		}
+		void AddTail() {
+			GroupCounter++;
+			var obs = Next($"[{GroupCounter}]");
+			Data.Add(obs);
+		}
+		void RemoveHead() {
+			if (Data.Count > WindowSize) {
+				Data.RemoveAt(0);
+			}
+		}
+	}
+	#endregion
+	#region TimedObservations2VM
+	/// <summary>
+	/// This version uses <see cref="ObservableCollection{T}"/> and leverages the incremental update features of <see cref="Chart"/> and <see cref="DataSource"/>.
+	/// </summary>
+	public class TimedObservations2VM : TimedObservationsCore {
+		/// <summary>
+		/// In this VM, the group counter is NOT bound to the DataSource.ExternalRefresh DP.
+		/// This is only used for creating value labels.
+		/// </summary>
+		public int GroupCounter { get; private set; }
+		/// <summary>
+		/// The list of data.
+		/// NOTE this DOES implement <see cref="INotifyCollectionChanged"/>.
+		/// </summary>
+		public ObservableCollection<Observation2> Data { get; private set; }
+		public TimedObservations2VM(CoreDispatcher dx) : this(dx, new List<Observation2>()) { }
+		public TimedObservations2VM(CoreDispatcher dx, List<Observation2> data) : base(dx) {
+			Data = new ObservableCollection<Observation2>(data);
+			GroupCounter = Data.Count;
+		}
+		public void ResetCounter() { GroupCounter = 0; }
+		/// <summary>
+		/// Since we ARE using <see cref="ObservableCollection{T}"/>, nothing else required!
+		/// </summary>
+		protected override void DoTimerCallback() {
+			RemoveHead();
+			AddTail();
+		}
+		void AddTail() {
+			var obs = Next($"[{GroupCounter++}]");
+			Data.Add(obs);
+		}
+		void RemoveHead() {
+			if (Data.Count > WindowSize) {
+				Data.RemoveAt(0);
 			}
 		}
 	}
