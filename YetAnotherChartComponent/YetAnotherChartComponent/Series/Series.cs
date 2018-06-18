@@ -1,7 +1,10 @@
-﻿using System;
+﻿using eScape.Core;
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using Windows.UI.Xaml;
+using Windows.UI.Xaml.Shapes;
 
 namespace eScapeLLC.UWP.Charts {
 	#region DataSeries
@@ -12,6 +15,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// The <see cref="Chart"/> class keys on this class for certain render pipeline phases.
 	/// </summary>
 	public abstract class DataSeries : ChartComponent {
+		static LogTools.Flag _trace = LogTools.Add("DataSeries", LogTools.Level.Error);
 		#region DPs
 		/// <summary>
 		/// Identifies <see cref="DataSourceName"/> dependency property.
@@ -32,6 +36,25 @@ namespace eScapeLLC.UWP.Charts {
 		public bool ClipToDataRegion { get; set; } = true;
 		#endregion
 		#region helpers
+		/// <summary>
+		/// Invoke the items update event, trapping and reporting any <see cref="Exception"/> via <see cref="IChartErrorInfo"/>.
+		/// </summary>
+		/// <param name="eh">The event handler to invoke.</param>
+		/// <param name="icrc">Passed to args.</param>
+		/// <param name="ncca">Passed to args.</param>
+		/// <param name="startAt">Passed to args.</param>
+		/// <param name="reproc">Passed to args.</param>
+		protected void RaiseItemsUpdated(EventHandler<SeriesItemUpdateEventArgs> eh, IChartRenderContext icrc, NotifyCollectionChangedAction ncca, int startAt, List<ItemState<Path>> reproc) {
+			try {
+				var args = new SeriesItemUpdateEventArgs(icrc, ncca, startAt, reproc);
+				eh?.Invoke(this, args);
+			} catch (Exception ex) {
+				_trace.Error($"{NameOrType()} SeriesItemUpdate({ncca}).unhandled: {ex.Message}");
+				if (icrc is IChartErrorInfo icei) {
+					icei.Report(new ChartValidationResult(NameOrType(), $"SeriesItemUpdate({ncca}) failed: {ex.Message}"));
+				}
+			}
+		}
 		/// <summary>
 		/// Provide a readable name for DP update diagnostics.
 		/// </summary>
