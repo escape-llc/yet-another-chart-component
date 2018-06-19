@@ -35,6 +35,8 @@ Please check out the [Wiki](../../wiki) to learn more about the guts of YACC and
 Please consult the [other](../../issues) [features](../../projects) of this github repository to find out the current state of affairs, [*or to contribute*](../../pulls).
 
 # Nuget Releases
+[![NuGet version](https://badge.fury.io/nu/escapellc.uwp.charts.svg)](https://badge.fury.io/nu/escapellc.uwp.charts)
+
 ## 1.5.0
 More features and fixes.  Contains *breaking changes* so be sure to check the milestone page!
 
