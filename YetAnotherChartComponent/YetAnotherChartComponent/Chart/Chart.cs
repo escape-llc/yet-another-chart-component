@@ -426,6 +426,7 @@ namespace eScapeLLC.UWP.Charts {
 						// force this dirty so it refreshes
 						ds.IsDirty = true;
 					}
+					ds.RefreshRequest -= DataSource_RefreshRequest;
 					ds.RefreshRequest += DataSource_RefreshRequest;
 					ds.DataContext = DataContext;
 				}
@@ -451,6 +452,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (nccea.NewItems != null) {
 				foreach (ChartComponent cc in nccea.NewItems) {
 					_trace.Verbose($"enter '{cc.Name}' {cc}");
+					cc.RefreshRequest -= ChartComponent_RefreshRequest;
 					cc.RefreshRequest += ChartComponent_RefreshRequest;
 					cc.DataContext = DataContext;
 					if(Surface != null)  {
@@ -779,6 +781,7 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			if(cc is IProvideLegendDynamic ipld) {
 				// attach the event
+				ipld.LegendChanged -= Ipld_LegendChanged;
 				ipld.LegendChanged += Ipld_LegendChanged;
 			}
 			// axis and DSRP are mutually-exclusive
