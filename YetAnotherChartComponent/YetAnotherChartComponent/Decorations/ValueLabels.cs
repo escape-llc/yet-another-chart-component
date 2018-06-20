@@ -1,5 +1,4 @@
-﻿#undef COMPOSITION_ENABLED
-using eScape.Core;
+﻿using eScape.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -163,6 +162,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public IValueConverter LabelSelector { get; set; }
 		/// <summary>
+		/// Whether to create layer with composition animations enabled.
+		/// </summary>
+		public bool UseImplicitAnimations { get; set; }
+		/// <summary>
 		/// Dereferenced value axis.
 		/// </summary>
 		protected IChartAxis ValueAxis { get; set; }
@@ -282,6 +285,16 @@ namespace eScapeLLC.UWP.Charts {
 			}
 		}
 		/// <summary>
+		/// Undo any bookkeeping done in <see cref="ElementPipeline"/>.
+		/// </summary>
+		/// <param name="fes"></param>
+		protected void TeardownElements(IEnumerable<FrameworkElement> fes) {
+			foreach (var fe in fes) {
+				fe.DataContext = null;
+				fe.SizeChanged -= Element_SizeChanged;
+			}
+		}
+		/// <summary>
 		/// Get the transform from <see cref="IProvideCustomTransform"/>, or based on axes, whichever hits first.
 		/// If there's no <see cref="ValueAxis"/> return Identity matrix.
 		/// </summary>
@@ -318,11 +331,7 @@ namespace eScapeLLC.UWP.Charts {
 				// connect the shim to template root element's Visibility
 				BindTo(shim, nameof(Visibility), fe, UIElement.VisibilityProperty);
 				fe.DataContext = shim;
-				fe.SizeChanged -= Element_SizeChanged;
 				fe.SizeChanged += Element_SizeChanged;
-#if COMPOSITION_ENABLED
-				UniversalApiContract.v3.CompositionSupport.AttachAnimations(fe);
-#endif
 			}
 			return fe;
 		}
@@ -483,6 +492,7 @@ namespace eScapeLLC.UWP.Charts {
 			foreach (var itx in ItemState.Where(ix => ix.Index >= startAt)) {
 				itx.UpdatePlacement(PlacementOffset, CategoryAxisOffset);
 			}
+			TeardownElements(reproc.Select(xx => xx.Element));
 			Layer.Remove(reproc.Select(xx => xx.Element));
 			// everything else will re-calc in Transforms()
 		}
@@ -538,6 +548,7 @@ namespace eScapeLLC.UWP.Charts {
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			EnsureComponents(icelc as IChartComponentContext);
 			Layer = icelc.CreateLayer();
+			Layer.UseImplicitAnimations = UseImplicitAnimations;
 			AssignFromRef(icelc as IChartErrorInfo, NameOrType(), nameof(LabelStyle), nameof(Theme.LabelAxisTop),
 				LabelStyle == null, Theme != null, Theme.LabelAxisTop != null,
 				() => LabelStyle = Theme.LabelAxisTop
@@ -587,6 +598,7 @@ namespace eScapeLLC.UWP.Charts {
 				}
 				// postamble
 				ItemState = itemstate;
+				TeardownElements(recycler.Unused);
 				Layer.Remove(recycler.Unused);
 				Layer.Add(recycler.Created);
 				Dirty = false;
