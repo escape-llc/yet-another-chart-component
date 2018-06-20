@@ -146,32 +146,42 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public interface IChartLayer {
 		/// <summary>
+		/// Control the state of implicit composition animations.
+		/// </summary>
+		bool UseImplicitAnimations { get; set; }
+		/// <summary>
 		/// Add content.
+		/// MUST be called from UI thread.
 		/// </summary>
 		/// <param name="fe">Element to add.</param>
 		void Add(FrameworkElement fe);
 		/// <summary>
 		/// Remove content.
+		/// MUST be called from UI thread.
 		/// </summary>
 		/// <param name="fe">Element to remove.</param>
 		void Remove(FrameworkElement fe);
 		/// <summary>
 		/// Add group of elements.
+		/// MUST be called from UI thread.
 		/// </summary>
 		/// <param name="fes"></param>
 		void Add(IEnumerable<FrameworkElement> fes);
 		/// <summary>
 		/// Remove group of elements.
+		/// MUST be called from UI thread.
 		/// </summary>
 		/// <param name="fes"></param>
 		void Remove(IEnumerable<FrameworkElement> fes);
 		/// <summary>
 		/// Position the layer.
+		/// MUST be called from UI thread.
 		/// </summary>
 		/// <param name="target"></param>
 		void Layout(Rect target);
 		/// <summary>
 		/// Remove all the components this layer knows about.
+		/// MUST be called from UI thread.
 		/// </summary>
 		void Clear();
 	}
