@@ -1,4 +1,4 @@
-﻿#define COMPOSITION_ENABLED
+﻿#undef COMPOSITION_ENABLED
 using eScape.Core;
 using System;
 using System.Collections.Generic;
@@ -318,6 +318,7 @@ namespace eScapeLLC.UWP.Charts {
 				// connect the shim to template root element's Visibility
 				BindTo(shim, nameof(Visibility), fe, UIElement.VisibilityProperty);
 				fe.DataContext = shim;
+				fe.SizeChanged -= Element_SizeChanged;
 				fe.SizeChanged += Element_SizeChanged;
 #if COMPOSITION_ENABLED
 				UniversalApiContract.v3.CompositionSupport.AttachAnimations(fe);
