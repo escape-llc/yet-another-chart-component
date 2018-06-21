@@ -1,7 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Reflection;
 using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Media.Animation;
 
 namespace eScapeLLC.UWP.Charts {
 	#region layer implementations
@@ -9,7 +12,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Base implementation for <see cref="IChartLayer"/> that uses a <see cref="Canvas"/>.
 	/// </summary>
-	public abstract class CanvasLayerCore : IChartLayer {
+	public abstract class CanvasLayerCore : IChartLayer, IChartLayerAnimation {
 		#region data
 		/// <summary>
 		/// Access to the <see cref="Canvas"/>.
@@ -25,17 +28,26 @@ namespace eScapeLLC.UWP.Charts {
 			this.canvas = canvas;
 		}
 		#endregion
+		#region helpers
+		#endregion
 		#region extension points
 		/// <summary>
 		/// Add element with assign z-index.
 		/// </summary>
 		/// <param name="fe"></param>
 		protected virtual void InternalAdd(FrameworkElement fe) {
-			if((this as IChartLayer).UseImplicitAnimations) {
-				UniversalApiContract.v3.CompositionSupport.AttachAnimations(fe, 1000);
-				UniversalApiContract.v4.CompositionSupport.AttachAnimations(fe, 2000);
+			var sb = default(Storyboard);
+			if(this is IChartLayerAnimation icla) {
+				if(icla.UseImplicitAnimations) {
+					UniversalApiContract.v3.CompositionSupport.AttachAnimations(fe, 1000);
+					if (icla.Enter == null) {
+						UniversalApiContract.v4.CompositionSupport.AttachAnimations(fe, 2000);
+					}
+				}
+				sb = icla.Enter.Clone(fe);
 			}
 			canvas.Children.Add(fe);
+			sb?.Begin();
 		}
 		/// <summary>
 		/// Add elements with assign z-index.
@@ -48,15 +60,29 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="target">Location in PX.</param>
 		protected abstract void InternalLayout(Rect target);
 		/// <summary>
-		/// Remove element and detach animations.
+		/// Remove element and call <see cref="PostRemove"/>.
+		/// If there's a <see cref="Storyboard"/> in effect, waits until that is done playing before remove.
 		/// </summary>
 		/// <param name="fe"></param>
 		protected virtual void InternalRemove(FrameworkElement fe) {
-			canvas.Children.Remove(fe);
-			PostRemove(fe);
+			var sb = default(Storyboard);
+			if (this is IChartLayerAnimation icla) {
+				sb = icla.Leave.Clone(fe);
+				if (sb != null) {
+					sb.Completed += (sender, e) => {
+						canvas.Children.Remove(fe);
+						PostRemove(fe);
+					};
+					sb.Begin();
+				}
+			}
+			if(sb == null) {
+				canvas.Children.Remove(fe);
+				PostRemove(fe);
+			}
 		}
 		/// <summary>
-		/// Any actions to perform as element leaves VT.
+		/// Any actions to perform AFTER element has left VT.
 		/// Called from <see cref="InternalClear"/> and <see cref="InternalRemove(FrameworkElement)"/>.
 		/// </summary>
 		/// <param name="fe"></param>
@@ -85,8 +111,12 @@ namespace eScapeLLC.UWP.Charts {
 			}
 		}
 		#endregion
+		#region IChartLayerAnimation
+		bool IChartLayerAnimation.UseImplicitAnimations { get; set; }
+		Storyboard IChartLayerAnimation.Enter { get; set; }
+		Storyboard IChartLayerAnimation.Leave { get; set; }
+		#endregion
 		#region IChartLayer
-		bool IChartLayer.UseImplicitAnimations { get; set; }
 		void IChartLayer.Add(FrameworkElement fe) { InternalAdd(fe); }
 		void IChartLayer.Add(IEnumerable<FrameworkElement> fes) { InternalAdd(fes); }
 		void IChartLayer.Layout(Rect target) { InternalLayout(target); }
