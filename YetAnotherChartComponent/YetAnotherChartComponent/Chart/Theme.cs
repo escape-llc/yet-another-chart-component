@@ -75,6 +75,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// It SHOULD be configured to accept a <see cref="DataTemplateShim"/> as its <see cref="FrameworkElement.DataContext"/>.
 		/// </summary>
 		DataTemplate TextBlockTemplate { get; }
+		/// <summary>
+		/// Data template for "default" series item containers.
+		/// MUST be a Path at the ROOT.
+		/// </summary>
+		DataTemplate PathTemplate { get; }
 		#endregion
 		#region Storyboards
 		/// <summary>
@@ -174,6 +179,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// Template for text blocks.
 		/// </summary>
 		public DataTemplate TextBlockTemplate { get { return (DataTemplate)GetValue(TextBlockTemplateProperty); } set { SetValue(TextBlockTemplateProperty, value); } }
+		/// <summary>
+		/// Data template for "default" series item containers.
+		/// MUST be a Path.
+		/// </summary>
+		public DataTemplate PathTemplate { get { return (DataTemplate)GetValue(PathTemplateProperty); } set { SetValue(PathTemplateProperty, value); } }
 		#endregion
 		#region Storyboards
 		/// <summary>
@@ -238,6 +248,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// Identifies <see cref="TextBlockTemplate"/> DP.
 		/// </summary>
 		public static readonly DependencyProperty TextBlockTemplateProperty = DependencyProperty.Register(nameof(TextBlockTemplate), typeof(DataTemplate), typeof(ChartTheme), new PropertyMetadata(null));
+		/// <summary>
+		/// Identifies <see cref="PathTemplate"/> DP.
+		/// </summary>
+		public static readonly DependencyProperty PathTemplateProperty = DependencyProperty.Register(nameof(PathTemplate), typeof(DataTemplate), typeof(ChartTheme), new PropertyMetadata(null));
 		/// <summary>
 		/// Identifies <see cref="EnterAnimation"/> DP.
 		/// </summary>

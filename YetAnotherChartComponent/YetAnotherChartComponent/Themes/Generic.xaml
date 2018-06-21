@@ -61,6 +61,13 @@
 	<DataTemplate x:Key="TextBlock">
 		<TextBlock Text="{Binding Text}"/>
 	</DataTemplate>
+	<DataTemplate x:Key="Path">
+		<Path RenderTransformOrigin=".5,.5">
+			<Path.RenderTransform>
+				<ScaleTransform ScaleX="1" ScaleY="1"/>
+			</Path.RenderTransform>
+		</Path>
+	</DataTemplate>
 	<Storyboard x:Key="Enter">
 		<DoubleAnimation
 			Storyboard.TargetProperty="Opacity"
@@ -85,6 +92,7 @@
 		PathHorizontalRule="{ThemeResource Rule}"
 		PathHorizontalBand="{ThemeResource Band_Fill}"
 		TextBlockTemplate="{ThemeResource TextBlock}"
+		PathTemplate="{ThemeResource Path}"
 		EnterAnimation="{ThemeResource Enter}"
 		LeaveAnimation="{ThemeResource Leave}"
 	/>
