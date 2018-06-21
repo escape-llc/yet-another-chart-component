@@ -136,6 +136,7 @@
     <Compile Include="Series\StackedColumnSeries.cs" />
     <Compile Include="Decorations\ValueLabels.cs" />
     <Compile Include="Series\State.cs" />
+    <Compile Include="Support\Storyboard.cs" />
     <Compile Include="Support\Style.cs" />
     <Compile Include="Chart\Theme.cs" />
     <Compile Include="Axis\ValueAxis.cs" />
