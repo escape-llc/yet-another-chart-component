@@ -47,6 +47,7 @@ namespace eScapeLLC.UWP.Charts {
 				animation.InsertKeyFrame(1f, 0f);
 			}
 			animation.Duration = TimeSpan.FromMilliseconds(duration);
+			animation.DelayBehavior = AnimationDelayBehavior.SetInitialValueBeforeDelay;
 			var animationGroup = compositor.CreateAnimationGroup();
 			animationGroup.Add(animation);
 			return animation;
@@ -104,7 +105,7 @@ namespace eScapeLLC.UWP.Charts.UniversalApiContract.v3 {
 		/// <summary>
 		/// Get whether we have API support.
 		/// </summary>
-		public static bool IsSupported { get; } = ApiInformation.IsApiContractPresent(CONTRACT, VERSION);
+		public static bool IsSupported => ApiInformation.IsApiContractPresent(CONTRACT, VERSION);
 		#endregion
 		#region external (MUST check CONTRACT)
 		/// <summary>
@@ -115,13 +116,12 @@ namespace eScapeLLC.UWP.Charts.UniversalApiContract.v3 {
 		/// <param name="duration">Duration in MS.</param>
 		public static void AttachAnimations(UIElement uix, int duration) {
 			if (!IsSupported) return;
-			var elementVisual = ElementCompositionPreview.GetElementVisual(uix);
-			var compositor = elementVisual.Compositor;
-			var elementImplicitAnimation = compositor.CreateImplicitAnimationCollection();
-			// Define trigger and animation to play when the trigger is fired.
+			var ev = ElementCompositionPreview.GetElementVisual(uix);
+			var compositor = ev.Compositor;
+			var collection = compositor.CreateImplicitAnimationCollection();
 			var prop = nameof(Visual.Offset);
-			elementImplicitAnimation[prop] = compositor.CreateOffsetAnimation(prop, duration);
-			elementVisual.ImplicitAnimations = elementImplicitAnimation;
+			collection[prop] = compositor.CreateOffsetAnimation(prop, duration);
+			ev.ImplicitAnimations = collection;
 		}
 		/// <summary>
 		/// Detach implicit animations from given element.
@@ -155,11 +155,7 @@ namespace eScapeLLC.UWP.Charts.UniversalApiContract.v4 {
 		/// <summary>
 		/// Get whether we have API support.
 		/// </summary>
-		public static bool IsSupported { get; } = ApiInformation.IsApiContractPresent(CONTRACT, VERSION);
-		/// <summary>
-		/// Globally set the duration of the offset animation.
-		/// </summary>
-		public static int AnimationDuration { get; set; } = 3250;
+		public static bool IsSupported => ApiInformation.IsApiContractPresent(CONTRACT, VERSION);
 		#endregion
 		#region external (MUST check CONTRACT)
 		/// <summary>
@@ -167,13 +163,13 @@ namespace eScapeLLC.UWP.Charts.UniversalApiContract.v4 {
 		/// Creates new instances of everything.
 		/// </summary>
 		/// <param name="uix"></param>
-		public static void AttachAnimations(UIElement uix) {
+		/// <param name="duration">Fade duration in MS.</param>
+		public static void AttachAnimations(UIElement uix, int duration) {
 			if (!IsSupported) return;
-			var elementVisual = ElementCompositionPreview.GetElementVisual(uix);
-			var compositor = elementVisual.Compositor;
-			var show = compositor.CreateOpacityAnimation(true, AnimationDuration);
+			var compositor = ElementCompositionPreview.GetElementVisual(uix).Compositor;
+			var show = compositor.CreateOpacityAnimation(true, duration);
 			ElementCompositionPreview.SetImplicitShowAnimation(uix, show);
-			var hide = compositor.CreateOpacityAnimation(false, AnimationDuration);
+			var hide = compositor.CreateOpacityAnimation(false, duration);
 			ElementCompositionPreview.SetImplicitHideAnimation(uix, hide);
 		}
 		/// <summary>
@@ -182,7 +178,7 @@ namespace eScapeLLC.UWP.Charts.UniversalApiContract.v4 {
 		/// <param name="uix"></param>
 		public static void DetachAnimations(UIElement uix) {
 			if (!IsSupported) return;
-			var elementVisual = ElementCompositionPreview.GetElementVisual(uix);
+			//var elementVisual = ElementCompositionPreview.GetElementVisual(uix);
 			ElementCompositionPreview.SetImplicitShowAnimation(uix, null);
 			ElementCompositionPreview.SetImplicitHideAnimation(uix, null);
 		}
