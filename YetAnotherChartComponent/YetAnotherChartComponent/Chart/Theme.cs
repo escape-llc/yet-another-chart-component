@@ -1,5 +1,6 @@
 ﻿using System;
 using Windows.UI.Xaml;
+using Windows.UI.Xaml.Media.Animation;
 
 namespace eScapeLLC.UWP.Charts {
 	#region IChartTheme
@@ -74,6 +75,16 @@ namespace eScapeLLC.UWP.Charts {
 		/// It SHOULD be configured to accept a <see cref="DataTemplateShim"/> as its <see cref="FrameworkElement.DataContext"/>.
 		/// </summary>
 		DataTemplate TextBlockTemplate { get; }
+		#endregion
+		#region Storyboards
+		/// <summary>
+		/// Storyboard for "enter" chart.
+		/// </summary>
+		Storyboard EnterAnimation { get; }
+		/// <summary>
+		/// Storyboard for "leave" chart.
+		/// </summary>
+		Storyboard LeaveAnimation { get; }
 		#endregion
 	}
 	#endregion
@@ -164,6 +175,16 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public DataTemplate TextBlockTemplate { get { return (DataTemplate)GetValue(TextBlockTemplateProperty); } set { SetValue(TextBlockTemplateProperty, value); } }
 		#endregion
+		#region Storyboards
+		/// <summary>
+		/// Storyboard for "enter" chart.
+		/// </summary>
+		public Storyboard EnterAnimation { get { return (Storyboard)GetValue(EnterAnimationProperty); } set { SetValue(EnterAnimationProperty, value); } }
+		/// <summary>
+		/// Storyboard for "leave" chart.
+		/// </summary>
+		public Storyboard LeaveAnimation { get { return (Storyboard)GetValue(LeaveAnimationProperty); } set { SetValue(LeaveAnimationProperty, value); } }
+		#endregion
 		#region DPs
 		/// <summary>
 		/// Identifies <see cref="LabelAxisLeft"/> DP.
@@ -217,6 +238,14 @@ namespace eScapeLLC.UWP.Charts {
 		/// Identifies <see cref="TextBlockTemplate"/> DP.
 		/// </summary>
 		public static readonly DependencyProperty TextBlockTemplateProperty = DependencyProperty.Register(nameof(TextBlockTemplate), typeof(DataTemplate), typeof(ChartTheme), new PropertyMetadata(null));
+		/// <summary>
+		/// Identifies <see cref="EnterAnimation"/> DP.
+		/// </summary>
+		public static readonly DependencyProperty EnterAnimationProperty = DependencyProperty.Register(nameof(EnterAnimation), typeof(Storyboard), typeof(ChartTheme), new PropertyMetadata(null));
+		/// <summary>
+		/// Identifies <see cref="LeaveAnimation"/> DP.
+		/// </summary>
+		public static readonly DependencyProperty LeaveAnimationProperty = DependencyProperty.Register(nameof(LeaveAnimation), typeof(Storyboard), typeof(ChartTheme), new PropertyMetadata(null));
 		#endregion
 	}
 	#endregion

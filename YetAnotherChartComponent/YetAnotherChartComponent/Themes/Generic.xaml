@@ -61,6 +61,16 @@
 	<DataTemplate x:Key="TextBlock">
 		<TextBlock Text="{Binding Text}"/>
 	</DataTemplate>
+	<Storyboard x:Key="Enter">
+		<DoubleAnimation
+			Storyboard.TargetProperty="Opacity"
+			From="0.0" To="1.0" Duration="0:0:0.5"/>
+	</Storyboard>
+	<Storyboard x:Key="Leave">
+		<DoubleAnimation
+			Storyboard.TargetProperty="Opacity"
+			From="1.0" To="0.0" Duration="0:0:0.5"/>
+	</Storyboard>
 	<local:ChartTheme x:Key="DefaultChartTheme" Name="DefaultFromGenericXaml"
 		LabelAxisLeft="{ThemeResource AxisLabel_LEFT}"
 		LabelAxisRight="{ThemeResource AxisLabel_RIGHT}"
@@ -75,13 +85,18 @@
 		PathHorizontalRule="{ThemeResource Rule}"
 		PathHorizontalBand="{ThemeResource Band_Fill}"
 		TextBlockTemplate="{ThemeResource TextBlock}"
+		EnterAnimation="{ThemeResource Enter}"
+		LeaveAnimation="{ThemeResource Leave}"
 	/>
 	<Style TargetType="local:Chart">
 		<Setter Property="Theme" Value="{ThemeResource DefaultChartTheme}"/>
 		<Setter Property="Template">
 			<Setter.Value>
 				<ControlTemplate TargetType="local:Chart">
-					<Canvas x:Name="PART_Canvas" Background="{TemplateBinding Background}" HorizontalAlignment="{TemplateBinding HorizontalAlignment}" VerticalAlignment="{TemplateBinding VerticalAlignment}" />
+					<Canvas x:Name="PART_Canvas"
+						Background="{TemplateBinding Background}"
+						HorizontalAlignment="{TemplateBinding HorizontalAlignment}"
+						VerticalAlignment="{TemplateBinding VerticalAlignment}" />
 				</ControlTemplate>
 			</Setter.Value>
 		</Setter>
