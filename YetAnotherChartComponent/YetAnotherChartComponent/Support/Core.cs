@@ -6,6 +6,7 @@ using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Media;
+using Windows.UI.Xaml.Media.Animation;
 
 namespace eScapeLLC.UWP.Charts {
 	#region AxisType
@@ -146,10 +147,6 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public interface IChartLayer {
 		/// <summary>
-		/// Control the state of implicit composition animations.
-		/// </summary>
-		bool UseImplicitAnimations { get; set; }
-		/// <summary>
 		/// Add content.
 		/// MUST be called from UI thread.
 		/// </summary>
@@ -184,6 +181,23 @@ namespace eScapeLLC.UWP.Charts {
 		/// MUST be called from UI thread.
 		/// </summary>
 		void Clear();
+	}
+	/// <summary>
+	/// Accept animation configuration.
+	/// </summary>
+	public interface IChartLayerAnimation {
+		/// <summary>
+		/// Control the state of implicit composition animations (for Offset).
+		/// </summary>
+		bool UseImplicitAnimations { get; set; }
+		/// <summary>
+		/// Play on entry to VT.
+		/// </summary>
+		Storyboard Enter { get; set; }
+		/// <summary>
+		/// Play on exit, before removing from VT.
+		/// </summary>
+		Storyboard Leave { get; set; }
 	}
 	#endregion
 	#region IChartLayoutContext
