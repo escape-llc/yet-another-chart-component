@@ -21,6 +21,7 @@ namespace eScapeLLC.UWP.Charts {
 					pi.SetValue(clone, pi.GetValue(tl));
 				}
 			}
+			// TODO what about keyframe animations?
 			return clone as Timeline;
 		}
 		/// <summary>
@@ -41,6 +42,10 @@ namespace eScapeLLC.UWP.Charts {
 			};
 			foreach (var tl in sb.Children) {
 				var tclone = tl.Clone();
+				var tname = Storyboard.GetTargetName(tl);
+				if(!String.IsNullOrEmpty(tname)) {
+					Storyboard.SetTargetName(tclone, tname);
+				}
 				Storyboard.SetTargetProperty(tclone, Storyboard.GetTargetProperty(tl));
 				clone.Children.Add(tclone);
 			}
