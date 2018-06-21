@@ -33,7 +33,7 @@ namespace eScapeLLC.UWP.Charts {
 		protected virtual void InternalAdd(FrameworkElement fe) {
 			if((this as IChartLayer).UseImplicitAnimations) {
 				UniversalApiContract.v3.CompositionSupport.AttachAnimations(fe, 1000);
-				UniversalApiContract.v4.CompositionSupport.AttachAnimations(fe);
+				UniversalApiContract.v4.CompositionSupport.AttachAnimations(fe, 2000);
 			}
 			canvas.Children.Add(fe);
 		}
