@@ -75,6 +75,15 @@
 			<Setter Property="FontSize" Value="20"/>
 			<Setter Property="Foreground" Value="Bisque"/>
 		</Style>
+		<!-- This style sets up a transform for the storyboards below -->
+		<Style x:Key="ScaledLabels" BasedOn="{StaticResource BigLabels}" TargetType="TextBlock">
+			<Setter Property="RenderTransformOrigin" Value=".5,.5"/>
+			<Setter Property="RenderTransform">
+				<Setter.Value>
+					<ScaleTransform ScaleX="1" ScaleY="1"/>
+				</Setter.Value>
+			</Setter>
+		</Style>
 		<DataTemplate x:Key="Marker">
 			<GeometryGroup>
 				<EllipseGeometry RadiusX=".5" RadiusY=".5" Center=".5,.5" />
@@ -179,7 +188,7 @@
 					PlacementOffset="0,1" LabelOffset="0,-1" LabelStyle="{StaticResource BigLabels}" />
 				<yacc:ValueLabels SourceName="colv1" LabelFormatString="F2" CategoryAxisOffset=".375"
 					UseImplicitAnimations="True" EnterStoryboard="{StaticResource Enter}" LeaveStoryboard="{StaticResource Leave}"
-					PlacementOffset="0,1" LabelOffset="0,-1" LabelStyle="{StaticResource BigLabels}" />
+					PlacementOffset="0,1" LabelOffset="0,-1" LabelStyle="{StaticResource ScaledLabels}" />
 				<yacc:ValueLabels SourceName="colv1" LabelFormatString="F2" CategoryAxisOffset=".375"
 					PlacementOffset="0,1" LabelOffset="0,1" LabelTemplate="{StaticResource LabelMinMax}"
 					UseImplicitAnimations="True" EnterStoryboard="{StaticResource Enter}" LeaveStoryboard="{StaticResource Leave}"
