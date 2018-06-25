@@ -58,6 +58,13 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public IChartTheme Theme { get; set; }
 		/// <summary>
+		/// Template to use for generated paths.
+		/// If set, this overrides applying <see cref="DataSeriesWithValue.PathStyle"/> (assumed <see cref="Style"/> inside the template).
+		/// If this is not set, then <see cref="IChartTheme.PathTemplate"/> is used and <see cref="DataSeriesWithValue.PathStyle"/> applied (if set).
+		/// If Theme is not set, then <see cref="Path"/> is used (via ctor) and <see cref="DataSeriesWithValue.PathStyle"/> applied (if set).
+		/// </summary>
+		public DataTemplate PathTemplate { get { return (DataTemplate)GetValue(PathTemplateProperty); } set { SetValue(PathTemplateProperty, value); } }
+		/// <summary>
 		/// Fractional offset into the "cell" of the category axis.
 		/// BarOffset + BarWidth &lt;= 1.0
 		/// </summary>
@@ -95,6 +102,12 @@ namespace eScapeLLC.UWP.Charts {
 		Evaluators BindPaths { get; set; }
 		#endregion
 		#region DPs
+		/// <summary>
+		/// Identifies <see cref="PathTemplate"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty PathTemplateProperty = DependencyProperty.Register(
+			nameof(PathTemplate), typeof(DataTemplate), typeof(ColumnSeries), new PropertyMetadata(null)
+		);
 		#endregion
 		#region ctor
 		/// <summary>
