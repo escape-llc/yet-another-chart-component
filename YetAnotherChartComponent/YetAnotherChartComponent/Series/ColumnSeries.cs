@@ -161,7 +161,7 @@ namespace eScapeLLC.UWP.Charts {
 			var path = default(Path);
 			if (PathTemplate != null) {
 				path = PathTemplate.LoadContent() as Path;
-			} else if (Theme.PathTemplate != null) {
+			} else if (Theme?.PathTemplate != null) {
 				path = Theme.PathTemplate.LoadContent() as Path;
 				if (PathStyle != null) {
 					BindTo(this, nameof(PathStyle), path, FrameworkElement.StyleProperty);
