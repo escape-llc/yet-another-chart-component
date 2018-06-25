@@ -15,6 +15,6 @@
 		"PieSeries": "Error",
 		"StackedColumnSeries": "Error",
 		"ValueAxis": "Error",
-		"ValueLabels": "Error"
+		"ValueLabels": "Verbose"
 	}
 }
