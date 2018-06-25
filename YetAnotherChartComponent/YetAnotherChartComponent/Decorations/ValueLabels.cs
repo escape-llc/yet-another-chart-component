@@ -39,8 +39,8 @@ namespace eScapeLLC.UWP.Charts {
 			internal Point Direction { get; private set; }
 			internal Point CanvasLocation { get; private set; }
 			internal object CustomValue { get; private set; }
-			internal SeriesItemState(ISeriesItem isi, ISeriesItemValueDouble isivd, Point loc, Point dir, FrameworkElement ele, object cv)
-			: base(isi, isivd, loc.X, loc.Y, ele) {
+			internal SeriesItemState(ISeriesItem isi, ISeriesItemValueDouble isivd, Point loc, Point dir, object cv)
+			: base(isi, isivd, loc.X, loc.Y, null) {
 				Direction = dir;
 				CustomValue = cv;
 			}
@@ -48,22 +48,27 @@ namespace eScapeLLC.UWP.Charts {
 			/// Set <see cref="CanvasLocation"/> and the canvas properties based on actual size.
 			/// </summary>
 			/// <param name="matx">Use to calculate the new <see cref="CanvasLocation"/>.</param>
-			/// <param name="fe">Use for actual size.</param>
 			/// <param name="offs">Additional offset from <see cref="CanvasLocation"/> in direction of <see cref="Direction"/>.</param>
-			internal void Locate(Matrix matx, FrameworkElement fe, Point offs) {
+			/// <param name="rt">Render type.  Used to trigger invalidation of the element.</param>
+			internal void Locate(Matrix matx, Point offs, RenderType rt) {
 				CanvasLocation = matx.Transform(new Point(XValueAfterOffset, Value));
-				Locate(fe, offs);
+				Locate(offs);
+				if (rt != RenderType.TransformsOnly) {
+					// doing render so (try to) trigger the SizeChanged handler
+					Element.InvalidateMeasure();
+					Element.InvalidateArrange();
+				}
 			}
 			/// <summary>
 			/// Re-locate based on current <see cref="CanvasLocation"/> and actual size.
 			/// </summary>
-			/// <param name="fe">Use for actual size.</param>
 			/// <param name="offs">Additional offset from <see cref="CanvasLocation"/> in direction of <see cref="Direction"/>.</param>
-			internal void Locate(FrameworkElement fe, Point offs) {
-				var hw = fe.ActualWidth / 2;
-				var hh = fe.ActualHeight / 2;
-				fe.SetValue(Canvas.LeftProperty, CanvasLocation.X - hw + hw * offs.X * Direction.X);
-				fe.SetValue(Canvas.TopProperty, CanvasLocation.Y - hh + hh * offs.Y * Direction.Y);
+			internal void Locate(Point offs) {
+				if (Element == null) return;
+				var hw = Element.ActualWidth / 2;
+				var hh = Element.ActualHeight / 2;
+				Element.SetValue(Canvas.LeftProperty, CanvasLocation.X - hw + hw * offs.X * Direction.X);
+				Element.SetValue(Canvas.TopProperty, CanvasLocation.Y - hh + hh * offs.Y * Direction.Y);
 			}
 			/// <summary>
 			/// Recalculate placement values and update state.
@@ -396,6 +401,109 @@ namespace eScapeLLC.UWP.Charts {
 			}
 		}
 		/// <summary>
+		/// Create the state only; defer UI creation.
+		/// </summary>
+		/// <param name="siv">Source.  SHOULD be <see cref="ISeriesItemValueDouble"/>.</param>
+		/// <returns>New instance or NULL.</returns>
+		SeriesItemState CreateState(ISeriesItem siv) {
+			ISeriesItemValueDouble target = ValueFor(siv);
+			if (target != null && !double.IsNaN(target.Value)) {
+				var place = GetPlacement(target, PlacementOffset, CategoryAxisOffset);
+				var cv = target is ISeriesItemValueCustom isivc ? isivc.CustomValue : null;
+				return new SeriesItemState(siv, target, place.Item1, place.Item2, cv);
+			}
+			return null;
+		}
+		/// <summary>
+		/// If <see cref="LabelFormatter"/> and Element are defined, evaluate the formatter
+		/// and apply the results.
+		/// </summary>
+		/// <param name="ipsiv">Used for evaluation context.</param>
+		/// <param name="state">Target state.  The Element MUST be assigned for any effect.</param>
+		void ApplyFormatter(IProvideSeriesItemValues ipsiv, SeriesItemState state) {
+			if (LabelFormatter == null) return;
+			if (state.Element == null) return;
+			var ctx = new SelectorContext(ipsiv, state.ValueSource);
+			// TODO could call for typeof(object) and replace CustomValue
+			var format = LabelFormatter.Convert(ctx, typeof(Tuple<Style, String>), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
+			if (format is Tuple<Style, String> ovx) {
+				if (ovx.Item1 != null) {
+					// TODO use error control because style may not match the template
+					state.Element.Style = ovx.Item1;
+				}
+				if (ovx.Item2 != null) {
+					if (state.Element.DataContext is TextShim ts) {
+						ts.Text = ovx.Item2;
+					}
+				}
+			}
+		}
+		/// <summary>
+		/// If <see cref="LabelSelector"/> is defined, evaluate it and return the results.
+		/// </summary>
+		/// <param name="ipsiv">Used for evaluation context.</param>
+		/// <param name="target">Item value.</param>
+		/// <returns>true: select for label; false: not selected.</returns>
+		bool ApplySelector(IProvideSeriesItemValues ipsiv, ISeriesItemValueDouble target) {
+			if (LabelSelector == null) return true;
+			// apply
+			var ctx = new SelectorContext(ipsiv, target);
+			var ox = LabelSelector.Convert(ctx, typeof(bool), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
+			if (ox is bool bx) {
+				return bx;
+			} else {
+				return ox != null;
+			}
+		}
+		/// <summary>
+		/// Re-evaluate the dynamic logic for given item.
+		/// Directly manipulates item creation and the layer.
+		/// </summary>
+		/// <param name="ipsiv">Used for evaluation context.</param>
+		/// <param name="state">Target state.</param>
+		void UpdateElement(IProvideSeriesItemValues ipsiv, SeriesItemState state) {
+			var createit = ApplySelector(ipsiv, state.ValueSource);
+			// compare decision with current state
+			if(state.Element == null) {
+				if(createit) {
+					// need one
+					var el = CreateElement(state.ValueSource);
+					state.Element = el;
+					ApplyFormatter(ipsiv, state);
+					Layer.Add(el);
+				}
+			} else {
+				if(!createit) {
+					// remove this one
+					Layer.Remove(state.Element);
+					state.Element = null;
+				}
+				else {
+					// just re-style
+					ApplyFormatter(ipsiv, state);
+				}
+			}
+		}
+		/// <summary>
+		/// Re-initialize a recycled element for a new application.
+		/// </summary>
+		/// <param name="target"></param>
+		/// <param name="fe"></param>
+		/// <param name="shim"></param>
+		void RecycleElement(ISeriesItemValueDouble target, FrameworkElement fe, TextShim shim) {
+			// recycling; update values
+			var txt = target.Value.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
+			shim.Visibility = Visibility;
+			shim.Text = txt;
+			if (shim is ObjectShim oshim && target is ISeriesItemValueCustom isivc2) {
+				oshim.CustomValue = isivc2.CustomValue;
+			}
+			// restore binding if we are using a LabelFormatter
+			if (LabelFormatter != null && LabelStyle != null) {
+				BindTo(this, nameof(LabelStyle), fe, FrameworkElement.StyleProperty);
+			}
+		}
+		/// <summary>
 		/// Item state factory method.
 		/// </summary>
 		/// <param name="ipsiv">Used in contexts.</param>
@@ -403,53 +511,17 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="recycler">For element creation.</param>
 		/// <returns>New instance or NULL.</returns>
 		SeriesItemState ElementPipeline(IProvideSeriesItemValues ipsiv, ISeriesItem siv, Recycler<FrameworkElement, ISeriesItemValueDouble> recycler) {
-			ISeriesItemValueDouble target = ValueFor(siv);
-			if (target != null && !double.IsNaN(target.Value)) {
-				var createit = true;
-				if (LabelSelector != null) {
-					// apply LabelSelector
-					var ctx = new SelectorContext(ipsiv, target);
-					var ox = LabelSelector.Convert(ctx, typeof(bool), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
-					if (ox is bool bx) {
-						createit = bx;
-					} else {
-						createit = ox != null;
+			var sis = CreateState(siv);
+			if (sis != null) {
+				if (ApplySelector(ipsiv, sis.ValueSource)) {
+					var el = recycler.Next(sis.ValueSource);
+					if (!el.Item1 && el.Item2.DataContext is TextShim shim) {
+						RecycleElement(sis.ValueSource, el.Item2, shim);
 					}
+					sis.Element = el.Item2;
+					ApplyFormatter(ipsiv, sis);
 				}
-				if (!createit) return null;
-				var el = recycler.Next(target);
-				if (!el.Item1 && el.Item2.DataContext is TextShim shim) {
-					// recycling; update values
-					var txt = target.Value.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
-					shim.Visibility = Visibility;
-					shim.Text = txt;
-					if (shim is ObjectShim oshim && target is ISeriesItemValueCustom isivc2) {
-						oshim.CustomValue = isivc2.CustomValue;
-					}
-					// restore binding if we are using a LabelFormatter
-					if (LabelFormatter != null && LabelStyle != null) {
-						BindTo(this, nameof(LabelStyle), el.Item2, FrameworkElement.StyleProperty);
-					}
-				}
-				if (LabelFormatter != null) {
-					var ctx = new SelectorContext(ipsiv, target);
-					// TODO could call for typeof(object) and replace CustomValue
-					var format = LabelFormatter.Convert(ctx, typeof(Tuple<Style, String>), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
-					if (format is Tuple<Style, String> ovx) {
-						if (ovx.Item1 != null) {
-						// TODO use error control because style may not match the template
-							el.Item2.Style = ovx.Item1;
-						}
-						if (ovx.Item2 != null) {
-							if (el.Item2.DataContext is TextShim ts) {
-								ts.Text = ovx.Item2;
-							}
-						}
-					}
-				}
-				var place = GetPlacement(target, PlacementOffset, CategoryAxisOffset);
-				var cv = target is ISeriesItemValueCustom isivc ? isivc.CustomValue : null;
-				return new SeriesItemState(siv, target, place.Item1, place.Item2, el.Item2, cv);
+				return sis;
 			}
 			return null;
 		}
@@ -521,7 +593,7 @@ namespace eScapeLLC.UWP.Charts {
 			var state = ItemState.SingleOrDefault((sis) => sis.Element == fe);
 			if (state != null) {
 				_trace.Verbose($"{Name} sizeChanged loc:{state.CanvasLocation} yv:{state.Value} ns:{e.NewSize}");
-				state.Locate(fe, LabelOffset);
+				state.Locate(LabelOffset);
 			}
 		}
 		/// <summary>
@@ -609,9 +681,17 @@ namespace eScapeLLC.UWP.Charts {
 				var itemstate = new List<SeriesItemState>();
 				// render
 				foreach (var siv in ipsiv.SeriesItemValues) {
-					var istate = ElementPipeline(ipsiv, siv, recycler);
+					var istate = CreateState(siv);
 					if(istate != null) {
 						itemstate.Add(istate);
+						if(ApplySelector(ipsiv, istate.ValueSource)) {
+							var el = recycler.Next(istate.ValueSource);
+							if (!el.Item1 && el.Item2.DataContext is TextShim shim) {
+								RecycleElement(istate.ValueSource, el.Item2, shim);
+							}
+							istate.Element = el.Item2;
+							ApplyFormatter(ipsiv, istate);
+						}
 					}
 				}
 				// postamble
@@ -634,14 +714,10 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"{Name} transforms a:{icrc.Area} rx:{CategoryAxis?.Range} ry:{ValueAxis?.Range} matx:{matx}  type:{icrc.Type}");
 			if (matx == default(Matrix)) return;
 			foreach (var state in ItemState) {
+				if (state.Element == null) continue;
 				_trace.Verbose($"{Name} el:{state.Element} ds:{state.Element.DesiredSize} as:{state.Element.ActualWidth},{state.Element.ActualHeight}");
 				// Recalc and Position element now because it WILL NOT invoke EVH if size didn't actually change
-				state.Locate(matx, state.Element, LabelOffset);
-				if (icrc.Type != RenderType.TransformsOnly) {
-					// doing render so (try to) trigger the SizeChanged handler
-					state.Element.InvalidateMeasure();
-					state.Element.InvalidateArrange();
-				}
+				state.Locate(matx, LabelOffset, icrc.Type);
 #if false
 				if (ClipToDataRegion) {
 					// TODO this does not work "correctly" the TB gets clipped no matter what
@@ -650,7 +726,7 @@ namespace eScapeLLC.UWP.Charts {
 					//state.Element.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
 				}
 #endif
-				_trace.Verbose($"{Name} matx:{matx} pt:({state.XValue},{state.Value}) dcc:{state.CanvasLocation}");
+				_trace.Verbose($"{Name} matx:{matx} pt:({state.XValue},{state.Value}) canvas:{state.CanvasLocation}");
 			}
 		}
 		#endregion
