@@ -92,12 +92,35 @@
 				<TextBlock Text="{Binding Text}" Style="{StaticResource BigLabels2}" />
 			</Border>
 		</DataTemplate>
+		<DataTemplate x:Key="LabelMinMax">
+			<TextBlock Text="{Binding Text}" Style="{StaticResource BigLabels}" RenderTransformOrigin=".5,.5">
+			<TextBlock.RenderTransform>
+				<ScaleTransform ScaleX="1" ScaleY="1"/>
+			</TextBlock.RenderTransform>
+			</TextBlock>
+		</DataTemplate>
 		<Style x:Key="v1_GreaterThan_v2" BasedOn="{StaticResource BigLabels}" TargetType="TextBlock">
 			<Setter Property="Foreground" Value="GreenYellow"/>
 		</Style>
 		<Style x:Key="v1_LessThan_v2" BasedOn="{StaticResource BigLabels}" TargetType="TextBlock">
 			<Setter Property="Foreground" Value="Red"/>
 		</Style>
+		<Storyboard x:Key="Enter">
+			<DoubleAnimation
+			Storyboard.TargetProperty="Opacity"
+			From="0.0" To="1.0" Duration="0:0:1"/>
+			<DoubleAnimation
+			Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+			From="0.1" To="1.0" Duration="0:0:1"/>
+			<DoubleAnimation
+			Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+			From="0.1" To="1.0" Duration="0:0:1"/>
+		</Storyboard>
+		<Storyboard x:Key="Leave">
+			<DoubleAnimation
+			Storyboard.TargetProperty="Opacity"
+			From="1.0" To="0.0" Duration="0:0:0.5"/>
+		</Storyboard>
 		<vm:MinMaxObservationValueConverter x:Key="MinMaxLabel"/>
 		<vm:CompareObservationValuesConverter x:Key="ColorLabel"
 			WhenEqual="{StaticResource BigLabels2}"
@@ -155,17 +178,19 @@
 				<yacc:ValueLabels SourceName="colv2" LabelFormatString="F2" CategoryAxisOffset=".625"
 					PlacementOffset="0,1" LabelOffset="0,-1" LabelStyle="{StaticResource BigLabels}" />
 				<yacc:ValueLabels SourceName="colv1" LabelFormatString="F2" CategoryAxisOffset=".375"
+					UseImplicitAnimations="True" EnterStoryboard="{StaticResource Enter}" LeaveStoryboard="{StaticResource Leave}"
 					PlacementOffset="0,1" LabelOffset="0,-1" LabelStyle="{StaticResource BigLabels}" />
 				<yacc:ValueLabels SourceName="colv1" LabelFormatString="F2" CategoryAxisOffset=".375"
-					PlacementOffset="0,1" LabelOffset="0,1" LabelStyle="{StaticResource BigLabels}"
+					PlacementOffset="0,1" LabelOffset="0,1" LabelTemplate="{StaticResource LabelMinMax}"
+					UseImplicitAnimations="True" EnterStoryboard="{StaticResource Enter}" LeaveStoryboard="{StaticResource Leave}"
 					LabelFormatter="{StaticResource ColorLabel}" LabelSelector="{StaticResource MinMaxLabel}" />
 				<!-- CANNOT ElementName bind here we're tying into a different XAML namescope -->
 				<yacc:ValueLabels SourceName="band" LabelFormatString="F2" x:Name="values1"
-					Visibility="{Binding ShowBand, Converter={StaticResource b2v}}"
+					Visibility="{Binding ShowBand, Converter={StaticResource b2v}}" UseImplicitAnimations="True"
 					CategoryAxisOffset="0" PlacementOffset="0,1" LabelOffset="1,0" LabelTemplate="{StaticResource LabelWithBorder}" />
 				<!-- CANNOT ElementName bind here we're tying into a different XAML namescope -->
 				<yacc:ValueLabels SourceName="band" ValueChannel="1" LabelFormatString="F2" x:Name="values2"
-					Visibility="{Binding ShowBand, Converter={StaticResource b2v}}"
+					Visibility="{Binding ShowBand, Converter={StaticResource b2v}}" UseImplicitAnimations="True"
 					CategoryAxisOffset="1" PlacementOffset="0,0" LabelOffset="-1,0" LabelTemplate="{StaticResource LabelWithBorder2}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>
