@@ -10,6 +10,7 @@ namespace eScapeLLC.UWP.Charts {
 	#region DataSeries
 	/// <summary>
 	/// Base class of components that represent a data series.
+	/// <para/>
 	/// This class commits to a <see cref="DataSourceName"/> only.
 	/// <para/>
 	/// The <see cref="Chart"/> class keys on this class for certain render pipeline phases.
@@ -255,7 +256,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Derive from this series type when the series has a single value binding, e.g. <see cref="LineSeries"/>, <see cref="ColumnSeries"/>, <see cref="MarkerSeries"/>.
 	/// <para/>
-	/// This class commits to the <see cref="ValuePath"/> and <see cref="PathStyle"/> of those elements.
+	/// This class commits to the <see cref="ValuePath"/>, <see cref="PathTemplate"/> and <see cref="PathStyle"/> of those elements.
 	/// <para/>
 	/// Series type with multiple value bindings SHOULD use <see cref="DataSeriesWithAxes"/> instead.
 	/// </summary>
