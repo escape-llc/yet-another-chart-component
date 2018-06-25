@@ -59,7 +59,11 @@
 		<Setter Property="Fill" Value="{StaticResource band-fill}"/>
 	</Style>
 	<DataTemplate x:Key="TextBlock">
-		<TextBlock Text="{Binding Text}"/>
+		<TextBlock Text="{Binding Text}">
+			<TextBlock.RenderTransform>
+				<ScaleTransform ScaleX="1" ScaleY="1"/>
+			</TextBlock.RenderTransform>
+		</TextBlock>
 	</DataTemplate>
 	<DataTemplate x:Key="Path">
 		<Path Data="{Binding PathData}" RenderTransformOrigin="{Binding RenderTransformOrigin}">
