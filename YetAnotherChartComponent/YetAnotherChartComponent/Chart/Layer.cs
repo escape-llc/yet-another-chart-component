@@ -97,6 +97,7 @@ namespace eScapeLLC.UWP.Charts {
 		protected virtual void InternalRemove(IEnumerable<FrameworkElement> fes) { foreach (var fe in fes) (this as IChartLayer).Remove(fe); }
 		/// <summary>
 		/// Remove all children.
+		/// Does not invoke any <see cref="Storyboard"/>.
 		/// </summary>
 		protected virtual void InternalClear() {
 			try {
