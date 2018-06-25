@@ -833,6 +833,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// VM shim for a path.
 	/// User must manually bind the <see cref="Transform"/> or otherwise assign it to <see cref="Geometry"/> outside this VM.
 	/// </summary>
+	/// <typeparam name="G">Geometry expected.</typeparam>
 	public class GeometryShim<G> : DataTemplateShim where G: Geometry {
 		#region data
 		G _gx;
@@ -841,6 +842,7 @@ namespace eScapeLLC.UWP.Charts {
 		#region properties
 		/// <summary>
 		/// Render transform origin.
+		/// Does Not do change notification.
 		/// Default is (.5,.5) in NDC.
 		/// </summary>
 		public Point RenderTransformOrigin { get; set; } = new Point(.5, .5);
