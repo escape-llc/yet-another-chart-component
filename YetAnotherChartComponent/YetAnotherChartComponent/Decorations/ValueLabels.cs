@@ -7,6 +7,7 @@ using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Media;
+using Windows.UI.Xaml.Media.Animation;
 
 namespace eScapeLLC.UWP.Charts {
 	#region ILabelSelectorContext
@@ -150,8 +151,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Converter to use as the element <see cref="FrameworkElement.Style"/> and <see cref="TextShim.Text"/> selector.
 		/// These are already set to their "standard" values before this is called, so it MAY selectively opt out of setting them.
 		/// The <see cref="IValueConverter.Convert"/> targetType parameter is used to determine which value is requested.
-		/// Uses <see cref="String"/> for label override.  Return a new label or NULL to opt out.
-		/// Uses <see cref="Style"/> for style override.  Return a style or NULL to opt out.
+		/// Uses <see cref="Tuple{Style,String}"/> for style/label override.  Return a new value or NULL (in each "slot") to opt in/out.
 		/// </summary>
 		public IValueConverter LabelFormatter { get; set; }
 		/// <summary>
@@ -165,6 +165,14 @@ namespace eScapeLLC.UWP.Charts {
 		/// Whether to create layer with composition animations enabled.
 		/// </summary>
 		public bool UseImplicitAnimations { get; set; }
+		/// <summary>
+		/// Label entry storyboard.
+		/// </summary>
+		public Storyboard EnterStoryboard { get; set; }
+		/// <summary>
+		/// Label exit storyboard.
+		/// </summary>
+		public Storyboard LeaveStoryboard { get; set; }
 		/// <summary>
 		/// Dereferenced value axis.
 		/// </summary>
@@ -429,6 +437,7 @@ namespace eScapeLLC.UWP.Charts {
 					var format = LabelFormatter.Convert(ctx, typeof(Tuple<Style, String>), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
 					if (format is Tuple<Style, String> ovx) {
 						if (ovx.Item1 != null) {
+						// TODO use error control because style may not match the template
 							el.Item2.Style = ovx.Item1;
 						}
 						if (ovx.Item2 != null) {
@@ -548,7 +557,16 @@ namespace eScapeLLC.UWP.Charts {
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			EnsureComponents(icelc as IChartComponentContext);
 			Layer = icelc.CreateLayer();
-			Layer.UseImplicitAnimations = UseImplicitAnimations;
+			if (Layer is IChartLayerAnimation icla) {
+				icla.UseImplicitAnimations = UseImplicitAnimations;
+				// pass through storyboards
+				if(EnterStoryboard != null) {
+					icla.Enter = EnterStoryboard;
+				}
+				if (LeaveStoryboard != null) {
+					icla.Leave = LeaveStoryboard;
+				}
+			}
 			AssignFromRef(icelc as IChartErrorInfo, NameOrType(), nameof(LabelStyle), nameof(Theme.LabelAxisTop),
 				LabelStyle == null, Theme != null, Theme.LabelAxisTop != null,
 				() => LabelStyle = Theme.LabelAxisTop
