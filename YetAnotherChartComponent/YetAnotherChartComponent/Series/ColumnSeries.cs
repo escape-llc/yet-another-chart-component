@@ -29,8 +29,9 @@ namespace eScapeLLC.UWP.Charts {
 			/// Extract the rectangle geometry and create placement.
 			/// </summary>
 			/// <returns></returns>
-			protected override Placement CreatePlacement() { return new RectanglePlacement(Value >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, (Element.Data as RectangleGeometry).Rect); }
+			protected override Placement CreatePlacement() { return new RectanglePlacement(Value >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, DataFor().Rect); }
 			internal SeriesItemState_Custom(int idx, double xv, double xvo, double yv, object cs, Path ele) : base(idx, xv, xvo, yv, cs, ele, 0) { }
+			RectangleGeometry DataFor() { if (Element.DataContext is GeometryShim<RectangleGeometry> gs) return gs.PathData; return Element.Data as RectangleGeometry; }
 		}
 		/// <summary>
 		/// Implementation for item state.
@@ -42,8 +43,9 @@ namespace eScapeLLC.UWP.Charts {
 			/// Extract the rectangle geometry and create placement.
 			/// </summary>
 			/// <returns></returns>
-			protected override Placement CreatePlacement() { return new RectanglePlacement(Value >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, (Element.Data as RectangleGeometry).Rect); }
+			protected override Placement CreatePlacement() { return new RectanglePlacement(Value >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, DataFor().Rect); }
 			internal SeriesItemState_Double(int idx, double xv, double xvo, double yv, Path ele) : base(idx, xv, xvo, yv, ele, 0) { }
+			RectangleGeometry DataFor() { if (Element.DataContext is GeometryShim<RectangleGeometry> gs) return gs.PathData; return Element.Data as RectangleGeometry; }
 		}
 		#endregion
 		#region properties
@@ -135,8 +137,14 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"{Name}[{index}] {valuey} ({barx},{topy}) ({rightx},{bottomy})");
 			var path = recycler.Next(null);
 			if (path == null) return null;
-			var rg = new RectangleGeometry() { Rect = new Rect(new Point(barx, topy), new Point(rightx, bottomy)) };
-			path.Item2.Data = rg;
+			var shim = new GeometryShim<RectangleGeometry>() {
+			 PathData = new RectangleGeometry() { Rect = new Rect(new Point(barx, topy), new Point(rightx, bottomy)) }
+			};
+			path.Item2.DataContext = shim;
+			// connect the shim to template root element's Visibility
+			BindTo(shim, nameof(Visibility), path.Item2, UIElement.VisibilityProperty);
+			// connect the shim's xform to template geometry's Transform
+			BindTo(shim, nameof(shim.GeometryTransform), shim.PathData, Geometry.TransformProperty);
 			if (byl == null) {
 				return new SeriesItemState_Double(index, leftx, BarOffset, y1, path.Item2);
 			} else {
@@ -150,8 +158,15 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="isp">Not used.</param>
 		/// <returns></returns>
 		Path CreatePath(ItemState<Path> isp) {
-			var path = new Path();
-			BindTo(this, nameof(PathStyle), path, FrameworkElement.StyleProperty);
+			var path = default(Path);
+			if (PathTemplate != null) {
+				path = PathTemplate.LoadContent() as Path;
+			} else if (Theme.PathTemplate != null) {
+				path = Theme.PathTemplate.LoadContent() as Path;
+				if (PathStyle != null) {
+					BindTo(this, nameof(PathStyle), path, FrameworkElement.StyleProperty);
+				}
+			}
 			return path;
 		}
 		/// <summary>
@@ -159,7 +174,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="st">Updated state.</param>
 		void UpdateGeometry(ItemStateCore st) {
-			var rg = (st as ItemState<Path>).Element.Data as RectangleGeometry;
+			var isp = (st as ItemState<Path>);
+			var rg = (isp.Element.DataContext is GeometryShim<RectangleGeometry> gs ? gs.PathData : isp.Element.Data) as RectangleGeometry;
 			rg.Rect = new Rect(new Point(st.XValueAfterOffset, rg.Rect.Top), new Point(st.XValueAfterOffset + BarWidth, rg.Rect.Bottom));
 		}
 		#endregion
@@ -187,6 +203,13 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			if (DebugSegments != null) {
 				Layer.Add(DebugSegments);
+			}
+			if (PathTemplate == null) {
+				if (Theme?.PathTemplate == null) {
+					if (icelc is IChartErrorInfo icei) {
+						icei.Report(new ChartValidationResult(NameOrType(), $"No {nameof(PathTemplate)} and {nameof(Theme.PathTemplate)} was not found", new[] { nameof(PathTemplate), nameof(Theme.PathTemplate) }));
+					}
+				}
 			}
 			AssignFromRef(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathColumnSeries),
 				PathStyle == null, Theme != null, Theme.PathColumnSeries != null,
@@ -225,7 +248,11 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"{Name} mat:{matx} clip:{icrc.SeriesArea}");
 			var mt = new MatrixTransform() { Matrix = matx };
 			foreach(var ss in ItemState) {
-				ss.Element.Data.Transform = mt;
+				if (ss.Element.DataContext is GeometryShim<RectangleGeometry> gs) {
+					gs.GeometryTransform = mt;
+				} else {
+					ss.Element.Data.Transform = mt;
+				}
 				if (ClipToDataRegion) {
 					var cg = new RectangleGeometry() { Rect = icrc.SeriesArea };
 					ss.Element.Clip = cg;
