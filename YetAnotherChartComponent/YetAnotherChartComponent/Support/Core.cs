@@ -182,6 +182,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		void Clear();
 	}
+	#endregion
+	#region IChartLayerAnimation
 	/// <summary>
 	/// Accept animation configuration.
 	/// </summary>
@@ -825,6 +827,45 @@ namespace eScapeLLC.UWP.Charts {
 		/// Additional custom state.
 		/// </summary>
 		public object CustomValue { get { return _value; } set { _value = value; Changed(nameof(CustomValue)); } }
+		#endregion
+	}
+	/// <summary>
+	/// VM shim for a path.
+	/// User must manually bind the <see cref="Transform"/> or otherwise assign it to <see cref="Geometry"/> outside this VM.
+	/// </summary>
+	public class GeometryShim<G> : DataTemplateShim where G: Geometry {
+		#region data
+		G _gx;
+		Transform _matx;
+		#endregion
+		#region properties
+		/// <summary>
+		/// Render transform origin.
+		/// Default is (.5,.5) in NDC.
+		/// </summary>
+		public Point RenderTransformOrigin { get; set; } = new Point(.5, .5);
+		/// <summary>
+		/// Path geometry.
+		/// Also set <see cref="Geometry.Transform"/> if <see cref="GeometryTransform"/> is set.
+		/// </summary>
+		public G PathData {
+			get { return _gx; }
+			set {
+				_gx = value;
+				Changed(nameof(PathData));
+			}
+		}
+		/// <summary>
+		/// Geometry transform.
+		/// Also set <see cref="Geometry.Transform"/> if <see cref="PathData"/> is set.
+		/// </summary>
+		public Transform GeometryTransform {
+			get { return _matx; }
+			set {
+				_matx = value;
+				Changed(nameof(GeometryTransform));
+			}
+		}
 		#endregion
 	}
 	#endregion
