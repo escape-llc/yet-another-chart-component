@@ -17,14 +17,13 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="target">The animation target.</param>
 		/// <param name="duration">Duration of offset animation in MS.</param>
 		/// <returns>New instance.</returns>
-		public static ICompositionAnimationBase CreateOffsetAnimation(this Compositor compositor, String target, int duration) {
-			// Define Offset Animation for the Animation group
-			var offsetAnimation = compositor.CreateVector3KeyFrameAnimation();
-			offsetAnimation.Target = target;
-			offsetAnimation.InsertExpressionKeyFrame(1.0f, "this.FinalValue");
-			offsetAnimation.Duration = TimeSpan.FromMilliseconds(duration);
+		public static CompositionAnimationGroup CreateOffsetAnimation(this Compositor compositor, String target, int duration) {
+			var animation = compositor.CreateVector3KeyFrameAnimation();
+			animation.Target = target;
+			animation.InsertExpressionKeyFrame(1.0f, "this.FinalValue");
+			animation.Duration = TimeSpan.FromMilliseconds(duration);
 			var animationGroup = compositor.CreateAnimationGroup();
-			animationGroup.Add(offsetAnimation);
+			animationGroup.Add(animation);
 			return animationGroup;
 		}
 		/// <summary>
@@ -35,8 +34,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="fadein">true: 0..1; false: 1..0.</param>
 		/// <param name="duration">Duration of animation in MS.</param>
 		/// <returns>New instance.</returns>
-		public static ICompositionAnimationBase CreateOpacityAnimation(this Compositor compositor, bool fadein, int duration) {
-			// Define Opacity Animation for the Animation group
+		public static CompositionAnimationGroup CreateOpacityAnimation(this Compositor compositor, bool fadein, int duration) {
 			var animation = compositor.CreateScalarKeyFrameAnimation();
 			animation.Target = nameof(Visual.Opacity);
 			if(fadein) {
@@ -44,13 +42,14 @@ namespace eScapeLLC.UWP.Charts {
 				animation.InsertKeyFrame(1f, 1f);
 			}
 			else {
+				animation.InsertKeyFrame(0f, 1f);
 				animation.InsertKeyFrame(1f, 0f);
 			}
 			animation.Duration = TimeSpan.FromMilliseconds(duration);
 			animation.DelayBehavior = AnimationDelayBehavior.SetInitialValueBeforeDelay;
 			var animationGroup = compositor.CreateAnimationGroup();
 			animationGroup.Add(animation);
-			return animation;
+			return animationGroup;
 		}
 	}
 }
@@ -65,7 +64,7 @@ namespace eScapeLLC.UWP.Charts.UniversalApiContract.v3 {
 	/// The following is a "handy" reference for accessing APIs.
 	/// <para/>
 	/// APIs in v1:
-	/// class <see cref="Compositor"/>
+	/// class <see cref="Compositor"/>, <see cref="CompositionObject"/>, <see cref="CompositionAnimation"/>
 	/// CreateContainerVisual	CreateCubicBezierEasingFunction	CreateEffectFactory	CreateExpressionAnimation
 	/// CreateInsetClip	CreateLinearEasingFunction	CreatePropertySet	CreateScalarKeyFrameAnimation
 	/// CreateTargetForCurrentView	CreateVector(2/3/4)KeyFrameAnimation
