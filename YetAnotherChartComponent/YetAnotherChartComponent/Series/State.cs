@@ -226,7 +226,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// The generated element.
 		/// </summary>
-		public EL Element { get; private set; }
+		public EL Element { get; set; }
 		/// <summary>
 		/// The y value.
 		/// </summary>
