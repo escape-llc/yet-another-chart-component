@@ -62,7 +62,7 @@
 		<TextBlock Text="{Binding Text}"/>
 	</DataTemplate>
 	<DataTemplate x:Key="Path">
-		<Path RenderTransformOrigin=".5,.5">
+		<Path Data="{Binding PathData}" RenderTransformOrigin="{Binding RenderTransformOrigin}">
 			<Path.RenderTransform>
 				<ScaleTransform ScaleX="1" ScaleY="1"/>
 			</Path.RenderTransform>
