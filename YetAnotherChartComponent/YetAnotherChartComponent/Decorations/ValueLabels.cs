@@ -475,6 +475,7 @@ namespace eScapeLLC.UWP.Charts {
 			} else {
 				if(!createit) {
 					// remove this one
+					TeardownElements(new[] { state.Element });
 					Layer.Remove(state.Element);
 					state.Element = null;
 				}
@@ -533,8 +534,9 @@ namespace eScapeLLC.UWP.Charts {
 		void IncrementalAdd(int startAt, IList<ISeriesItem> items) {
 			var reproc = new List<SeriesItemState>();
 			var recycler = new Recycler<FrameworkElement, ISeriesItemValueDouble>(CreateElement);
+			var ipsiv = Source as IProvideSeriesItemValues;
 			foreach (var item in items) {
-				var target = ElementPipeline(Source as IProvideSeriesItemValues, item, recycler);
+				var target = ElementPipeline(ipsiv, item, recycler);
 				if (target != null) {
 					reproc.Add(target);
 				}
@@ -542,6 +544,10 @@ namespace eScapeLLC.UWP.Charts {
 			// adjust indices based on removed items
 			foreach (var itx in ItemState.Where(ix => ix.Index >= startAt)) {
 				itx.UpdatePlacement(PlacementOffset, CategoryAxisOffset);
+			}
+			// re-evaluate everything except the new ones
+			foreach(var itx in ItemState) {
+				UpdateElement(ipsiv, itx);
 			}
 			if (reproc.Count > 0) {
 				// add collected items and re-sort by index
@@ -572,6 +578,10 @@ namespace eScapeLLC.UWP.Charts {
 			// adjust indices based on removed items
 			foreach (var itx in ItemState.Where(ix => ix.Index >= startAt)) {
 				itx.UpdatePlacement(PlacementOffset, CategoryAxisOffset);
+			}
+			// re-evaluate everything
+			foreach (var itx in ItemState) {
+				UpdateElement(Source as IProvideSeriesItemValues, itx);
 			}
 			TeardownElements(reproc.Select(xx => xx.Element));
 			Layer.Remove(reproc.Select(xx => xx.Element));
