@@ -393,7 +393,6 @@ namespace eScapeLLC.UWP.Charts {
 			pg.Figures.Add(lower);
 			var shim = new GeometryShim<PathGeometry>() { PathData = pg };
 			path.Item2.DataContext = shim;
-			//path.Item2.Data = pg;
 			// establish the style for "forward" or "reverse" polarity
 			BindTo(this, valueO < valueC ? nameof(PathStyle) : nameof(ReversePathStyle), path.Item2, Path.StyleProperty);
 			var figs = new Tuple<double, PathFigure>[4];
