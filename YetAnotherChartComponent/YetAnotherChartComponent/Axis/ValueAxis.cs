@@ -116,6 +116,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public IValueConverter LabelSelector { get; set; }
 		/// <summary>
+		/// Whether to create layer with composition animations enabled.
+		/// </summary>
+		public bool UseImplicitAnimations { get; set; }
+		/// <summary>
 		/// Path for the axis "bar".
 		/// </summary>
 		protected Path Axis { get; set; }
@@ -236,6 +240,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icelc">The context.</param>
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			Layer = icelc.CreateLayer(Axis);
+			if(Layer is IChartLayerAnimation icla) {
+				icla.UseImplicitAnimations = UseImplicitAnimations;
+			}
 			ApplyLabelStyle(icelc as IChartErrorInfo);
 			AssignFromRef(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathAxisValue),
 				PathStyle == null, Theme != null, Theme.PathAxisValue != null,

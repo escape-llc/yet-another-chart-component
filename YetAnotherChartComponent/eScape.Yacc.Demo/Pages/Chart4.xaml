@@ -68,9 +68,9 @@
 					PathStyle="{StaticResource Axes}" MinHeight="80"
 					LabelStyle="{StaticResource LabelRotated}" LabelSelector="{StaticResource DateRangeSelector}" LabelFormatter="{StaticResource DateFormatter}" />
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}" MinWidth="40"
-					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="C2" />
+					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="C2" UseImplicitAnimations="True" />
 				<yacc:ValueAxis x:Name="volume" Side="Right" PathStyle="{StaticResource SecondAxis}" MinWidth="80"
-					LabelStyle="{StaticResource ValueAxisLabelRight}" LabelFormatString="N0" />
+					LabelStyle="{StaticResource ValueAxisLabelRight}" LabelFormatString="N0" UseImplicitAnimations="True" />
 				<yacc:ValueAxisGrid ValueAxisName="volume" PathStyle="{StaticResource SecondGrid}"
 					Visibility="{Binding ElementName=cb_grid2, Path=IsChecked, Converter={StaticResource b2v}}" />
 				<yacc:ColumnSeries x:Name="colv2" DataSourceName="data" ValuePath="Value5"

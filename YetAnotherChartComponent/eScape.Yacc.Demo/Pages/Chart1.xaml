@@ -180,7 +180,7 @@
 					BandPathStyle="{StaticResource Band_v1v2-band}" ClipToDataRegion="False"
 					Visibility="{Binding ShowBand, Converter={StaticResource b2v}}" />
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}"
-					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="F1" />
+					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="F1" UseImplicitAnimations="True" />
 				<!-- CANNOT ElementName bind here we're tying into a different XAML namescope -->
 				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource Grid}"
 					Visibility="{Binding ShowGrid, Converter={StaticResource b2v}}" />
