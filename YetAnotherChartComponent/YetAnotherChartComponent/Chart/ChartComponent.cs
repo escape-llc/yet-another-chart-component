@@ -59,7 +59,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="path">Component's (source) property path.</param>
 		/// <param name="target">Target DO.</param>
 		/// <param name="dp">FE's (target) DP.</param>
-		protected static void BindTo(object source, String path, DependencyObject target, DependencyProperty dp) {
+		public static void BindTo(object source, String path, DependencyObject target, DependencyProperty dp) {
 			Binding bx = new Binding() {
 				Path = new PropertyPath(path),
 				Source = source,
@@ -75,7 +75,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="path"></param>
 		/// <param name="target">Target framework element.</param>
 		/// <param name="dp"></param>
-		protected static void ApplyBinding(FrameworkElement source, String path, DependencyObject target, DependencyProperty dp) {
+		public static void ApplyBinding(FrameworkElement source, String path, DependencyObject target, DependencyProperty dp) {
 			var bx = source.GetBindingExpression(dp);
 			if (bx != null) {
 				target.ClearValue(dp);

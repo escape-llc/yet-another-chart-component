@@ -156,9 +156,6 @@ namespace eScapeLLC.UWP.Charts {
 			path.Item2.DataContext = shim;
 			// connect the shim to template root element's Visibility
 			BindTo(shim, nameof(Visibility), path.Item2, UIElement.VisibilityProperty);
-			// connect the shim's xform to template geometry's Transform
-			// NOTE this only works because we don't re-assign PathData
-			BindTo(shim, nameof(shim.GeometryTransform), shim.PathData, Geometry.TransformProperty);
 			if (byl == null) {
 				return new SeriesItemState_Double(index, leftx, BarOffset, y1, path.Item2);
 			} else {

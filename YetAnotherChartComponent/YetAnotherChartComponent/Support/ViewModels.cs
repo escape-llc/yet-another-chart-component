@@ -87,13 +87,17 @@ namespace eScapeLLC.UWP.Charts {
 		public Point RenderTransformOrigin { get; set; } = new Point(.5, .5);
 		/// <summary>
 		/// Path geometry.
-		/// Also set <see cref="Geometry.Transform"/> if <see cref="GeometryTransform"/> is set.
+		/// Also sets binding between <see cref="GeometryTransform"/> and <see cref="Geometry.Transform"/>.
 		/// </summary>
 		public G PathData {
 			get { return _gx; }
 			set {
 				_gx = value;
 				Changed(nameof(PathData));
+				if (_gx != null) {
+					// bind our GeometryTransform property to the PathData.Transform property
+					ChartComponent.BindTo(this, nameof(GeometryTransform), _gx, Geometry.TransformProperty);
+				}
 			}
 		}
 		/// <summary>

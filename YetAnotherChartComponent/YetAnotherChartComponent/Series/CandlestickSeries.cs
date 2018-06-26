@@ -396,9 +396,6 @@ namespace eScapeLLC.UWP.Charts {
 			//path.Item2.Data = pg;
 			// establish the style for "forward" or "reverse" polarity
 			BindTo(this, valueO < valueC ? nameof(PathStyle) : nameof(ReversePathStyle), path.Item2, Path.StyleProperty);
-			// connect the shim's xform to template geometry's Transform
-			// NOTE this only works because we don't re-assign PathData
-			BindTo(shim, nameof(shim.GeometryTransform), shim.PathData, Geometry.TransformProperty);
 			var figs = new Tuple<double, PathFigure>[4];
 			figs[0] = new Tuple<double, PathFigure>(y1, body);
 			figs[1] = new Tuple<double, PathFigure>(y2, body);
