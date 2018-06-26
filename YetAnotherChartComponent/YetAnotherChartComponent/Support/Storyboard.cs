@@ -16,12 +16,12 @@ namespace eScapeLLC.UWP.Charts {
 		public static Timeline Clone(this Timeline tl) {
 			if (tl == null) return null;
 			var clone = Activator.CreateInstance(tl.GetType());
+			// NOTE any collections within TL just get shallow-copied, e.g. KeyFrameCollection
 			foreach (var pi in tl.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance)) {
 				if (pi.CanWrite) {
 					pi.SetValue(clone, pi.GetValue(tl));
 				}
 			}
-			// TODO what about keyframe animations?
 			return clone as Timeline;
 		}
 		/// <summary>
@@ -42,6 +42,8 @@ namespace eScapeLLC.UWP.Charts {
 			};
 			foreach (var tl in sb.Children) {
 				var tclone = tl.Clone();
+				if (tclone == null) continue;
+				// cloned it; do attached properties
 				var tname = Storyboard.GetTargetName(tl);
 				if(!String.IsNullOrEmpty(tname)) {
 					Storyboard.SetTargetName(tclone, tname);
