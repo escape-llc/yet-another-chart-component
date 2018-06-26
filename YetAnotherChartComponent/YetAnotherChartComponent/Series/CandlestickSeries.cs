@@ -30,9 +30,12 @@ namespace eScapeLLC.UWP.Charts {
 			internal SeriesItemState(int idx, double xv, double xo, double yv, Path ele, Tuple<double, PathFigure>[] figs) : base(idx, xv, xo, yv, ele, 0) { Elements = figs; }
 			Tuple<double, PathFigure>[] IFigureData.Elements => Elements;
 			void IFigureData.UpdateGeometry(double width) {
-				var rightx = XValueAfterOffset + width;
-				var pg = SeriesItemState_Custom.UpdateGeometry(XValue, XValueAfterOffset, rightx, Elements);
-				Element.Data = pg;
+				if (Element.DataContext is GeometryShim<PathGeometry> gs) {
+					var rightx = XValueAfterOffset + width;
+					gs.PathData.Figures.Clear();
+					SeriesItemState_Custom.UpdateGeometry(XValue, XValueAfterOffset, rightx, Elements, gs.PathData.Figures);
+					gs.GeometryUpdated();
+				}
 			}
 		}
 		/// <summary>
@@ -46,19 +49,23 @@ namespace eScapeLLC.UWP.Charts {
 			internal SeriesItemState_Custom(int idx, double xv, double xo, double yv, object cs, Path ele, Tuple<double, PathFigure>[] figs) : base(idx, xv, xo, yv, cs, ele, 0) { Elements = figs; }
 			Tuple<double, PathFigure>[] IFigureData.Elements => Elements;
 			void IFigureData.UpdateGeometry(double width) {
-				var rightx = XValueAfterOffset + width;
-				var pg = UpdateGeometry(XValue, XValueAfterOffset, rightx, Elements);
-				Element.Data = pg;
+				if (Element.DataContext is GeometryShim<PathGeometry> gs) {
+					var rightx = XValueAfterOffset + width;
+					gs.PathData.Figures.Clear();
+					UpdateGeometry(XValue, XValueAfterOffset, rightx, Elements, gs.PathData.Figures);
+					gs.GeometryUpdated();
+				}
 			}
 			/// <summary>
-			/// Update figures in-place, and return a <see cref="PathGeometry"/> with the new figures.
+			/// Update figures in-place, and populate given <see cref="PathFigureCollection"/> with the new figures.
 			/// </summary>
 			/// <param name="leftx"></param>
 			/// <param name="offsetx"></param>
 			/// <param name="rightx"></param>
 			/// <param name="figs">Array of figures to update.</param>
+			/// <param name="pfc">Target figure collection.</param>
 			/// <returns>New <see cref="PathGeometry"/> matching the new values.</returns>
-			internal static PathGeometry UpdateGeometry(double leftx, double offsetx, double rightx, Tuple<double,PathFigure>[] figs) {
+			internal static void UpdateGeometry(double leftx, double offsetx, double rightx, Tuple<double,PathFigure>[] figs, PathFigureCollection pfc) {
 				var topy = Math.Max(figs[0].Item1, figs[1].Item1);
 				var bottomy = Math.Min(figs[0].Item1, figs[1].Item1);
 				var highy = Math.Max(figs[2].Item1, figs[3].Item1);
@@ -74,11 +81,9 @@ namespace eScapeLLC.UWP.Charts {
 				figs[1] = new Tuple<double, PathFigure>(figs[1].Item1, body);
 				figs[2] = new Tuple<double, PathFigure>(figs[2].Item1, upper);
 				figs[3] = new Tuple<double, PathFigure>(figs[3].Item1, lower);
-				var pg = new PathGeometry();
-				pg.Figures.Add(body);
-				pg.Figures.Add(upper);
-				pg.Figures.Add(lower);
-				return pg;
+				pfc.Add(body);
+				pfc.Add(upper);
+				pfc.Add(lower);
 			}
 		}
 		#endregion
@@ -183,6 +188,13 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public Style ReversePathStyle { get { return (Style)GetValue(ReversePathStyleProperty); } set { SetValue(ReversePathStyleProperty, value); } }
 		/// <summary>
+		/// Template to use for generated paths.
+		/// If set, this overrides applying <see cref="DataSeriesWithValue.PathStyle"/> (assumed <see cref="Style"/> inside the template).
+		/// If this is not set, then <see cref="IChartTheme.PathTemplate"/> is used and <see cref="DataSeriesWithValue.PathStyle"/> applied (if set).
+		/// If Theme is not set, then <see cref="Path"/> is used (via ctor) and <see cref="DataSeriesWithValue.PathStyle"/> applied (if set).
+		/// </summary>
+		public DataTemplate PathTemplate { get { return (DataTemplate)GetValue(PathTemplateProperty); } set { SetValue(PathTemplateProperty, value); } }
+		/// <summary>
 		/// Fractional offset into the "cell" of the category axis.
 		/// BarOffset + BarWidth &lt;= 1.0
 		/// </summary>
@@ -250,6 +262,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public static readonly DependencyProperty ReversePathStyleProperty = DependencyProperty.Register(
 			nameof(ReversePathStyle), typeof(Style), typeof(CandlestickSeries), new PropertyMetadata(null)
+		);
+		/// <summary>
+		/// Identifies <see cref="PathTemplate"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty PathTemplateProperty = DependencyProperty.Register(
+			nameof(PathTemplate), typeof(DataTemplate), typeof(ColumnSeries), new PropertyMetadata(null)
 		);
 		/// <summary>
 		/// Identifies <see cref="OpenValuePath"/> dependency property.
@@ -330,9 +348,15 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Path factory for recycler.
 		/// </summary>
+		/// <param name="isp">Not used.</param>
 		/// <returns></returns>
-		Path CreatePath(ItemState<Path> ist) {
-			var path = new Path();
+		Path CreatePath(ItemState<Path> isp) {
+			var path = default(Path);
+			if (PathTemplate != null) {
+				path = PathTemplate.LoadContent() as Path;
+			} else if (Theme?.PathTemplate != null) {
+				path = Theme.PathTemplate.LoadContent() as Path;
+			}
 			return path;
 		}
 		ItemState<Path> ElementPipeline (
@@ -367,9 +391,14 @@ namespace eScapeLLC.UWP.Charts {
 			// lower shadow (low)
 			var lower = PathHelper.Line(centerx, bottomy, centerx, lowy);
 			pg.Figures.Add(lower);
-			path.Item2.Data = pg;
+			var shim = new GeometryShim<PathGeometry>() { PathData = pg };
+			path.Item2.DataContext = shim;
+			//path.Item2.Data = pg;
 			// establish the style for "forward" or "reverse" polarity
 			BindTo(this, valueO < valueC ? nameof(PathStyle) : nameof(ReversePathStyle), path.Item2, Path.StyleProperty);
+			// connect the shim's xform to template geometry's Transform
+			// NOTE this only works because we don't re-assign PathData
+			BindTo(shim, nameof(shim.GeometryTransform), shim.PathData, Geometry.TransformProperty);
 			var figs = new Tuple<double, PathFigure>[4];
 			figs[0] = new Tuple<double, PathFigure>(y1, body);
 			figs[1] = new Tuple<double, PathFigure>(y2, body);
@@ -456,7 +485,11 @@ namespace eScapeLLC.UWP.Charts {
 			var matx = MatrixSupport.TransformFor(icrc.SeriesArea, CategoryAxis, ValueAxis);
 			var mt = new MatrixTransform() { Matrix = matx };
 			foreach (var state in ItemState) {
-				state.Element.Data.Transform = mt;
+				if (state.Element.DataContext is GeometryShim<PathGeometry> gs) {
+					gs.GeometryTransform = mt;
+				} else {
+					state.Element.Data.Transform = mt;
+				}
 				if (ClipToDataRegion) {
 					state.Element.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
 				}
