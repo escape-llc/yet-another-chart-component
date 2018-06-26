@@ -58,7 +58,7 @@
 			</yacc:Chart.DataSources>
 			<yacc:Chart.Components>
 				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" DataSourceName="data" LabelPath="Label" 
-					PathStyle="{StaticResource Axes}"
+					PathStyle="{StaticResource Axes}" UseImplicitAnimations="True"
 					LabelStyle="{StaticResource CategoryAxisLabel}" />
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}" LimitMinimum="-4.5" LimitMaximum="4.5"
 					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="F1" />

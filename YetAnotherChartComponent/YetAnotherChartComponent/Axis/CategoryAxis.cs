@@ -167,9 +167,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Converter to use as the element <see cref="FrameworkElement.Style"/> and <see cref="TextBlock.Text"/> selector.
 		/// These are already set to their "standard" values before this is called, so it MAY selectively opt out of setting them.
+		/// <para/>
 		/// The <see cref="IValueConverter.Convert"/> targetType parameter is used to determine which value is requested.
-		/// Uses <see cref="String"/> for label override.  Return a new label or NULL to opt out.
-		/// Uses <see cref="Style"/> for style override.  Return a style or NULL to opt out.
+		/// <para/>
+		/// Uses <see cref="Tuple{Style,String}"/> for style/label override.  Return a new instance/NULL to opt in/out.
 		/// </summary>
 		public IValueConverter LabelFormatter { get; set; }
 		/// <summary>
@@ -179,6 +180,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// SHOULD return a <see cref="bool"/> but MAY return NULL/not-NULL.
 		/// </summary>
 		public IValueConverter LabelSelector { get; set; }
+		/// <summary>
+		/// Whether to create layer with composition animations enabled.
+		/// </summary>
+		public bool UseImplicitAnimations { get; set; }
 		/// <summary>
 		/// Binding path to the axis label.
 		/// </summary>
@@ -335,6 +340,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icelc"></param>
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			Layer = icelc.CreateLayer(Axis);
+			if (Layer is IChartLayerAnimation icla) {
+				icla.UseImplicitAnimations = UseImplicitAnimations;
+			}
 			ApplyLabelStyle(icelc as IChartErrorInfo);
 			AssignFromRef(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathAxisCategory),
 				PathStyle == null, Theme != null, Theme.PathAxisCategory != null,
