@@ -189,9 +189,6 @@ namespace eScapeLLC.UWP.Charts {
 		public Style ReversePathStyle { get { return (Style)GetValue(ReversePathStyleProperty); } set { SetValue(ReversePathStyleProperty, value); } }
 		/// <summary>
 		/// Template to use for generated paths.
-		/// If set, this overrides applying <see cref="DataSeriesWithValue.PathStyle"/> (assumed <see cref="Style"/> inside the template).
-		/// If this is not set, then <see cref="IChartTheme.PathTemplate"/> is used and <see cref="DataSeriesWithValue.PathStyle"/> applied (if set).
-		/// If Theme is not set, then <see cref="Path"/> is used (via ctor) and <see cref="DataSeriesWithValue.PathStyle"/> applied (if set).
 		/// </summary>
 		public DataTemplate PathTemplate { get { return (DataTemplate)GetValue(PathTemplateProperty); } set { SetValue(PathTemplateProperty, value); } }
 		/// <summary>
@@ -267,7 +264,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Identifies <see cref="PathTemplate"/> dependency property.
 		/// </summary>
 		public static readonly DependencyProperty PathTemplateProperty = DependencyProperty.Register(
-			nameof(PathTemplate), typeof(DataTemplate), typeof(ColumnSeries), new PropertyMetadata(null)
+			nameof(PathTemplate), typeof(DataTemplate), typeof(CandlestickSeries), new PropertyMetadata(null)
 		);
 		/// <summary>
 		/// Identifies <see cref="OpenValuePath"/> dependency property.
