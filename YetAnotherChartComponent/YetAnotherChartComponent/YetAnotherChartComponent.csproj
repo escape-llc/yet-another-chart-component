@@ -140,6 +140,7 @@
     <Compile Include="Support\Style.cs" />
     <Compile Include="Chart\Theme.cs" />
     <Compile Include="Axis\ValueAxis.cs" />
+    <Compile Include="Support\ViewModels.cs" />
     <EmbeddedResource Include="Properties\eScapeLLC.UWP.Charts.rd.xml" />
   </ItemGroup>
   <ItemGroup>
