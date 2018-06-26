@@ -152,6 +152,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public StyleGenerator Generator { get { return (StyleGenerator)GetValue(GeneratorProperty); } set { SetValue(GeneratorProperty, value); } }
 		/// <summary>
+		/// Template to use for generated paths.
+		/// </summary>
+		public DataTemplate PathTemplate { get { return (DataTemplate)GetValue(PathTemplateProperty); } set { SetValue(PathTemplateProperty, value); } }
+		/// <summary>
 		/// Provide item values.
 		/// </summary>
 		public IEnumerable<ISeriesItem> SeriesItemValues => WrapItemState(ItemState.AsReadOnly());
@@ -196,6 +200,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public static readonly DependencyProperty GeneratorProperty = DependencyProperty.Register(
 			nameof(Generator), typeof(StyleGenerator), typeof(PieSeries), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
+		);
+		/// <summary>
+		/// Identifies <see cref="PathTemplate"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty PathTemplateProperty = DependencyProperty.Register(
+			nameof(PathTemplate), typeof(DataTemplate), typeof(PieSeries), new PropertyMetadata(null)
 		);
 		#endregion
 		#region ctor
@@ -261,11 +271,18 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Path factory for recycler.
 		/// </summary>
+		/// <param name="isp">Not used.</param>
 		/// <returns></returns>
-		Path CreatePath(ItemState<Path> ist) {
-			var path = new Path {
-				Style = Generator.NextStyle()
-			};
+		Path CreatePath(ItemState<Path> isp) {
+			var path = default(Path);
+			if (PathTemplate != null) {
+				path = PathTemplate.LoadContent() as Path;
+			} else if (Theme?.PathTemplate != null) {
+				path = Theme.PathTemplate.LoadContent() as Path;
+			}
+			if(path != null) {
+				path.Style = Generator.NextStyle();
+			}
 			return path;
 		}
 		class State : RenderState_ValueAndLabel<ItemState<Path>, Path> {
@@ -278,8 +295,6 @@ namespace eScapeLLC.UWP.Charts {
 		object IDataSourceRenderer.Preamble(IChartRenderContext icrc) {
 			if (String.IsNullOrEmpty(ValuePath)) return null;
 			var by = new BindingEvaluator(ValuePath);
-			// TODO report the binding error
-			if (by == null) return null;
 			var paths = ItemState.Select(ms => ms.Element);
 			var recycler = new Recycler<Path, ItemState<Path>>(paths, CreatePath);
 			Generator.Reset();
@@ -304,7 +319,9 @@ namespace eScapeLLC.UWP.Charts {
 			var path = st.recycler.Next(null);
 			if (path == null) return;
 			// start with empty geometry
-			path.Item2.Data = new PathGeometry();
+			var shim = new GeometryShim<PathGeometry>() { PathData = new PathGeometry() };
+			path.Item2.DataContext = shim;
+			//path.Item2.Data = new PathGeometry();
 			var cs = st.evs.LabelFor(item);
 			if (cs == null) {
 				st.itemstate.Add(new SeriesItemState(index, valuex, valuex, valuey, path.Item2, index) { Label = label });
@@ -331,16 +348,19 @@ namespace eScapeLLC.UWP.Charts {
 			var startangle = 0.0;
 			foreach (var sta in st.itemstate) {
 				var percent = Math.Abs(sta.Value) / st.totalv;
-				var pg = sta.Element.Data as PathGeometry;
-				if (sta is ISeriesItemCommon sic) {
-					sic.Percent = percent;
-					// lay out geometry
-					var degs = sic.Percent * 360;
-					sic.PlacementAngle = startangle + degs / 2;
-					_trace.Verbose($"{Name}[{sta.Index}] {sta.Value} sa:{startangle:F2} degs:{degs:F2}");
-					var pf = CreateSegment(startangle, degs);
-					pg.Figures.Add(pf);
-					startangle += degs;
+				if(sta.Element.DataContext is GeometryShim<PathGeometry> gs) {
+					var pg = gs.PathData;
+					if (sta is ISeriesItemCommon sic) {
+						sic.Percent = percent;
+						// lay out geometry
+						var degs = sic.Percent * 360;
+						sic.PlacementAngle = startangle + degs / 2;
+						_trace.Verbose($"{Name}[{sta.Index}] {sta.Value} sa:{startangle:F2} degs:{degs:F2}");
+						var pf = CreateSegment(startangle, degs);
+						pg.Figures.Add(pf);
+						startangle += degs;
+						gs.GeometryUpdated();
+					}
 				}
 			}
 		}
@@ -377,8 +397,9 @@ namespace eScapeLLC.UWP.Charts {
 			if (ItemState.Count == 0) return;
 			var matx = (this as IProvideCustomTransform).TransformFor(icrc.Area);
 			foreach (var sis in ItemState) {
-				var pg = sis.Element.Data as PathGeometry;
-				pg.Transform = new MatrixTransform() { Matrix = matx };
+				if(sis.Element.DataContext is GeometryShim<PathGeometry> gs) {
+					gs.GeometryTransform = new MatrixTransform() { Matrix = matx };
+				}
 			}
 		}
 		#endregion
