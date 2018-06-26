@@ -157,6 +157,7 @@ namespace eScapeLLC.UWP.Charts {
 			// connect the shim to template root element's Visibility
 			BindTo(shim, nameof(Visibility), path.Item2, UIElement.VisibilityProperty);
 			// connect the shim's xform to template geometry's Transform
+			// NOTE this only works because we don't re-assign PathData
 			BindTo(shim, nameof(shim.GeometryTransform), shim.PathData, Geometry.TransformProperty);
 			if (byl == null) {
 				return new SeriesItemState_Double(index, leftx, BarOffset, y1, path.Item2);
@@ -188,8 +189,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="st">Updated state.</param>
 		void UpdateGeometry(ItemStateCore st) {
 			var isp = (st as ItemState<Path>);
-			var rg = (isp.Element.DataContext is GeometryShim<RectangleGeometry> gs ? gs.PathData : isp.Element.Data) as RectangleGeometry;
-			rg.Rect = new Rect(new Point(st.XValueAfterOffset, rg.Rect.Top), new Point(st.XValueAfterOffset + BarWidth, rg.Rect.Bottom));
+			if (isp.Element.DataContext is GeometryShim<RectangleGeometry> gs) {
+				var rg = gs.PathData;
+				gs.PathData.Rect = new Rect(new Point(st.XValueAfterOffset, rg.Rect.Top), new Point(st.XValueAfterOffset + BarWidth, rg.Rect.Bottom));
+				gs.GeometryUpdated();
+			}
 		}
 		#endregion
 		#region IRequireEnterLeave
