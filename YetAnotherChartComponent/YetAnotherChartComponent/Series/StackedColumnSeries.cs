@@ -105,9 +105,12 @@ namespace eScapeLLC.UWP.Charts {
 			/// <param name="bw"></param>
 			public void UpdateGeometry(double bw) {
 				foreach (var el in Elements) {
-					var rg = el.Item2.Data as RectangleGeometry;
-					var rightx = XValueAfterOffset + bw;
-					rg.Rect = new Rect(new Point(XValueAfterOffset, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
+					if(el.Item2.DataContext is GeometryShim<RectangleGeometry> gs) {
+						var rg = gs.PathData;
+						var rightx = XValueAfterOffset + bw;
+						rg.Rect = new Rect(new Point(XValueAfterOffset, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
+						gs.GeometryUpdated();
+					}
 				}
 			}
 			/// <summary>
@@ -216,6 +219,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public ColumnStackItemCollection ColumnStack { get; private set; }
 		/// <summary>
+		/// Template to use for generated paths.
+		/// </summary>
+		public DataTemplate PathTemplate { get { return (DataTemplate)GetValue(PathTemplateProperty); } set { SetValue(PathTemplateProperty, value); } }
+		/// <summary>
 		/// Binding path to the value axis label.
 		/// MAY be NULL.
 		/// If specified, this value will augment the one used for All Channels in <see cref="ISeriesItemValue"/>.
@@ -254,6 +261,12 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public static readonly DependencyProperty ValueLabelPathProperty = DependencyProperty.Register(
 			nameof(ValueLabelPath), typeof(string), typeof(StackedColumnSeries), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
+		);
+		/// <summary>
+		/// Identifies <see cref="PathTemplate"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty PathTemplateProperty = DependencyProperty.Register(
+			nameof(PathTemplate), typeof(DataTemplate), typeof(StackedColumnSeries), new PropertyMetadata(null)
 		);
 		#endregion
 		#region ctor
@@ -300,9 +313,15 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Path factory for recycler.
 		/// </summary>
+		/// <param name="sis">Not used.</param>
 		/// <returns></returns>
 		Path CreatePath(SeriesItemState sis) {
-			var path = new Path();
+			var path = default(Path);
+			if (PathTemplate != null) {
+				path = PathTemplate.LoadContent() as Path;
+			} else if (Theme?.PathTemplate != null) {
+				path = Theme.PathTemplate.LoadContent() as Path;
+			}
 			return path;
 		}
 		/// <summary>
@@ -334,8 +353,10 @@ namespace eScapeLLC.UWP.Charts {
 				_trace.Verbose($"{Name}[{index},{ix}] {valuey} ({barx},{topy}) ({rightx},{bottomy}) sis ({sis.Min},{sis.Max})");
 				var path = recycler.Next(null);
 				if (path == null) return null;
-				var rg = new RectangleGeometry() { Rect = new Rect(new Point(barx, topy), new Point(rightx, bottomy)) };
-				path.Item2.Data = rg;
+				var shim = new GeometryShim<RectangleGeometry>() {
+					PathData = new RectangleGeometry() { Rect = new Rect(new Point(barx, topy), new Point(rightx, bottomy)) }
+				};
+				path.Item2.DataContext = shim;
 				BindTo(ColumnStack[ix], "PathStyle", path.Item2, FrameworkElement.StyleProperty);
 				UpdateLimits(valuex, sis.Min, sis.Max);
 				sis.Elements.Add(new Tuple<double, Path>(valuey, path.Item2));
@@ -403,7 +424,9 @@ namespace eScapeLLC.UWP.Charts {
 			var mt = new MatrixTransform() { Matrix = matx };
 			foreach (var ss in ItemState) {
 				foreach (var el in ss.Elements) {
-					el.Item2.Data.Transform = mt;
+					if(el.Item2.DataContext is GeometryShim<RectangleGeometry> gs) {
+						gs.GeometryTransform = mt;
+					}
 					if (ClipToDataRegion) {
 						var cg = new RectangleGeometry() { Rect = icrc.SeriesArea };
 						el.Item2.Clip = cg;
