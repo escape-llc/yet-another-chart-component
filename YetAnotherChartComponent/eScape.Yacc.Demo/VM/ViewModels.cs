@@ -28,6 +28,12 @@ namespace Yacc.Demo.VM {
 	/// </summary>
 	public class MainPageVM : CoreViewModel {
 		public ObservableCollection<PageItem> PageList { get; private set; }
+		/// <summary>
+		/// Indicate whether we're in RDP or not.
+		/// Some features appear disabled when Remote, like implicit composition show/hide animations.
+		/// Other implicit composition animations appear to work, e.g. Offset.
+		/// </summary>
+		public bool IsRemote { get; } = Windows.System.RemoteDesktop.InteractiveSession.IsRemote;
 		public MainPageVM(CoreDispatcher dx) : base(dx) {
 			// build offline so we don't trigger events
 			var pl = new ObservableCollection<PageItem> {
