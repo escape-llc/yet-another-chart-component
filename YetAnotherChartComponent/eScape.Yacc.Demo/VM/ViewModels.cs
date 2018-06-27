@@ -34,6 +34,8 @@ namespace Yacc.Demo.VM {
 		/// Other implicit composition animations appear to work, e.g. Offset.
 		/// </summary>
 		public bool IsRemote { get; } = Windows.System.RemoteDesktop.InteractiveSession.IsRemote;
+		public bool IsImplicitSupported { get; } = eScapeLLC.UWP.Charts.UniversalApiContract.v3.CompositionSupport.IsSupported;
+		public bool IsShowHideSupported { get; } = eScapeLLC.UWP.Charts.UniversalApiContract.v4.CompositionSupport.IsSupported;
 		public MainPageVM(CoreDispatcher dx) : base(dx) {
 			// build offline so we don't trigger events
 			var pl = new ObservableCollection<PageItem> {
