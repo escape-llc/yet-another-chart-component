@@ -87,7 +87,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="fe"></param>
 		protected virtual void PostRemove(FrameworkElement fe) {
-			UniversalApiContract.v4.CompositionSupport.DetachAnimations(fe);
+			// IST: cannot detach here or the animations won't play!
+			//UniversalApiContract.v4.CompositionSupport.DetachAnimations(fe);
+			// probably true for this too but doesn't seem to affect
 			UniversalApiContract.v3.CompositionSupport.DetachAnimations(fe);
 		}
 		/// <summary>
