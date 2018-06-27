@@ -31,18 +31,17 @@ namespace eScapeLLC.UWP.Charts {
 		/// Doesn't check for CONTRACT.
 		/// </summary>
 		/// <param name="compositor"></param>
-		/// <param name="fadein">true: 0..1; false: 1..0.</param>
+		/// <param name="show">true: 0..1; false: 1..0.</param>
 		/// <param name="duration">Duration of animation in MS.</param>
 		/// <returns>New instance.</returns>
-		public static CompositionAnimationGroup CreateOpacityAnimation(this Compositor compositor, bool fadein, int duration) {
+		public static CompositionAnimationGroup CreateOpacityAnimation(this Compositor compositor, bool show, int duration) {
 			var animation = compositor.CreateScalarKeyFrameAnimation();
 			animation.Target = nameof(Visual.Opacity);
-			if(fadein) {
+			if(show) {
 				animation.InsertKeyFrame(0f, 0f);
 				animation.InsertKeyFrame(1f, 1f);
 			}
 			else {
-				animation.InsertKeyFrame(0f, 1f);
 				animation.InsertKeyFrame(1f, 0f);
 			}
 			animation.Duration = TimeSpan.FromMilliseconds(duration);
