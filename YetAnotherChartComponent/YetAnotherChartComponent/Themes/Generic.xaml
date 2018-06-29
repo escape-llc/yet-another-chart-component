@@ -99,6 +99,8 @@
 				<ControlTemplate TargetType="local:Chart">
 					<Canvas x:Name="PART_Canvas"
 						Background="{TemplateBinding Background}"
+						Margin="{TemplateBinding Margin}"
+						Opacity="{TemplateBinding Opacity}"
 						HorizontalAlignment="{TemplateBinding HorizontalAlignment}"
 						VerticalAlignment="{TemplateBinding VerticalAlignment}" />
 				</ControlTemplate>
