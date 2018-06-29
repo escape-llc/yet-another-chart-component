@@ -583,8 +583,9 @@ namespace eScapeLLC.UWP.Charts {
 			foreach (var itx in ItemState) {
 				UpdateElement(Source as IProvideSeriesItemValues, itx);
 			}
-			TeardownElements(reproc.Select(xx => xx.Element));
-			Layer.Remove(reproc.Select(xx => xx.Element));
+			var els = reproc.Select(xx => xx.Element).Where(el => el != null);
+			TeardownElements(els);
+			Layer.Remove(els);
 			// everything else will re-calc in Transforms()
 		}
 		#endregion
