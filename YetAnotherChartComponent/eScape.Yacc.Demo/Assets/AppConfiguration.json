@@ -7,7 +7,7 @@
 		"ColumnSeries": "Error",
 		"ColumnSeriesPaths": "Off",
 		"DataSeries": "Error",
-		"DataSource": "Verbose",
+		"DataSource": "Error",
 		"HorizontalBand": "Error",
 		"HorizontalRule": "Error",
 		"LineSeries": "Error",
