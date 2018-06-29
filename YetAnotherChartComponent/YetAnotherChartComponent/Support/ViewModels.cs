@@ -26,6 +26,7 @@ namespace eScapeLLC.UWP.Charts {
 	}
 	#endregion
 	#region Shims
+	#region DataTemplateShim
 	/// <summary>
 	/// "Internal" VM used as the <see cref="FrameworkElement.DataContext"/> for a <see cref="DataTemplate"/> used by a <see cref="ChartComponent"/>.
 	/// </summary>
@@ -40,6 +41,8 @@ namespace eScapeLLC.UWP.Charts {
 		public Visibility Visibility { get { return _vis; } set { _vis = value; Changed(nameof(Visibility)); } }
 		#endregion
 	}
+	#endregion
+	#region TextShim
 	/// <summary>
 	/// VM for a text label context.
 	/// </summary>
@@ -54,6 +57,8 @@ namespace eScapeLLC.UWP.Charts {
 		public String Text { get { return _text; } set { _text = value; Changed(nameof(Text)); } }
 		#endregion
 	}
+	#endregion
+	#region ObjectShim
 	/// <summary>
 	/// VM shim for a custom label context.
 	/// </summary>
@@ -68,9 +73,11 @@ namespace eScapeLLC.UWP.Charts {
 		public object CustomValue { get { return _value; } set { _value = value; Changed(nameof(CustomValue)); } }
 		#endregion
 	}
+	#endregion
+	#region GeometryShim<G>
 	/// <summary>
 	/// VM shim for a path.
-	/// User must manually bind the <see cref="Transform"/> or otherwise assign it to <see cref="Geometry"/> outside this VM.
+	/// Set the <see cref="PathData"/> property to bind the <see cref="Transform"/> to <see cref="Geometry"/>.
 	/// </summary>
 	/// <typeparam name="G">Geometry expected.</typeparam>
 	public class GeometryShim<G> : DataTemplateShim where G : Geometry {
@@ -112,11 +119,14 @@ namespace eScapeLLC.UWP.Charts {
 			}
 		}
 		#endregion
+		#region public
 		/// <summary>
 		/// Force a notify on <see cref="PathData"/>.
-		/// Use this if changing "internal" parts of the <see cref="PathData"/>, e.g. <see cref="RectangleGeometry.Rect"/>.
+		/// Use this method if changing "internal" parts of the <see cref="PathData"/>, e.g. <see cref="RectangleGeometry.Rect"/>.
 		/// </summary>
 		public void GeometryUpdated() { Changed(nameof(PathData)); }
+		#endregion
 	}
+	#endregion
 	#endregion
 }
