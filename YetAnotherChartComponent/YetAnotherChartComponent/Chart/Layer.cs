@@ -38,12 +38,6 @@ namespace eScapeLLC.UWP.Charts {
 		protected virtual void InternalAdd(FrameworkElement fe) {
 			var sb = default(Storyboard);
 			if(this is IChartLayerAnimation icla) {
-				if(icla.UseImplicitAnimations) {
-					UniversalApiContract.v3.CompositionSupport.AttachAnimations(fe, 1000);
-					if (icla.Enter == null) {
-						UniversalApiContract.v4.CompositionSupport.AttachAnimations(fe, 2000);
-					}
-				}
 				sb = icla.Enter.Clone(fe);
 			}
 			canvas.Children.Add(fe);
@@ -86,12 +80,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Called from <see cref="InternalClear"/> and <see cref="InternalRemove(FrameworkElement)"/>.
 		/// </summary>
 		/// <param name="fe"></param>
-		protected virtual void PostRemove(FrameworkElement fe) {
-			// IST: cannot detach here or the animations won't play!
-			//UniversalApiContract.v4.CompositionSupport.DetachAnimations(fe);
-			// probably true for this too but doesn't seem to affect
-			UniversalApiContract.v3.CompositionSupport.DetachAnimations(fe);
-		}
+		protected virtual void PostRemove(FrameworkElement fe) { }
 		/// <summary>
 		/// Remove elements.
 		/// </summary>
@@ -115,7 +104,6 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region IChartLayerAnimation
-		bool IChartLayerAnimation.UseImplicitAnimations { get; set; }
 		Storyboard IChartLayerAnimation.Enter { get; set; }
 		Storyboard IChartLayerAnimation.Leave { get; set; }
 		#endregion
