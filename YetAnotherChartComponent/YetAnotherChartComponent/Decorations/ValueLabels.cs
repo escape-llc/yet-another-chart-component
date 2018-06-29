@@ -333,7 +333,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (LabelTemplate != null) {
 				fe = LabelTemplate.LoadContent() as FrameworkElement;
 			} else if (Theme.TextBlockTemplate != null) {
-				fe = Theme.TextBlockTemplate.LoadContent() as TextBlock;
+				fe = Theme.TextBlockTemplate.LoadContent() as FrameworkElement;
 				if (LabelStyle != null) {
 					BindTo(this, nameof(LabelStyle), fe, FrameworkElement.StyleProperty);
 				}
