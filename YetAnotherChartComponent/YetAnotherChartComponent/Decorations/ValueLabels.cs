@@ -641,14 +641,9 @@ namespace eScapeLLC.UWP.Charts {
 			EnsureComponents(icelc as IChartComponentContext);
 			Layer = icelc.CreateLayer();
 			if (Layer is IChartLayerAnimation icla) {
-				icla.UseImplicitAnimations = UseImplicitAnimations;
 				// pass through storyboards
-				if(EnterStoryboard != null) {
-					icla.Enter = EnterStoryboard;
-				}
-				if (LeaveStoryboard != null) {
-					icla.Leave = LeaveStoryboard;
-				}
+				icla.Enter = EnterStoryboard;
+				icla.Leave = LeaveStoryboard;
 			}
 			AssignFromRef(icelc as IChartErrorInfo, NameOrType(), nameof(LabelStyle), nameof(Theme.LabelAxisTop),
 				LabelStyle == null, Theme != null, Theme.LabelAxisTop != null,
