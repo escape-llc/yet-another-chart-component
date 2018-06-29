@@ -5,6 +5,8 @@
 	xmlns:yacc="using:eScapeLLC.UWP.Charts"
 	xmlns:core="using:eScape.Core.Page"
 	xmlns:vm="using:Yacc.Demo.VM"
+	xmlns:animations="using:Microsoft.Toolkit.Uwp.UI.Animations"
+	xmlns:extensions="using:Microsoft.Toolkit.Uwp.UI.Extensions"
 	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 	mc:Ignorable="d">
@@ -91,22 +93,73 @@
 				<LineGeometry StartPoint=".4,.5" EndPoint=".6,.5" />
 			</GeometryGroup>
 		</DataTemplate>
+		<animations:AnimationCollection x:Key="OffsetAndOpacity">
+			<animations:OffsetAnimation Duration="0:0:0.75"/>
+			<animations:ScalarAnimation Target="Opacity" ImplicitTarget="Offset" Duration="0:0:0.75">
+				<animations:ExpressionKeyFrame Key="0" Value="1"/>
+				<animations:ExpressionKeyFrame Key=".5" Value=".4"/>
+				<animations:ExpressionKeyFrame Key="1" Value="1"/>
+			</animations:ScalarAnimation>
+		</animations:AnimationCollection>
+		<animations:AnimationCollection x:Key="OffsetAndRotate">
+			<animations:OffsetAnimation Duration="0:0:2"/>
+			<animations:ScalarAnimation Target="RotationAngleInDegrees" ImplicitTarget="Offset" Duration="0:0:2">
+				<animations:ExpressionKeyFrame Key=".25" Value="This.StartingValue + 15"/>
+				<animations:ExpressionKeyFrame Key="1" Value="This.FinalValue"/>
+			</animations:ScalarAnimation>
+		</animations:AnimationCollection>
+		<animations:AnimationCollection x:Key="OffsetAndScale">
+			<animations:OffsetAnimation Duration="0:0:2"/>
+			<animations:ScaleAnimation Duration="0:0:2" ImplicitTarget="Offset">
+				<animations:Vector3KeyFrame Key="0" Value="1,1,1"/>
+				<animations:Vector3KeyFrame Key=".5" Value="1.2,1.2,1"/>
+				<animations:Vector3KeyFrame Key="1" Value="1,1,1"/>
+			</animations:ScaleAnimation>
+		</animations:AnimationCollection>
+		<animations:AnimationCollection x:Key="Show">
+			<animations:TranslationAnimation Duration="0:0:5" To="0,0,0"></animations:TranslationAnimation>
+			<animations:OpacityAnimation Duration="0:0:5" To="1.0"></animations:OpacityAnimation>
+			<animations:ScaleAnimation Duration="0:0:5">
+				<animations:Vector3KeyFrame Key="0" Value="1,1,1"/>
+				<animations:Vector3KeyFrame Key=".5" Value="1.2,1.2,1"/>
+				<animations:Vector3KeyFrame Key="1" Value="1,1,1"/>
+			</animations:ScaleAnimation>
+		</animations:AnimationCollection>
+		<animations:AnimationCollection x:Key="Hide">
+			<animations:ScalarAnimation Target="Opacity" Duration="0:0:1" To="0.0"></animations:ScalarAnimation>
+			<animations:ScalarAnimation Target="Translation.Y" Duration="0:0:1" To="-200">
+				<animations:ScalarKeyFrame Key="0.1" Value="30"></animations:ScalarKeyFrame>
+				<animations:ScalarKeyFrame Key="0.5" Value="0.0"></animations:ScalarKeyFrame>
+			</animations:ScalarAnimation>
+		</animations:AnimationCollection>
 		<DataTemplate x:Key="LabelWithBorder">
-			<Border Background="Goldenrod" Padding="2" BorderThickness="1" CornerRadius="2" BorderBrush="DarkGray">
+			<Border Background="Goldenrod" Padding="2" BorderThickness="1" CornerRadius="2" BorderBrush="DarkGray"
+				extensions:VisualExtensions.NormalizedCenterPoint="0.5,0.5,0"
+				animations:Implicit.Animations="{StaticResource OffsetAndScale}"
+			>
 				<TextBlock Text="{Binding Text}" Style="{StaticResource BigLabels2}" />
 			</Border>
 		</DataTemplate>
 		<DataTemplate x:Key="LabelWithBorder2">
-			<Border Background="DarkGoldenrod" Padding="2" BorderThickness="1" CornerRadius="2" BorderBrush="DarkGray">
+			<Border Background="DarkGoldenrod" Padding="2" BorderThickness="1" CornerRadius="2" BorderBrush="DarkGray"
+				extensions:VisualExtensions.NormalizedCenterPoint="0.5,0.5,0"
+				animations:Implicit.Animations="{StaticResource OffsetAndScale}"
+			>
 				<TextBlock Text="{Binding Text}" Style="{StaticResource BigLabels2}" />
 			</Border>
 		</DataTemplate>
 		<DataTemplate x:Key="LabelMinMax">
-			<TextBlock Text="{Binding Text}" Style="{StaticResource BigLabels}" RenderTransformOrigin=".5,.5">
-			<TextBlock.RenderTransform>
-				<ScaleTransform ScaleX="1" ScaleY="1"/>
-			</TextBlock.RenderTransform>
-			</TextBlock>
+			<TextBlock Text="{Binding Text}" Style="{StaticResource BigLabels}"
+				extensions:VisualExtensions.NormalizedCenterPoint="0.5,0.5,0"
+				animations:Implicit.Animations="{StaticResource OffsetAndRotate}"
+				animations:Implicit.ShowAnimations="{StaticResource Show}"
+				animations:Implicit.HideAnimations="{StaticResource Hide}"
+				/>
+		</DataTemplate>
+		<DataTemplate x:Key="CategoryAxisChart1">
+			<TextBlock Style="{StaticResource CategoryAxisLabel2}" Text="{Binding Text}"
+				animations:Implicit.Animations="{StaticResource OffsetAndOpacity}"
+			/>
 		</DataTemplate>
 		<Style x:Key="v1_GreaterThan_v2" BasedOn="{StaticResource BigLabels}" TargetType="TextBlock">
 			<Setter Property="Foreground" Value="GreenYellow"/>
@@ -115,13 +168,13 @@
 			<Setter Property="Foreground" Value="Red"/>
 		</Style>
 		<Storyboard x:Key="Enter">
-			<DoubleAnimation
+			<DoubleAnimation EnableDependentAnimation="True"
 			Storyboard.TargetProperty="Opacity"
 			From="0.0" To="1.0" Duration="0:0:1"/>
-			<DoubleAnimation
+			<DoubleAnimation EnableDependentAnimation="True"
 			Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
 			From="0.1" To="1.0" Duration="0:0:1"/>
-			<DoubleAnimation
+			<DoubleAnimation EnableDependentAnimation="True"
 			Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
 			From="0.1" To="1.0" Duration="0:0:1"/>
 		</Storyboard>
@@ -161,7 +214,7 @@
 				<yacc:Background PathStyle="{StaticResource Bkg}"/>
 				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" DataSourceName="data" LabelPath="Label"
 					PathStyle="{StaticResource Axes}"
-					LabelStyle="{StaticResource CategoryAxisLabel2}" />
+					LabelTemplate="{StaticResource CategoryAxisChart1}" />
 				<yacc:ColumnSeries x:Name="colv1" DataSourceName="data" ValuePath="Value1" ValueLabelPath="."
 					ClipToDataRegion="False"
 					Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis"
@@ -191,15 +244,14 @@
 					PlacementOffset="0,1" LabelOffset="0,-1" LabelStyle="{StaticResource ScaledLabels}" />
 				<yacc:ValueLabels SourceName="colv1" LabelFormatString="F2" CategoryAxisOffset=".375"
 					PlacementOffset="0,1" LabelOffset="0,1" LabelTemplate="{StaticResource LabelMinMax}"
-					UseImplicitAnimations="True" EnterStoryboard="{StaticResource Enter}" LeaveStoryboard="{StaticResource Leave}"
 					LabelFormatter="{StaticResource ColorLabel}" LabelSelector="{StaticResource MinMaxLabel}" />
 				<!-- CANNOT ElementName bind here we're tying into a different XAML namescope -->
 				<yacc:ValueLabels SourceName="band" LabelFormatString="F2" x:Name="values1"
-					Visibility="{Binding ShowBand, Converter={StaticResource b2v}}" UseImplicitAnimations="True"
+					Visibility="{Binding ShowBand, Converter={StaticResource b2v}}"
 					CategoryAxisOffset="0" PlacementOffset="0,1" LabelOffset="1,0" LabelTemplate="{StaticResource LabelWithBorder}" />
 				<!-- CANNOT ElementName bind here we're tying into a different XAML namescope -->
 				<yacc:ValueLabels SourceName="band" ValueChannel="1" LabelFormatString="F2" x:Name="values2"
-					Visibility="{Binding ShowBand, Converter={StaticResource b2v}}" UseImplicitAnimations="True"
+					Visibility="{Binding ShowBand, Converter={StaticResource b2v}}"
 					CategoryAxisOffset="1" PlacementOffset="0,0" LabelOffset="-1,0" LabelTemplate="{StaticResource LabelWithBorder2}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>
