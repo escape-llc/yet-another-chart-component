@@ -159,6 +159,15 @@
 		<DataTemplate x:Key="CategoryAxisChart1">
 			<TextBlock Style="{StaticResource CategoryAxisLabel2}" Text="{Binding Text}"
 				animations:Implicit.Animations="{StaticResource OffsetAndOpacity}"
+				animations:Implicit.ShowAnimations="{StaticResource Show}"
+				animations:Implicit.HideAnimations="{StaticResource Hide}"
+			/>
+		</DataTemplate>
+		<DataTemplate x:Key="ValueAxisChart1">
+			<TextBlock Style="{StaticResource ValueAxisLabel}" Text="{Binding Text}"
+				animations:Implicit.Animations="{StaticResource OffsetAndOpacity}"
+				animations:Implicit.ShowAnimations="{StaticResource Show}"
+				animations:Implicit.HideAnimations="{StaticResource Hide}"
 			/>
 		</DataTemplate>
 		<Style x:Key="v1_GreaterThan_v2" BasedOn="{StaticResource BigLabels}" TargetType="TextBlock">
@@ -233,7 +242,7 @@
 					BandPathStyle="{StaticResource Band_v1v2-band}" ClipToDataRegion="False"
 					Visibility="{Binding ShowBand, Converter={StaticResource b2v}}" />
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}"
-					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="F1" UseImplicitAnimations="True" />
+					LabelTemplate="{StaticResource ValueAxisChart1}" LabelFormatString="F1" />
 				<!-- CANNOT ElementName bind here we're tying into a different XAML namescope -->
 				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource Grid}"
 					Visibility="{Binding ShowGrid, Converter={StaticResource b2v}}" />

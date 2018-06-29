@@ -5,6 +5,8 @@
 	xmlns:core="using:eScape.Core.Page"
 	xmlns:yacc="using:eScapeLLC.UWP.Charts"
 	xmlns:vm="using:Yacc.Demo.VM"
+	xmlns:animations="using:Microsoft.Toolkit.Uwp.UI.Animations"
+	xmlns:extensions="using:Microsoft.Toolkit.Uwp.UI.Extensions"
 	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 	mc:Ignorable="d">
@@ -46,6 +48,44 @@
 			<Setter Property="BorderThickness" Value="2"/>
 			<Setter Property="CornerRadius" Value="4"/>
 		</Style>
+		<animations:AnimationCollection x:Key="OffsetAndOpacity">
+			<animations:OffsetAnimation Duration="0:0:0.75"/>
+			<animations:ScalarAnimation Target="Opacity" ImplicitTarget="Offset" Duration="0:0:0.75">
+				<animations:ExpressionKeyFrame Key="0" Value="1"/>
+				<animations:ExpressionKeyFrame Key=".5" Value=".4"/>
+				<animations:ExpressionKeyFrame Key="1" Value="1"/>
+			</animations:ScalarAnimation>
+		</animations:AnimationCollection>
+		<animations:AnimationCollection x:Key="Show">
+			<animations:TranslationAnimation Duration="0:0:5" To="0,0,0"></animations:TranslationAnimation>
+			<animations:OpacityAnimation Duration="0:0:5" To="1.0"></animations:OpacityAnimation>
+			<animations:ScaleAnimation Duration="0:0:5">
+				<animations:Vector3KeyFrame Key="0" Value="1,1,1"/>
+				<animations:Vector3KeyFrame Key=".5" Value="1.2,1.2,1"/>
+				<animations:Vector3KeyFrame Key="1" Value="1,1,1"/>
+			</animations:ScaleAnimation>
+		</animations:AnimationCollection>
+		<animations:AnimationCollection x:Key="Hide">
+			<animations:ScalarAnimation Target="Opacity" Duration="0:0:1" To="0.0"></animations:ScalarAnimation>
+			<animations:ScalarAnimation Target="Translation.Y" Duration="0:0:1" To="-200">
+				<animations:ScalarKeyFrame Key="0.1" Value="30"></animations:ScalarKeyFrame>
+				<animations:ScalarKeyFrame Key="0.5" Value="0.0"></animations:ScalarKeyFrame>
+			</animations:ScalarAnimation>
+		</animations:AnimationCollection>
+		<DataTemplate x:Key="ValueAxisChart4">
+			<TextBlock Style="{StaticResource ValueAxisLabel}" Text="{Binding Text}"
+				animations:Implicit.Animations="{StaticResource OffsetAndOpacity}"
+				animations:Implicit.ShowAnimations="{StaticResource Show}"
+				animations:Implicit.HideAnimations="{StaticResource Hide}"
+			/>
+		</DataTemplate>
+		<DataTemplate x:Key="ValueAxisChart4Right">
+			<TextBlock Style="{StaticResource ValueAxisLabelRight}" Text="{Binding Text}"
+				animations:Implicit.Animations="{StaticResource OffsetAndOpacity}"
+				animations:Implicit.ShowAnimations="{StaticResource Show}"
+				animations:Implicit.HideAnimations="{StaticResource Hide}"
+			/>
+		</DataTemplate>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 		<CommandBar x:Name="toolbar"
@@ -68,9 +108,9 @@
 					PathStyle="{StaticResource Axes}" MinHeight="80"
 					LabelStyle="{StaticResource LabelRotated}" LabelSelector="{StaticResource DateRangeSelector}" LabelFormatter="{StaticResource DateFormatter}" />
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}" MinWidth="40"
-					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="C2" UseImplicitAnimations="True" />
+					LabelTemplate="{StaticResource ValueAxisChart4}" LabelFormatString="C2" />
 				<yacc:ValueAxis x:Name="volume" Side="Right" PathStyle="{StaticResource SecondAxis}" MinWidth="80"
-					LabelStyle="{StaticResource ValueAxisLabelRight}" LabelFormatString="N0" UseImplicitAnimations="True" />
+					LabelTemplate="{StaticResource ValueAxisChart4Right}" LabelFormatString="N0" />
 				<yacc:ValueAxisGrid ValueAxisName="volume" PathStyle="{StaticResource SecondGrid}"
 					Visibility="{Binding ElementName=cb_grid2, Path=IsChecked, Converter={StaticResource b2v}}" />
 				<yacc:ColumnSeries x:Name="colv2" DataSourceName="data" ValuePath="Value5"

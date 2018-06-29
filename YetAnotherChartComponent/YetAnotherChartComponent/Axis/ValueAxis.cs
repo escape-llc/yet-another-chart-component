@@ -42,7 +42,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// The item state for this component.
 		/// </summary>
 		protected class ItemState {
-			internal TextBlock tb;
+			internal FrameworkElement tb;
 			internal double value;
 			internal void SetLocation(double left, double top) {
 				tb.SetValue(Canvas.LeftProperty, left);
@@ -117,9 +117,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public IValueConverter LabelSelector { get; set; }
 		/// <summary>
-		/// Whether to create layer with composition animations enabled.
+		/// If set, the template to use for labels.
+		/// This overrides <see cref="AxisCommon.LabelStyle"/>.
+		/// If this is not set, then <see cref="TextBlock"/>s are used and <see cref="AxisCommon.LabelStyle"/> applied to them.
 		/// </summary>
-		public bool UseImplicitAnimations { get; set; }
+		public DataTemplate LabelTemplate { get { return (DataTemplate)GetValue(LabelTemplateProperty); } set { SetValue(LabelTemplateProperty, value); } }
 		/// <summary>
 		/// Path for the axis "bar".
 		/// </summary>
@@ -136,6 +138,14 @@ namespace eScapeLLC.UWP.Charts {
 		/// The layer to manage components.
 		/// </summary>
 		protected IChartLayer Layer { get; set; }
+		#endregion
+		#region DPs
+		/// <summary>
+		/// Identifies <see cref="LabelTemplate"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty LabelTemplateProperty = DependencyProperty.Register(
+			nameof(LabelTemplate), typeof(DataTemplate), typeof(ValueAxis), new PropertyMetadata(null)
+		);
 		#endregion
 		#region ctor
 		/// <summary>
@@ -157,25 +167,32 @@ namespace eScapeLLC.UWP.Charts {
 		void DoBindings(IChartEnterLeaveContext icelc) {
 			BindTo(this, nameof(PathStyle), Axis, FrameworkElement.StyleProperty);
 		}
+		FrameworkElement CreateElement(ItemState ist) {
+			var fe = default(FrameworkElement);
+			if (LabelTemplate != null) {
+				fe = LabelTemplate.LoadContent() as FrameworkElement;
+			} else if (Theme.TextBlockTemplate != null) {
+				fe = Theme.TextBlockTemplate.LoadContent() as FrameworkElement;
+				if (LabelStyle != null) {
+					BindTo(this, nameof(LabelStyle), fe, FrameworkElement.StyleProperty);
+				}
+			}
+			if (fe != null) {
+//				fe.SizeChanged += Element_SizeChanged;
+			}
+			return fe;
+		}
 		void DoTickLabels(IChartRenderContext icrc) {
 			var tc = new TickCalculator(Minimum, Maximum);
 			_trace.Verbose($"grid range:{tc.Range} tintv:{tc.TickInterval}");
 			// TODO may want to include the LabelStyle's padding if defined
 			var padding = AxisLineThickness + 2 * AxisMargin;
-			var tbr = new Recycler<TextBlock, ItemState>(TickLabels.Select(tl => tl.tb), (ist) => {
-				var tb = Theme.TextBlockTemplate.LoadContent() as TextBlock;
-				if (LabelStyle != null) {
-					BindTo(this, nameof(LabelStyle), tb, FrameworkElement.StyleProperty);
-				} else {
-					// already reported this, but need to do something
-					tb.FontSize = 10;
-					tb.Foreground = Axis.Fill;
-					tb.VerticalAlignment = VerticalAlignment.Center;
-					tb.HorizontalAlignment = Side == Side.Right ? HorizontalAlignment.Left : HorizontalAlignment.Right;
-					tb.TextAlignment = Side == Side.Right ? TextAlignment.Left : TextAlignment.Right;
-				}
+			var tbr = new Recycler<FrameworkElement, ItemState>(TickLabels.Select(tl => tl.tb), (ist) => {
+				var tb = CreateElement(ist);
 				tb.Width = icrc.Area.Width - padding;
-				tb.Padding = Side == Side.Right ? new Thickness(padding, 0, 0, 0) : new Thickness(0, 0, padding, 0);
+				if (tb is TextBlock tbb) {
+					tbb.Padding = Side == Side.Right ? new Thickness(padding, 0, 0, 0) : new Thickness(0, 0, padding, 0);
+				}
 				return tb;
 			});
 			var itemstate = new List<ItemState>();
@@ -218,8 +235,10 @@ namespace eScapeLLC.UWP.Charts {
 						}
 					}
 				}
+				var shim = new TextShim() { Text = text };
+				current.Item2.DataContext = shim;
+				BindTo(shim, nameof(Visibility), current.Item2, UIElement.VisibilityProperty);
 				var state = new ItemState() { tb = current.Item2, value = tick };
-				state.tb.Text = text;
 				state.SetLocation(icrc.Area.Left, tick);
 				sc.Generated(tick);
 				itemstate.Add(state);
@@ -242,7 +261,6 @@ namespace eScapeLLC.UWP.Charts {
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			Layer = icelc.CreateLayer(Axis);
 			if(Layer is IChartLayerAnimation icla) {
-				icla.UseImplicitAnimations = UseImplicitAnimations;
 			}
 			ApplyLabelStyle(icelc as IChartErrorInfo);
 			AssignFromRef(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathAxisValue),
