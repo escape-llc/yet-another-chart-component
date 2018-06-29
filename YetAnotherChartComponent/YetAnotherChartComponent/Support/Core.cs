@@ -188,10 +188,6 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public interface IChartLayerAnimation {
 		/// <summary>
-		/// Control the state of implicit composition animations (for Offset).
-		/// </summary>
-		bool UseImplicitAnimations { get; set; }
-		/// <summary>
 		/// Play on entry to VT.
 		/// </summary>
 		Storyboard Enter { get; set; }
