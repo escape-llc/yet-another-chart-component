@@ -68,7 +68,7 @@ namespace eScapeLLC.UWP.Charts {
 			// the label
 			internal object label;
 			// the display element
-			internal TextBlock tb;
+			internal FrameworkElement element;
 			// these are used for JIT re-positioning
 			internal double scalex;
 			internal bool usexau;
@@ -86,10 +86,10 @@ namespace eScapeLLC.UWP.Charts {
 			/// <param name="loc"></param>
 			internal void Locate(Point loc) {
 				if(usexau) {
-					tb.Width = scalex;
+					element.Width = scalex;
 				}
-				tb.SetValue(Canvas.LeftProperty, loc.X);
-				tb.SetValue(Canvas.TopProperty, loc.Y);
+				element.SetValue(Canvas.LeftProperty, loc.X);
+				element.SetValue(Canvas.TopProperty, loc.Y);
 			}
 			/// <summary>
 			/// Calculate position based on <see cref="FrameworkElement.ActualWidth"/> or XAU as appropriate.
@@ -101,7 +101,7 @@ namespace eScapeLLC.UWP.Charts {
 					return new Point(left + value * scalex, top);
 				} else {
 					// place it centered in cell
-					return new Point(left + value * scalex + scalex / 2 - tb.ActualWidth / 2, top);
+					return new Point(left + value * scalex + scalex / 2 - element.ActualWidth / 2, top);
 				}
 			}
 			/// <summary>
@@ -181,9 +181,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public IValueConverter LabelSelector { get; set; }
 		/// <summary>
-		/// Whether to create layer with composition animations enabled.
+		/// If set, the template to use for labels.
+		/// This overrides <see cref="AxisCommon.LabelStyle"/>.
+		/// If this is not set, then <see cref="TextBlock"/>s are used and <see cref="AxisCommon.LabelStyle"/> applied to them.
 		/// </summary>
-		public bool UseImplicitAnimations { get; set; }
+		public DataTemplate LabelTemplate { get { return (DataTemplate)GetValue(LabelTemplateProperty); } set { SetValue(LabelTemplateProperty, value); } }
 		/// <summary>
 		/// Binding path to the axis label.
 		/// </summary>
@@ -218,6 +220,12 @@ namespace eScapeLLC.UWP.Charts {
 		public static readonly DependencyProperty LabelPathProperty = DependencyProperty.Register(
 			nameof(LabelPath), typeof(String), typeof(CategoryAxis), new PropertyMetadata(null, new PropertyChangedCallback(PropertyChanged_ValueDirty))
 		);
+		/// <summary>
+		/// Identifies <see cref="LabelTemplate"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty LabelTemplateProperty = DependencyProperty.Register(
+			nameof(LabelTemplate), typeof(DataTemplate), typeof(CategoryAxis), new PropertyMetadata(null)
+		);
 		#endregion
 		#region ctor
 		/// <summary>
@@ -236,6 +244,7 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region helpers
 		/// <summary>
+		/// Layout pass size changed.
 		/// Just-in-time re-position of label element at exactly the right spot after it's done with (asynchronous) measure/arrange.
 		/// </summary>
 		/// <param name="sender"></param>
@@ -246,7 +255,7 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"{Name} sizeChanged ps:{e.PreviousSize} ns:{e.NewSize} text:{vm?.Text}");
 #endif
 			var fe = sender as FrameworkElement;
-			var state = AxisLabels.SingleOrDefault((sis) => sis.tb == fe);
+			var state = AxisLabels.SingleOrDefault((sis) => sis.element == fe);
 			if (state != null) {
 				var loc = state.UpdateLocation();
 				_trace.Verbose($"{Name} sizeChanged loc:{loc} yv:{state.value} ns:{e.NewSize}");
@@ -261,24 +270,24 @@ namespace eScapeLLC.UWP.Charts {
 			AxisGeometry.Figures.Add(pf);
 		}
 		/// <summary>
-		/// Factory method for <see cref="TextBlock"/> creation.
+		/// Factory method for <see cref="FrameworkElement"/> creation.
 		/// </summary>
 		/// <param name="state">Item state.</param>
 		/// <returns>New element.</returns>
-		TextBlock CreateElement(ItemState state) {
-			var tb = Theme.TextBlockTemplate.LoadContent() as TextBlock;
-			if (LabelStyle != null) {
-				BindTo(this, nameof(LabelStyle), tb, FrameworkElement.StyleProperty);
-			} else {
-				// already reported this, but need to do something
-				tb.FontSize = 10;
-				tb.Foreground = Axis.Fill;
-				tb.VerticalAlignment = VerticalAlignment.Center;
-				tb.HorizontalAlignment = HorizontalAlignment.Center;
-				tb.TextAlignment = TextAlignment.Center;
+		FrameworkElement CreateElement(ItemState state) {
+			var fe = default(FrameworkElement);
+			if (LabelTemplate != null) {
+				fe = LabelTemplate.LoadContent() as FrameworkElement;
+			} else if (Theme.TextBlockTemplate != null) {
+				fe = Theme.TextBlockTemplate.LoadContent() as TextBlock;
+				if (LabelStyle != null) {
+					BindTo(this, nameof(LabelStyle), fe, FrameworkElement.StyleProperty);
+				}
 			}
-			tb.SizeChanged += Element_SizeChanged;
-			return tb;
+			if (fe != null) {
+				fe.SizeChanged += Element_SizeChanged;
+			}
+			return fe;
 		}
 		/// <summary>
 		/// Main flow of the render pipeline.
@@ -286,7 +295,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="sc"></param>
 		/// <param name="ist"></param>
 		/// <param name="recycler"></param>
-		void ElementPipeline(SelectorContext sc, ItemState ist, Recycler<TextBlock,ItemState> recycler) {
+		void ElementPipeline(SelectorContext sc, ItemState ist, Recycler<FrameworkElement,ItemState> recycler) {
 			sc.SetTick(ist.index);
 			var createit = true;
 			if (LabelSelector != null) {
@@ -326,8 +335,10 @@ namespace eScapeLLC.UWP.Charts {
 				}
 			}
 			// back-fill values
-			ist.tb = current.Item2;
-			ist.tb.Text = text;
+			var shim = new TextShim() { Text = text };
+			current.Item2.DataContext = shim;
+			BindTo(shim, nameof(Visibility), current.Item2, UIElement.VisibilityProperty);
+			ist.element = current.Item2;
 			sc.Generated(ist);
 		}
 		#endregion
@@ -341,7 +352,6 @@ namespace eScapeLLC.UWP.Charts {
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			Layer = icelc.CreateLayer(Axis);
 			if (Layer is IChartLayerAnimation icla) {
-				icla.UseImplicitAnimations = UseImplicitAnimations;
 			}
 			ApplyLabelStyle(icelc as IChartErrorInfo);
 			AssignFromRef(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathAxisCategory),
@@ -387,16 +397,16 @@ namespace eScapeLLC.UWP.Charts {
 			AxisGeometry.Transform = new MatrixTransform() { Matrix = matx };
 			_trace.Verbose($"transforms sx:{scalex:F3} matx:{matx} a:{icrc.Area}");
 			foreach (var state in AxisLabels) {
-				if (state.tb == null) continue;
+				if (state.element == null) continue;
 				state.scalex = scalex;
 				state.top = icrc.Area.Top + AxisLineThickness + 2 * AxisMargin;
 				state.left = icrc.Area.Left;
 				var loc = state.UpdateLocation();
-				_trace.Verbose($"tb {state.tb.ActualWidth}x{state.tb.ActualHeight} v:{state.value} @:({loc.X},{loc.Y})");
+				_trace.Verbose($"tb {state.element.ActualWidth}x{state.element.ActualHeight} v:{state.value} @:({loc.X},{loc.Y})");
 				if (icrc.Type != RenderType.TransformsOnly) {
 					// doing render so (try to) trigger the SizeChanged handler
-					state.tb.InvalidateMeasure();
-					state.tb.InvalidateArrange();
+					state.element.InvalidateMeasure();
+					state.element.InvalidateArrange();
 				}
 			}
 		}
@@ -405,7 +415,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Internal render state.
 		/// </summary>
-		class State : RenderStateCore<ItemState, TextBlock> {
+		class State : RenderStateCore<ItemState, FrameworkElement> {
 			/// <summary>
 			/// Remember whether we are using x-axis units or auto.
 			/// </summary>
@@ -415,7 +425,7 @@ namespace eScapeLLC.UWP.Charts {
 			/// </summary>
 			internal readonly BindingEvaluator bl;
 			internal readonly IChartRenderContext icrc;
-			internal State(List<ItemState> state, Recycler<TextBlock, ItemState> rc, IChartRenderContext icrc, bool xau, BindingEvaluator bl) : base(state, rc) {
+			internal State(List<ItemState> state, Recycler<FrameworkElement, ItemState> rc, IChartRenderContext icrc, bool xau, BindingEvaluator bl) : base(state, rc) {
 				this.icrc = icrc;
 				usexau = xau;
 				this.bl = bl;
@@ -429,7 +439,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (String.IsNullOrEmpty(LabelPath)) return null;
 			var bl = new BindingEvaluator(LabelPath);
 			if (bl == null) return null;
-			var recycler = new Recycler<TextBlock, ItemState>(AxisLabels.Where(tl=>tl.tb != null).Select(tl => tl.tb), CreateElement);
+			var recycler = new Recycler<FrameworkElement, ItemState>(AxisLabels.Where(tl=>tl.element != null).Select(tl => tl.element), CreateElement);
 			ResetLimits();
 			var widx = LabelStyle?.Find(FrameworkElement.WidthProperty);
 			return new State(new List<ItemState>(), recycler, icrc, widx == null, bl);
@@ -488,8 +498,8 @@ namespace eScapeLLC.UWP.Charts {
 			var remove = new List<FrameworkElement>();
 			for (int ix = 0; ix < items.Count; ix++) {
 				// remove requested item
-				if (AxisLabels[startAt].tb != null) {
-					remove.Add(AxisLabels[startAt].tb);
+				if (AxisLabels[startAt].element != null) {
+					remove.Add(AxisLabels[startAt].element);
 				}
 				AxisLabels.RemoveAt(startAt);
 			}
@@ -531,7 +541,7 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			// render new items
 			// run the element pipeline on the added items
-			var recycler = new Recycler<TextBlock, ItemState>(new List<TextBlock>(), CreateElement);
+			var recycler = new Recycler<FrameworkElement, ItemState>(CreateElement);
 			var labels = new List<ICategoryLabelState>(AxisLabels);
 			var sc = new SelectorContext(this, icrc.SeriesArea, labels);
 			foreach (var istate in reproc) {
