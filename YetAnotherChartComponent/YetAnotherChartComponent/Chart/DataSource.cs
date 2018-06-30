@@ -108,6 +108,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// Represents a source of data for one-or-more series.
 	/// Primary purpose is to consolidate the data traversal for rendering this data.
 	/// This is important when the data changes; only one notification is handled instead one per series.
+	/// <para/>
 	/// The <see cref="Items"/> property automatically tracks anything that implements <see cref="INotifyCollectionChanged"/>.
 	/// Otherwise, owner must call <see cref="Refresh"/> at appropriate time, or alternatively, increment the <see cref="RefreshRequest"/> property.
 	/// The latter is handier when you are doing collection updtaes from a View Model.
