@@ -72,12 +72,12 @@ namespace eScapeLLC.UWP.Charts {
 		#region FrameworkElements
 		/// <summary>
 		/// Data template for "default" data template.
-		/// It SHOULD be configured to accept a <see cref="DataTemplateShim"/> as its <see cref="FrameworkElement.DataContext"/>.
+		/// It MUST be configured to accept a <see cref="DataTemplateShim"/> as its <see cref="FrameworkElement.DataContext"/>.
 		/// </summary>
 		DataTemplate TextBlockTemplate { get; }
 		/// <summary>
 		/// Data template for "default" series item containers.
-		/// MUST be a Path at the ROOT.
+		/// It MUST be configured to accept a <see cref="DataTemplateShim"/> as its <see cref="FrameworkElement.DataContext"/>.
 		/// </summary>
 		DataTemplate PathTemplate { get; }
 		#endregion
