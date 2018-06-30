@@ -167,10 +167,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public IValueConverter LabelSelector { get; set; }
 		/// <summary>
-		/// Whether to create layer with composition animations enabled.
-		/// </summary>
-		public bool UseImplicitAnimations { get; set; }
-		/// <summary>
 		/// Label entry storyboard.
 		/// </summary>
 		public Storyboard EnterStoryboard { get; set; }
