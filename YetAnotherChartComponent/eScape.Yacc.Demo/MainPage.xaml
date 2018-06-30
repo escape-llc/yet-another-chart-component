@@ -33,8 +33,8 @@
 			<Frame x:Name="MainFrame" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" BorderBrush="Gray" BorderThickness="1"
 				RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True" RelativePanel.AlignTopWithPanel="True"/>
 			<StackPanel Margin="4" Orientation="Vertical" RelativePanel.AlignBottomWithPanel="True">
-				<TextBlock Visibility="{Binding IsShowHideSupported}" Text="Show/Hide Active" FontStyle="Italic" Foreground="DarkGray" />
-				<TextBlock Visibility="{Binding IsImplicitSupported}" Text="Implicit Active" FontStyle="Italic" Foreground="DarkGray" />
+				<TextBlock Visibility="{Binding IsShowHideSupported}" Text="Show/Hide Supported" FontStyle="Italic" Foreground="DarkGray" />
+				<TextBlock Visibility="{Binding IsImplicitSupported}" Text="Implicit Supported" FontStyle="Italic" Foreground="DarkGray" />
 				<TextBlock Visibility="{Binding IsRemote}" Text="RDP Active" FontStyle="Italic" Foreground="DarkGray" />
 			</StackPanel>
 			<controls:InAppNotification x:Name="Notification" ContentTemplate="{StaticResource PageItem}" RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignVerticalCenterWithPanel="True"/>
