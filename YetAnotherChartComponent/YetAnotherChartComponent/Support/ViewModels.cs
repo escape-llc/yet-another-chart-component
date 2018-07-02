@@ -128,5 +128,18 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 	}
 	#endregion
+	#region GeometryWithOffsetShim<G>
+	/// <summary>
+	/// Additional property for binding to Canvas.LeftProperty or Canvas.TopProperty (depending on orientation).
+	/// </summary>
+	/// <typeparam name="G"></typeparam>
+	public class GeometryWithOffsetShim<G> : GeometryShim<G> where G: Geometry {
+		double _offset;
+		/// <summary>
+		/// Current offset.
+		/// </summary>
+		public double Offset {  get { return _offset; } set { _offset = value; Changed(nameof(Offset)); } }
+	}
+	#endregion
 	#endregion
 }
