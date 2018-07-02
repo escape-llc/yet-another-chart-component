@@ -18,6 +18,11 @@
 			<Setter Property="Foreground" Value="Azure"/>
 		</Style>
 		<yacc:DefaultColorsGenerator x:Key="colors" BaseStyle="{StaticResource Column_v1}"/>
+		<TransitionCollection x:Key="DefaultTransitions">
+			<EntranceThemeTransition/>
+			<AddDeleteThemeTransition/>
+			<EdgeUIThemeTransition/>
+		</TransitionCollection>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 		<CommandBar x:Name="toolbar"
@@ -26,7 +31,7 @@
 				<AppBarToggleButton IsChecked="True" x:Name="cb_legend" Label="Toggle" Content="Legend"/>
 			</CommandBar.PrimaryCommands>
 		</CommandBar>
-		<yacc:Chart x:Name="chart" Style="{StaticResource Chart}" ChartError="Chart_ChartError"
+		<yacc:Chart x:Name="chart" Style="{StaticResource Chart}" ChartError="Chart_ChartError" Transitions="{StaticResource DefaultTransitions}"
 			RelativePanel.Below="toolbar" RelativePanel.AlignBottomWithPanel="True"
 			RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True">
 			<yacc:Chart.DataSources>
