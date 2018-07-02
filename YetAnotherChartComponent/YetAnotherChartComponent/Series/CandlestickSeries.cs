@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using Windows.UI.Xaml;
+using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
 
@@ -17,7 +18,6 @@ namespace eScapeLLC.UWP.Charts {
 		#region SeriesItemState
 		internal interface IFigureData {
 			Tuple<double,PathFigure>[] Elements { get; }
-			void UpdateGeometry(double width);
 		}
 		/// <summary>
 		/// Item state.
@@ -29,14 +29,6 @@ namespace eScapeLLC.UWP.Charts {
 			internal Tuple<double, PathFigure>[] Elements { get; private set; }
 			internal SeriesItemState(int idx, double xv, double xo, double yv, Path ele, Tuple<double, PathFigure>[] figs) : base(idx, xv, xo, yv, ele, 0) { Elements = figs; }
 			Tuple<double, PathFigure>[] IFigureData.Elements => Elements;
-			void IFigureData.UpdateGeometry(double width) {
-				if (Element.DataContext is GeometryShim<PathGeometry> gs) {
-					var rightx = XValueAfterOffset + width;
-					gs.PathData.Figures.Clear();
-					SeriesItemState_Custom.UpdateGeometry(XValue, XValueAfterOffset, rightx, Elements, gs.PathData.Figures);
-					gs.GeometryUpdated();
-				}
-			}
 		}
 		/// <summary>
 		/// Custom item state.
@@ -48,43 +40,6 @@ namespace eScapeLLC.UWP.Charts {
 			internal Tuple<double, PathFigure>[] Elements { get; private set; }
 			internal SeriesItemState_Custom(int idx, double xv, double xo, double yv, object cs, Path ele, Tuple<double, PathFigure>[] figs) : base(idx, xv, xo, yv, cs, ele, 0) { Elements = figs; }
 			Tuple<double, PathFigure>[] IFigureData.Elements => Elements;
-			void IFigureData.UpdateGeometry(double width) {
-				if (Element.DataContext is GeometryShim<PathGeometry> gs) {
-					var rightx = XValueAfterOffset + width;
-					gs.PathData.Figures.Clear();
-					UpdateGeometry(XValue, XValueAfterOffset, rightx, Elements, gs.PathData.Figures);
-					gs.GeometryUpdated();
-				}
-			}
-			/// <summary>
-			/// Update figures in-place, and populate given <see cref="PathFigureCollection"/> with the new figures.
-			/// </summary>
-			/// <param name="leftx"></param>
-			/// <param name="offsetx"></param>
-			/// <param name="rightx"></param>
-			/// <param name="figs">Array of figures to update.</param>
-			/// <param name="pfc">Target figure collection.</param>
-			/// <returns>New <see cref="PathGeometry"/> matching the new values.</returns>
-			internal static void UpdateGeometry(double leftx, double offsetx, double rightx, Tuple<double,PathFigure>[] figs, PathFigureCollection pfc) {
-				var topy = Math.Max(figs[0].Item1, figs[1].Item1);
-				var bottomy = Math.Min(figs[0].Item1, figs[1].Item1);
-				var highy = Math.Max(figs[2].Item1, figs[3].Item1);
-				var lowy = Math.Min(figs[2].Item1, figs[3].Item1);
-				// body (open/close)
-				var body = PathHelper.Rectangle(offsetx, topy, rightx, bottomy);
-				// upper shadow (high)
-				var centerx = offsetx + (rightx - offsetx) / 2;
-				var upper = PathHelper.Line(centerx, topy, centerx, highy);
-				// lower shadow (low)
-				var lower = PathHelper.Line(centerx, bottomy, centerx, lowy);
-				figs[0] = new Tuple<double, PathFigure>(figs[0].Item1, body);
-				figs[1] = new Tuple<double, PathFigure>(figs[1].Item1, body);
-				figs[2] = new Tuple<double, PathFigure>(figs[2].Item1, upper);
-				figs[3] = new Tuple<double, PathFigure>(figs[3].Item1, lower);
-				pfc.Add(body);
-				pfc.Add(upper);
-				pfc.Add(lower);
-			}
 		}
 		#endregion
 		#region Evaluators
@@ -366,7 +321,7 @@ namespace eScapeLLC.UWP.Charts {
 			var y3 = ValueAxis.For(valueH);
 			var y4 = ValueAxis.For(valueL);
 			var leftx = CategoryAxis.For(valuex);
-			var offsetx = leftx + BarOffset;
+			var offsetx = BarOffset;
 			var rightx = offsetx + BarWidth;
 			// force them to be a min/max
 			var topy = Math.Max(y1, y2);
@@ -388,10 +343,12 @@ namespace eScapeLLC.UWP.Charts {
 			// lower shadow (low)
 			var lower = PathHelper.Line(centerx, bottomy, centerx, lowy);
 			pg.Figures.Add(lower);
-			var shim = new GeometryShim<PathGeometry>() { PathData = pg };
+			var shim = new GeometryWithOffsetShim<PathGeometry>() { PathData = pg };
 			path.Item2.DataContext = shim;
 			// establish the style for "forward" or "reverse" polarity
 			BindTo(this, valueO < valueC ? nameof(PathStyle) : nameof(ReversePathStyle), path.Item2, Path.StyleProperty);
+			// bind offset
+			BindTo(shim, nameof(shim.Offset), path.Item2, Canvas.LeftProperty);
 			var figs = new Tuple<double, PathFigure>[4];
 			figs[0] = new Tuple<double, PathFigure>(y1, body);
 			figs[1] = new Tuple<double, PathFigure>(y2, body);
@@ -409,7 +366,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="st">State to update.</param>
 		void UpdateGeometry(ItemStateCore st) {
-			(st as IFigureData).UpdateGeometry(BarWidth);
+			//(st as IFigureData).UpdateGeometry(BarWidth);
 		}
 		#endregion
 		#region IProvideSeriesItemUpdates
@@ -478,8 +435,9 @@ namespace eScapeLLC.UWP.Charts {
 			var matx = MatrixSupport.TransformFor(icrc.SeriesArea, CategoryAxis, ValueAxis);
 			var mt = new MatrixTransform() { Matrix = matx };
 			foreach (var state in ItemState) {
-				if (state.Element.DataContext is GeometryShim<PathGeometry> gs) {
+				if (state.Element.DataContext is GeometryWithOffsetShim<PathGeometry> gs) {
 					gs.GeometryTransform = mt;
+					gs.Offset = state.XValue * matx.M11;
 				} else {
 					state.Element.Data.Transform = mt;
 				}

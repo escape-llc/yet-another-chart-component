@@ -7,6 +7,7 @@ using System.Collections.Specialized;
 using System.Linq;
 using Windows.Foundation;
 using Windows.UI.Xaml;
+using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
 
@@ -100,26 +101,12 @@ namespace eScapeLLC.UWP.Charts {
 				if (vx > Max) Max = vx;
 			}
 			/// <summary>
-			/// Update the location of the <see cref="Geometry"/>.
-			/// </summary>
-			/// <param name="bw"></param>
-			public void UpdateGeometry(double bw) {
-				foreach (var el in Elements) {
-					if(el.Item2.DataContext is GeometryShim<RectangleGeometry> gs) {
-						var rg = gs.PathData;
-						var rightx = XValueAfterOffset + bw;
-						rg.Rect = new Rect(new Point(XValueAfterOffset, rg.Rect.Top), new Point(rightx, rg.Rect.Bottom));
-						gs.GeometryUpdated();
-					}
-				}
-			}
-			/// <summary>
 			/// Ctor.
 			/// </summary>
 			/// <param name="idx">Index.</param>
 			/// <param name="xv">x-value.</param>
-			/// <param name="xvo">x-value offset.</param>
-			public SeriesItemState(int idx, double xv, double xvo) : base(idx, xv, xvo) { }
+			/// <param name="xo">x-value offset.</param>
+			public SeriesItemState(int idx, double xv, double xo) : base(idx, xv, xo) { }
 		}
 		/// <summary>
 		/// Custom state version.
@@ -134,9 +121,9 @@ namespace eScapeLLC.UWP.Charts {
 			/// </summary>
 			/// <param name="idx">Index.</param>
 			/// <param name="xv">x-value.</param>
-			/// <param name="xvo">x-value after offset.</param>
+			/// <param name="xo">x-value offset.</param>
 			/// <param name="cs">Custom state.</param>
-			public SeriesItemState_Custom(int idx, double xv, double xvo, object cs) : base(idx, xv, xvo) { CustomValue = cs; }
+			public SeriesItemState_Custom(int idx, double xv, double xo, object cs) : base(idx, xv, xo) { CustomValue = cs; }
 		}
 		/// <summary>
 		/// Wrapper for the channel items.
@@ -147,7 +134,7 @@ namespace eScapeLLC.UWP.Charts {
 			/// </summary>
 			/// <returns></returns>
 			protected override Placement CreatePlacement() { return new RectanglePlacement(Value >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, (Element.Data as RectangleGeometry).Rect); }
-			internal ChannelItemState(int idx, double xv, double xvo, double yv, Path ele, int ch) : base(idx, xv, xvo, yv, ele, ch) { }
+			internal ChannelItemState(int idx, double xv, double xo, double yv, Path ele, int ch) : base(idx, xv, xo, yv, ele, ch) { }
 		}
 		/// <summary>
 		/// Wrapper for the channel items.
@@ -158,7 +145,7 @@ namespace eScapeLLC.UWP.Charts {
 			/// </summary>
 			/// <returns></returns>
 			protected override Placement CreatePlacement() { return new RectanglePlacement(Value >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, (Element.Data as RectangleGeometry).Rect); }
-			internal ChannelItemState_Custom(int idx, double xv, double xvo, double yv, object cs, Path ele, int ch) : base(idx, xv, xvo, yv, cs, ele, ch) { }
+			internal ChannelItemState_Custom(int idx, double xv, double xo, double yv, object cs, Path ele, int ch) : base(idx, xv, xo, yv, cs, ele, ch) { }
 		}
 		#endregion
 		#region Evaluators
@@ -335,9 +322,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// <returns>New instance or NULL.</returns>
 		SeriesItemState ElementPipeline(int index, double valuex, object item, Recycler<Path, SeriesItemState> recycler, Evaluators evs) {
 			var leftx = CategoryAxis.For(valuex);
-			var barx = leftx + BarOffset;
+			var barx = BarOffset;
 			var rightx = barx + BarWidth;
-			var sis = evs.byl == null ? new SeriesItemState(index, leftx, BarOffset) : new SeriesItemState_Custom(index, leftx, barx, evs.byl.For(item));
+			var sis = evs.byl == null ? new SeriesItemState(index, leftx, BarOffset) : new SeriesItemState_Custom(index, leftx, BarOffset, evs.byl.For(item));
 			for (int ix = 0; ix < evs.bys.Length; ix++) {
 				var valuey = CoerceValue(item, evs.bys[ix]);
 				if (double.IsNaN(valuey)) {
@@ -353,11 +340,13 @@ namespace eScapeLLC.UWP.Charts {
 				_trace.Verbose($"{Name}[{index},{ix}] {valuey} ({barx},{topy}) ({rightx},{bottomy}) sis ({sis.Min},{sis.Max})");
 				var path = recycler.Next(null);
 				if (path == null) return null;
-				var shim = new GeometryShim<RectangleGeometry>() {
+				var shim = new GeometryWithOffsetShim<RectangleGeometry>() {
 					PathData = new RectangleGeometry() { Rect = new Rect(new Point(barx, topy), new Point(rightx, bottomy)) }
 				};
 				path.Item2.DataContext = shim;
 				BindTo(ColumnStack[ix], "PathStyle", path.Item2, FrameworkElement.StyleProperty);
+				// bind offset
+				BindTo(shim, nameof(shim.Offset), path.Item2, Canvas.LeftProperty);
 				UpdateLimits(valuex, sis.Min, sis.Max);
 				sis.Elements.Add(new Tuple<double, Path>(valuey, path.Item2));
 			}
@@ -367,9 +356,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Cascade geometry update.
 		/// </summary>
 		/// <param name="st">State to update.</param>
-		void UpdateGeometry(ItemStateCore st) {
-			(st as SeriesItemState).UpdateGeometry(BarWidth);
-		}
+		void UpdateGeometry(ItemStateCore st) { }
 		#endregion
 		#region IProvideSeriesItemUpdates
 		/// <summary>
@@ -424,8 +411,9 @@ namespace eScapeLLC.UWP.Charts {
 			var mt = new MatrixTransform() { Matrix = matx };
 			foreach (var ss in ItemState) {
 				foreach (var el in ss.Elements) {
-					if(el.Item2.DataContext is GeometryShim<RectangleGeometry> gs) {
+					if(el.Item2.DataContext is GeometryWithOffsetShim<RectangleGeometry> gs) {
 						gs.GeometryTransform = mt;
+						gs.Offset = ss.XValue * matx.M11;
 					}
 					if (ClipToDataRegion) {
 						var cg = new RectangleGeometry() { Rect = icrc.SeriesArea };
