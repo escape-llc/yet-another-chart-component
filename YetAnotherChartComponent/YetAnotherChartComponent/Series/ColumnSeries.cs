@@ -7,6 +7,7 @@ using System.Linq;
 using Windows.Foundation;
 using Windows.UI;
 using Windows.UI.Xaml;
+using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
 
@@ -17,11 +18,11 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public class ColumnSeries : DataSeriesWithValue, IDataSourceRenderer, IRequireDataSourceUpdates, IProvideSeriesItemUpdates, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("ColumnSeries", LogTools.Level.Error);
-		static LogTools.Flag _traceg = LogTools.Add("ColumnSeriesPaths", LogTools.Level.Off);
 		#region item state classes
 		/// <summary>
 		/// Implementation for item state custom label.
 		/// Provides placement information.
+		/// TODO MAY have to reconstitute the "full" x-coordinates for <see cref="Placement"/> if those ever get used (currently not).
 		/// This one is used when <see cref="DataSeriesWithValue.ValueLabelPath"/> is set.
 		/// </summary>
 		protected class SeriesItemState_Custom : ItemStateCustomWithPlacement<Path> {
@@ -75,19 +76,6 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public double BarWidth { get; set; } = 0.5;
 		/// <summary>
-		/// Whether to display debug paths.
-		/// Should only be on for ONE series for best results.
-		/// </summary>
-		public bool EnableDebugPaths { get; set; }
-		/// <summary>
-		/// Geometry for debug: clip region.
-		/// </summary>
-		protected GeometryGroup DebugClip { get; set; }
-		/// <summary>
-		/// Path for the debug graphics.
-		/// </summary>
-		protected Path DebugSegments { get; set; }
-		/// <summary>
 		/// The layer for components.
 		/// </summary>
 		protected IChartLayer Layer { get; set; }
@@ -131,6 +119,8 @@ namespace eScapeLLC.UWP.Charts {
 		#region helpers
 		/// <summary>
 		/// Core element processing.
+		/// The <see cref="RectangleGeometry"/> inside the <see cref="Path"/> is now location-invariant wrt x-axis.
+		/// This means that during incremental updates, no re-calculation is required, only adjusting the <see cref="Canvas.LeftProperty"/>.
 		/// </summary>
 		/// <param name="index"></param>
 		/// <param name="valuex"></param>
@@ -145,17 +135,18 @@ namespace eScapeLLC.UWP.Charts {
 			var topy = Math.Max(y1, y2);
 			var bottomy = Math.Min(y1, y2);
 			var leftx = CategoryAxis.For(valuex);
-			var barx = leftx + BarOffset;
+			var barx = BarOffset;
 			var rightx = barx + BarWidth;
 			_trace.Verbose($"{Name}[{index}] {valuey} ({barx},{topy}) ({rightx},{bottomy})");
 			var path = recycler.Next(null);
 			if (path == null) return null;
-			var shim = new GeometryShim<RectangleGeometry>() {
+			var shim = new GeometryWithOffsetShim<RectangleGeometry>() {
 			 PathData = new RectangleGeometry() { Rect = new Rect(new Point(barx, topy), new Point(rightx, bottomy)) }
 			};
 			path.Item2.DataContext = shim;
 			// connect the shim to template root element's Visibility
-			BindTo(shim, nameof(Visibility), path.Item2, UIElement.VisibilityProperty);
+			BindTo(shim, nameof(shim.Visibility), path.Item2, UIElement.VisibilityProperty);
+			BindTo(shim, nameof(shim.Offset), path.Item2, Canvas.LeftProperty);
 			if (byl == null) {
 				return new SeriesItemState_Double(index, leftx, BarOffset, y1, path.Item2);
 			} else {
@@ -181,15 +172,12 @@ namespace eScapeLLC.UWP.Charts {
 			return path;
 		}
 		/// <summary>
-		/// Rebuild geometry based on current geometry and updated state.
+		/// Currently nothing to do here.
 		/// </summary>
 		/// <param name="st">Updated state.</param>
 		void UpdateGeometry(ItemStateCore st) {
 			var isp = (st as ItemState<Path>);
-			if (isp.Element.DataContext is GeometryShim<RectangleGeometry> gs) {
-				var rg = gs.PathData;
-				gs.PathData.Rect = new Rect(new Point(st.XValueAfterOffset, rg.Rect.Top), new Point(st.XValueAfterOffset + BarWidth, rg.Rect.Bottom));
-				gs.GeometryUpdated();
+			if (isp.Element.DataContext is GeometryWithOffsetShim<RectangleGeometry> gs) {
 			}
 		}
 		#endregion
@@ -203,21 +191,6 @@ namespace eScapeLLC.UWP.Charts {
 			EnsureValuePath(icelc as IChartComponentContext);
 			Layer = icelc.CreateLayer();
 			_trace.Verbose($"{Name} enter v:{ValueAxisName} {ValueAxis} c:{CategoryAxisName} {CategoryAxis} d:{DataSourceName}");
-			if (EnableDebugPaths) {
-				_traceg.Verbose(() => {
-					DebugClip = new GeometryGroup();
-					DebugSegments = new Path() {
-						StrokeThickness = 1,
-						Fill = new SolidColorBrush(Color.FromArgb(32, Colors.LimeGreen.R, Colors.LimeGreen.G, Colors.LimeGreen.B)),
-						Stroke = new SolidColorBrush(Colors.White),
-						Data = DebugClip
-					};
-					return "Created Debug path";
-				});
-			}
-			if (DebugSegments != null) {
-				Layer.Add(DebugSegments);
-			}
 			if (PathTemplate == null) {
 				if (Theme?.PathTemplate == null) {
 					if (icelc is IChartErrorInfo icei) {
@@ -262,8 +235,9 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"{Name} mat:{matx} clip:{icrc.SeriesArea}");
 			var mt = new MatrixTransform() { Matrix = matx };
 			foreach(var ss in ItemState) {
-				if (ss.Element.DataContext is GeometryShim<RectangleGeometry> gs) {
+				if (ss.Element.DataContext is GeometryWithOffsetShim<RectangleGeometry> gs) {
 					gs.GeometryTransform = mt;
+					gs.Offset = ss.XValue * matx.M11;
 				} else {
 					ss.Element.Data.Transform = mt;
 				}
@@ -271,12 +245,6 @@ namespace eScapeLLC.UWP.Charts {
 					var cg = new RectangleGeometry() { Rect = icrc.SeriesArea };
 					ss.Element.Clip = cg;
 				}
-			}
-			if (DebugClip != null) {
-				DebugClip.Children.Clear();
-				//DebugClip.Children.Add(new RectangleGeometry() { Rect = clip });
-				DebugClip.Children.Add(new RectangleGeometry() { Rect = new Rect(icrc.Area.Left, icrc.Area.Top, matx.M11, ValueAxis.Range / 2 * matx.M22) });
-				//_trace.Verbose($"{Name} rmat:{DebugClip.Transform}");
 			}
 		}
 		#endregion
