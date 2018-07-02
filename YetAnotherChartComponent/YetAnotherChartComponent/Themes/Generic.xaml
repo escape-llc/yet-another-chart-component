@@ -102,7 +102,8 @@
 						Margin="{TemplateBinding Margin}"
 						Opacity="{TemplateBinding Opacity}"
 						HorizontalAlignment="{TemplateBinding HorizontalAlignment}"
-						VerticalAlignment="{TemplateBinding VerticalAlignment}" />
+						VerticalAlignment="{TemplateBinding VerticalAlignment}" ChildrenTransitions="{TemplateBinding Transitions}">
+					</Canvas>
 				</ControlTemplate>
 			</Setter.Value>
 		</Setter>
