@@ -94,8 +94,13 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <returns></returns>
 		Path CreatePath(ItemState<Path> ist) {
-			var path = new Path();
-			BindTo(this, nameof(PathStyle), path, FrameworkElement.StyleProperty);
+			var path = default(Path);
+			if (Theme?.PathTemplate != null) {
+				path = Theme.PathTemplate.LoadContent() as Path;
+				if (PathStyle != null) {
+					BindTo(this, nameof(PathStyle), path, FrameworkElement.StyleProperty);
+				}
+			}
 			return path;
 		}
 		/// <summary>
@@ -119,7 +124,8 @@ namespace eScapeLLC.UWP.Charts {
 			// no path yet
 			var el = recycler.Next(null);
 			if (el == null) return null;
-			el.Item2.Data = mk;
+			var shim = new GeometryWithOffsetShim<Geometry>() { PathData = mk };
+			el.Item2.DataContext = shim;
 			var cs = evs.LabelFor(item);
 			if (cs == null) {
 				return new ItemState_Matrix<Path>(index, mappedx, MarkerOffset, mappedy, el.Item2);
@@ -204,9 +210,13 @@ namespace eScapeLLC.UWP.Charts {
 				// assemble Mk * M * P transform for this path
 				var model = MatrixSupport.Multiply((state as IItemStateMatrix).World, marker);
 				var matx = MatrixSupport.Multiply(proj, model);
-				state.Element.Data.Transform = new MatrixTransform() { Matrix = matx };
-				// doesn't work for path
-				//state.Path.RenderTransform = new MatrixTransform() { Matrix = matx };
+				var mt = new MatrixTransform() { Matrix = matx };
+				if (state.Element.DataContext is GeometryWithOffsetShim<Geometry> gs) {
+					gs.GeometryTransform = mt;
+					gs.Offset = state.XValue * matx.M11;
+				} else {
+					state.Element.Data.Transform = mt;
+				}
 				if (ClipToDataRegion) {
 					state.Element.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
 				}
