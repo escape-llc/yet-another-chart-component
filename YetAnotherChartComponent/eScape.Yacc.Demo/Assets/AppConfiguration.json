@@ -5,7 +5,6 @@
 		"CategoryAxis": "Error",
 		"Chart": "Error",
 		"ColumnSeries": "Error",
-		"ColumnSeriesPaths": "Off",
 		"DataSeries": "Error",
 		"DataSource": "Error",
 		"HorizontalBand": "Error",
