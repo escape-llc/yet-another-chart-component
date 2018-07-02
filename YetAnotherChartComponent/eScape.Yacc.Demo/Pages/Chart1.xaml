@@ -25,6 +25,45 @@
 			<GradientStop Color="Green" Offset="0"/>
 		</LinearGradientBrush>
 		<SolidColorBrush x:Key="band-fill" Color="#44aaccee"/>
+		<animations:AnimationCollection x:Key="OffsetAndOpacity">
+			<animations:OffsetAnimation Duration="0:0:0.75"/>
+			<animations:ScalarAnimation Target="Opacity" ImplicitTarget="Offset" Duration="0:0:0.75">
+				<animations:ExpressionKeyFrame Key="0" Value="1"/>
+				<animations:ExpressionKeyFrame Key=".5" Value=".4"/>
+				<animations:ExpressionKeyFrame Key="1" Value="1"/>
+			</animations:ScalarAnimation>
+		</animations:AnimationCollection>
+		<animations:AnimationCollection x:Key="OffsetAndRotate">
+			<animations:OffsetAnimation Duration="0:0:2"/>
+			<animations:ScalarAnimation Target="RotationAngleInDegrees" ImplicitTarget="Offset" Duration="0:0:2">
+				<animations:ExpressionKeyFrame Key=".25" Value="This.StartingValue + 15"/>
+				<animations:ExpressionKeyFrame Key="1" Value="This.FinalValue"/>
+			</animations:ScalarAnimation>
+		</animations:AnimationCollection>
+		<animations:AnimationCollection x:Key="OffsetAndScale">
+			<animations:OffsetAnimation Duration="0:0:2"/>
+			<animations:ScaleAnimation Duration="0:0:2" ImplicitTarget="Offset">
+				<animations:Vector3KeyFrame Key="0" Value="1,1,1"/>
+				<animations:Vector3KeyFrame Key=".5" Value="1.2,1.2,1"/>
+				<animations:Vector3KeyFrame Key="1" Value="1,1,1"/>
+			</animations:ScaleAnimation>
+		</animations:AnimationCollection>
+		<animations:AnimationCollection x:Key="Show">
+			<animations:TranslationAnimation Duration="0:0:5" To="0,0,0"></animations:TranslationAnimation>
+			<animations:OpacityAnimation Duration="0:0:5" To="1.0"></animations:OpacityAnimation>
+			<animations:ScaleAnimation Duration="0:0:5">
+				<animations:Vector3KeyFrame Key="0" Value="1,1,1"/>
+				<animations:Vector3KeyFrame Key=".5" Value="1.2,1.2,1"/>
+				<animations:Vector3KeyFrame Key="1" Value="1,1,1"/>
+			</animations:ScaleAnimation>
+		</animations:AnimationCollection>
+		<animations:AnimationCollection x:Key="Hide">
+			<animations:ScalarAnimation Target="Opacity" Duration="0:0:1" To="0.0"></animations:ScalarAnimation>
+			<animations:ScalarAnimation Target="Translation.Y" Duration="0:0:1" To="-200">
+				<animations:ScalarKeyFrame Key="0.1" Value="30"></animations:ScalarKeyFrame>
+				<animations:ScalarKeyFrame Key="0.5" Value="0.0"></animations:ScalarKeyFrame>
+			</animations:ScalarAnimation>
+		</animations:AnimationCollection>
 		<Style x:Key="cbStyle" TargetType="CheckBox">
 			<Setter Property="Margin" Value="4,0"/>
 		</Style>
@@ -79,6 +118,7 @@
 		</Style>
 		<!-- This style sets up a transform for the storyboards below -->
 		<Style x:Key="ScaledLabels" BasedOn="{StaticResource BigLabels}" TargetType="TextBlock">
+			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
 			<Setter Property="RenderTransformOrigin" Value=".5,.5"/>
 			<Setter Property="RenderTransform">
 				<Setter.Value>
@@ -93,45 +133,6 @@
 				<LineGeometry StartPoint=".4,.5" EndPoint=".6,.5" />
 			</GeometryGroup>
 		</DataTemplate>
-		<animations:AnimationCollection x:Key="OffsetAndOpacity">
-			<animations:OffsetAnimation Duration="0:0:0.75"/>
-			<animations:ScalarAnimation Target="Opacity" ImplicitTarget="Offset" Duration="0:0:0.75">
-				<animations:ExpressionKeyFrame Key="0" Value="1"/>
-				<animations:ExpressionKeyFrame Key=".5" Value=".4"/>
-				<animations:ExpressionKeyFrame Key="1" Value="1"/>
-			</animations:ScalarAnimation>
-		</animations:AnimationCollection>
-		<animations:AnimationCollection x:Key="OffsetAndRotate">
-			<animations:OffsetAnimation Duration="0:0:2"/>
-			<animations:ScalarAnimation Target="RotationAngleInDegrees" ImplicitTarget="Offset" Duration="0:0:2">
-				<animations:ExpressionKeyFrame Key=".25" Value="This.StartingValue + 15"/>
-				<animations:ExpressionKeyFrame Key="1" Value="This.FinalValue"/>
-			</animations:ScalarAnimation>
-		</animations:AnimationCollection>
-		<animations:AnimationCollection x:Key="OffsetAndScale">
-			<animations:OffsetAnimation Duration="0:0:2"/>
-			<animations:ScaleAnimation Duration="0:0:2" ImplicitTarget="Offset">
-				<animations:Vector3KeyFrame Key="0" Value="1,1,1"/>
-				<animations:Vector3KeyFrame Key=".5" Value="1.2,1.2,1"/>
-				<animations:Vector3KeyFrame Key="1" Value="1,1,1"/>
-			</animations:ScaleAnimation>
-		</animations:AnimationCollection>
-		<animations:AnimationCollection x:Key="Show">
-			<animations:TranslationAnimation Duration="0:0:5" To="0,0,0"></animations:TranslationAnimation>
-			<animations:OpacityAnimation Duration="0:0:5" To="1.0"></animations:OpacityAnimation>
-			<animations:ScaleAnimation Duration="0:0:5">
-				<animations:Vector3KeyFrame Key="0" Value="1,1,1"/>
-				<animations:Vector3KeyFrame Key=".5" Value="1.2,1.2,1"/>
-				<animations:Vector3KeyFrame Key="1" Value="1,1,1"/>
-			</animations:ScaleAnimation>
-		</animations:AnimationCollection>
-		<animations:AnimationCollection x:Key="Hide">
-			<animations:ScalarAnimation Target="Opacity" Duration="0:0:1" To="0.0"></animations:ScalarAnimation>
-			<animations:ScalarAnimation Target="Translation.Y" Duration="0:0:1" To="-200">
-				<animations:ScalarKeyFrame Key="0.1" Value="30"></animations:ScalarKeyFrame>
-				<animations:ScalarKeyFrame Key="0.5" Value="0.0"></animations:ScalarKeyFrame>
-			</animations:ScalarAnimation>
-		</animations:AnimationCollection>
 		<DataTemplate x:Key="LabelWithBorder">
 			<Border Background="Goldenrod" Padding="2" BorderThickness="1" CornerRadius="2" BorderBrush="DarkGray"
 				extensions:VisualExtensions.NormalizedCenterPoint="0.5,0.5,0"
@@ -176,6 +177,7 @@
 		<Style x:Key="v1_LessThan_v2" BasedOn="{StaticResource BigLabels}" TargetType="TextBlock">
 			<Setter Property="Foreground" Value="Red"/>
 		</Style>
+		<!-- goes with ScaledLabels template -->
 		<Storyboard x:Key="Enter">
 			<DoubleAnimation EnableDependentAnimation="True"
 			Storyboard.TargetProperty="Opacity"
@@ -249,7 +251,7 @@
 				<yacc:ValueLabels SourceName="colv2" LabelFormatString="F2" CategoryAxisOffset=".625"
 					PlacementOffset="0,1" LabelOffset="0,-1" LabelStyle="{StaticResource BigLabels}" />
 				<yacc:ValueLabels SourceName="colv1" LabelFormatString="F2" CategoryAxisOffset=".375"
-					UseImplicitAnimations="True" EnterStoryboard="{StaticResource Enter}" LeaveStoryboard="{StaticResource Leave}"
+					EnterStoryboard="{StaticResource Enter}" LeaveStoryboard="{StaticResource Leave}"
 					PlacementOffset="0,1" LabelOffset="0,-1" LabelStyle="{StaticResource ScaledLabels}" />
 				<yacc:ValueLabels SourceName="colv1" LabelFormatString="F2" CategoryAxisOffset=".375"
 					PlacementOffset="0,1" LabelOffset="0,1" LabelTemplate="{StaticResource LabelMinMax}"
