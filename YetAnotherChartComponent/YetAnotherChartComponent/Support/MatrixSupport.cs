@@ -141,6 +141,24 @@ namespace eScapeLLC.UWP.Charts {
 			return Multiply(ProjectionFor(area), ModelFor(xaxis, yaxis));
 		}
 		/// <summary>
+		/// <see cref="GeometryShim{G}"/> Offset version.  Caller must account for the Matrix.OffsetX component there.
+		/// <para/>
+		/// Create a final (MP) matrix for this rectangle and axes.
+		/// It would "normally" be MVP matrix, but for how V == I so we leave it out.
+		/// </summary>
+		/// <param name="area">Target area. The Left component is eliminated from output matrix.</param>
+		/// <param name="xaxis">The x-axis.</param>
+		/// <param name="yaxis">The y-axis.</param>
+		/// <returns></returns>
+		public static Matrix TransformForOffsetX(Rect area, IChartAxis xaxis, IChartAxis yaxis) {
+			if (xaxis == null) throw new ArgumentNullException(nameof(xaxis));
+			if (yaxis == null) throw new ArgumentNullException(nameof(yaxis));
+			var proj = ProjectionFor(area);
+			// remove the x-offset
+			proj.OffsetX = 0;
+			return Multiply(proj, ModelFor(xaxis, yaxis));
+		}
+		/// <summary>
 		/// Translate matrix by given offset.
 		/// </summary>
 		/// <param name="mx">Source matrix.</param>
