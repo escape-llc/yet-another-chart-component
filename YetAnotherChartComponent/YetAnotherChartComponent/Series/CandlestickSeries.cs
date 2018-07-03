@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
+using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
@@ -432,12 +433,13 @@ namespace eScapeLLC.UWP.Charts {
 		public void Transforms(IChartRenderContext icrc) {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			if (ItemState.Count == 0) return;
-			var matx = MatrixSupport.TransformFor(icrc.SeriesArea, CategoryAxis, ValueAxis);
+			var matx = MatrixSupport.TransformForOffsetX(icrc.SeriesArea, CategoryAxis, ValueAxis);
 			var mt = new MatrixTransform() { Matrix = matx };
 			foreach (var state in ItemState) {
 				if (state.Element.DataContext is GeometryWithOffsetShim<PathGeometry> gs) {
 					gs.GeometryTransform = mt;
-					gs.Offset = state.XValue * matx.M11;
+					var output = matx.Transform(new Point(state.XValue, 0));
+					gs.Offset = icrc.Area.Left + output.X;
 				} else {
 					state.Element.Data.Transform = mt;
 				}
