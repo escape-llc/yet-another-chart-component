@@ -6,6 +6,7 @@ using System.Collections.Specialized;
 using System.Linq;
 using Windows.Foundation;
 using Windows.UI.Xaml;
+using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
 
@@ -126,6 +127,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (el == null) return null;
 			var shim = new GeometryWithOffsetShim<Geometry>() { PathData = mk };
 			el.Item2.DataContext = shim;
+			BindTo(shim, nameof(shim.Offset), el.Item2, Canvas.LeftProperty);
 			var cs = evs.LabelFor(item);
 			if (cs == null) {
 				return new ItemState_Matrix<Path>(index, mappedx, MarkerOffset, mappedy, el.Item2);
@@ -187,7 +189,7 @@ namespace eScapeLLC.UWP.Charts {
 			var world = MatrixSupport.ModelFor(CategoryAxis, ValueAxis);
 			foreach (var state in ItemState) {
 				if (state is IItemStateMatrix ism) {
-					ism.World = MatrixSupport.Translate(world, state.XValueAfterOffset, state.Value);
+					ism.World = MatrixSupport.Translate(world, state.XOffset, state.Value);
 				}
 			}
 		}
@@ -203,17 +205,23 @@ namespace eScapeLLC.UWP.Charts {
 			if (ItemState.Count == 0) return;
 			// put the P matrix on everything
 			var proj = MatrixSupport.ProjectionFor(icrc.Area);
+			// cancel x-offset
+			proj.OffsetX = 0;
 			var world = MatrixSupport.ModelFor(CategoryAxis, ValueAxis);
 			// get the local marker matrix
 			var marker = MatrixSupport.LocalFor(world, MarkerWidth, icrc.Area, -MarkerOrigin.X, -MarkerOrigin.Y);
+			// get the offset matrix
+			var mato = MatrixSupport.Multiply(proj, world);
 			foreach (var state in ItemState) {
 				// assemble Mk * M * P transform for this path
-				var model = MatrixSupport.Multiply((state as IItemStateMatrix).World, marker);
+				var iworld = (state as IItemStateMatrix).World;
+				var model = MatrixSupport.Multiply(iworld, marker);
 				var matx = MatrixSupport.Multiply(proj, model);
 				var mt = new MatrixTransform() { Matrix = matx };
 				if (state.Element.DataContext is GeometryWithOffsetShim<Geometry> gs) {
 					gs.GeometryTransform = mt;
-					gs.Offset = state.XValue * matx.M11;
+					var output = mato.Transform(new Point(state.XValue, 0));
+					gs.Offset = icrc.Area.Left + output.X;
 				} else {
 					state.Element.Data.Transform = mt;
 				}
