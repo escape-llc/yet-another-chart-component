@@ -406,14 +406,15 @@ namespace eScapeLLC.UWP.Charts {
 		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			if (ItemState.Count == 0) return;
-			var matx = MatrixSupport.TransformFor(icrc.Area, CategoryAxis, ValueAxis);
+			var matx = MatrixSupport.TransformForOffsetX(icrc.Area, CategoryAxis, ValueAxis);
 			_trace.Verbose($"{Name} mat:{matx} clip:{icrc.SeriesArea}");
 			var mt = new MatrixTransform() { Matrix = matx };
-			foreach (var ss in ItemState) {
-				foreach (var el in ss.Elements) {
+			foreach (var state in ItemState) {
+				foreach (var el in state.Elements) {
 					if(el.Item2.DataContext is GeometryWithOffsetShim<RectangleGeometry> gs) {
 						gs.GeometryTransform = mt;
-						gs.Offset = ss.XValue * matx.M11;
+						var output = matx.Transform(new Point(state.XValue, 0));
+						gs.Offset = icrc.Area.Left + output.X;
 					}
 					if (ClipToDataRegion) {
 						var cg = new RectangleGeometry() { Rect = icrc.SeriesArea };
