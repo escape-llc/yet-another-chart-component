@@ -31,7 +31,14 @@
 	<controls:HamburgerMenu ItemsSource="{Binding PageList}" ItemTemplate="{StaticResource NavItem}" ItemInvoked="HamburgerMenu_ItemInvoked">
 		<RelativePanel HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 			<Frame x:Name="MainFrame" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" BorderBrush="Gray" BorderThickness="1"
-				RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True" RelativePanel.AlignTopWithPanel="True"/>
+				RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True" RelativePanel.AlignTopWithPanel="True">
+				<Frame.ContentTransitions>
+					<TransitionCollection>
+						<NavigationThemeTransition/>
+						<ContentThemeTransition/>
+					</TransitionCollection>
+				</Frame.ContentTransitions>
+			</Frame>
 			<StackPanel Margin="4" Orientation="Horizontal" RelativePanel.AlignBottomWithPanel="True">
 				<TextBlock Visibility="{Binding IsShowHideSupported}" Margin="4,0,8,0" Text="Show/Hide &#x2714;" FontStyle="Italic" Foreground="DarkGray" />
 				<TextBlock Visibility="{Binding IsImplicitSupported}" Margin="4,0,8,0" Text="Implicit &#x2714;" FontStyle="Italic" Foreground="DarkGray" />
