@@ -10,15 +10,55 @@
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 	mc:Ignorable="d">
 	<Page.Resources>
+		<animations:AnimationCollection x:Key="OffsetAndOpacity">
+			<animations:OffsetAnimation Duration="0:0:0.5"/>
+			<animations:ScalarAnimation Target="Opacity" ImplicitTarget="Offset" Duration="0:0:0.5">
+				<animations:ExpressionKeyFrame Key="0" Value="1"/>
+				<animations:ExpressionKeyFrame Key=".5" Value=".4"/>
+				<animations:ExpressionKeyFrame Key="1" Value="1"/>
+			</animations:ScalarAnimation>
+		</animations:AnimationCollection>
+		<animations:AnimationCollection x:Key="Show">
+			<animations:TranslationAnimation Duration="0:0:1" To="0,0,0"></animations:TranslationAnimation>
+			<animations:OpacityAnimation Duration="0:0:1" To="1.0"></animations:OpacityAnimation>
+			<animations:ScaleAnimation Duration="0:0:1">
+				<animations:Vector3KeyFrame Key="0" Value="1,1,1"/>
+				<animations:Vector3KeyFrame Key=".5" Value="1.2,1.2,1"/>
+				<animations:Vector3KeyFrame Key="1" Value="1,1,1"/>
+			</animations:ScaleAnimation>
+		</animations:AnimationCollection>
+		<animations:AnimationCollection x:Key="ShowAxisLabel">
+			<animations:ScalarAnimation Target="Opacity" Duration="0:0:1" To="0.0"></animations:ScalarAnimation>
+			<animations:ScalarAnimation Target="Translation.X" Duration="0:0:1" From="200">
+				<animations:ScalarKeyFrame Key="0.1" Value="30"></animations:ScalarKeyFrame>
+				<animations:ScalarKeyFrame Key="0.5" Value="0.0"></animations:ScalarKeyFrame>
+			</animations:ScalarAnimation>
+		</animations:AnimationCollection>
+		<animations:AnimationCollection x:Key="Hide">
+			<animations:ScalarAnimation Target="Opacity" Duration="0:0:1" To="0.0"></animations:ScalarAnimation>
+		</animations:AnimationCollection>
+		<animations:AnimationCollection x:Key="HideAxisLabel">
+			<animations:ScalarAnimation Target="Opacity" Duration="0:0:1" To="0.0"></animations:ScalarAnimation>
+			<animations:ScalarAnimation Target="Translation.X" Duration="0:0:1" To="-200">
+				<animations:ScalarKeyFrame Key="0.1" Value="30"></animations:ScalarKeyFrame>
+				<animations:ScalarKeyFrame Key="0.5" Value="0.0"></animations:ScalarKeyFrame>
+			</animations:ScalarAnimation>
+		</animations:AnimationCollection>
 		<Style x:Key="Column_v1" TargetType="Path">
 			<Setter Property="Stroke" Value="DarkOrchid"/>
 			<Setter Property="StrokeThickness" Value="1"/>
 			<Setter Property="Fill" Value="Blue"/>
+			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
+			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource Show}"/>
+			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource Hide}"/>
 		</Style>
 		<Style x:Key="Column_v2" TargetType="Path">
 			<Setter Property="Stroke" Value="DarkOrchid"/>
 			<Setter Property="StrokeThickness" Value="1"/>
 			<Setter Property="Fill" Value="Green"/>
+			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
+			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource Show}"/>
+			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource Hide}"/>
 		</Style>
 		<Style x:Key="Line_v3" TargetType="Path">
 			<Setter Property="Stroke" Value="Olive"/>
@@ -31,45 +71,30 @@
 			<Setter Property="Stroke" Value="Coral"/>
 			<Setter Property="StrokeThickness" Value="1"/>
 			<Setter Property="Fill" Value="Blue"/>
+			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
+			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource Show}"/>
+			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource Hide}"/>
 		</Style>
-		<animations:AnimationCollection x:Key="OffsetAndOpacity">
-			<animations:OffsetAnimation Duration="0:0:0.75"/>
-			<animations:ScalarAnimation Target="Opacity" ImplicitTarget="Offset" Duration="0:0:0.75">
-				<animations:ExpressionKeyFrame Key="0" Value="1"/>
-				<animations:ExpressionKeyFrame Key=".5" Value=".4"/>
-				<animations:ExpressionKeyFrame Key="1" Value="1"/>
-			</animations:ScalarAnimation>
-		</animations:AnimationCollection>
-		<animations:AnimationCollection x:Key="Show">
-			<animations:TranslationAnimation Duration="0:0:5" To="0,0,0"></animations:TranslationAnimation>
-			<animations:OpacityAnimation Duration="0:0:5" To="1.0"></animations:OpacityAnimation>
-			<animations:ScaleAnimation Duration="0:0:5">
-				<animations:Vector3KeyFrame Key="0" Value="1,1,1"/>
-				<animations:Vector3KeyFrame Key=".5" Value="1.2,1.2,1"/>
-				<animations:Vector3KeyFrame Key="1" Value="1,1,1"/>
-			</animations:ScaleAnimation>
-		</animations:AnimationCollection>
-		<animations:AnimationCollection x:Key="Hide">
-			<animations:ScalarAnimation Target="Opacity" Duration="0:0:1" To="0.0"></animations:ScalarAnimation>
-			<animations:ScalarAnimation Target="Translation.Y" Duration="0:0:1" To="-200">
-				<animations:ScalarKeyFrame Key="0.1" Value="30"></animations:ScalarKeyFrame>
-				<animations:ScalarKeyFrame Key="0.5" Value="0.0"></animations:ScalarKeyFrame>
-			</animations:ScalarAnimation>
-		</animations:AnimationCollection>
-		<DataTemplate x:Key="CategoryAxisChart3">
-			<TextBlock Style="{StaticResource CategoryAxisLabel}" Text="{Binding Text}"
-				animations:Implicit.Animations="{StaticResource OffsetAndOpacity}"
-				animations:Implicit.ShowAnimations="{StaticResource Show}"
-				animations:Implicit.HideAnimations="{StaticResource Hide}"
-			/>
-		</DataTemplate>
+		<Style x:Key="LabelsChart3" BasedOn="{StaticResource Labels}" TargetType="TextBlock">
+			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
+			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource Show}"/>
+			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource Hide}"/>
+		</Style>
+		<Style x:Key="CategoryAxisChart3" BasedOn="{StaticResource CategoryAxisLabel}" TargetType="TextBlock">
+			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
+			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource ShowAxisLabel}"/>
+			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource HideAxisLabel}"/>
+		</Style>
 		<DataTemplate x:Key="Marker">
 			<GeometryGroup>
 				<EllipseGeometry RadiusX=".5" RadiusY=".5" Center=".5,.5" />
 			</GeometryGroup>
 		</DataTemplate>
 		<DataTemplate x:Key="LabelWithBorder">
-			<Border Background="Bisque" Padding="2" BorderThickness="1" CornerRadius="2" BorderBrush="LightBlue" Opacity=".75">
+			<Border Background="Bisque" Padding="2" BorderThickness="1" CornerRadius="2" BorderBrush="LightBlue" Opacity=".75"
+								animations:Implicit.Animations="{StaticResource OffsetAndOpacity}"
+				animations:Implicit.ShowAnimations="{StaticResource Show}"
+				animations:Implicit.HideAnimations="{StaticResource Hide}">
 				<TextBlock Text="{Binding Text}" Style="{StaticResource Labels}" Foreground="Black" FontStyle="Italic"/>
 			</Border>
 		</DataTemplate>
@@ -92,7 +117,7 @@
 			<yacc:Chart.Components>
 				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" DataSourceName="data" LabelPath="Label" 
 					PathStyle="{StaticResource Axes}"
-					LabelTemplate="{StaticResource CategoryAxisChart3}" />
+					LabelStyle="{StaticResource CategoryAxisChart3}" />
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}" LimitMinimum="-4.5" LimitMaximum="4.5"
 					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="F1" />
 				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource Grid}"
@@ -110,7 +135,7 @@
 					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".5"
 					ClipToDataRegion="False" PathStyle="{StaticResource Line_v3}" />
 				<yacc:ValueLabels SourceName="v3" LabelFormatString="F2"
-					CategoryAxisOffset=".5" LabelOffset="0,0" LabelStyle="{StaticResource Labels}" />
+					CategoryAxisOffset=".5" LabelOffset="0,0" LabelStyle="{StaticResource LabelsChart3}" />
 				<yacc:ValueLabels SourceName="v4" LabelFormatString="F2"
 					CategoryAxisOffset=".375" LabelOffset="0,-1" LabelTemplate="{StaticResource LabelWithBorder}" />
 			</yacc:Chart.Components>
