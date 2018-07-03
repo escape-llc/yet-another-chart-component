@@ -90,16 +90,25 @@
 			<Setter Property="Stroke" Value="DarkOrchid"/>
 			<Setter Property="StrokeThickness" Value="1"/>
 			<Setter Property="Fill" Value="{StaticResource blue-to-green}"/>
+			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
+			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource Show}"/>
+			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource Hide}"/>
 		</Style>
 		<Style x:Key="Column_v2" TargetType="Path">
 			<Setter Property="Stroke" Value="DarkOrchid"/>
 			<Setter Property="StrokeThickness" Value="1"/>
 			<Setter Property="Fill" Value="{StaticResource green-to-blue}"/>
+			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
+			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource Show}"/>
+			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource Hide}"/>
 		</Style>
 		<Style x:Key="Marker_v1" TargetType="Path">
 			<Setter Property="Stroke" Value="Goldenrod"/>
 			<Setter Property="StrokeThickness" Value="1"/>
 			<Setter Property="Fill" Value="Blue"/>
+			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
+			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource Show}"/>
+			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource Hide}"/>
 		</Style>
 		<Style x:Key="Line_v2" TargetType="Path">
 			<Setter Property="Stroke" Value="Green"/>
