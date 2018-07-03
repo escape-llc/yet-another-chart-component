@@ -21,7 +21,8 @@
 		<TransitionCollection x:Key="DefaultTransitions">
 			<EntranceThemeTransition/>
 			<AddDeleteThemeTransition/>
-			<EdgeUIThemeTransition/>
+			<ReorderThemeTransition/>
+			<ContentThemeTransition/>
 		</TransitionCollection>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
