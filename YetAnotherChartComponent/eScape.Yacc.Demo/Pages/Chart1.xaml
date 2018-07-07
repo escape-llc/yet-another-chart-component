@@ -25,6 +25,9 @@
 			<GradientStop Color="Green" Offset="0"/>
 		</LinearGradientBrush>
 		<SolidColorBrush x:Key="band-fill" Color="#44aaccee"/>
+		<animations:AnimationCollection x:Key="Offset">
+			<animations:OffsetAnimation Duration="0:0:0.75"/>
+		</animations:AnimationCollection>
 		<animations:AnimationCollection x:Key="OffsetAndOpacity">
 			<animations:OffsetAnimation Duration="0:0:0.75"/>
 			<animations:ScalarAnimation Target="Opacity" ImplicitTarget="Offset" Duration="0:0:0.75">
@@ -49,13 +52,11 @@
 			</animations:ScaleAnimation>
 		</animations:AnimationCollection>
 		<animations:AnimationCollection x:Key="Show">
-			<animations:TranslationAnimation Duration="0:0:5" To="0,0,0"></animations:TranslationAnimation>
-			<animations:OpacityAnimation Duration="0:0:5" To="1.0"></animations:OpacityAnimation>
-			<animations:ScaleAnimation Duration="0:0:5">
-				<animations:Vector3KeyFrame Key="0" Value="1,1,1"/>
-				<animations:Vector3KeyFrame Key=".5" Value="1.2,1.2,1"/>
-				<animations:Vector3KeyFrame Key="1" Value="1,1,1"/>
-			</animations:ScaleAnimation>
+			<animations:ScalarAnimation Target="Translation.Y" Duration="0:0:1" From="-200">
+				<animations:ScalarKeyFrame Key="0.1" Value="30"></animations:ScalarKeyFrame>
+				<animations:ScalarKeyFrame Key="0.5" Value="0.0"></animations:ScalarKeyFrame>
+			</animations:ScalarAnimation>
+			<animations:OpacityAnimation Duration="0:0:1" To="1.0"/>
 		</animations:AnimationCollection>
 		<animations:AnimationCollection x:Key="Hide">
 			<animations:ScalarAnimation Target="Opacity" Duration="0:0:1" To="0.0"></animations:ScalarAnimation>
@@ -78,19 +79,22 @@
 		<Style x:Key="Band_v1-rule" TargetType="Path">
 			<Setter Property="Stroke" Value="DarkGoldenrod"/>
 			<Setter Property="StrokeThickness" Value="3"/>
+			<Setter Property="animations:Implicit.Animations" Value="{StaticResource Offset}"/>
 		</Style>
 		<Style x:Key="Band_v2-rule" TargetType="Path">
 			<Setter Property="Stroke" Value="Goldenrod"/>
 			<Setter Property="StrokeThickness" Value="3"/>
+			<Setter Property="animations:Implicit.Animations" Value="{StaticResource Offset}"/>
 		</Style>
 		<Style x:Key="Band_v1v2-band" TargetType="Path">
 			<Setter Property="Fill" Value="{StaticResource band-fill}"/>
+			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
 		</Style>
 		<Style x:Key="Column_v1" TargetType="Path">
 			<Setter Property="Stroke" Value="DarkOrchid"/>
 			<Setter Property="StrokeThickness" Value="1"/>
 			<Setter Property="Fill" Value="{StaticResource blue-to-green}"/>
-			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
+			<Setter Property="animations:Implicit.Animations" Value="{StaticResource Offset}"/>
 			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource Show}"/>
 			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource Hide}"/>
 		</Style>
@@ -98,7 +102,7 @@
 			<Setter Property="Stroke" Value="DarkOrchid"/>
 			<Setter Property="StrokeThickness" Value="1"/>
 			<Setter Property="Fill" Value="{StaticResource green-to-blue}"/>
-			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
+			<Setter Property="animations:Implicit.Animations" Value="{StaticResource Offset}"/>
 			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource Show}"/>
 			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource Hide}"/>
 		</Style>
@@ -106,7 +110,7 @@
 			<Setter Property="Stroke" Value="Goldenrod"/>
 			<Setter Property="StrokeThickness" Value="1"/>
 			<Setter Property="Fill" Value="Blue"/>
-			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
+			<Setter Property="animations:Implicit.Animations" Value="{StaticResource Offset}"/>
 			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource Show}"/>
 			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource Hide}"/>
 		</Style>
@@ -120,20 +124,11 @@
 		<Style x:Key="BigLabels" BasedOn="{StaticResource Labels}" TargetType="TextBlock">
 			<Setter Property="FontSize" Value="16"/>
 			<Setter Property="Foreground" Value="Cyan"/>
+			<Setter Property="animations:Implicit.Animations" Value="{StaticResource Offset}"/>
 		</Style>
 		<Style x:Key="BigLabels2" BasedOn="{StaticResource Labels}" TargetType="TextBlock">
 			<Setter Property="FontSize" Value="20"/>
 			<Setter Property="Foreground" Value="Bisque"/>
-		</Style>
-		<!-- This style sets up a transform for the storyboards below -->
-		<Style x:Key="ScaledLabels" BasedOn="{StaticResource BigLabels}" TargetType="TextBlock">
-			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
-			<Setter Property="RenderTransformOrigin" Value=".5,.5"/>
-			<Setter Property="RenderTransform">
-				<Setter.Value>
-					<ScaleTransform ScaleX="1" ScaleY="1"/>
-				</Setter.Value>
-			</Setter>
 		</Style>
 		<DataTemplate x:Key="Marker">
 			<GeometryGroup>
@@ -186,17 +181,10 @@
 		<Style x:Key="v1_LessThan_v2" BasedOn="{StaticResource BigLabels}" TargetType="TextBlock">
 			<Setter Property="Foreground" Value="Red"/>
 		</Style>
-		<!-- goes with ScaledLabels template -->
 		<Storyboard x:Key="Enter">
-			<DoubleAnimation EnableDependentAnimation="True"
+			<DoubleAnimation
 			Storyboard.TargetProperty="Opacity"
 			From="0.0" To="1.0" Duration="0:0:1"/>
-			<DoubleAnimation EnableDependentAnimation="True"
-			Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-			From="0.1" To="1.0" Duration="0:0:1"/>
-			<DoubleAnimation EnableDependentAnimation="True"
-			Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-			From="0.1" To="1.0" Duration="0:0:1"/>
 		</Storyboard>
 		<Storyboard x:Key="Leave">
 			<DoubleAnimation
@@ -245,7 +233,7 @@
 				<yacc:LineSeries x:Name="linev2" DataSourceName="data" ValuePath="Value2" Title="Value 2 Line"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis" CategoryAxisOffset=".375"
 					ClipToDataRegion="False" PathStyle="{StaticResource Line_v2}" />
-				<yacc:MarkerSeries DataSourceName="data" ValuePath="Value1" Title="Value 1 Marker"
+				<yacc:MarkerSeries DataSourceName="data" ValuePath="Value1" Title="Value 1 Marker" ClipToDataRegion="False"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis" MarkerOffset=".625" MarkerWidth=".25"
 					PathStyle="{StaticResource Marker_v1}" MarkerTemplate="{StaticResource Marker}"/>
 				<yacc:HorizontalBand x:Name="band" ValueAxisName="yaxis" Value1="{Binding Value1Average}" Value2="{Binding Value2Average}"
@@ -260,8 +248,7 @@
 				<yacc:ValueLabels SourceName="colv2" LabelFormatString="F2" CategoryAxisOffset=".625"
 					PlacementOffset="0,1" LabelOffset="0,-1" LabelStyle="{StaticResource BigLabels}" />
 				<yacc:ValueLabels SourceName="colv1" LabelFormatString="F2" CategoryAxisOffset=".375"
-					EnterStoryboard="{StaticResource Enter}" LeaveStoryboard="{StaticResource Leave}"
-					PlacementOffset="0,1" LabelOffset="0,-1" LabelStyle="{StaticResource ScaledLabels}" />
+					PlacementOffset="0,1" LabelOffset="0,-1" LabelStyle="{StaticResource BigLabels}" />
 				<yacc:ValueLabels SourceName="colv1" LabelFormatString="F2" CategoryAxisOffset=".375"
 					PlacementOffset="0,1" LabelOffset="0,1" LabelTemplate="{StaticResource LabelMinMax}"
 					LabelFormatter="{StaticResource ColorLabel}" LabelSelector="{StaticResource MinMaxLabel}" />

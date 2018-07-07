@@ -19,14 +19,15 @@
 		</animations:AnimationCollection>
 		<animations:AnimationCollection x:Key="ShowAxisLabel">
 			<animations:ScalarAnimation Target="Opacity" Duration="0:0:1" To="1.0"/>
-			<animations:ScalarAnimation Target="Translation.X" Duration="0:0:1" From="200" To="0"/>
+			<animations:ScalarAnimation Target="Translation.X" Duration="0:0:1" From="100" To="0"/>
 		</animations:AnimationCollection>
 		<animations:AnimationCollection x:Key="Hide">
-			<animations:ScalarAnimation Target="Opacity" Duration="0:0:1" To="0.0"/>
+			<animations:TranslationAnimation Duration="0:0:1" To="-20,0,0"/>
+			<animations:OpacityAnimation Duration="0:0:1" To="0.0"/>
 		</animations:AnimationCollection>
 		<animations:AnimationCollection x:Key="HideAxisLabel">
 			<animations:ScalarAnimation Target="Opacity" Duration="0:0:1" To="0.0"/>
-			<animations:ScalarAnimation Target="Translation.X" Duration="0:0:1" From="0" To="-200"/>
+			<animations:ScalarAnimation Target="Translation.X" Duration="0:0:1" From="0" To="-100"/>
 		</animations:AnimationCollection>
 		<Style x:Key="Column_v1" TargetType="Path">
 			<Setter Property="Stroke" Value="DarkOrchid"/>
