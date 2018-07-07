@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using Windows.Foundation;
 using Windows.UI.Xaml;
+using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
 
@@ -172,11 +173,17 @@ namespace eScapeLLC.UWP.Charts {
 		/// Ctor.
 		/// </summary>
 		public HorizontalBand() {
-			Value1Rule = new LineGeometry();
+			Value1Rule = new LineGeometry {
+				StartPoint = new Point(0, 0),
+				EndPoint = new Point(1, 0)
+			};
 			Value1Path = new Path() {
 				Data = Value1Rule
 			};
-			Value2Rule = new LineGeometry();
+			Value2Rule = new LineGeometry {
+				StartPoint = new Point(0, 0),
+				EndPoint = new Point(1, 0)
+			};
 			Value2Path = new Path() {
 				Data = Value2Rule
 			};
@@ -251,11 +258,15 @@ namespace eScapeLLC.UWP.Charts {
 			var vmax = ValueAxis.For(Value1);
 			var mmin = DoMinMax ? Math.Min(vmin, vmax) : vmin;
 			var mmax = DoMinMax ? Math.Max(vmin, vmax) : vmax;
+#if false
 			Value1Rule.StartPoint = new Point(0, mmin);
 			Value1Rule.EndPoint = new Point(1, mmin);
 			Value2Rule.StartPoint = new Point(0, mmax);
 			Value2Rule.EndPoint = new Point(1, mmax);
 			Band.Rect = new Rect(Value1Rule.StartPoint, Value2Rule.EndPoint);
+#else
+			Band.Rect = new Rect(new Point(0, 0), new Point(1, mmax - mmin));
+#endif
 			Dirty = false;
 		}
 		#endregion
@@ -273,9 +284,26 @@ namespace eScapeLLC.UWP.Charts {
 				Value2Path.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
 				BandPath.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
 			}
+#if true
+			var vmin = ValueAxis.For(Value2);
+			var vmax = ValueAxis.For(Value1);
+			var mmin = DoMinMax ? Math.Min(vmin, vmax) : vmin;
+			var mmax = DoMinMax ? Math.Max(vmin, vmax) : vmax;
+			var offset1 = matx.Transform(new Point(0, vmin));
+			Value1Path.SetValue(Canvas.TopProperty, offset1.Y);
+			var offset2 = matx.Transform(new Point(0, vmax));
+			Value2Path.SetValue(Canvas.TopProperty, offset2.Y);
+			var matx2 = matx;
+			matx2.OffsetY = 0;
+			Value1Rule.Transform = new MatrixTransform() { Matrix = matx2 };
+			Value2Rule.Transform = new MatrixTransform() { Matrix = matx2 };
+			BandPath.SetValue(Canvas.TopProperty, offset1.Y);
+			Band.Transform = new MatrixTransform() { Matrix = matx2 };
+#else
 			Value1Rule.Transform = new MatrixTransform() { Matrix = matx };
 			Value2Rule.Transform = new MatrixTransform() { Matrix = matx };
 			Band.Transform = new MatrixTransform() { Matrix = matx };
+#endif
 		}
 		#endregion
 	}
