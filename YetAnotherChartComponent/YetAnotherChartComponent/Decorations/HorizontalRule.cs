@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using Windows.Foundation;
 using Windows.UI.Xaml;
+using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
 
@@ -114,7 +115,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// Ctor.
 		/// </summary>
 		public HorizontalRule() {
-			Rule = new LineGeometry();
+			Rule = new LineGeometry {
+				StartPoint = new Point(0, 0),
+				EndPoint = new Point(1, 1)
+			};
 			Path = new Path() {
 				Data = Rule
 			};
@@ -143,7 +147,7 @@ namespace eScapeLLC.UWP.Charts {
 			}
 		}
 		#endregion
-		#region extensions
+		#region IRequireEnterLeave
 		/// <summary>
 		/// Add elements and attach bindings.
 		/// </summary>
@@ -162,6 +166,8 @@ namespace eScapeLLC.UWP.Charts {
 			icelc.DeleteLayer(Layer);
 			Layer = null;
 		}
+		#endregion
+		#region IRequireRender
 		/// <summary>
 		/// Rule coordinates:
 		///		x: "normalized" [0..1] and scaled to the area-width
@@ -171,11 +177,10 @@ namespace eScapeLLC.UWP.Charts {
 		void IRequireRender.Render(IChartRenderContext icrc) {
 			if (ValueAxis == null) return;
 			_trace.Verbose($"{Name} val:{Value}");
-			var vx = ValueAxis.For(Value);
-			Rule.StartPoint = new Point(0, vx);
-			Rule.EndPoint = new Point(1, vx);
 			Dirty = false;
 		}
+		#endregion
+		#region IRequireTransforms
 		/// <summary>
 		/// rule coordinates (x:[0..1], y:axis)
 		/// </summary>
@@ -187,6 +192,10 @@ namespace eScapeLLC.UWP.Charts {
 			if (ClipToDataRegion) {
 				Path.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
 			}
+			var vx = ValueAxis.For(Value);
+			var offset = matx.Transform(new Point(0, vx));
+			Rule.SetValue(Canvas.TopProperty, offset.Y);
+			matx.OffsetY = 0;
 			Rule.Transform = new MatrixTransform() { Matrix = matx };
 		}
 		#endregion
