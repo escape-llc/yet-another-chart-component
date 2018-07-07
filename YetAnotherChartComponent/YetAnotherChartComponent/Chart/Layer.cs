@@ -88,18 +88,19 @@ namespace eScapeLLC.UWP.Charts {
 		protected virtual void InternalRemove(IEnumerable<FrameworkElement> fes) { foreach (var fe in fes) (this as IChartLayer).Remove(fe); }
 		/// <summary>
 		/// Remove all children.
-		/// Does not invoke any <see cref="Storyboard"/>.
+		/// Invokes <see cref="Storyboard"/> if present.
 		/// </summary>
 		protected virtual void InternalClear() {
+			var array = new UIElement[canvas.Children.Count];
 			try {
-				foreach (var fe in canvas.Children) {
+				canvas.Children.CopyTo(array, 0);
+				canvas.Children.Clear();
+			} finally {
+				foreach (var fe in array) {
 					if (fe is FrameworkElement fe2) {
-						// NOTE this MAY be a problem if PostRemove requires FE2 be really NOT IN Visual Tree!
-						PostRemove(fe2);
+						InternalRemove(fe2);
 					}
 				}
-			} finally {
-				canvas.Children.Clear();
 			}
 		}
 		#endregion
