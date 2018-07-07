@@ -135,6 +135,9 @@
     <PackageReference Include="MSTest.TestFramework">
       <Version>1.3.2</Version>
     </PackageReference>
+	<PackageReference Include="Microsoft.NET.Test.Sdk">
+	  <Version>15.7.2</Version>
+	</PackageReference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\YetAnotherChartComponent\YetAnotherChartComponent.csproj">
