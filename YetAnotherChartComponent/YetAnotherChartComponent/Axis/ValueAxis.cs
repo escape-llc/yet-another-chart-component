@@ -188,12 +188,12 @@ namespace eScapeLLC.UWP.Charts {
 			// TODO may want to include the LabelStyle's padding if defined
 			var padding = AxisLineThickness + 2 * AxisMargin;
 			var tbr = new Recycler<FrameworkElement, ItemState>(TickLabels.Select(tl => tl.tb), (ist) => {
-				var tb = CreateElement(ist);
-				tb.Width = icrc.Area.Width - padding;
-				if (tb is TextBlock tbb) {
+				var fe = CreateElement(ist);
+				fe.Width = icrc.Area.Width - padding;
+				if (fe is TextBlock tbb) {
 					tbb.Padding = Side == Side.Right ? new Thickness(padding, 0, 0, 0) : new Thickness(0, 0, padding, 0);
 				}
-				return tb;
+				return fe;
 			});
 			var itemstate = new List<ItemState>();
 			// materialize the ticks

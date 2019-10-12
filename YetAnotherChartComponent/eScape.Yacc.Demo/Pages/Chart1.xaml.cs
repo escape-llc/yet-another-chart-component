@@ -11,7 +11,7 @@ using Yacc.Demo.VM;
 namespace Yacc.Demo.Pages {
 	public sealed partial class Chart1 : BasicPage {
 		public override string PageTitle => "Demo Chart";
-		public int CurrentChildCount { get; private set; }
+		public int CurrentChildCount { get; set; }
 		Timer cctimer;
 
 		public Chart1() {

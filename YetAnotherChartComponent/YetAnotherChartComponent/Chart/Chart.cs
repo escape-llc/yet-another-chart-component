@@ -218,6 +218,7 @@ namespace eScapeLLC.UWP.Charts {
 			Axes = new List<IChartAxis>();
 			DeferredEnter = new List<ChartComponent>();
 			LayoutUpdated += new EventHandler<object>(Chart_LayoutUpdated);
+			SizeChanged += Chart_SizeChanged;
 			DataContextChanged += Chart_DataContextChanged;
 			CurrentLayout = new LayoutState();
 			Layers = new List<IChartLayer>();
@@ -255,6 +256,17 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			args.Handled = true;
 		}
+		private void Chart_SizeChanged(object sender, SizeChangedEventArgs e) {
+		#if false
+			_trace.Verbose($"SizeChanged prev({e.PreviousSize.Width}x{e.PreviousSize.Height}) new({e.NewSize.Width}x{e.NewSize.Height})");
+			if (e.NewSize.Width == 0 || e.NewSize.Height == 0) return;
+			if (CurrentLayout.IsSizeChanged(e.NewSize)) {
+				var ls = new LayoutState() { Dimensions = e.NewSize, Layout = CurrentLayout.Layout };
+				RenderComponents(ls);
+				CurrentLayout = ls;
+			}
+		#endif
+		}
 		/// <summary>
 		/// Reconfigure components in response to layout change.
 		/// Happens After OnApplyTemplate.
@@ -264,11 +276,12 @@ namespace eScapeLLC.UWP.Charts {
 		private void Chart_LayoutUpdated(object sender, object e) {
 			// This is (NaN,NaN) if we haven't been sized yet
 			var sz = new Size(ActualWidth, ActualHeight);
-			_trace.Verbose($"LayoutUpdated ({sz.Width}x{sz.Height})");
+			//_trace.Verbose($"LayoutUpdated ({sz.Width}x{sz.Height})");
 			if (!double.IsNaN(sz.Width) && !double.IsNaN(sz.Height)) {
 				// we are sized; see if dimensions actually changed
 				if (sz.Width == 0 || sz.Height == 0) return;
 				if (CurrentLayout.IsSizeChanged(sz)) {
+					_trace.Verbose($"LayoutUpdated.trigger ({sz.Width}x{sz.Height})");
 					var ls = new LayoutState() { Dimensions = sz, Layout = CurrentLayout.Layout };
 					RenderComponents(ls);
 					CurrentLayout = ls;

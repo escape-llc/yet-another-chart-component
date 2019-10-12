@@ -22,17 +22,17 @@
 			<EntranceThemeTransition/>
 			<AddDeleteThemeTransition/>
 			<ReorderThemeTransition/>
-			<ContentThemeTransition/>
 		</TransitionCollection>
 	</Page.Resources>
-	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+		Transitions="{StaticResource DefaultTransitions}">
 		<CommandBar x:Name="toolbar"
 			RelativePanel.AlignTopWithPanel="True">
 			<CommandBar.PrimaryCommands>
 				<AppBarToggleButton IsChecked="True" x:Name="cb_legend" Label="Toggle" Content="Legend"/>
 			</CommandBar.PrimaryCommands>
 		</CommandBar>
-		<yacc:Chart x:Name="chart" Style="{StaticResource Chart}" ChartError="Chart_ChartError" Transitions="{StaticResource DefaultTransitions}"
+		<yacc:Chart x:Name="chart" Style="{StaticResource Chart}" ChartError="Chart_ChartError"
 			RelativePanel.Below="toolbar" RelativePanel.AlignBottomWithPanel="True"
 			RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True">
 			<yacc:Chart.DataSources>

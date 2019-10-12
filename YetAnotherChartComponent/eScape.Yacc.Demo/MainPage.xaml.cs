@@ -19,9 +19,8 @@ namespace Yacc.Demo {
 			var vm = new MainPageVM(Dispatcher);
 			DataContext = vm;
 		}
-
-		private void HamburgerMenu_ItemInvoked(object sender, Microsoft.Toolkit.Uwp.UI.Controls.HamburgerMenuItemInvokedEventArgs e) {
-			if(e.InvokedItem is PageItem pi) {
+		private void NavigationView_ItemInvoked(Microsoft.UI.Xaml.Controls.NavigationView sender, Microsoft.UI.Xaml.Controls.NavigationViewItemInvokedEventArgs args) {
+			if (args.InvokedItemContainer.DataContext is PageItem pi) {
 				Notification.Content = pi;
 				Notification.Show();
 				// for now just send in PI

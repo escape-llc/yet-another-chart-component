@@ -9,7 +9,7 @@ using System;
 namespace Yacc.Demo.Pages {
 	public sealed partial class Chart3 : BasicPage {
 		public override string PageTitle => "Recycling";
-		public int CurrentChildCount { get; private set; }
+		public int CurrentChildCount { get; set; }
 		Timer cctimer;
 		public Chart3() {
 			this.InitializeComponent();

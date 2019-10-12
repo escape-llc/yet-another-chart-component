@@ -244,24 +244,6 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region helpers
 		/// <summary>
-		/// Layout pass size changed.
-		/// Just-in-time re-position of label element at exactly the right spot after it's done with (asynchronous) measure/arrange.
-		/// </summary>
-		/// <param name="sender"></param>
-		/// <param name="e"></param>
-		void Element_SizeChanged(object sender, SizeChangedEventArgs e) {
-#if false
-			var vm = fe.DataContext as DataTemplateShim;
-			_trace.Verbose($"{Name} sizeChanged ps:{e.PreviousSize} ns:{e.NewSize} text:{vm?.Text}");
-#endif
-			var fe = sender as FrameworkElement;
-			var state = AxisLabels.SingleOrDefault((sis) => sis.element == fe);
-			if (state != null) {
-				var loc = state.UpdateLocation();
-				_trace.Verbose($"{Name} sizeChanged loc:{loc} yv:{state.value} ns:{e.NewSize}");
-			}
-		}
-		/// <summary>
 		/// Rebuild the axis geometry based on current extents.
 		/// </summary>
 		void RebuildAxisGeometry() {
@@ -343,6 +325,26 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region extensions
+		#endregion
+		#region evhs
+		/// <summary>
+		/// Layout pass size changed.
+		/// Just-in-time re-position of label element at exactly the right spot after it's done with (asynchronous) measure/arrange.
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		void Element_SizeChanged(object sender, SizeChangedEventArgs e) {
+#if false
+			var vm = fe.DataContext as DataTemplateShim;
+			_trace.Verbose($"{Name} sizeChanged ps:{e.PreviousSize} ns:{e.NewSize} text:{vm?.Text}");
+#endif
+			var fe = sender as FrameworkElement;
+			var state = AxisLabels.SingleOrDefault((sis) => sis.element == fe);
+			if (state != null) {
+				var loc = state.UpdateLocation();
+				_trace.Verbose($"{Name} sizeChanged[{state.index}] loc:{loc} yv:{state.value} ns:{e.NewSize}");
+			}
+		}
 		#endregion
 		#region IRequireEnterLeave
 		/// <summary>
@@ -536,8 +538,8 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			// re-sequence remaining items
 			for (int ix = startAt + reproc.Count; ix < AxisLabels.Count; ix++) {
-				AxisLabels[ix].index = ix + items.Count;
-				AxisLabels[ix].value = ix + items.Count;
+				AxisLabels[ix].index = ix;
+				AxisLabels[ix].value = ix;
 			}
 			// render new items
 			// run the element pipeline on the added items
