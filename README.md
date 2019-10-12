@@ -37,6 +37,9 @@ Please consult the [other](../../issues) [features](../../projects) of this gith
 # Nuget Releases
 [![NuGet version](https://badge.fury.io/nu/escapellc.uwp.charts.svg)](https://badge.fury.io/nu/escapellc.uwp.charts)
 
+## 1.5.1
+Disable experimental composition animations.
+
 ## 1.5.0
 More features and fixes.  Contains *breaking changes* so be sure to check the milestone page!
 
