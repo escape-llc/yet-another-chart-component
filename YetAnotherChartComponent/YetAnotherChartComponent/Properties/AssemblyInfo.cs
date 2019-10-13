@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("eScape Technology LLC")]
 [assembly: AssemblyProduct("Charts for UWP")]
-[assembly: AssemblyCopyright("Copyright © 2017-18")]
+[assembly: AssemblyCopyright("Copyright © 2017-19")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
