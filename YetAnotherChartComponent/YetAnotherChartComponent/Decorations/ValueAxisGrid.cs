@@ -6,6 +6,7 @@ using System.Linq;
 using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
 
@@ -16,14 +17,19 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public class ValueAxisGrid : ChartComponent, IRequireChartTheme, IRequireEnterLeave, IRequireRender, IRequireTransforms {
 		static readonly LogTools.Flag _trace = LogTools.Add("ValueAxisGrid", LogTools.Level.Error);
+		#region ItemState
+		/// <summary>
+		/// Internal state for generated grid lines.
+		/// </summary>
 		protected class ItemState {
-			public TickCalculator.TickState tick { get; set; }
-			public Path element { get; set; }
+			internal TickState tick { get; set; }
+			internal Path element { get; set; }
 			internal void SetLocation(double left, double top) {
 				element.SetValue(Canvas.LeftProperty, left);
 				element.SetValue(Canvas.TopProperty, top);
 			}
 		}
+		#endregion
 		#region properties
 		/// <summary>
 		/// The style to use for Path geometry.
@@ -39,17 +45,18 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public String ValueAxisName { get; set; }
 		/// <summary>
+		/// Converter to use as the element <see cref="FrameworkElement.Style"/> selector.
+		/// These are already set to their "standard" values before this is called, so it MAY selectively opt out of setting them.
+		/// <para/>
+		/// The <see cref="IValueConverter.Convert"/> targetType parameter is used to determine which value is requested.
+		/// <para/>
+		/// Uses <see cref="Tuple{Style,String}"/> for style/label override.  Return a new instance/NULL to opt in/out.  the String portion is NOT USED.
+		/// </summary>
+		public IValueConverter PathFormatter { get; set; }
+		/// <summary>
 		/// The dereferenced value axis.
 		/// </summary>
 		protected IChartAxis ValueAxis { get; set; }
-		/// <summary>
-		/// Path for the grid lines.
-		/// </summary>
-		//protected Path Grid { get; set; }
-		/// <summary>
-		/// Geometry for the grid lines.
-		/// </summary>
-		//protected GeometryGroup GridGeometry { get; set; }
 		/// <summary>
 		/// Paths for the grid lines.
 		/// </summary>
@@ -100,12 +107,15 @@ namespace eScapeLLC.UWP.Charts {
 				PathStyle == null, Theme != null, Theme.PathGridValue != null,
 				() => PathStyle = Theme.PathGridValue
 			);
-			//BindTo(this, nameof(PathStyle), Grid, FrameworkElement.StyleProperty);
-			//ApplyBinding(this, nameof(Visibility), Grid, UIElement.VisibilityProperty);
 		}
+		/// <summary>
+		/// Coordinates are strict NDC.  XY-offsets are delegated to <see cref="Canvas"/>.
+		/// </summary>
+		/// <param name="state"></param>
+		/// <returns></returns>
 		Path CreateElement(ItemState state) {
 			var path = new Path();
-			var gline = new LineGeometry() { StartPoint=new Point(0, /*state.tick.Value*/0), EndPoint=new Point(1, /*state.tick.Value*/0) };
+			var gline = new LineGeometry() { StartPoint=new Point(0, 0), EndPoint=new Point(1, 0) };
 			path.Data = gline;
 			if (PathStyle != null) {
 				BindTo(this, nameof(PathStyle), path, FrameworkElement.StyleProperty);
@@ -140,8 +150,10 @@ namespace eScapeLLC.UWP.Charts {
 			});
 			var itemstate = new List<ItemState>();
 			//_trace.Verbose($"grid range:{tc.Range} tintv:{tc.TickInterval}");
-			//GridGeometry.Children.Clear();
-			foreach (var tick in tc.GetTicks()) {
+			var tixarray = tc.GetTicks().ToArray();
+			var sc = new ValueAxisSelectorContext(ValueAxis, icrc.SeriesArea, tixarray, tc.TickInterval);
+			for (int ix = 0; ix < tixarray.Length; ix++) {
+				var tick = tixarray[ix];
 				//_trace.Verbose($"grid vx:{tick}");
 				var state = new ItemState() { tick = tick };
 				var current = recycler.Next(state);
@@ -153,7 +165,18 @@ namespace eScapeLLC.UWP.Charts {
 				}
 				state.element = current.Item2;
 				ApplyBinding(this, nameof(Visibility), state.element, UIElement.VisibilityProperty);
+				if (PathFormatter != null) {
+					sc.SetTick(ix);
+					// call for Style, String override
+					var format = PathFormatter.Convert(sc, typeof(Tuple<Style, String>), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
+					if (format is Tuple<Style, String> ovx) {
+						if (ovx.Item1 != null) {
+							current.Item2.Style = ovx.Item1;
+						}
+					}
+				}
 				state.SetLocation(icrc.Area.Left, tick.Value);
+				sc.Generated(tick);
 				itemstate.Add(state);
 			}
 			// VT and internal bookkeeping

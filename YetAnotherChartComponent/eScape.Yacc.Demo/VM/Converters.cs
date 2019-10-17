@@ -4,6 +4,24 @@ using Windows.UI.Xaml;
 using Windows.UI.Xaml.Data;
 
 namespace Yacc.Demo.VM {
+	public class ValueAxisGridZeroLine : IValueConverter {
+		public Style WhenZero { get; set; }
+		public object Convert(object value, Type targetType, object parameter, string language) {
+			if (WhenZero == null) return null;
+			if (value is IValueAxisLabelSelectorContext ivalsc) {
+				if (targetType == typeof(Tuple<Style, String>)) {
+					var ox = ivalsc.AllTicks[ivalsc.Index];
+					if(ox.Value == 0.0) {
+						return new Tuple<Style, String>(WhenZero, null);
+					}
+				}
+			}
+			return null;
+		}
+		public object ConvertBack(object value, Type targetType, object parameter, string language) {
+			throw new NotImplementedException();
+		}
+	}
 	public class CategoryAxisDateRangeConverter : IValueConverter {
 		DayOfWeek DowFor(object ox) {
 			if (ox is DateTime dt) {

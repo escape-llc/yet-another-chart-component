@@ -111,6 +111,7 @@
   <ItemGroup>
     <Compile Include="Axis\Axis.cs" />
     <Compile Include="Axis\CategoryAxis.cs" />
+    <Compile Include="Axis\TickCalculator.cs" />
     <Compile Include="Chart\Chart.cs" />
     <Compile Include="Chart\ChartComponent.cs" />
     <Compile Include="Chart\Layer.cs" />

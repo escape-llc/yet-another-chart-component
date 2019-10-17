@@ -19,7 +19,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// List of all tick values, in order of layout.
 		/// MAY NOT be in sorted order!
 		/// </summary>
-		double[] AllTicks { get; }
+		TickState[] AllTicks { get; }
 		/// <summary>
 		/// The computed tick interval.
 		/// </summary>
@@ -28,7 +28,56 @@ namespace eScapeLLC.UWP.Charts {
 		/// List of previously-generated ticks, in order of layout.
 		/// MAY NOT be in sorted order!
 		/// </summary>
-		List<double> GeneratedTicks { get; }
+		List<TickState> GeneratedTicks { get; }
+	}
+	#endregion
+	#region ValueAxisSelectorContext
+	/// <summary>
+	/// Context for value axis selectors.
+	/// </summary>
+	public class ValueAxisSelectorContext : IValueAxisLabelSelectorContext {
+		/// <summary>
+		/// <see cref="IAxisLabelSelectorContext.Index"/>.
+		/// </summary>
+		public int Index { get; private set; }
+		/// <summary>
+		/// <see cref="IValueAxisLabelSelectorContext.AllTicks"/>.
+		/// </summary>
+		public TickState[] AllTicks { get; private set; }
+		/// <summary>
+		/// <see cref="IValueAxisLabelSelectorContext.TickInterval"/>.
+		/// </summary>
+		public double TickInterval { get; private set; }
+		/// <summary>
+		/// <see cref="IAxisLabelSelectorContext.Axis"/>.
+		/// </summary>
+		public IChartAxis Axis { get; private set; }
+		/// <summary>
+		/// <see cref="IAxisLabelSelectorContext.Area"/>.
+		/// </summary>
+		public Rect Area { get; private set; }
+		/// <summary>
+		/// <see cref="IValueAxisLabelSelectorContext.GeneratedTicks"/>.
+		/// </summary>
+		public List<TickState> GeneratedTicks { get; private set; }
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="ica"></param>
+		/// <param name="rc"></param>
+		/// <param name="ticks"></param>
+		/// <param name="ti"></param>
+		public ValueAxisSelectorContext(IChartAxis ica, Rect rc, TickState[] ticks, double ti) { Axis = ica; Area = rc; AllTicks = ticks; TickInterval = ti; GeneratedTicks = new List<TickState>(); }
+		/// <summary>
+		/// Set the current index.
+		/// </summary>
+		/// <param name="idx"></param>
+		public void SetTick(int idx) { Index = idx; }
+		/// <summary>
+		/// Add to the list of generated ticks.
+		/// </summary>
+		/// <param name="dx"></param>
+		public void Generated(TickState dx) { GeneratedTicks.Add(dx); }
 	}
 	#endregion
 	#region ValueAxis
@@ -43,60 +92,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		protected class ItemState {
 			internal FrameworkElement tb;
-			internal double value;
+			internal TickState tick;
 			internal void SetLocation(double left, double top) {
 				tb.SetValue(Canvas.LeftProperty, left);
 				tb.SetValue(Canvas.TopProperty, top);
 			}
-		}
-		#endregion
-		#region SelectorContext
-		/// <summary>
-		/// Internal context for selector.
-		/// </summary>
-		protected class SelectorContext : IValueAxisLabelSelectorContext {
-			/// <summary>
-			/// <see cref="IAxisLabelSelectorContext.Index"/>.
-			/// </summary>
-			public int Index { get; private set; }
-			/// <summary>
-			/// <see cref="IValueAxisLabelSelectorContext.AllTicks"/>.
-			/// </summary>
-			public double[] AllTicks { get; private set; }
-			/// <summary>
-			/// <see cref="IValueAxisLabelSelectorContext.TickInterval"/>.
-			/// </summary>
-			public double TickInterval { get; private set; }
-			/// <summary>
-			/// <see cref="IAxisLabelSelectorContext.Axis"/>.
-			/// </summary>
-			public IChartAxis Axis { get; private set; }
-			/// <summary>
-			/// <see cref="IAxisLabelSelectorContext.Area"/>.
-			/// </summary>
-			public Rect Area { get; private set; }
-			/// <summary>
-			/// <see cref="IValueAxisLabelSelectorContext.GeneratedTicks"/>.
-			/// </summary>
-			public List<double> GeneratedTicks { get; private set; }
-			/// <summary>
-			/// Ctor.
-			/// </summary>
-			/// <param name="ica"></param>
-			/// <param name="rc"></param>
-			/// <param name="ticks"></param>
-			/// <param name="ti"></param>
-			public SelectorContext(IChartAxis ica, Rect rc, double[] ticks, double ti) { Axis = ica; Area = rc; AllTicks = ticks; TickInterval = ti; GeneratedTicks = new List<double>(); }
-			/// <summary>
-			/// Set the current index.
-			/// </summary>
-			/// <param name="idx"></param>
-			public void SetTick(int idx) { Index = idx; }
-			/// <summary>
-			/// Add to the list of generated ticks.
-			/// </summary>
-			/// <param name="dx"></param>
-			public void Generated(double dx) { GeneratedTicks.Add(dx); }
 		}
 		#endregion
 		#region properties
@@ -197,8 +197,8 @@ namespace eScapeLLC.UWP.Charts {
 			});
 			var itemstate = new List<ItemState>();
 			// materialize the ticks
-			var lx = tc.GetTicks().Select(x=>x.Value).ToArray();
-			var sc = new SelectorContext(this, icrc.Area, lx, tc.TickInterval);
+			var lx = tc.GetTicks().ToArray();
+			var sc = new ValueAxisSelectorContext(this, icrc.Area, lx, tc.TickInterval);
 			for (int ix = 0; ix < lx.Length; ix++) {
 				//_trace.Verbose($"grid vx:{tick}");
 				sc.SetTick(ix);
@@ -222,7 +222,7 @@ namespace eScapeLLC.UWP.Charts {
 					}
 				}
 				// default text
-				var text = tick.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
+				var text = tick.Value.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
 				if (LabelFormatter != null) {
 					// call for Style, String override
 					var format = LabelFormatter.Convert(sc, typeof(Tuple<Style, String>), null, System.Globalization.CultureInfo.CurrentUICulture.Name);
@@ -238,8 +238,8 @@ namespace eScapeLLC.UWP.Charts {
 				var shim = new TextShim() { Text = text };
 				current.Item2.DataContext = shim;
 				BindTo(shim, nameof(Visibility), current.Item2, UIElement.VisibilityProperty);
-				var state = new ItemState() { tb = current.Item2, value = tick };
-				state.SetLocation(icrc.Area.Left, tick);
+				var state = new ItemState() { tb = current.Item2, tick = tick };
+				state.SetLocation(icrc.Area.Left, tick.Value);
 				sc.Generated(tick);
 				itemstate.Add(state);
 			}
@@ -335,7 +335,7 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"transforms sy:{scaley:F3} matx:{matx} a:{icrc.Area} sa:{icrc.SeriesArea}");
 			foreach (var state in TickLabels) {
 				var adj = state.tb.ActualHeight / 2;
-				var top = icrc.Area.Bottom - (state.value - Minimum) * scaley - adj;
+				var top = icrc.Area.Bottom - (state.tick.Value - Minimum) * scaley - adj;
 				state.SetLocation(icrc.Area.Left, top);
 			}
 		}

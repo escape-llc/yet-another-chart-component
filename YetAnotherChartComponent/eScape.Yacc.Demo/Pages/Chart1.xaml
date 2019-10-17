@@ -95,6 +95,10 @@
 			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource Show}"/>
 			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource Hide}"/>
 		</Style>
+		<Style x:Key="AxisGridZeroLine" TargetType="Path" BasedOn="{StaticResource AxisGridLines}">
+			<Setter Property="Stroke" Value="Yellow"/>
+			<Setter Property="StrokeThickness" Value="1"/>
+		</Style>
 		<Style x:Key="Column_v1" TargetType="Path">
 			<Setter Property="Stroke" Value="DarkOrchid"/>
 			<Setter Property="StrokeThickness" Value="1"/>
@@ -201,6 +205,7 @@
 			WhenEqual="{StaticResource BigLabels2}"
 			WhenGreater="{StaticResource v1_GreaterThan_v2}"
 			WhenLess="{StaticResource v1_LessThan_v2}"/>
+		<vm:ValueAxisGridZeroLine x:Key="ZeroLine" WhenZero="{StaticResource AxisGridZeroLine}"/>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 		<CommandBar x:Name="toolbar"
@@ -248,7 +253,7 @@
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}"
 					LabelTemplate="{StaticResource ValueAxisChart1}" LabelFormatString="F1" />
 				<!-- CANNOT ElementName bind here we're tying into a different XAML namescope -->
-				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource AxisGridLines}"
+				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource AxisGridLines}" PathFormatter="{StaticResource ZeroLine}"
 					Visibility="{Binding ShowGrid, Converter={StaticResource b2v}}" />
 				<yacc:ValueLabels SourceName="colv2" LabelFormatString="F2" CategoryAxisOffset=".625"
 					PlacementOffset="0,1" LabelOffset="0,-1" LabelStyle="{StaticResource BigLabels}" />
