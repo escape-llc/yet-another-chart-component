@@ -14,6 +14,27 @@ namespace eScapeLLC.UWP.Charts {
 	///		Otherwise it's the arithmetic midpoint (Minimum + Range/2) rounded to the nearest TickInterval.
 	/// </summary>
 	public class TickCalculator {
+		#region TickState
+		/// <summary>
+		/// Data holder for <see cref="GetTicks"/>.
+		/// </summary>
+		public class TickState {
+			/// <summary>
+			/// Index of the value.  MAY be negative.
+			/// </summary>
+			public int Index { get; private set; }
+			/// <summary>
+			/// Tick value.
+			/// </summary>
+			public double Value { get; private set; }
+			/// <summary>
+			/// Ctor.
+			/// </summary>
+			/// <param name="idx"></param>
+			/// <param name="val"></param>
+			public TickState(int idx, double val) { Index = idx; Value = val; }
+		}
+		#endregion
 		#region properties
 		/// <summary>
 		/// The low extent.
@@ -83,11 +104,13 @@ namespace eScapeLLC.UWP.Charts {
 		/// Starts at the "center" and works "outward" toward each extent, alternating positive/negative direction.
 		/// Once an extent is "filled", only values of the opposite extent SHALL appear.
 		/// If extents "cross" zero, start at zero, otherwise the "center" of the range, to nearest tick.
+		/// Generator: [0] the "center", [ix] "above-center" tick, [-ix] "below-center" tick
+		/// Generator pattern: 0, 1, -1, 2, -2,...
 		/// </summary>
 		/// <returns>Series of values, as described above.</returns>
-		public IEnumerable<double> GetTicks() {
+		public IEnumerable<TickState> GetTicks() {
 			var center = Math.Sign(Minimum) != Math.Sign(Maximum) ? 0 : RoundTo(Minimum + Range / 2, TickInterval);
-			yield return center;
+			yield return new TickState(0, center);
 			var inside = true;
 			for (int ix = 1; inside; ix++) {
 				bool didu = false, didl = false;
@@ -95,11 +118,11 @@ namespace eScapeLLC.UWP.Charts {
 				var upper = center + ix * TickInterval;
 				var lower = center - ix * TickInterval;
 				if (upper <= Maximum) {
-					yield return upper;
+					yield return new TickState(ix, upper);
 					didu = true;
 				}
 				if (lower >= Minimum) {
-					yield return lower;
+					yield return new TickState(-ix, lower);
 					didl = true;
 				}
 				inside = didu || didl;

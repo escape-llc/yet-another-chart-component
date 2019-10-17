@@ -90,6 +90,11 @@
 			<Setter Property="Fill" Value="{StaticResource band-fill}"/>
 			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
 		</Style>
+		<Style x:Key="AxisGridLines" TargetType="Path" BasedOn="{StaticResource Grid}">
+			<Setter Property="animations:Implicit.Animations" Value="{StaticResource Offset}"/>
+			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource Show}"/>
+			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource Hide}"/>
+		</Style>
 		<Style x:Key="Column_v1" TargetType="Path">
 			<Setter Property="Stroke" Value="DarkOrchid"/>
 			<Setter Property="StrokeThickness" Value="1"/>
@@ -243,7 +248,7 @@
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}"
 					LabelTemplate="{StaticResource ValueAxisChart1}" LabelFormatString="F1" />
 				<!-- CANNOT ElementName bind here we're tying into a different XAML namescope -->
-				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource Grid}"
+				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource AxisGridLines}"
 					Visibility="{Binding ShowGrid, Converter={StaticResource b2v}}" />
 				<yacc:ValueLabels SourceName="colv2" LabelFormatString="F2" CategoryAxisOffset=".625"
 					PlacementOffset="0,1" LabelOffset="0,-1" LabelStyle="{StaticResource BigLabels}" />

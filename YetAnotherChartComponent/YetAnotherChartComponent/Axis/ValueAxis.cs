@@ -197,7 +197,7 @@ namespace eScapeLLC.UWP.Charts {
 			});
 			var itemstate = new List<ItemState>();
 			// materialize the ticks
-			var lx = tc.GetTicks().ToArray();
+			var lx = tc.GetTicks().Select(x=>x.Value).ToArray();
 			var sc = new SelectorContext(this, icrc.Area, lx, tc.TickInterval);
 			for (int ix = 0; ix < lx.Length; ix++) {
 				//_trace.Verbose($"grid vx:{tick}");
