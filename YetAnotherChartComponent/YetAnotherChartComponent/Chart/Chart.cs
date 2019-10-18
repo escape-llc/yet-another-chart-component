@@ -159,7 +159,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// The list of Legend items.
 		/// This is intended for data binding to an external UI to present the legend.
 		/// </summary>
-		public ObservableCollection<Legend> LegendItems { get; private set; }
+		public ObservableCollection<LegendBase> LegendItems { get; private set; }
 		/// <summary>
 		/// The THEME to use for this chart.
 		/// This MUST be set from GENERIC.XAML.
@@ -210,7 +210,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public Chart() :base() {
 			DefaultStyleKey = typeof(Chart);
-			LegendItems = new ObservableCollection<Legend>();
+			LegendItems = new ObservableCollection<LegendBase>();
 			DataSources = new ChartDataSourceCollection();
 			DataSources.CollectionChanged += DataSources_CollectionChanged;
 			Components = new ChartComponentCollection();

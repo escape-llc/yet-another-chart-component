@@ -162,7 +162,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// The current set of legend items.
 		/// </summary>
-		public IEnumerable<Legend> LegendItems { get { return InternalLegendItems; } }
+		public IEnumerable<LegendBase> LegendItems { get { return InternalLegendItems; } }
 		/// <summary>
 		/// The layer for components.
 		/// </summary>
@@ -174,7 +174,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Internal legend items.
 		/// </summary>
-		protected List<Legend> InternalLegendItems { get; set; }
+		protected List<LegendBase> InternalLegendItems { get; set; }
 		#endregion
 		#region events
 		/// <summary>
@@ -214,7 +214,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		public PieSeries() {
 			ItemState = new List<ItemState<Path>>();
-			InternalLegendItems = new List<Legend>();
+			InternalLegendItems = new List<LegendBase>();
 		}
 		#endregion
 		#region helpers
@@ -229,7 +229,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Refresh the current state of the legend items.
 		/// </summary>
 		void UpdateLegend() {
-			List<Legend> legend = new List<Legend>();
+			List<LegendBase> legend = new List<LegendBase>();
 			foreach(var state in ItemState) {
 				if (state is ISeriesItemCommon sic) {
 					var leg = new Legend() {

@@ -196,8 +196,8 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region IProvideLegend
-		private Legend _legend;
-		IEnumerable<Legend> IProvideLegend.LegendItems {
+		private LegendBase _legend;
+		IEnumerable<LegendBase> IProvideLegend.LegendItems {
 			get { if (_legend == null) _legend = Legend(); return new[] { _legend }; }
 		}
 		Legend Legend() {

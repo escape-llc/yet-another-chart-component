@@ -80,6 +80,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// It MUST be configured to accept a <see cref="DataTemplateShim"/> as its <see cref="FrameworkElement.DataContext"/>.
 		/// </summary>
 		DataTemplate PathTemplate { get; }
+		/// <summary>
+		/// Data template for "default" series item containers.
+		/// It MUST be configured to accept a <see cref="DataTemplateShim"/> as its <see cref="FrameworkElement.DataContext"/>.
+		/// </summary>
+		DataTemplate ImageTemplate { get; }
 		#endregion
 		#region Storyboards
 		/// <summary>
@@ -184,6 +189,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// MUST be a Path.
 		/// </summary>
 		public DataTemplate PathTemplate { get { return (DataTemplate)GetValue(PathTemplateProperty); } set { SetValue(PathTemplateProperty, value); } }
+		/// <summary>
+		/// Data template for "default" series item containers.
+		/// MUST be a Image.
+		/// </summary>
+		public DataTemplate ImageTemplate { get { return (DataTemplate)GetValue(ImageTemplateProperty); } set { SetValue(ImageTemplateProperty, value); } }
 		#endregion
 		#region Storyboards
 		/// <summary>
@@ -252,6 +262,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// Identifies <see cref="PathTemplate"/> DP.
 		/// </summary>
 		public static readonly DependencyProperty PathTemplateProperty = DependencyProperty.Register(nameof(PathTemplate), typeof(DataTemplate), typeof(ChartTheme), new PropertyMetadata(null));
+		/// <summary>
+		/// Identifies <see cref="ImageTemplate"/> DP.
+		/// </summary>
+		public static readonly DependencyProperty ImageTemplateProperty = DependencyProperty.Register(nameof(ImageTemplate), typeof(DataTemplate), typeof(ChartTheme), new PropertyMetadata(null));
 		/// <summary>
 		/// Identifies <see cref="EnterAnimation"/> DP.
 		/// </summary>

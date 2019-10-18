@@ -141,5 +141,43 @@ namespace eScapeLLC.UWP.Charts {
 		public double Offset {  get { return _offset; } set { _offset = value; Changed(nameof(Offset)); } }
 	}
 	#endregion
+	#region ImageSourceShim
+	/// <summary>
+	/// Additional property for binding an <see cref="ImageSource"/>.
+	/// </summary>
+	public class ImageSourceShim : DataTemplateShim {
+		ImageSource _source;
+		double _offsetx;
+		double _offsety;
+		double _width;
+		double _height;
+		/// <summary>
+		/// Current offset X.
+		/// </summary>
+		public double OffsetX { get { return _offsetx; } set { _offsetx = value; Changed(nameof(OffsetX)); } }
+		/// <summary>
+		/// Current offset Y.
+		/// </summary>
+		public double OffsetY { get { return _offsety; } set { _offsety = value; Changed(nameof(OffsetY)); } }
+		/// <summary>
+		/// Current width.
+		/// </summary>
+		public double Width { get { return _width; } set { _width = value; Changed(nameof(Width)); } }
+		/// <summary>
+		/// Current height.
+		/// </summary>
+		public double Height { get { return _height; } set { _height = value; Changed(nameof(Height)); } }
+		/// <summary>
+		/// Current image source.
+		/// </summary>
+		public ImageSource Source { get { return _source; } set { _source = value; Changed(nameof(Source)); } }
+		/// <summary>
+		/// Render transform origin.
+		/// Does Not do change notification.
+		/// Default is (.5,.5) in NDC.
+		/// </summary>
+		public Point RenderTransformOrigin { get; set; } = new Point(.5, .5);
+	}
+	#endregion
 	#endregion
 }

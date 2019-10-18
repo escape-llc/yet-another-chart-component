@@ -1,5 +1,6 @@
 ﻿using System;
 using Windows.UI.Xaml;
+using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
 
@@ -35,14 +36,26 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region LegendWithPath
 	/// <summary>
-	/// Legend VM with a custom Path for its visualization.
+	/// Legend VM with a custom Geometry for its visualization.
 	/// </summary>
-	public class LegendWithPath : LegendBase {
-		Path _path;
+	public class LegendWithGeometry : Legend {
+		Geometry _data;
 		/// <summary>
 		/// The path to display in the legend.
 		/// </summary>
-		public Path Path { get { return _path; } set { _path = value; Changed(nameof(Path)); } }
+		public Geometry Data { get { return _data; } set { _data = value; Changed(nameof(Data)); } }
+	}
+	#endregion
+	#region LegendWithImageSource
+	/// <summary>
+	/// Legend VM with a custom ImageSource for its visualization.
+	/// </summary>
+	public class LegendWithImageSource : LegendBase {
+		ImageSource _source;
+		/// <summary>
+		/// The path to display in the legend.
+		/// </summary>
+		public ImageSource Source { get { return _source; } set { _source = value; Changed(nameof(Source)); } }
 	}
 	#endregion
 	#region LegendWithElement
@@ -56,6 +69,22 @@ namespace eScapeLLC.UWP.Charts {
 		/// MAY come from a <see cref="DataTemplate"/>.
 		/// </summary>
 		public FrameworkElement Element { get { return _element; } set { _element = value; Changed(nameof(Element)); } }
+	}
+	#endregion
+	#region LegendTemplateSelector
+	public class LegendTemplateSelector : DataTemplateSelector {
+		public DataTemplate ForLegend { get; set; }
+		public DataTemplate ForLegendWithPath { get; set; }
+		public DataTemplate ForLegendWithImageSource { get; set; }
+		protected override DataTemplate SelectTemplateCore(object item, DependencyObject container) {
+			if (item is LegendWithImageSource && ForLegendWithImageSource != null)
+				return ForLegendWithImageSource;
+			else if (item is LegendWithGeometry && ForLegendWithPath != null)
+				return ForLegendWithPath;
+			else if (ForLegend != null)
+				return ForLegend;
+			return base.SelectTemplateCore(item, container);
+		}
 	}
 	#endregion
 }

@@ -146,6 +146,13 @@
 				<LineGeometry StartPoint=".4,.5" EndPoint=".6,.5" />
 			</GeometryGroup>
 		</DataTemplate>
+		<BitmapImage x:Key="bmi" UriSource="ms-appx:///Assets/yacc_logo.png"/>
+		<Style x:Key="Marker_v2" TargetType="Image">
+			<Setter Property="RenderTransformOrigin" Value=".5,.5"/>
+			<Setter Property="animations:Implicit.Animations" Value="{StaticResource Offset}"/>
+			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource Show}"/>
+			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource Hide}"/>
+		</Style>
 		<DataTemplate x:Key="LabelWithBorder">
 			<Border Background="Goldenrod" Padding="2" BorderThickness="1" CornerRadius="2" BorderBrush="DarkGray"
 				extensions:VisualExtensions.NormalizedCenterPoint="0.5,0.5,0"
@@ -206,6 +213,10 @@
 			WhenGreater="{StaticResource v1_GreaterThan_v2}"
 			WhenLess="{StaticResource v1_LessThan_v2}"/>
 		<vm:ValueAxisGridZeroLine x:Key="ZeroLine" WhenZero="{StaticResource AxisGridZeroLine}"/>
+		<yacc:LegendTemplateSelector x:Key="LegendSelector"
+			ForLegend="{StaticResource LegendItem}"
+			ForLegendWithPath="{StaticResource LegendItemPath}"
+			ForLegendWithImageSource="{StaticResource LegendItemImage}"/>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 		<CommandBar x:Name="toolbar"
@@ -246,6 +257,9 @@
 				<yacc:MarkerSeries DataSourceName="data" ValuePath="Value1" Title="Value 1 Marker" ClipToDataRegion="False"
 					ValueAxisName="yaxis" CategoryAxisName="xaxis" MarkerOffset=".625" MarkerWidth=".25"
 					PathStyle="{StaticResource Marker_v1}" MarkerTemplate="{StaticResource Marker}"/>
+				<yacc:ImageSourceMarkerSeries DataSourceName="data" ValuePath="Value1" Title="Value 1 Image Marker" ClipToDataRegion="False"
+					ValueAxisName="yaxis" CategoryAxisName="xaxis" MarkerOffset=".625" MarkerWidth=".25"
+					PathStyle="{StaticResource Marker_v2}" Source="{StaticResource bmi}"/>
 				<yacc:HorizontalBand x:Name="band" ValueAxisName="yaxis" Value1="{Binding Value1Average}" Value2="{Binding Value2Average}"
 					DoMinMax="False" PathStyle="{StaticResource Band_v1-rule}" Value2PathStyle="{StaticResource Band_v2-rule}"
 					BandPathStyle="{StaticResource Band_v1v2-band}" ClipToDataRegion="False"
@@ -281,8 +295,8 @@
 			Visibility="{Binding ElementName=cb_legend,Path=IsChecked}"
 			RelativePanel.AlignRightWith="chart" RelativePanel.AlignTopWith="chart">
 			<ItemsControl x:Name="legend" Margin="2" Padding="2"
-				ItemsSource="{Binding ElementName=chart,Path=LegendItems}"
-				ItemTemplate="{StaticResource LegendItem}"/>
+				ItemsSource="{Binding ElementName=chart,Path=LegendItems}" ItemTemplateSelector="{StaticResource LegendSelector}"
+				/>
 		</Border>
 		<TextBlock x:Name="counter" Style="{StaticResource Title}"
 			RelativePanel.AlignTopWith="chart" RelativePanel.AlignLeftWith="chart">

@@ -483,7 +483,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// MUST return a stable enumeration (same values).
 		/// MUST NOT be called before <see cref="IRequireEnterLeave.Enter"/>.
 		/// </summary>
-		IEnumerable<Legend> LegendItems { get; }
+		IEnumerable<LegendBase> LegendItems { get; }
 	}
 	#endregion
 	#region IProvideLegendDynamic
@@ -494,17 +494,17 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// The previous items.
 		/// </summary>
-		public IEnumerable<Legend> PreviousItems { get; private set; }
+		public IEnumerable<LegendBase> PreviousItems { get; private set; }
 		/// <summary>
 		/// The current items.
 		/// </summary>
-		public IEnumerable<Legend> CurrentItems { get; private set; }
+		public IEnumerable<LegendBase> CurrentItems { get; private set; }
 		/// <summary>
 		/// Ctor.
 		/// </summary>
 		/// <param name="pitems"></param>
 		/// <param name="nitems"></param>
-		public LegendDynamicEventArgs(IEnumerable<Legend> pitems, IEnumerable<Legend> nitems) { PreviousItems = pitems; CurrentItems = nitems; }
+		public LegendDynamicEventArgs(IEnumerable<LegendBase> pitems, IEnumerable<LegendBase> nitems) { PreviousItems = pitems; CurrentItems = nitems; }
 	}
 	/// <summary>
 	/// Ability to provide a dynamically-varying set of legend items.

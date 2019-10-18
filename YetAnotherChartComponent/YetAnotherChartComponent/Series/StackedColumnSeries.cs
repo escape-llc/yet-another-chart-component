@@ -365,8 +365,8 @@ namespace eScapeLLC.UWP.Charts {
 		public event EventHandler<SeriesItemUpdateEventArgs> ItemUpdates;
 		#endregion
 		#region IProvideLegend
-		private Legend[] _legend;
-		IEnumerable<Legend> IProvideLegend.LegendItems {
+		private LegendBase[] _legend;
+		IEnumerable<LegendBase> IProvideLegend.LegendItems {
 			get { if (_legend == null) _legend = Legend(); return _legend; }
 		}
 		Legend[] Legend() {

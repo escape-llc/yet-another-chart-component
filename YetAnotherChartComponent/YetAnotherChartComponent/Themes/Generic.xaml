@@ -64,6 +64,9 @@
 	<DataTemplate x:Key="Path">
 		<Path Data="{Binding PathData}" RenderTransformOrigin="{Binding RenderTransformOrigin}"/>
 	</DataTemplate>
+	<DataTemplate x:Key="Image">
+		<Image Source="{Binding Source}" RenderTransformOrigin="{Binding RenderTransformOrigin}"/>
+	</DataTemplate>
 	<Storyboard x:Key="Enter">
 		<DoubleAnimation
 			Storyboard.TargetProperty="Opacity"
@@ -89,6 +92,7 @@
 		PathHorizontalBand="{ThemeResource Band_Fill}"
 		TextBlockTemplate="{ThemeResource TextBlock}"
 		PathTemplate="{ThemeResource Path}"
+		ImageTemplate="{ThemeResource Image}"
 		EnterAnimation="{ThemeResource Enter}"
 		LeaveAnimation="{ThemeResource Leave}"
 	/>
