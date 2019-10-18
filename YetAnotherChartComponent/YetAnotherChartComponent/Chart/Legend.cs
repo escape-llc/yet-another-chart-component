@@ -72,15 +72,33 @@ namespace eScapeLLC.UWP.Charts {
 	}
 	#endregion
 	#region LegendTemplateSelector
+	/// <summary>
+	/// Default <see cref="DataTemplateSelector"/> for Legends.
+	/// </summary>
 	public class LegendTemplateSelector : DataTemplateSelector {
+		/// <summary>
+		/// Use as default.
+		/// </summary>
 		public DataTemplate ForLegend { get; set; }
-		public DataTemplate ForLegendWithPath { get; set; }
+		/// <summary>
+		/// Use for <see cref="LegendWithGeometry"/>.
+		/// </summary>
+		public DataTemplate ForLegendWithGeometry { get; set; }
+		/// <summary>
+		/// Use for <see cref="LegendWithImageSource"/>.
+		/// </summary>
 		public DataTemplate ForLegendWithImageSource { get; set; }
+		/// <summary>
+		/// Determine a suitable <see cref="DataTemplate"/>.
+		/// </summary>
+		/// <param name="item">SHOULD be subclass of <see cref="LegendBase"/>.</param>
+		/// <param name="container">Not consulted.</param>
+		/// <returns></returns>
 		protected override DataTemplate SelectTemplateCore(object item, DependencyObject container) {
 			if (item is LegendWithImageSource && ForLegendWithImageSource != null)
 				return ForLegendWithImageSource;
-			else if (item is LegendWithGeometry && ForLegendWithPath != null)
-				return ForLegendWithPath;
+			else if (item is LegendWithGeometry && ForLegendWithGeometry != null)
+				return ForLegendWithGeometry;
 			else if (ForLegend != null)
 				return ForLegend;
 			return base.SelectTemplateCore(item, container);

@@ -18,15 +18,15 @@ namespace Yacc.Tests {
 			Assert.AreEqual(1, tc.TickInterval, "TickInterval failed");
 			var ticks = tc.GetTicks().ToList();
 			Assert.AreEqual(9, ticks.Count, "ticks.Count failed");
-			Assert.AreEqual(0, ticks[0], "ticks[0] failed");
-			Assert.AreEqual(1, ticks[1], "ticks[1] failed");
-			Assert.AreEqual(-1, ticks[2], "ticks[2] failed");
-			Assert.AreEqual(2, ticks[3], "ticks[3] failed");
-			Assert.AreEqual(-2, ticks[4], "ticks[4] failed");
-			Assert.AreEqual(3, ticks[5], "ticks[5] failed");
-			Assert.AreEqual(-3, ticks[6], "ticks[6] failed");
-			Assert.AreEqual(4, ticks[7], "ticks[7] failed");
-			Assert.AreEqual(5, ticks[8], "ticks[8] failed");
+			Assert.AreEqual(0, ticks[0].Value, "ticks[0] failed");
+			Assert.AreEqual(1, ticks[1].Value, "ticks[1] failed");
+			Assert.AreEqual(-1, ticks[2].Value, "ticks[2] failed");
+			Assert.AreEqual(2, ticks[3].Value, "ticks[3] failed");
+			Assert.AreEqual(-2, ticks[4].Value, "ticks[4] failed");
+			Assert.AreEqual(3, ticks[5].Value, "ticks[5] failed");
+			Assert.AreEqual(-3, ticks[6].Value, "ticks[6] failed");
+			Assert.AreEqual(4, ticks[7].Value, "ticks[7] failed");
+			Assert.AreEqual(5, ticks[8].Value, "ticks[8] failed");
 		}
 		[TestMethod, TestCategory("ticks")]
 		public void FlameTest2_CrossZero_10s() {
@@ -39,15 +39,15 @@ namespace Yacc.Tests {
 			Assert.AreEqual(10, tc.TickInterval, "TickInterval failed");
 			var ticks = tc.GetTicks().ToList();
 			Assert.AreEqual(9, ticks.Count, "ticks.Count failed");
-			Assert.AreEqual(0, ticks[0], "ticks[0] failed");
-			Assert.AreEqual(10, ticks[1], "ticks[1] failed");
-			Assert.AreEqual(-10, ticks[2], "ticks[2] failed");
-			Assert.AreEqual(20, ticks[3], "ticks[3] failed");
-			Assert.AreEqual(-20, ticks[4], "ticks[4] failed");
-			Assert.AreEqual(30, ticks[5], "ticks[5] failed");
-			Assert.AreEqual(-30, ticks[6], "ticks[6] failed");
-			Assert.AreEqual(40, ticks[7], "ticks[7] failed");
-			Assert.AreEqual(50, ticks[8], "ticks[8] failed");
+			Assert.AreEqual(0, ticks[0].Value, "ticks[0] failed");
+			Assert.AreEqual(10, ticks[1].Value, "ticks[1] failed");
+			Assert.AreEqual(-10, ticks[2].Value, "ticks[2] failed");
+			Assert.AreEqual(20, ticks[3].Value, "ticks[3] failed");
+			Assert.AreEqual(-20, ticks[4].Value, "ticks[4] failed");
+			Assert.AreEqual(30, ticks[5].Value, "ticks[5] failed");
+			Assert.AreEqual(-30, ticks[6].Value, "ticks[6] failed");
+			Assert.AreEqual(40, ticks[7].Value, "ticks[7] failed");
+			Assert.AreEqual(50, ticks[8].Value, "ticks[8] failed");
 		}
 		[TestMethod, TestCategory("ticks")]
 		public void FlameTest_CrossZero_Tenths() {
@@ -61,15 +61,15 @@ namespace Yacc.Tests {
 			var ticks = tc.GetTicks().ToList();
 			Assert.AreEqual(9, ticks.Count, "ticks.Count failed");
 			var epi = Math.Pow(10, tc.DecimalPlaces - 1);
-			Assert.AreEqual(0, ticks[0], "ticks[0] failed");
-			Assert.AreEqual(.1, ticks[1], "ticks[1] failed");
-			Assert.AreEqual(-.1, ticks[2], "ticks[2] failed");
-			Assert.AreEqual(.2, ticks[3], "ticks[3] failed");
-			Assert.AreEqual(-.2, ticks[4], "ticks[4] failed");
-			Assert.IsTrue(TickCalculator.Equals(.3, ticks[5], epi), "ticks[5] failed");
-			Assert.IsTrue(TickCalculator.Equals(-.3, ticks[6], epi), "ticks[6] failed");
-			Assert.AreEqual(.4, ticks[7], "ticks[7] failed");
-			Assert.AreEqual(.5, ticks[8], "ticks[8] failed");
+			Assert.AreEqual(0, ticks[0].Value, "ticks[0] failed");
+			Assert.AreEqual(.1, ticks[1].Value, "ticks[1] failed");
+			Assert.AreEqual(-.1, ticks[2].Value, "ticks[2] failed");
+			Assert.AreEqual(.2, ticks[3].Value, "ticks[3] failed");
+			Assert.AreEqual(-.2, ticks[4].Value, "ticks[4] failed");
+			Assert.IsTrue(TickCalculator.Equals(.3, ticks[5].Value, epi), "ticks[5] failed");
+			Assert.IsTrue(TickCalculator.Equals(-.3, ticks[6].Value, epi), "ticks[6] failed");
+			Assert.AreEqual(.4, ticks[7].Value, "ticks[7] failed");
+			Assert.AreEqual(.5, ticks[8].Value, "ticks[8] failed");
 		}
 		[TestMethod, TestCategory("ticks")]
 		public void FlameTest_PositiveOnly_Tenths() {
@@ -83,24 +83,24 @@ namespace Yacc.Tests {
 			var ticks = tc.GetTicks().ToList();
 			Assert.AreEqual(18, ticks.Count, "ticks.Count failed");
 			var epi = Math.Pow(10, tc.DecimalPlaces - 1);
-			Assert.IsTrue(TickCalculator.Equals(4.4, ticks[0], epi), "ticks[0] failed");
-			Assert.IsTrue(TickCalculator.Equals(4.5, ticks[1], epi), "ticks[1] failed");
-			Assert.IsTrue(TickCalculator.Equals(4.3, ticks[2], epi), "ticks[2] failed");
-			Assert.IsTrue(TickCalculator.Equals(4.6, ticks[3], epi), "ticks[3] failed");
-			Assert.IsTrue(TickCalculator.Equals(4.2, ticks[4], epi), "ticks[4] failed");
-			Assert.IsTrue(TickCalculator.Equals(4.7, ticks[5], epi), "ticks[5] failed");
-			Assert.IsTrue(TickCalculator.Equals(4.1, ticks[6], epi), "ticks[6] failed");
-			Assert.IsTrue(TickCalculator.Equals(4.8, ticks[7], epi), "ticks[7] failed");
-			Assert.IsTrue(TickCalculator.Equals(4.0, ticks[8], epi), "ticks[8] failed");
-			Assert.IsTrue(TickCalculator.Equals(4.9, ticks[9], epi), "ticks[9] failed");
-			Assert.IsTrue(TickCalculator.Equals(3.9, ticks[10], epi), "ticks[10] failed");
-			Assert.IsTrue(TickCalculator.Equals(5.0, ticks[11], epi), "ticks[11] failed");
-			Assert.IsTrue(TickCalculator.Equals(3.8, ticks[12], epi), "ticks[12] failed");
-			Assert.IsTrue(TickCalculator.Equals(5.1, ticks[13], epi), "ticks[13] failed");
-			Assert.IsTrue(TickCalculator.Equals(3.7, ticks[14], epi), "ticks[14] failed");
-			Assert.IsTrue(TickCalculator.Equals(5.2, ticks[15], epi), "ticks[15] failed");
-			Assert.IsTrue(TickCalculator.Equals(3.6, ticks[16], epi), "ticks[16] failed");
-			Assert.IsTrue(TickCalculator.Equals(3.5, ticks[17], epi), "ticks[17] failed");
+			Assert.IsTrue(TickCalculator.Equals(4.4, ticks[0].Value, epi), "ticks[0] failed");
+			Assert.IsTrue(TickCalculator.Equals(4.5, ticks[1].Value, epi), "ticks[1] failed");
+			Assert.IsTrue(TickCalculator.Equals(4.3, ticks[2].Value, epi), "ticks[2] failed");
+			Assert.IsTrue(TickCalculator.Equals(4.6, ticks[3].Value, epi), "ticks[3] failed");
+			Assert.IsTrue(TickCalculator.Equals(4.2, ticks[4].Value, epi), "ticks[4] failed");
+			Assert.IsTrue(TickCalculator.Equals(4.7, ticks[5].Value, epi), "ticks[5] failed");
+			Assert.IsTrue(TickCalculator.Equals(4.1, ticks[6].Value, epi), "ticks[6] failed");
+			Assert.IsTrue(TickCalculator.Equals(4.8, ticks[7].Value, epi), "ticks[7] failed");
+			Assert.IsTrue(TickCalculator.Equals(4.0, ticks[8].Value, epi), "ticks[8] failed");
+			Assert.IsTrue(TickCalculator.Equals(4.9, ticks[9].Value, epi), "ticks[9] failed");
+			Assert.IsTrue(TickCalculator.Equals(3.9, ticks[10].Value, epi), "ticks[10] failed");
+			Assert.IsTrue(TickCalculator.Equals(5.0, ticks[11].Value, epi), "ticks[11] failed");
+			Assert.IsTrue(TickCalculator.Equals(3.8, ticks[12].Value, epi), "ticks[12] failed");
+			Assert.IsTrue(TickCalculator.Equals(5.1, ticks[13].Value, epi), "ticks[13] failed");
+			Assert.IsTrue(TickCalculator.Equals(3.7, ticks[14].Value, epi), "ticks[14] failed");
+			Assert.IsTrue(TickCalculator.Equals(5.2, ticks[15].Value, epi), "ticks[15] failed");
+			Assert.IsTrue(TickCalculator.Equals(3.6, ticks[16].Value, epi), "ticks[16] failed");
+			Assert.IsTrue(TickCalculator.Equals(3.5, ticks[17].Value, epi), "ticks[17] failed");
 		}
 		[TestMethod, TestCategory("ticks")]
 		public void FlameTest_NegativeOnly_Tenths() {
@@ -114,24 +114,24 @@ namespace Yacc.Tests {
 			var ticks = tc.GetTicks().ToList();
 			Assert.AreEqual(18, ticks.Count, "ticks.Count failed");
 			var epi = Math.Pow(10, tc.DecimalPlaces - 1);
-			Assert.IsTrue(TickCalculator.Equals(-4.4, ticks[0], epi), "ticks[0] failed");
-			Assert.IsTrue(TickCalculator.Equals(-4.5, ticks[2], epi), "ticks[2] failed");
-			Assert.IsTrue(TickCalculator.Equals(-4.3, ticks[1], epi), "ticks[1] failed");
-			Assert.IsTrue(TickCalculator.Equals(-4.6, ticks[4], epi), "ticks[4] failed");
-			Assert.IsTrue(TickCalculator.Equals(-4.2, ticks[3], epi), "ticks[3] failed");
-			Assert.IsTrue(TickCalculator.Equals(-4.7, ticks[6], epi), "ticks[6] failed");
-			Assert.IsTrue(TickCalculator.Equals(-4.1, ticks[5], epi), "ticks[5] failed");
-			Assert.IsTrue(TickCalculator.Equals(-4.8, ticks[8], epi), "ticks[8] failed");
-			Assert.IsTrue(TickCalculator.Equals(-4.0, ticks[7], epi), "ticks[7] failed");
-			Assert.IsTrue(TickCalculator.Equals(-4.9, ticks[10], epi), "ticks[10] failed");
-			Assert.IsTrue(TickCalculator.Equals(-3.9, ticks[9], epi), "ticks[9] failed");
-			Assert.IsTrue(TickCalculator.Equals(-5.0, ticks[12], epi), "ticks[12] failed");
-			Assert.IsTrue(TickCalculator.Equals(-3.8, ticks[11], epi), "ticks[11] failed");
-			Assert.IsTrue(TickCalculator.Equals(-5.1, ticks[14], epi), "ticks[14] failed");
-			Assert.IsTrue(TickCalculator.Equals(-3.7, ticks[13], epi), "ticks[13] failed");
-			Assert.IsTrue(TickCalculator.Equals(-5.2, ticks[16], epi), "ticks[16] failed");
-			Assert.IsTrue(TickCalculator.Equals(-3.6, ticks[15], epi), "ticks[15] failed");
-			Assert.IsTrue(TickCalculator.Equals(-3.5, ticks[17], epi), "ticks[17] failed");
+			Assert.IsTrue(TickCalculator.Equals(-4.4, ticks[0].Value, epi), "ticks[0] failed");
+			Assert.IsTrue(TickCalculator.Equals(-4.5, ticks[2].Value, epi), "ticks[2] failed");
+			Assert.IsTrue(TickCalculator.Equals(-4.3, ticks[1].Value, epi), "ticks[1] failed");
+			Assert.IsTrue(TickCalculator.Equals(-4.6, ticks[4].Value, epi), "ticks[4] failed");
+			Assert.IsTrue(TickCalculator.Equals(-4.2, ticks[3].Value, epi), "ticks[3] failed");
+			Assert.IsTrue(TickCalculator.Equals(-4.7, ticks[6].Value, epi), "ticks[6] failed");
+			Assert.IsTrue(TickCalculator.Equals(-4.1, ticks[5].Value, epi), "ticks[5] failed");
+			Assert.IsTrue(TickCalculator.Equals(-4.8, ticks[8].Value, epi), "ticks[8] failed");
+			Assert.IsTrue(TickCalculator.Equals(-4.0, ticks[7].Value, epi), "ticks[7] failed");
+			Assert.IsTrue(TickCalculator.Equals(-4.9, ticks[10].Value, epi), "ticks[10] failed");
+			Assert.IsTrue(TickCalculator.Equals(-3.9, ticks[9].Value, epi), "ticks[9] failed");
+			Assert.IsTrue(TickCalculator.Equals(-5.0, ticks[12].Value, epi), "ticks[12] failed");
+			Assert.IsTrue(TickCalculator.Equals(-3.8, ticks[11].Value, epi), "ticks[11] failed");
+			Assert.IsTrue(TickCalculator.Equals(-5.1, ticks[14].Value, epi), "ticks[14] failed");
+			Assert.IsTrue(TickCalculator.Equals(-3.7, ticks[13].Value, epi), "ticks[13] failed");
+			Assert.IsTrue(TickCalculator.Equals(-5.2, ticks[16].Value, epi), "ticks[16] failed");
+			Assert.IsTrue(TickCalculator.Equals(-3.6, ticks[15].Value, epi), "ticks[15] failed");
+			Assert.IsTrue(TickCalculator.Equals(-3.5, ticks[17].Value, epi), "ticks[17] failed");
 		}
 	}
 }

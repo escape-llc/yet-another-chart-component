@@ -215,7 +215,7 @@
 		<vm:ValueAxisGridZeroLine x:Key="ZeroLine" WhenZero="{StaticResource AxisGridZeroLine}"/>
 		<yacc:LegendTemplateSelector x:Key="LegendSelector"
 			ForLegend="{StaticResource LegendItem}"
-			ForLegendWithPath="{StaticResource LegendItemPath}"
+			ForLegendWithGeometry="{StaticResource LegendItemPath}"
 			ForLegendWithImageSource="{StaticResource LegendItemImage}"/>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
