@@ -37,6 +37,11 @@ Please consult the [other](../../issues) [features](../../projects) of this gith
 # Nuget Releases
 [![NuGet version](https://badge.fury.io/nu/escapellc.uwp.charts.svg)](https://badge.fury.io/nu/escapellc.uwp.charts)
 
+## 1.6.0
+More features and fixes.
+
+See the [Milestone page](https://github.com/escape-llc/yet-another-chart-component/milestone/8?closed=1).
+
 ## 1.5.1
 Disable experimental composition animations.
 
