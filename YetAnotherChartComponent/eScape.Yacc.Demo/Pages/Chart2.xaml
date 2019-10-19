@@ -4,10 +4,30 @@
 	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 	xmlns:yacc="using:eScapeLLC.UWP.Charts"
 	xmlns:core="using:eScape.Core.Page"
+	xmlns:vm="using:Yacc.Demo.VM"
 	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 	mc:Ignorable="d">
 	<Page.Resources>
+		<Style x:Key="GridLines" TargetType="Path">
+			<Setter Property="Stroke" Value="Gray"/>
+			<Setter Property="StrokeThickness" Value="1"/>
+			<Setter Property="Opacity" Value=".5"/>
+		</Style>
+		<Style x:Key="SubGrid" TargetType="Path">
+			<Setter Property="Stroke" Value="DarkGoldenrod"/>
+			<Setter Property="StrokeThickness" Value=".5"/>
+			<Setter Property="Opacity" Value=".5"/>
+		</Style>
+		<Style x:Key="AxisGridZeroLine" TargetType="Path">
+			<Setter Property="Stroke" Value="Yellow"/>
+			<Setter Property="StrokeThickness" Value="1"/>
+		</Style>
+		<yacc:LegendTemplateSelector x:Key="LegendSelector"
+			ForLegend="{StaticResource LegendItem}"
+			ForLegendWithGeometry="{StaticResource LegendItemPath}"
+			ForLegendWithImageSource="{StaticResource LegendItemImage}"/>
+		<vm:ValueAxisGridZeroLine x:Key="ZeroLine" WhenZero="{StaticResource AxisGridZeroLine}"/>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 		<CommandBar x:Name="toolbar"
@@ -30,6 +50,9 @@
 				<yacc:DataSource x:Name="data" Items="{Binding Data}"/>
 			</yacc:Chart.DataSources>
 			<yacc:Chart.Components>
+				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource GridLines}"
+					MinorGridLineCount="3" MinorGridPathStyle="{StaticResource SubGrid}" PathFormatter="{StaticResource ZeroLine}"
+					Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
 				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" DataSourceName="data" LabelPath="Label" />
 				<yacc:ColumnSeries x:Name="colv1" DataSourceName="data" ValuePath="Value1" ClipToDataRegion="False"
 					Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis"
@@ -58,8 +81,6 @@
 					Visibility="{Binding ElementName=cb_band, Path=IsChecked, Converter={StaticResource b2v}}"
 				/>
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" LabelFormatString="F1" />
-				<yacc:ValueAxisGrid ValueAxisName="yaxis"
-					Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>
 		<TextBlock x:Name="title" Style="{StaticResource Title}" Text="Default Styles"
@@ -71,7 +92,7 @@
 			RelativePanel.AlignRightWith="chart" RelativePanel.AlignTopWith="chart">
 			<ItemsControl x:Name="legend" Margin="2" Padding="2"
 				ItemsSource="{Binding ElementName=chart,Path=LegendItems}"
-				ItemTemplate="{StaticResource LegendItem}"/>
+				ItemTemplateSelector="{StaticResource LegendSelector}"/>
 		</Border>
 	</RelativePanel>
 </core:BasicPage>

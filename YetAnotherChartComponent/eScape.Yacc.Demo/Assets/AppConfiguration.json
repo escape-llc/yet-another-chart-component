@@ -9,7 +9,7 @@
 		"DataSource": "Error",
 		"HorizontalBand": "Error",
 		"HorizontalRule": "Error",
-		"ImageSourceMarkerSeries": "Verbose",
+		"ImageSourceMarkerSeries": "Error",
 		"LineSeries": "Error",
 		"MarkerSeries": "Error",
 		"PieSeries": "Error",

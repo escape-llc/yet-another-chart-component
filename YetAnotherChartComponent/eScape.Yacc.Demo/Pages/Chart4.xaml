@@ -86,6 +86,11 @@
 				animations:Implicit.HideAnimations="{StaticResource Hide}"
 			/>
 		</DataTemplate>
+		<Style x:Key="SubGrid" TargetType="Path">
+			<Setter Property="Stroke" Value="DarkGoldenrod"/>
+			<Setter Property="StrokeThickness" Value=".5"/>
+			<Setter Property="Opacity" Value=".5"/>
+		</Style>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 		<CommandBar x:Name="toolbar"
@@ -117,6 +122,7 @@
 					Title="Volume" ValueAxisName="volume" CategoryAxisName="xaxis" ClipToDataRegion="False"
 					PathStyle="{StaticResource Column_volume}" BarOffset=".25" BarWidth=".5" />
 				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource FirstGrid}"
+					MinorGridLineCount="9" MinorGridPathStyle="{StaticResource SubGrid}"
 					Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
 				<yacc:CandlestickSeries x:Name="candle" DataSourceName="data" OpenValuePath="Value1" HighValuePath="Value2" LowValuePath="Value3" CloseValuePath="Value4"
 					ClipToDataRegion="False" Title="Price" ValueAxisName="yaxis" CategoryAxisName="xaxis"

@@ -22,11 +22,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// Internal state for generated grid lines.
 		/// </summary>
 		protected class ItemState {
-			internal TickState tick { get; set; }
-			internal Path element { get; set; }
+			internal TickState Tick { get; set; }
+			internal Path Element { get; set; }
 			internal void SetLocation(double left, double top) {
-				element.SetValue(Canvas.LeftProperty, left);
-				element.SetValue(Canvas.TopProperty, top);
+				Element.SetValue(Canvas.LeftProperty, left);
+				Element.SetValue(Canvas.TopProperty, top);
 			}
 		}
 		#endregion
@@ -35,6 +35,15 @@ namespace eScapeLLC.UWP.Charts {
 		/// The style to use for Path geometry.
 		/// </summary>
 		public Style PathStyle { get { return (Style)GetValue(PathStyleProperty); } set { SetValue(PathStyleProperty, value); } }
+		/// <summary>
+		/// The style for minor grid Path geometry.
+		/// </summary>
+		public Style MinorGridPathStyle { get { return (Style)GetValue(MinorGridPathStyleProperty); } set { SetValue(MinorGridPathStyleProperty, value); } }
+		/// <summary>
+		/// If GT Zero, the number of minor grid lines.
+		/// NOTE: this is One Less than the actual subdivision "fraction" e.g. MinorGridLineCount == 1 divides by 2!
+		/// </summary>
+		public int MinorGridLineCount { get { return (int)GetValue(MinorGridLineCountProperty); } set { SetValue(MinorGridLineCountProperty, value); } }
 		/// <summary>
 		/// Holder for IRequireChartTheme interface.
 		/// </summary>
@@ -62,6 +71,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		protected List<ItemState> GridLines { get; set; }
 		/// <summary>
+		/// Paths for the minor grid lines.
+		/// </summary>
+		protected List<ItemState> MinorGridLines { get; set; }
+		/// <summary>
 		/// The layer for components.
 		/// </summary>
 		protected IChartLayer Layer { get; set; }
@@ -71,6 +84,14 @@ namespace eScapeLLC.UWP.Charts {
 		/// Identifies <see cref="PathStyle"/> dependency property.
 		/// </summary>
 		public static readonly DependencyProperty PathStyleProperty = DependencyProperty.Register(nameof(PathStyle), typeof(Style), typeof(ValueAxisGrid), new PropertyMetadata(null));
+		/// <summary>
+		/// Identifies <see cref="MinorGridPathStyle"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty MinorGridPathStyleProperty = DependencyProperty.Register(nameof(MinorGridPathStyle), typeof(Style), typeof(ValueAxisGrid), new PropertyMetadata(null));
+		/// <summary>
+		/// Identifies <see cref="MinorGridLineCount"/> dependency property.
+		/// </summary>
+		public static readonly DependencyProperty MinorGridLineCountProperty = DependencyProperty.Register(nameof(MinorGridLineCount), typeof(uint), typeof(ValueAxisGrid), new PropertyMetadata(null));
 		#endregion
 		#region ctor
 		/// <summary>
@@ -78,10 +99,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// Initialize geometry and path.
 		/// </summary>
 		public ValueAxisGrid() {
-			//Grid = new Path();
-			//GridGeometry = new GeometryGroup();
-			//Grid.Data = GridGeometry;
 			GridLines = new List<ItemState>();
+			MinorGridLines = new List<ItemState>();
+			MinorGridLineCount = 0;
 		}
 		#endregion
 		#region helpers
@@ -122,17 +142,49 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			return path;
 		}
+		Path CreateSubElement(ItemState state) {
+			var path = new Path();
+			var gline = new LineGeometry() { StartPoint = new Point(0, 0), EndPoint = new Point(1, 0) };
+			path.Data = gline;
+			if (MinorGridPathStyle != null) {
+				BindTo(this, nameof(MinorGridPathStyle), path, FrameworkElement.StyleProperty);
+			} else if (PathStyle != null) {
+				BindTo(this, nameof(PathStyle), path, FrameworkElement.StyleProperty);
+			}
+			return path;
+		}
 		#endregion
 		#region extensions
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			EnsureAxes(icelc as IChartComponentContext);
-			Layer = icelc.CreateLayer(/*Grid*/);
+			Layer = icelc.CreateLayer();
 			DoBindings(icelc);
 		}
 		void IRequireEnterLeave.Leave(IChartEnterLeaveContext icelc) {
 			ValueAxis = null;
 			icelc.DeleteLayer(Layer);
 			Layer = null;
+		}
+		internal class SubtickState : TickState {
+			internal int ParentIndex { get; set; }
+			internal SubtickState(int pidx, int idx, double vx) :base(idx, vx) { ParentIndex = pidx; }
+		}
+		ItemState CreateSubtick(IChartRenderContext icrc, Recycler<Path, ItemState> recycler, SubtickState tick) {
+			if (tick.Value <= ValueAxis.Minimum || tick.Value >= ValueAxis.Maximum) return null;
+			var state = new ItemState() { Tick = tick };
+			var current = recycler.Next(state);
+			if (!current.Item1) {
+				// restore binding
+				if (MinorGridPathStyle != null) {
+					BindTo(this, nameof(MinorGridPathStyle), current.Item2, FrameworkElement.StyleProperty);
+				} else if (PathStyle != null) {
+					BindTo(this, nameof(PathStyle), current.Item2, FrameworkElement.StyleProperty);
+				}
+			}
+			state.Element = current.Item2;
+			ApplyBinding(this, nameof(Visibility), state.Element, UIElement.VisibilityProperty);
+			state.SetLocation(icrc.Area.Left, tick.Value);
+			return state;
 		}
 		/// <summary>
 		/// Grid coordinates:
@@ -145,17 +197,21 @@ namespace eScapeLLC.UWP.Charts {
 			if (double.IsNaN(ValueAxis.Maximum) || double.IsNaN(ValueAxis.Minimum)) return;
 			// grid lines
 			var tc = new TickCalculator(ValueAxis.Minimum, ValueAxis.Maximum);
-			var recycler = new Recycler<Path, ItemState>(GridLines.Where(tl => tl.element != null).Select(tl => tl.element), (ist) => {
+			var recycler = new Recycler<Path, ItemState>(GridLines.Where(tl => tl.Element != null).Select(tl => tl.Element), (ist) => {
 				return CreateElement(ist);
 			});
+			var mrecycler = new Recycler<Path, ItemState>(MinorGridLines.Where(tl => tl.Element != null).Select(tl => tl.Element), (ist) => {
+				return CreateSubElement(ist);
+			});
 			var itemstate = new List<ItemState>();
+			var mitemstate = new List<ItemState>();
 			//_trace.Verbose($"grid range:{tc.Range} tintv:{tc.TickInterval}");
 			var tixarray = tc.GetTicks().ToArray();
 			var sc = new ValueAxisSelectorContext(ValueAxis, icrc.SeriesArea, tixarray, tc.TickInterval);
 			for (int ix = 0; ix < tixarray.Length; ix++) {
 				var tick = tixarray[ix];
 				//_trace.Verbose($"grid vx:{tick}");
-				var state = new ItemState() { tick = tick };
+				var state = new ItemState() { Tick = tick };
 				var current = recycler.Next(state);
 				if(!current.Item1) {
 					// restore binding
@@ -163,8 +219,8 @@ namespace eScapeLLC.UWP.Charts {
 						BindTo(this, nameof(PathStyle), current.Item2, FrameworkElement.StyleProperty);
 					}
 				}
-				state.element = current.Item2;
-				ApplyBinding(this, nameof(Visibility), state.element, UIElement.VisibilityProperty);
+				state.Element = current.Item2;
+				ApplyBinding(this, nameof(Visibility), state.Element, UIElement.VisibilityProperty);
 				if (PathFormatter != null) {
 					sc.SetTick(ix);
 					// call for Style, String override
@@ -178,11 +234,42 @@ namespace eScapeLLC.UWP.Charts {
 				state.SetLocation(icrc.Area.Left, tick.Value);
 				sc.Generated(tick);
 				itemstate.Add(state);
+				if (MinorGridLineCount != 0) {
+					// lay out minor divisions
+					var mintv = tc.TickInterval / (double)(MinorGridLineCount + 1);
+					var diry = Math.Sign(tick.Index);
+					if (diry == 0) {
+						// special case: zero
+						for (int mx = 1; mx <= MinorGridLineCount; mx++) {
+							var mtick = new SubtickState(tick.Index, mx, tick.Value + (double)mx * mintv);
+							var mstate = CreateSubtick(icrc, mrecycler, mtick);
+							if (mstate != null) {
+								mitemstate.Add(mstate);
+							}
+							var mtick2 = new SubtickState(tick.Index, -mx, tick.Value + (double)(-mx) * mintv);
+							var mstate2 = CreateSubtick(icrc, mrecycler, mtick2);
+							if (mstate2 != null) {
+								mitemstate.Add(mstate2);
+							}
+						}
+					} else {
+						for (int mx = 1; mx <= MinorGridLineCount; mx++) {
+							var mtick = new SubtickState(tick.Index, diry*mx, tick.Value + (double)(diry * mx) * mintv);
+							var mstate = CreateSubtick(icrc, mrecycler, mtick);
+							if (mstate != null) {
+								mitemstate.Add(mstate);
+							}
+						}
+					}
+				}
 			}
 			// VT and internal bookkeeping
+			MinorGridLines = mitemstate;
 			GridLines = itemstate;
+			Layer.Remove(mrecycler.Unused);
 			Layer.Remove(recycler.Unused);
 			Layer.Add(recycler.Created);
+			Layer.Add(mrecycler.Created);
 			Dirty = false;
 		}
 		/// <summary>
@@ -197,10 +284,17 @@ namespace eScapeLLC.UWP.Charts {
 			var gmt = new MatrixTransform() { Matrix = gmatx };
 			_trace.Verbose($"transforms sx:{scalex:F3} sy:{scaley:F3} matx:{gmatx} a:{icrc.Area} sa:{icrc.SeriesArea}");
 			foreach (var state in GridLines) {
-				var adj = state.element.ActualHeight / 2;
-				var top = icrc.Area.Bottom - (state.tick.Value - ValueAxis.Minimum) * scaley - adj;
-				_trace.Verbose($"transforms tick:{state.tick.Index} adj:{adj} top:{top}");
-				state.element.Data.Transform = gmt;
+				var adj = state.Element.ActualHeight / 2;
+				var top = icrc.Area.Bottom - (state.Tick.Value - ValueAxis.Minimum) * scaley - adj;
+				_trace.Verbose($"transforms tick:{state.Tick.Index} adj:{adj} top:{top}");
+				state.Element.Data.Transform = gmt;
+				state.SetLocation(icrc.SeriesArea.Left, top);
+			}
+			foreach(var state in MinorGridLines) {
+				var adj = state.Element.ActualHeight / 2;
+				var top = icrc.Area.Bottom - (state.Tick.Value - ValueAxis.Minimum) * scaley - adj;
+				_trace.Verbose($"transforms subtick:{state.Tick.Index} adj:{adj} top:{top}");
+				state.Element.Data.Transform = gmt;
 				state.SetLocation(icrc.SeriesArea.Left, top);
 			}
 		}

@@ -70,6 +70,11 @@
 			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource ShowAxisLabel}"/>
 			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource HideAxisLabel}"/>
 		</Style>
+		<Style x:Key="SubGrid" TargetType="Path">
+			<Setter Property="Stroke" Value="DarkGoldenrod"/>
+			<Setter Property="StrokeThickness" Value=".5"/>
+			<Setter Property="Opacity" Value=".5"/>
+		</Style>
 		<DataTemplate x:Key="Marker">
 			<GeometryGroup>
 				<EllipseGeometry RadiusX=".5" RadiusY=".5" Center=".5,.5" />
@@ -83,14 +88,18 @@
 				<TextBlock Text="{Binding Text}" Style="{StaticResource Labels}" Foreground="Black" FontStyle="Italic"/>
 			</Border>
 		</DataTemplate>
+		<yacc:LegendTemplateSelector x:Key="LegendSelector"
+			ForLegend="{StaticResource LegendItem}"
+			ForLegendWithGeometry="{StaticResource LegendItemPath}"
+			ForLegendWithImageSource="{StaticResource LegendItemImage}"/>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 		<CommandBar x:Name="toolbar"
 			RelativePanel.AlignTopWithPanel="True">
 			<CommandBar.PrimaryCommands>
-				<AppBarToggleButton IsChecked="True" x:Name="cb_legend" Label="Toggle" Content="Legend"/>
-				<AppBarToggleButton IsChecked="True" x:Name="cb_grid" Label="Toggle" Content="Grid"/>
-				<AppBarButton Content="&#x207a;&#x2215;&#x208b;" Label="Toggle" Command="{Binding Toggle}" />
+				<AppBarToggleButton IsChecked="True" x:Name="cb_legend" Label="Toggle Legend" Content="Legend"/>
+				<AppBarToggleButton IsChecked="True" x:Name="cb_grid" Label="Toggle Grid" Content="Grid"/>
+				<AppBarButton Content="&#x207a;&#x2215;&#x208b;" Label="Start/Stop" Command="{Binding Toggle}" />
 			</CommandBar.PrimaryCommands>
 		</CommandBar>
 		<yacc:Chart x:Name="chart" Style="{StaticResource Chart}"
@@ -106,6 +115,7 @@
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}" LimitMinimum="-4.5" LimitMaximum="4.5"
 					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="F1" />
 				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource Grid}"
+					MinorGridLineCount="3" MinorGridPathStyle="{StaticResource SubGrid}"
 					Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
 				<yacc:ColumnSeries DataSourceName="data" ValuePath="Value1" ClipToDataRegion="False"
 					Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis"
@@ -134,7 +144,7 @@
 			RelativePanel.AlignRightWith="chart" RelativePanel.AlignTopWith="chart">
 			<ItemsControl x:Name="legend" Margin="2" Padding="2"
 				ItemsSource="{Binding ElementName=chart,Path=LegendItems}"
-				ItemTemplate="{StaticResource LegendItem}"/>
+				ItemTemplateSelector="{StaticResource LegendSelector}"/>
 		</Border>
 		<TextBlock x:Name="counter" Style="{StaticResource Title}"
 			RelativePanel.AlignTopWith="chart" RelativePanel.AlignLeftWith="chart">
