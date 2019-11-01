@@ -1,7 +1,6 @@
 ﻿using eScape.Core;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using Windows.Foundation;
 using Windows.UI.Xaml;
@@ -142,14 +141,30 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			return path;
 		}
+		void TransferFromStyle(Path path, Style style) {
+			var sdap = style.Find(Shape.StrokeDashArrayProperty, default(DoubleCollection));
+			if (sdap != null && sdap != path.StrokeDashArray) {
+				var ndc = new DoubleCollection();
+				//path.StrokeDashArray.Clear();
+				foreach (var dx in sdap) {
+					ndc.Add(dx);
+				}
+				path.SetValue(Shape.StrokeDashArrayProperty, ndc);
+			}
+			else {
+				//path.ClearValue(Shape.StrokeDashArrayProperty);
+			}
+		}
 		Path CreateSubElement(ItemState state) {
 			var path = new Path();
 			var gline = new LineGeometry() { StartPoint = new Point(0, 0), EndPoint = new Point(1, 0) };
 			path.Data = gline;
 			if (MinorGridPathStyle != null) {
 				BindTo(this, nameof(MinorGridPathStyle), path, FrameworkElement.StyleProperty);
+				TransferFromStyle(path, MinorGridPathStyle);
 			} else if (PathStyle != null) {
 				BindTo(this, nameof(PathStyle), path, FrameworkElement.StyleProperty);
+				TransferFromStyle(path, PathStyle);
 			}
 			return path;
 		}
@@ -177,8 +192,10 @@ namespace eScapeLLC.UWP.Charts {
 				// restore binding
 				if (MinorGridPathStyle != null) {
 					BindTo(this, nameof(MinorGridPathStyle), current.Item2, FrameworkElement.StyleProperty);
+					TransferFromStyle(current.Item2, MinorGridPathStyle);
 				} else if (PathStyle != null) {
 					BindTo(this, nameof(PathStyle), current.Item2, FrameworkElement.StyleProperty);
+					TransferFromStyle(current.Item2, PathStyle);
 				}
 			}
 			state.Element = current.Item2;

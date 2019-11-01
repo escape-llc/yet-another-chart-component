@@ -122,7 +122,6 @@ namespace eScapeLLC.UWP.Charts {
 			var mappedx = CategoryAxis.For(valuex);
 			var markerx = mappedx + MarkerOffset;
 			_trace.Verbose($"[{index}] {valuey} ({markerx},{mappedy})");
-			// TODO allow MK to be other things like (Path or Image).
 			// TODO allow a MarkerTemplateSelector and a value Selector/Formatter
 			// no path yet
 			var el = recycler.Next(null);
