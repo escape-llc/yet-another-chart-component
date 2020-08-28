@@ -120,33 +120,18 @@ namespace Yacc.Tests {
 	public class UnitTest_LinearAlgebra {
 		#region test data
 		#region bounding box (P)
+		// P outputs DC; +DY is visually downward, +DX is visually rightward.
 		const double TOP = 10;
 		const double LEFT = 20;
 		const double WIDTH = 60;
 		const double HEIGHT = 40;
 		static readonly Rect Bounds = new Rect(LEFT, TOP, WIDTH, HEIGHT);
 		#endregion
-		#region test coordinates
-		const double XX = 3;
-		const double YY = 6;
-		// this is the test point in WC
-		static readonly Point TestPoint = new Point(XX, YY);
-		// this is the TestPoint in NDC (after M transform)
-		static readonly Point TestPoint_ndc = new Point(.5, 0);
-		// this is the final DC coordinates of the WC TestPoint (after MP transform)
-		static readonly Point TestPoint_dc =
-			new Point(Bounds.Left + Bounds.Width*TestPoint_ndc.X, Bounds.Top + Bounds.Height*TestPoint_ndc.Y);
-		// this is in marker's local coordinate system
-		// it SHOULD equate with the (M) center coordinate
-		static readonly Point TestPointMarkerCenter = new Point(.5, .5);
-		// generic origin
-		static readonly Point Origin = new Point(0, 0);
-		#endregion
 		#region axis information (M)
 		const double Y_MIN = -4;
 		const double Y_MAX = 6;
 		const double X_MIN1 = 0;
-		const double X_MAX1 = 6;
+		const double X_MAX1 = 5;
 		const double X_RANGE1 = X_MAX1 - X_MIN1;
 		const double X_MIN2 = X_MIN1 + 2;
 		const double X_MAX2 = X_MAX1 + 2;
@@ -154,6 +139,25 @@ namespace Yacc.Tests {
 		const double Y_RANGE = Y_MAX - Y_MIN;
 		static readonly Point W1UL = new Point(X_MIN1, Y_MAX);
 		static readonly Point W1LR = new Point(X_MAX1, Y_MIN);
+		#endregion
+		#region test coordinates
+		// M inputs WC and outputs NDC; basis is cartesian (+DX,-DY).
+		const double XX = X_MIN1 + X_RANGE1/2.0;
+		const double YY = Y_MAX;
+		// this is the test point in WC
+		static readonly Point TestPoint = new Point(XX, YY);
+		// this is the TestPoint in NDC (M output)
+		// NDC(0,0) is the upper-left of the rectangle DC(Left,Top) cartesian (+DX,+DY).
+		// NDC basis is (+1/Width,+1/Height).
+		static readonly Point TestPoint_ndc = new Point(.5, 0);
+		// this is the final DC coordinates of the WC TestPoint (after MP transform)
+		static readonly Point TestPoint_dc =
+			new Point(Bounds.Left + Bounds.Width * TestPoint_ndc.X, Bounds.Top + Bounds.Height * TestPoint_ndc.Y);
+		// this is in marker's local coordinate system
+		// it SHOULD equate with the (M) center coordinate
+		static readonly Point TestPointMarkerCenter = new Point(.5, .5);
+		// generic origin
+		static readonly Point Origin = new Point(0, 0);
 		#endregion
 		#region marker information (Mk)
 		const double MK_OFFSET = .25;
@@ -180,10 +184,10 @@ namespace Yacc.Tests {
 		public Matrix World2 { get; } = new Matrix(1 / X_RANGE2, 0, 0, -1 / Y_RANGE, -X_MIN2 / X_RANGE2, Y_MAX / Y_RANGE);
 		#endregion
 		#region helpers
-		public bool AreInThreshold(double d1, double d2) {
+		public static bool AreInThreshold(double d1, double d2) {
 			return Math.Abs(d1 - d2) < 0.0001;
 		}
-		void AssertDouble(double d1, double d2, string message) {
+		public static void AssertDouble(double d1, double d2, string message) {
 			if (!AreInThreshold(d1, d2))
 				Assert.AreEqual(d1, d2, message);
 		}
@@ -197,7 +201,7 @@ namespace Yacc.Tests {
 		}
 		#endregion
 		#region transform flame tests
-		[TestMethod, TestCategory("matrix")]
+		[TestMethod, TestCategory("matrix.transform")]
 		public void Matrix_Projection() {
 			var point = Projection.Transform(Origin);
 			var point2 = Projection.Transform(TestPoint_ndc);
@@ -207,19 +211,19 @@ namespace Yacc.Tests {
 			Assert.AreEqual(Bounds.Left + Bounds.Width * TestPoint_ndc.X, point2.X, "X failed.2");
 			Assert.AreEqual(Bounds.Top + Bounds.Height * TestPoint_ndc.Y, point2.Y, "Y failed.2");
 		}
-		[TestMethod, TestCategory("matrix")]
+		[TestMethod, TestCategory("matrix.transform")]
 		public void Matrix_World1() {
 			var point = World1.Transform(TestPoint);
 			AssertDouble(0.5, point.X, "X failed");
 			AssertDouble(0, point.Y, "Y failed");
 		}
-		[TestMethod, TestCategory("matrix")]
+		[TestMethod, TestCategory("matrix.transform")]
 		public void Matrix_World2() {
 			var point = World2.Transform(TestPoint);
 			AssertDouble((XX - X_MIN2)/X_RANGE2, point.X, "X failed");
 			AssertDouble(0, point.Y, "Y failed");
 		}
-		[TestMethod, TestCategory("matrix")]
+		[TestMethod, TestCategory("matrix.transform")]
 		public void World1_NomalizesAxes() {
 			var point = World1.Transform(W1UL);
 			AssertDouble(0, point.X, "UL.X1 failed");
@@ -231,7 +235,7 @@ namespace Yacc.Tests {
 			AssertDouble(.5, point.X, "mid.X failed");
 			AssertDouble(.5, point.Y, "mid.Y failed");
 		}
-		[UITestMethod, TestCategory("matrix")]
+		[UITestMethod, TestCategory("matrix.transform")]
 		public void World1_CombineModelProjection() {
 			var gt = new TransformGroup();
 			gt.Children.Add(new MatrixTransform() { Matrix = World1 });
@@ -244,9 +248,19 @@ namespace Yacc.Tests {
 			Assert.AreEqual(Bounds.Left + Bounds.Width, point.X, "X failed");
 			Assert.AreEqual(Bounds.Top + Bounds.Height, point.Y, "Y failed");
 		}
+		[UITestMethod, TestCategory("matrix.multiply")]
+		public void Multiply2_Flamer() {
+			var gt = new TransformGroup();
+			gt.Children.Add(new MatrixTransform() { Matrix = World1 });
+			gt.Children.Add(new MatrixTransform() { Matrix = Projection });
+			TestContext.WriteLine($"final matrix {gt.Value}");
+			var modelproj = MatrixSupport.Multiply(World1, Projection);
+			TestContext.WriteLine($"modelproj {modelproj}");
+			MatrixEqual(gt.Value, modelproj);
+		}
 		#endregion
 		#region inverse
-		[TestMethod, TestCategory("matrix")]
+		[TestMethod, TestCategory("matrix.inverse")]
 		public void Matrix_Inverse_Projection() {
 			var point = Projection.Transform(Origin);
 			Assert.AreEqual(Bounds.Left, point.X, "X failed");
@@ -257,7 +271,7 @@ namespace Yacc.Tests {
 			Assert.AreEqual(Origin.X, ppoint.X, "X failed");
 			Assert.AreEqual(Origin.Y, ppoint.Y, "Y failed");
 		}
-		[UITestMethod, TestCategory("matrix")]
+		[UITestMethod, TestCategory("matrix.inverse")]
 		public void Matrix_Inverse_MatchesMatrixTransform() {
 			var invproj = MatrixSupport.Invert(Projection);
 			var mat = new MatrixTransform() { Matrix = Projection };
@@ -269,27 +283,53 @@ namespace Yacc.Tests {
 		}
 		#endregion
 		#region multiply
-		[TestMethod, TestCategory("matrix")]
-		public void Matrix_Multiply_World1() {
-			var modelproj = MatrixSupport.Multiply(Projection, World1);
+		[TestMethod, TestCategory("matrix.multiply")]
+		public void Matrix_Multiply_Contrived()
+		{
+			var lhs = new Matrix(1, 2, 2, 3, 4, 6);
+			var rhs = new Matrix(2, 1, 4, 2, 1, 3);
+			var result = new Matrix(10,5,16,8,33,19);
+			var modelproj = MatrixSupport.Multiply(lhs, rhs);
+			TestContext.WriteLine($"modelproj {modelproj}");
+			MatrixEqual(result, modelproj);
+		}
+		[UITestMethod, TestCategory("matrix.multiply")]
+		public void Matrix_TransformGroup_Multiply2_Contrived()
+		{
+			var lhs = new Matrix(2, 1, 4, 2, 1, 3);
+			var rhs = new Matrix(1, 2, 2, 3, 4, 6);
+			var result = new Matrix(4, 7, 8, 14, 11, 17);
+			var gt = new TransformGroup();
+			gt.Children.Add(new MatrixTransform() { Matrix = lhs });
+			gt.Children.Add(new MatrixTransform() { Matrix = rhs });
+			TestContext.WriteLine($"final matrix {gt.Value}");
+			MatrixEqual(result, gt.Value);
+			var modelproj = MatrixSupport.Multiply(lhs, rhs);
+			TestContext.WriteLine($"modelproj {modelproj}");
+			MatrixEqual(gt.Value, modelproj);
+		}
+		[TestMethod, TestCategory("matrix.multiply")]
+		public void Matrix_Multiply2_World1()
+		{
+			var modelproj = MatrixSupport.Multiply(World1, Projection);
 			TestContext.WriteLine($"modelproj {modelproj}");
 			var point = modelproj.Transform(W1UL);
 			Assert.AreEqual(Bounds.Left, point.X, "X failed");
 			Assert.AreEqual(Bounds.Top, point.Y, "Y failed");
 		}
-		[UITestMethod, TestCategory("matrix")]
+		[UITestMethod, TestCategory("matrix.multiply")]
 		public void Matrix_Multiply_MatchesTransformGroup() {
 			var gt = new TransformGroup();
 			gt.Children.Add(new MatrixTransform() { Matrix = World1 });
 			gt.Children.Add(new MatrixTransform() { Matrix = Projection });
 			TestContext.WriteLine($"final matrix {gt.Value}");
-			var modelproj = MatrixSupport.Multiply(Projection, World1);
-			TestContext.WriteLine($"modelproj {modelproj}");
+			var modelproj = MatrixSupport.Multiply(World1, Projection);
+			TestContext.WriteLine($"modelproj2 {modelproj}");
 			MatrixEqual(gt.Value, modelproj);
 		}
 		#endregion
 		#region translate transform
-		[UITestMethod, TestCategory("matrix")]
+		[UITestMethod, TestCategory("matrix.translate")]
 		public void Matrix_Translate_MatchesTransformGroup() {
 			var gt = new TransformGroup();
 			gt.Children.Add(new TranslateTransform() { X = TestPoint.X, Y = TestPoint.Y });
@@ -299,7 +339,7 @@ namespace Yacc.Tests {
 			TestContext.WriteLine($"modeltrans {modeltrans}");
 			MatrixEqual(gt.Value, modeltrans);
 		}
-		[TestMethod, TestCategory("matrix")]
+		[TestMethod, TestCategory("matrix.translate")]
 		public void Matrix_Translate_Transform() {
 			var wtrans = MatrixSupport.Translate(World1, TestPoint.X, TestPoint.Y);
 			TestContext.WriteLine($"modeltrans {wtrans}");
@@ -319,23 +359,24 @@ namespace Yacc.Tests {
 		/// <summary>
 		/// The M matrix must have the coordinates "baked in".
 		/// </summary>
-		[TestMethod, TestCategory("matrix")]
+		[TestMethod, TestCategory("matrix.marker")]
 		public void World1_MarkerTransform_Flame() {
-			const double DIMENSION = 5;
+			const double DIMENSION = 6;
+			const double Y_DIMENSION = -1.5;
 			// must "walk out" the marker dimensions to DC
 			var mkwid_indc = MK_WIDTH * WIDTH * World1.M11;
 			// now "walk in" the DC to Y-axis
 			var mkhgt_inyaxis = mkwid_indc/HEIGHT/World1.M22;
-			TestContext.WriteLine($"marker width in DC {mkwid_indc} height in y-axis {mkhgt_inyaxis}");
+			TestContext.WriteLine($"marker width in DC {mkwid_indc} height in y-axis {mkhgt_inyaxis} world1 {World1}");
 			Assert.AreEqual(DIMENSION, mkwid_indc, "mkwid in DC failed");
-			Assert.AreEqual(-1.25, mkhgt_inyaxis, "mkhgt in Y-axis failed");
+			AssertDouble(Y_DIMENSION, mkhgt_inyaxis, "mkhgt in Y-axis failed");
 			// multiply Mk * M * P
-			// this matrix establishes the local coordinate system for the marker (5x5 pixels based on dimensions)
+			// this matrix establishes the local coordinate system for the marker (6x6 pixels based on dimensions)
 			// TODO get the marker center (.5,.5) to "line up" on the "target" point in M-coordinates
 			// TODO get the translation for target M-coordinate
 			var marker = MatrixSupport.LocalFor(World1, MK_WIDTH, Bounds, -.5, -.5);
-			var model2 = MatrixSupport.Multiply(World1, marker);
-			var modelproj = MatrixSupport.Multiply(Projection, model2);
+			var model2 = MatrixSupport.Multiply(marker, World1);
+			var modelproj = MatrixSupport.Multiply(model2, Projection);
 			var ul = modelproj.Transform(Origin);
 			var center = modelproj.Transform(TestPointMarkerCenter);
 			var lr = modelproj.Transform(new Point(1,1));
@@ -346,18 +387,18 @@ namespace Yacc.Tests {
 			Assert.AreEqual(Bounds.Left, center.X, "center.X failed");
 			Assert.AreEqual(Bounds.Top + zerodp, center.Y, "center.Y failed");
 			Assert.AreEqual(Bounds.Left - mkhalf, ul.X, "ul.X failed");
-			Assert.AreEqual(Bounds.Top + zerodp - 2.5, ul.Y, "ul.Y failed");
+			Assert.AreEqual(Bounds.Top + zerodp - mkhalf, ul.Y, "ul.Y failed");
 			Assert.AreEqual(Bounds.Left + mkhalf, lr.X, "lr.X failed");
-			Assert.AreEqual(Bounds.Top + zerodp + 2.5, lr.Y, "lr.Y failed");
+			Assert.AreEqual(Bounds.Top + zerodp + mkhalf, lr.Y, "lr.Y failed");
 		}
 		[TestMethod, TestCategory("matrix")]
 		public void World1_MarkerTransform_ForPoint() {
 			var world1t = MatrixSupport.Translate(World1, TestPoint.X, TestPoint.Y);
-			TestContext.WriteLine($"world1t {world1t}");
+			TestContext.WriteLine($"world1t {world1t} testpoint ${TestPoint}");
 			var marker = MatrixSupport.LocalFor(world1t, MK_WIDTH, Bounds, -.5, -.5);
-			var model2 = MatrixSupport.Multiply(world1t, marker);
-			var mkproj = MatrixSupport.Multiply(Projection, model2);
-			var modelproj = MatrixSupport.Multiply(Projection, World1);
+			var model2 = MatrixSupport.Multiply(marker, world1t);
+			var mkproj = MatrixSupport.Multiply(model2, Projection);
+			var modelproj = MatrixSupport.Multiply(World1, Projection);
 			var reference = modelproj.Transform(TestPoint);
 			var target = mkproj.Transform(TestPointMarkerCenter);
 			TestContext.WriteLine($"marker {marker}  model2 {model2}  Mk.M.P {mkproj}");
