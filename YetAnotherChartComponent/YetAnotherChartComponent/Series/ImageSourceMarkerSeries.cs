@@ -205,7 +205,7 @@ namespace eScapeLLC.UWP.Charts {
 			var proj = MatrixSupport.ProjectionFor(icrc.Area);
 			var world = MatrixSupport.ModelFor(CategoryAxis, ValueAxis);
 			// get the offset matrix
-			var mato = MatrixSupport.Multiply(proj, world);
+			var mato = MatrixSupport.Multiply(world, proj);
 			// TODO preserve aspect ratio of image; will require ImageOpened evh
 			var dimx = MarkerWidth * mato.M11;
 			_trace.Verbose($"dimx {dimx}");
