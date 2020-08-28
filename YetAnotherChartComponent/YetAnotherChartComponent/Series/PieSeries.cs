@@ -387,7 +387,7 @@ namespace eScapeLLC.UWP.Charts {
 			var scale = Math.Min(pmatx.M11, pmatx.M22);
 			pmatx.M11 = pmatx.M22 = scale;
 			// TODO adjust offset so it's centered
-			var matx = MatrixSupport.Multiply(pmatx, mmatx);
+			var matx = MatrixSupport.Multiply(mmatx, pmatx);
 			_trace.Verbose($"{Name} mat:{matx} M:{mmatx} P:{pmatx}");
 			return matx;
 		}

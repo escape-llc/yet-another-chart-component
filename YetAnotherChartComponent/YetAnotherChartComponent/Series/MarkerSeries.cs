@@ -218,12 +218,12 @@ namespace eScapeLLC.UWP.Charts {
 			// get the local marker matrix
 			var marker = MatrixSupport.LocalFor(world, MarkerWidth, icrc.Area, -MarkerOrigin.X, -MarkerOrigin.Y);
 			// get the offset matrix
-			var mato = MatrixSupport.Multiply(proj, world);
+			var mato = MatrixSupport.Multiply(world, proj);
 			foreach (var state in ItemState) {
 				// assemble Mk * M * P transform for this path
 				var iworld = (state as IItemStateMatrix).World;
-				var model = MatrixSupport.Multiply(iworld, marker);
-				var matx = MatrixSupport.Multiply(proj, model);
+				var model = MatrixSupport.Multiply(marker, iworld);
+				var matx = MatrixSupport.Multiply(model, proj);
 				var mt = new MatrixTransform() { Matrix = matx };
 				if (state.Element.DataContext is GeometryWithOffsetShim<Geometry> gs) {
 					gs.GeometryTransform = mt;
