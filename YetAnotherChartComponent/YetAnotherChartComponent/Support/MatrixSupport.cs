@@ -10,7 +10,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// Static helpers for XAML <see cref="Windows.UI.Xaml.Media.Matrix"/>.
 	/// In graphics programming, coordinate transforms are represented using affine matrices and homogeneous coordinates.
 	/// In XAML, the <see cref="Windows.UI.Xaml.Media.Matrix"/> struct is the workhorse.  This structure "leaves out" the last column, because its values are fixed at (0 0 1).
-	/// What matrix algebra would call M13 and M23, <see cref="Windows.UI.Xaml.Media.Matrix"/> calls OffsetX and OffsetY.
+	/// What matrix algebra would call M31 and M32, <see cref="Windows.UI.Xaml.Media.Matrix"/> calls OffsetX and OffsetY.
 	/// One can use <see cref="TransformGroup"/> to do matrix algebra, but it requires the UI thread (just to do matrix arithmetic)!
 	///
 	///	WC	world coordinates
@@ -28,62 +28,46 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public static class MatrixSupport {
 		// these are the affine matrix's third column
-		const double M31 = 0;
-		const double M32 = 0;
 		const double M33 = 1;
 		/// <summary>
 		/// Multiply 3x3 affine matrices.
 		/// Adapted for <see cref="Windows.UI.Xaml.Media.Matrix"/>.
-		/// Note parameter order is BACKWARDS from the math: Multiply(m1,m2) is M2 * M1.
+		/// Multiply(m1,m2) is M1 * M2.
 		/// Matrix multiplication is NOT commutative.
+		/// ZERO terms are now optimized out.
 		/// </summary>
-		/// <param name="rh">Righthand matrix.</param>
 		/// <param name="lh">Lefthand matrix.</param>
+		/// <param name="rh">Righthand matrix.</param>
 		/// <returns>New matrix.</returns>
-		public static Matrix Multiply(Matrix rh, Matrix lh) {
-			double c11 = rh.M11 * lh.M11 + rh.M12 * lh.M21 + rh.OffsetX * M31;
-			double c12 = rh.M11 * lh.M12 + rh.M12 * lh.M22 + rh.OffsetX * M32;
-			double c13 = rh.M11 * lh.OffsetX + rh.M12 * lh.OffsetY + rh.OffsetX * M33;
-			double c21 = rh.M21 * lh.M11 + rh.M22 * lh.M21 + rh.OffsetY * M31;
-			double c22 = rh.M21 * lh.M12 + rh.M22 * lh.M22 + rh.OffsetY * M32;
-			double c23 = rh.M21 * lh.OffsetX + rh.M22 * lh.OffsetY + rh.OffsetY * M33;
-#if false
-			// C31/C32/C33 "cancel out" and equal M31/M32/M33 respectively, hence the reason they are not "in the Matrix"!
-			double c31 = M31 * b.M11 + M32 * b.M21 + M33 * M31;
-			double c32 = M31 * b.M12 + M32 * b.M22 + M33 * M32;
-			double c33 = M31 * b.OffsetX + M32 * b.OffsetY + M33 * M33;
-#endif
-			return new Matrix(c11, c12, c21, c22, c13, c23);
+		public static Matrix Multiply(Matrix lh, Matrix rh) {
+			double c11 = lh.M11 * rh.M11 + lh.M12 * rh.M21;
+			double c12 = lh.M11 * rh.M12 + lh.M12 * rh.M22;
+			double c21 = lh.M21 * rh.M11 + lh.M22 * rh.M21;
+			double c22 = lh.M21 * rh.M12 + lh.M22 * rh.M22;
+			double c31 = lh.OffsetX * rh.M11 + lh.OffsetY * rh.M21 + M33 * rh.OffsetX;
+			double c32 = lh.OffsetX * rh.M12 + lh.OffsetY * rh.M22 + M33 * rh.OffsetY;
+			return new Matrix(c11, c12, c21, c22, c31, c32);
 		}
 		/// <summary>
 		/// Calculate inverse of affine matrix using determinant/adjugate method.
 		/// Adapted for <see cref="Windows.UI.Xaml.Media.Matrix"/>.
+		/// ZERO terms are now optimized out.
 		/// </summary>
 		/// <param name="mx">Source matrix.</param>
 		/// <returns>New matrix if invertable.</returns>
 		/// <exception cref="ArgumentOutOfRangeException">Determinant is Zero.</exception>
 		public static Matrix Invert(Matrix mx) {
-			// NOTE some terms "drop out" because M31 and M32 are ZERO
-			// Mxx are defined as CONST, so let the compiler optimize it
-			double det = mx.M11 * (mx.M22 * M33 - M32 * mx.OffsetY) -
-									 mx.M12 * (mx.M21 * M33 - mx.OffsetY * M31) +
-									 mx.OffsetX * (mx.M21 * M32 - mx.M22 * M31);
+			double det = mx.M11 * (mx.M22 * M33) - mx.M12 * (mx.M21 * M33);
 			if (det == 0)
 				throw new ArgumentOutOfRangeException("Determinant is Zero");
 			double invdet = 1 / det;
-			double c11 = (mx.M22 * M33 - M32 * mx.OffsetY) * invdet;
-			double c12 = (mx.OffsetX * M32 - mx.M12 * M33) * invdet;
-			double c13 = (mx.M12 * mx.OffsetY - mx.OffsetX * mx.M22) * invdet;
-			double c21 = (mx.OffsetY * M31 - mx.M21 * M33) * invdet;
-			double c22 = (mx.M11 * M33 - mx.OffsetX * M31) * invdet;
-			double c23 = (mx.M21 * mx.OffsetX - mx.M11 * mx.OffsetY) * invdet;
-#if false
-			// as expected, C31/C32/C33 cancel out to M31/M32/M33
-			double c31 = (mx.M21 * M32 - M31 * mx.M22) * invdet;
-			double c32 = (M31 * mx.M12 - mx.M11 * M32) * invdet;
-			double c33 = (mx.M11 * mx.M22 - mx.M21 * mx.M12) * invdet;
-#endif
-			return new Matrix(c11, c12, c21, c22, c13, c23);
+			double c11 = (mx.M22 * M33) * invdet;
+			double c12 = (-mx.M12 * M33) * invdet;
+			double c21 = (-mx.M21 * M33) * invdet;
+			double c22 = (mx.M11 * M33) * invdet;
+			double c31 = (mx.M12 * mx.OffsetY - mx.OffsetX * mx.M22) * invdet;
+			double c32 = (mx.M21 * mx.OffsetX - mx.M11 * mx.OffsetY) * invdet;
+			return new Matrix(c11, c12, c21, c22, c31, c32);
 		}
 		/// <summary>
 		/// Create the projection (P) matrix for the target rectangle.
@@ -138,7 +122,7 @@ namespace eScapeLLC.UWP.Charts {
 		public static Matrix TransformFor(Rect area, IChartAxis xaxis, IChartAxis yaxis) {
 			if (xaxis == null) throw new ArgumentNullException(nameof(xaxis));
 			if (yaxis == null) throw new ArgumentNullException(nameof(yaxis));
-			return Multiply(ProjectionFor(area), ModelFor(xaxis, yaxis));
+			return Multiply(ModelFor(xaxis, yaxis), ProjectionFor(area));
 		}
 		/// <summary>
 		/// <see cref="GeometryShim{G}"/> Offset version.  Caller must account for the Matrix.OffsetX component there.
@@ -156,7 +140,7 @@ namespace eScapeLLC.UWP.Charts {
 			var proj = ProjectionFor(area);
 			// remove the x-offset
 			proj.OffsetX = 0;
-			return Multiply(proj, ModelFor(xaxis, yaxis));
+			return Multiply(ModelFor(xaxis, yaxis), proj);
 		}
 		/// <summary>
 		/// Translate matrix by given offset.
