@@ -14,11 +14,11 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public enum AxisType {
 		/// <summary>
-		/// X-axis value.
+		/// First component (X-axis) value.
 		/// </summary>
 		Category,
 		/// <summary>
-		/// Y-axis value.
+		/// Second component (Y-axis) value.
 		/// </summary>
 		Value
 	};
@@ -97,7 +97,6 @@ namespace eScapeLLC.UWP.Charts {
 		AxisType Type { get; }
 		/// <summary>
 		/// The axis orientation.
-		/// Typically Horizontal for Category and Vertical for Value.
 		/// </summary>
 		AxisOrientation Orientation { get; }
 		/// <summary>
