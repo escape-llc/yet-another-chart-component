@@ -13,7 +13,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Series type where the marker is an <see cref="ImageSource"/>.
 	/// </summary>
-	public class ImageSourceMarkerSeries : DataSeriesWithValue, IDataSourceRenderer, IRequireDataSourceUpdates, IProvideSeriesItemUpdates, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireAfterAxesFinalized, IRequireTransforms {
+	public class ImageSourceMarkerSeries : DataSeriesWithValue, IDataSourceRenderer, IRequireDataSourceUpdates, IProvideSeriesItemUpdates, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("ImageSourceMarkerSeries", LogTools.Level.Error);
 		#region properties
 		/// <summary>
@@ -180,18 +180,6 @@ namespace eScapeLLC.UWP.Charts {
 			get { if (_legend == null) _legend = Legend(); return new[] { _legend }; }
 		}
 		#endregion
-		#region IRequireAfterAxesFinalized
-		void IRequireAfterAxesFinalized.AxesFinalized(IChartRenderContext icrc) {
-			if (CategoryAxis == null || ValueAxis == null) return;
-			if (ItemState.Count == 0) return;
-			var world = MatrixSupport.ModelFor(CategoryAxis, ValueAxis);
-			foreach (var state in ItemState) {
-				if (state is IItemStateMatrix ism) {
-					ism.World = MatrixSupport.Translate(world, state.XOffset, state.Value);
-				}
-			}
-		}
-		#endregion
 		#region IRequireTransforms
 		/// <summary>
 		/// Adjust transforms for the various components.
@@ -201,11 +189,9 @@ namespace eScapeLLC.UWP.Charts {
 		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			if (ItemState.Count == 0) return;
-			// put the P matrix on everything
-			var proj = MatrixSupport.ProjectionFor(icrc.Area);
-			var world = MatrixSupport.ModelFor(CategoryAxis, ValueAxis);
+			var mp = MatrixSupport.DataArea(CategoryAxis, ValueAxis, icrc.Area, 1);
 			// get the offset matrix
-			var mato = MatrixSupport.Multiply(world, proj);
+			var mato = MatrixSupport.Multiply(mp.Item1, mp.Item2);
 			// TODO preserve aspect ratio of image; will require ImageOpened evh
 			var dimx = MarkerWidth * mato.M11;
 			_trace.Verbose($"dimx {dimx}");
@@ -225,7 +211,7 @@ namespace eScapeLLC.UWP.Charts {
 					state.Element.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
 				}
 			}
-			_trace.Verbose($"{Name} mat:{world} clip:{icrc.SeriesArea}");
+			_trace.Verbose($"{Name} mat:{mp.Item1} clip:{icrc.SeriesArea}");
 		}
 		#endregion
 		#region IDataSourceRenderer

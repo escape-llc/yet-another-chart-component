@@ -169,7 +169,7 @@ namespace Yacc.Tests {
 		/// <summary>
 		/// Maps the rectangle the WC displays in to DC.
 		/// </summary>
-		public Matrix Projection { get; } = MatrixSupport.ProjectionFor(Bounds);
+		public Matrix Projection { get; } = MatrixSupport.ProjectForQuadrant(4, Bounds);
 		/// <summary>
 		/// Maps the "world" coordinate system (WC) to a normalized basis.
 		/// The basis vectors normalize the axis ranges.

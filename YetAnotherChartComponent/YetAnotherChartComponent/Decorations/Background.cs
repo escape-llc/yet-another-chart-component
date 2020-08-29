@@ -79,7 +79,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icrc">Context.</param>
 		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
-			var matx = MatrixSupport.ProjectionFor(icrc.SeriesArea);
+			var matx = MatrixSupport.ProjectForQuadrant(4, icrc.SeriesArea);
 			Rectangle.Transform = new MatrixTransform() { Matrix = matx };
 		}
 		#endregion

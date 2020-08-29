@@ -382,7 +382,7 @@ namespace eScapeLLC.UWP.Charts {
 		Matrix IProvideCustomTransform.TransformFor(Rect area) {
 			var range = 2.0 * RADIUS;
 			var mmatx = new Matrix(1.0 / range, 0, 0, -1.0 / range, RADIUS / range, RADIUS / range);
-			var pmatx = MatrixSupport.ProjectionFor(area);
+			var pmatx = MatrixSupport.ProjectForQuadrant(4, area);
 			// lock aspect ratio to smallest dimension so it's a circle
 			var scale = Math.Min(pmatx.M11, pmatx.M22);
 			pmatx.M11 = pmatx.M22 = scale;

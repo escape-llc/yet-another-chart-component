@@ -27,6 +27,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// MUST use the inverse of (each) matrix to go in the opposite direction.
 	/// </summary>
 	public static class MatrixSupport {
+		#region matrix operations
 		// these are the affine matrix's third column
 		const double M33 = 1;
 		/// <summary>
@@ -69,37 +70,184 @@ namespace eScapeLLC.UWP.Charts {
 			double c32 = (mx.M21 * mx.OffsetX - mx.M11 * mx.OffsetY) * invdet;
 			return new Matrix(c11, c12, c21, c22, c31, c32);
 		}
+		#endregion
+		#region projection
 		/// <summary>
-		/// Create the projection (P) matrix for the target rectangle.
-		/// Projection maps NDC to the display rectangle.
+		/// Create matrix in(NDC) out(DC).
 		/// </summary>
-		/// <param name="area">Target rectangle.</param>
-		/// <returns>New matrix.</returns>
-		public static Matrix ProjectionFor(Rect area) {
-			return new Matrix(area.Width, 0, 0, area.Height, area.Left, area.Top);
+		/// <param name="xorigin">x-origin.</param>
+		/// <param name="yorigin">y-origin.</param>
+		/// <param name="width">x-range. negate to reverse direction.</param>
+		/// <param name="height">y-range. negate to reverse direction.</param>
+		/// <returns></returns>
+		public static Matrix ProjectionFor(double xorigin, double yorigin, double width, double height) {
+			return new Matrix(width, 0, 0, height, xorigin, yorigin);
 		}
+		/// <summary>
+		/// Project up-and-right from Bottom Left corner (Quadrant I).
+		/// in(NDC) out(+DC,-DC)
+		/// </summary>
+		/// <param name="rect">Source rectangle.</param>
+		/// <returns>New instance.</returns>
+		static Matrix ProjectQuadrant1(Rect rect) {
+			return ProjectionFor(rect.Left, rect.Bottom, rect.Width, -rect.Height);
+		}
+		/// <summary>
+		/// Project up-and-left from Bottom Right corner (Quadrant II).
+		/// in(NDC) out(-DC,-DC)
+		/// </summary>
+		/// <param name="rect">Source rectangle.</param>
+		/// <returns>New instance.</returns>
+		static Matrix ProjectQuadrant2(Rect rect) {
+			return ProjectionFor(rect.Right, rect.Bottom, -rect.Width, -rect.Height);
+		}
+		/// <summary>
+		/// Project down-and-left from Top Right corner (Quadrant III).
+		/// in(NDC) out(-DC,+DC)
+		/// </summary>
+		/// <param name="rect">Source rectangle.</param>
+		/// <returns>New instance.</returns>
+		static Matrix ProjectQuadrant3(Rect rect) {
+			return ProjectionFor(rect.Right, rect.Top, -rect.Width, rect.Height);
+		}
+		/// <summary>
+		/// Project down-and-right from Top Left corner (Quadrant IV).
+		/// in(NDC) out(+DC,+DC)
+		/// </summary>
+		/// <param name="rect">Source rectangle.</param>
+		/// <returns>New instance.</returns>
+		static Matrix ProjectQuadrant4(Rect rect) {
+			return ProjectionFor(rect.Left, rect.Top, rect.Width, rect.Height);
+		}
+		/// <summary>
+		/// Demultiplex quadrant number to its P matrix.
+		/// </summary>
+		/// <param name="quad">Quadrant: [1..4]</param>
+		/// <param name="rect">Source rect.</param>
+		/// <returns>P-matrix.</returns>
+		public static Matrix ProjectForQuadrant(int quad, Rect rect) {
+			switch (quad) {
+				case 1:
+					return ProjectQuadrant1(rect);
+				case 2:
+					return ProjectQuadrant2(rect);
+				case 3:
+					return ProjectQuadrant3(rect);
+				case 4:
+					return ProjectQuadrant4(rect);
+				default:
+					throw new InvalidOperationException($"Invalid quadrant: {quad}");
+			}
+		}
+		#endregion
+		#region model
 		/// <summary>
 		/// Create the model (M) matrix for the given axis' extents.
 		/// Uses axis Range and extent values.
 		/// Model maps world coordinates to NDC.
 		/// The basis vectors normalize the axis range.
-		/// The Y scale is reversed because cartesian goes reverse (+up) of device y-axis (+down).
 		/// The translation components compensate for the axis "ends".  Note these are also normalized.
 		/// </summary>
-		/// <param name="xaxis">The x-axis.</param>
-		/// <param name="yaxis">The y-axis.</param>
+		/// <param name="axis1">The x-axis.</param>
+		/// <param name="axis2">The y-axis.</param>
 		/// <returns>New matrix</returns>
-		public static Matrix ModelFor(IChartAxis xaxis, IChartAxis yaxis) {
-			if (xaxis == null) throw new ArgumentNullException(nameof(xaxis));
-			if (yaxis == null) throw new ArgumentNullException(nameof(yaxis));
-			var xrange = xaxis.Range;
-			var yrange = yaxis.Range;
-			var matx = new Matrix(1 / xrange, 0, 0, -1 / yrange, -xaxis.Minimum / xrange, yaxis.Maximum / yrange);
+		public static Matrix ModelFor(IChartAxis axis1, IChartAxis axis2) {
+			if (axis1 == null) throw new ArgumentNullException(nameof(axis1));
+			if (axis2 == null) throw new ArgumentNullException(nameof(axis2));
+			var a1r = axis1.Range;
+			var a2r = axis2.Range;
+			var matx = new Matrix(1.0 / a1r, 0, 0, 1.0 / a2r, -axis1.Minimum / a1r, -axis2.Minimum / a2r);
 			return matx;
 		}
 		/// <summary>
-		/// Create a final (MVP) matrix for NDC in X axis, and axis.Range in Y-axis.
-		/// Y-axis is inverted.
+		/// Project world coordinates to NDC.
+		/// in(WC) out(NDC)
+		/// </summary>
+		/// <param name="a1min">Axis-1 Minimum.</param>
+		/// <param name="a1max">Axis-1 Maximum.</param>
+		/// <param name="a2min">Axis-2 Minimum.</param>
+		/// <param name="a2max">Axis-2 Maximum.</param>
+		/// <returns>New instance.</returns>
+		public static Matrix ModelFor(double a1min, double a1max, double a2min, double a2max) {
+			var a1r = a1max - a1min;
+			var a2r = a2max - a2min;
+			return new Matrix(1.0 / a1r, 0, 0, 1.0 / a2r, -a1min / a1r, -a2min / a2r);
+		}
+		#endregion
+		#region area projection
+		/// <summary>
+		/// Calculate M and P for given bounds (Bottom edge).
+		/// </summary>
+		/// <param name="axisrect">Axis rectangle.</param>
+		/// <param name="min">Axis minimum.</param>
+		/// <param name="max">Axis maximum.</param>
+		/// <param name="l2r">true: project left-to-right; false: project right-to-left.</param>
+		/// <returns>Item1: M, Item2: P.</returns>
+		public static Tuple<Matrix, Matrix> AxisBottom(Rect axisrect, double min, double max, bool l2r = true) {
+			return new Tuple<Matrix, Matrix>(ModelFor(min, max, 0, 1), ProjectForQuadrant(l2r ? 4 : 3, axisrect));
+		}
+		/// <summary>
+		/// Calculate M and P for given bounds (Top edge).
+		/// </summary>
+		/// <param name="axisrect">Axis rectangle.</param>
+		/// <param name="min">Axis minimum.</param>
+		/// <param name="max">Axis maximum.</param>
+		/// <param name="l2r">true: project left-to-right; false: project right-to-left.</param>
+		/// <returns>Item1: M, Item2: P.</returns>
+		public static Tuple<Matrix, Matrix> AxisTop(Rect axisrect, double min, double max, bool l2r = true) {
+			return new Tuple<Matrix, Matrix>(ModelFor(min, max, 0, 1), ProjectForQuadrant(l2r ? 1 : 2, axisrect));
+		}
+		/// <summary>
+		/// Calculate M and P for given bounds (Right edge).
+		/// </summary>
+		/// <param name="axisrect">Axis rectangle.</param>
+		/// <param name="min">Axis minimum.</param>
+		/// <param name="max">Axis maximum.</param>
+		/// <param name="b2t">true: project bottom-to-top; false: project top-to-bottom.</param>
+		/// <returns>Item1: M, Item2: P.</returns>
+		public static Tuple<Matrix, Matrix> AxisRight(Rect axisrect, double min, double max, bool b2t = true) {
+			return new Tuple<Matrix, Matrix>(ModelFor(0, 1, min, max), ProjectForQuadrant(b2t ? 1 : 4, axisrect));
+		}
+		/// <summary>
+		/// Create M and P for given bounds (Data area).
+		/// </summary>
+		/// <param name="a1min">A1 minimum.</param>
+		/// <param name="a1max">A1 maximum.</param>
+		/// <param name="a2min">A2 minimum.</param>
+		/// <param name="a2max">A2 maximum.</param>
+		/// <param name="area">Data area rectangle.</param>
+		/// <param name="quad">Projection Quadrant [1..4].</param>
+		/// <returns>Item1: M, Item2: P.</returns>
+		public static Tuple<Matrix, Matrix> DataArea(double a1min, double a1max, double a2min, double a2max, Rect area, int quad = 1) {
+			return new Tuple<Matrix, Matrix>(ModelFor(a1min, a1max, a2min, a2max), ProjectForQuadrant(quad, area));
+		}
+		/// <summary>
+		/// Create M and P for given bounds (Data area).
+		/// </summary>
+		/// <param name="a1">Axis 1.</param>
+		/// <param name="a2">Axis 2.</param>
+		/// <param name="area">Data area rectangle.</param>
+		/// <param name="quad">Projection Quadrant [1..4].</param>
+		/// <returns>Item1: M, Item2: P.</returns>
+		public static Tuple<Matrix, Matrix> DataArea(IChartAxis a1, IChartAxis a2, Rect area, int quad = 1) {
+			return new Tuple<Matrix, Matrix>(ModelFor(a1.Minimum, a1.Maximum, a2.Minimum, a2.Maximum), ProjectForQuadrant(quad, area));
+		}
+		/// <summary>
+		/// Calculate M and P for given bounds (Left edge).
+		/// </summary>
+		/// <param name="axisrect">Axis rectangle.</param>
+		/// <param name="min">Axis minimum.</param>
+		/// <param name="max">Axis maximum.</param>
+		/// <param name="b2t">true: project bottom-to-top; false: project top-to-bottom.</param>
+		/// <returns>Item1: M, Item2: P.</returns>
+		public static Tuple<Matrix, Matrix> AxisLeft(Rect axisrect, double min, double max, bool b2t = true) {
+			return new Tuple<Matrix, Matrix>(ModelFor(0, 1, min, max), ProjectForQuadrant(b2t ? 2 : 3, axisrect));
+		}
+		#endregion
+		#region composite transform
+		/// <summary>
+		/// Create a final (MP) matrix for NDC in X axis, and axis.Range in Y-axis.
+		/// Y-axis is inverted (for Q4).
 		/// All components are pre-multiplied instead of using <see cref="MatrixSupport.Multiply"/>.
 		/// </summary>
 		/// <param name="area">Target area.</param>
@@ -113,7 +261,7 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		/// <summary>
 		/// Create a final (MP) matrix for this rectangle and axes.
-		/// It would "normally" be MVP matrix, but for how V == I so we leave it out.
+		/// Renders for Q1.
 		/// </summary>
 		/// <param name="area">Target area.</param>
 		/// <param name="xaxis">The x-axis.</param>
@@ -122,13 +270,12 @@ namespace eScapeLLC.UWP.Charts {
 		public static Matrix TransformFor(Rect area, IChartAxis xaxis, IChartAxis yaxis) {
 			if (xaxis == null) throw new ArgumentNullException(nameof(xaxis));
 			if (yaxis == null) throw new ArgumentNullException(nameof(yaxis));
-			return Multiply(ModelFor(xaxis, yaxis), ProjectionFor(area));
+			return Multiply(ModelFor(xaxis, yaxis), ProjectForQuadrant(1, area));
 		}
 		/// <summary>
 		/// <see cref="GeometryShim{G}"/> Offset version.  Caller must account for the Matrix.OffsetX component there.
 		/// <para/>
 		/// Create a final (MP) matrix for this rectangle and axes.
-		/// It would "normally" be MVP matrix, but for how V == I so we leave it out.
 		/// </summary>
 		/// <param name="area">Target area. The Left component is eliminated from output matrix.</param>
 		/// <param name="xaxis">The x-axis.</param>
@@ -137,7 +284,7 @@ namespace eScapeLLC.UWP.Charts {
 		public static Matrix TransformForOffsetX(Rect area, IChartAxis xaxis, IChartAxis yaxis) {
 			if (xaxis == null) throw new ArgumentNullException(nameof(xaxis));
 			if (yaxis == null) throw new ArgumentNullException(nameof(yaxis));
-			var proj = ProjectionFor(area);
+			var proj = ProjectForQuadrant(1, area);
 			// remove the x-offset
 			proj.OffsetX = 0;
 			return Multiply(ModelFor(xaxis, yaxis), proj);
@@ -186,6 +333,7 @@ namespace eScapeLLC.UWP.Charts {
 			var marker = new Matrix(axes.X, 0, 0, axes.Y, xx * axes.X, yy * axes.Y);
 			return marker;
 		}
+		#endregion
 	}
 #pragma warning restore CS0419
 	#endregion
