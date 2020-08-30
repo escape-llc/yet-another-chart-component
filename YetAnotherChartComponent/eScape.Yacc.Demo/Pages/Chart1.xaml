@@ -150,7 +150,6 @@
 				<LineGeometry StartPoint=".4,.5" EndPoint=".6,.5" />
 			</GeometryGroup>
 		</DataTemplate>
-		<BitmapImage x:Key="bmi" UriSource="ms-appx:///Assets/yacc_logo.png"/>
 		<Style x:Key="Marker_v2" TargetType="Image">
 			<Setter Property="RenderTransformOrigin" Value=".5,.5"/>
 			<Setter Property="animations:Implicit.Animations" Value="{StaticResource Offset}"/>
