@@ -1,0 +1,207 @@
+﻿<core:BasicPage
+	x:Class="Yacc.Demo.Pages.Chart7"
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:core="using:eScape.Core.Page"
+	xmlns:yacc="using:eScapeLLC.UWP.Charts"
+	xmlns:animations="using:Microsoft.Toolkit.Uwp.UI.Animations"
+	xmlns:extensions="using:Microsoft.Toolkit.Uwp.UI.Extensions"
+	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+	mc:Ignorable="d">
+	<Page.Resources>
+		<animations:AnimationCollection x:Key="OffsetAndOpacity">
+			<animations:OffsetAnimation Duration="0:0:0.5"/>
+		</animations:AnimationCollection>
+		<animations:AnimationCollection x:Key="Show">
+			<animations:TranslationAnimation Duration="0:0:1" From="10,5,0" To="0,0,0"/>
+			<animations:OpacityAnimation Duration="0:0:1" To="1.0"/>
+		</animations:AnimationCollection>
+		<animations:AnimationCollection x:Key="ShowAxisLabel">
+			<animations:ScalarAnimation Target="Opacity" Duration="0:0:1" To="1.0"/>
+			<animations:ScalarAnimation Target="Translation.X" Duration="0:0:1" From="100" To="0"/>
+		</animations:AnimationCollection>
+		<animations:AnimationCollection x:Key="Hide">
+			<animations:TranslationAnimation Duration="0:0:1" To="-20,0,0"/>
+			<animations:OpacityAnimation Duration="0:0:1" To="0.0"/>
+		</animations:AnimationCollection>
+		<animations:AnimationCollection x:Key="HideAxisLabel">
+			<animations:ScalarAnimation Target="Opacity" Duration="0:0:1" To="0.0"/>
+			<animations:ScalarAnimation Target="Translation.X" Duration="0:0:1" From="0" To="-100"/>
+		</animations:AnimationCollection>
+		<Style x:Key="Column_v1" TargetType="Path">
+			<Setter Property="Stroke" Value="DarkOrchid"/>
+			<Setter Property="StrokeThickness" Value="1"/>
+			<Setter Property="Fill" Value="Blue"/>
+			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
+			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource Show}"/>
+			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource Hide}"/>
+		</Style>
+		<Style x:Key="Column_v2" TargetType="Path">
+			<Setter Property="Stroke" Value="DarkOrchid"/>
+			<Setter Property="StrokeThickness" Value="1"/>
+			<Setter Property="Fill" Value="Green"/>
+			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
+			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource Show}"/>
+			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource Hide}"/>
+		</Style>
+		<Style x:Key="Line_v3" TargetType="Path">
+			<Setter Property="Stroke" Value="Olive"/>
+			<Setter Property="StrokeThickness" Value="5"/>
+			<Setter Property="StrokeLineJoin" Value="Round"/>
+			<Setter Property="StrokeStartLineCap" Value="Round"/>
+			<Setter Property="StrokeEndLineCap" Value="Round"/>
+		</Style>
+		<Style x:Key="Marker_v4" TargetType="Path">
+			<Setter Property="Stroke" Value="Coral"/>
+			<Setter Property="StrokeThickness" Value="1"/>
+			<Setter Property="Fill" Value="Blue"/>
+			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
+			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource Show}"/>
+			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource Hide}"/>
+		</Style>
+		<Style x:Key="Marker_v4img" TargetType="Image">
+			<Setter Property="RenderTransformOrigin" Value=".5,.5"/>
+			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
+			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource Show}"/>
+			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource Hide}"/>
+		</Style>
+		<Style x:Key="LabelsChart3" BasedOn="{StaticResource Labels}" TargetType="TextBlock">
+			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
+			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource Show}"/>
+			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource Hide}"/>
+		</Style>
+		<Style x:Key="CategoryAxisChart3" BasedOn="{StaticResource CategoryAxisLabel}" TargetType="TextBlock">
+			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
+			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource ShowAxisLabel}"/>
+			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource HideAxisLabel}"/>
+		</Style>
+		<Style x:Key="SubGrid" TargetType="Path">
+			<Setter Property="Stroke" Value="DarkGoldenrod"/>
+			<Setter Property="StrokeThickness" Value=".5"/>
+			<Setter Property="Opacity" Value=".5"/>
+		</Style>
+		<DataTemplate x:Key="Marker">
+			<GeometryGroup>
+				<EllipseGeometry RadiusX=".5" RadiusY=".5" Center=".5,.5" />
+			</GeometryGroup>
+		</DataTemplate>
+		<DataTemplate x:Key="LabelWithBorder">
+			<Border Background="Bisque" Padding="2" BorderThickness="1" CornerRadius="2" BorderBrush="LightBlue" Opacity=".75"
+								animations:Implicit.Animations="{StaticResource OffsetAndOpacity}"
+				animations:Implicit.ShowAnimations="{StaticResource Show}"
+				animations:Implicit.HideAnimations="{StaticResource Hide}">
+				<TextBlock Text="{Binding Text}" Style="{StaticResource Labels}" Foreground="Black" FontStyle="Italic"/>
+			</Border>
+		</DataTemplate>
+		<yacc:LegendTemplateSelector x:Key="LegendSelector"
+			ForLegend="{StaticResource LegendItem_small}"
+			ForLegendWithGeometry="{StaticResource LegendItemPath_small}"
+			ForLegendWithImageSource="{StaticResource LegendItemImage_small}"/>
+	</Page.Resources>
+	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+		<CommandBar x:Name="toolbar"
+			RelativePanel.AlignTopWithPanel="True">
+			<CommandBar.PrimaryCommands>
+				<AppBarToggleButton IsChecked="True" x:Name="cb_legend" Label="Toggle Legend" Content="Legend"/>
+				<AppBarToggleButton IsChecked="True" x:Name="cb_grid" Label="Toggle Grid" Content="Grid"/>
+				<AppBarButton Content="&#x207a;&#x2215;&#x208b;" Label="Start/Stop" Command="{Binding Toggle}" />
+			</CommandBar.PrimaryCommands>
+		</CommandBar>
+		<Grid x:Name="grid"
+			RelativePanel.Below="toolbar" RelativePanel.AlignBottomWithPanel="True"
+			RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True">
+			<Grid.RowDefinitions>
+				<RowDefinition Height=".33*"/>
+				<RowDefinition Height=".33*"/>
+				<RowDefinition Height=".33*"/>
+			</Grid.RowDefinitions>
+			<yacc:Chart x:Name="chart1" Grid.Row="0" Style="{StaticResource Chart}">
+				<yacc:Chart.DataSources>
+					<yacc:DataSource x:Name="data" Items="{Binding Data}" ExternalRefresh="{Binding GroupCounter}"/>
+				</yacc:Chart.DataSources>
+				<yacc:Chart.Components>
+					<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" DataSourceName="data" LabelPath="Label" 
+						PathStyle="{StaticResource Axes}"
+						LabelStyle="{StaticResource CategoryAxisChart3}" />
+					<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}"
+						LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="F1" />
+					<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource Grid}"
+						MinorGridLineCount="3" MinorGridPathStyle="{StaticResource SubGrid}"
+						Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
+					<yacc:ColumnSeries DataSourceName="data" ValuePath="Value1" ClipToDataRegion="False"
+						Title="Value 1 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis"
+						PathStyle="{StaticResource Column_v1}" BarOffset=".25" BarWidth=".25" />
+					<yacc:ColumnSeries DataSourceName="data" ValuePath="Value2"
+						Title="Value 2 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" ClipToDataRegion="False"
+						PathStyle="{StaticResource Column_v2}" BarOffset=".5" BarWidth=".25" />
+				</yacc:Chart.Components>
+			</yacc:Chart>
+			<yacc:Chart x:Name="chart3" Grid.Row="1" Style="{StaticResource Chart}">
+				<yacc:Chart.DataSources>
+					<yacc:DataSource x:Name="data3" Items="{Binding Data}" ExternalRefresh="{Binding GroupCounter}"/>
+				</yacc:Chart.DataSources>
+				<yacc:Chart.Components>
+					<yacc:CategoryAxis x:Name="xaxis3" Side="Bottom" DataSourceName="data3" LabelPath="Label" 
+						PathStyle="{StaticResource Axes}"
+						LabelStyle="{StaticResource CategoryAxisChart3}" />
+					<yacc:ValueAxis x:Name="yaxis3" Side="Left" PathStyle="{StaticResource Axes}" LimitMinimum="-4.6" LimitMaximum="-3.4"
+						LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="F1" />
+					<yacc:ValueAxisGrid ValueAxisName="yaxis3" PathStyle="{StaticResource Grid}"
+						MinorGridLineCount="3" MinorGridPathStyle="{StaticResource SubGrid}"
+						Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
+					<yacc:ImageSourceMarkerSeries x:Name="v4" DataSourceName="data3" ValuePath="Value4" Title="Value 4 Marker"
+						ValueAxisName="yaxis3" CategoryAxisName="xaxis3" MarkerOffset=".5" MarkerWidth=".5" ClipToDataRegion="False"
+						PathStyle="{StaticResource Marker_v4img}" Source="{StaticResource bmi}"/>
+					<yacc:ValueLabels SourceName="v4" LabelFormatString="F2"
+						CategoryAxisOffset=".375" LabelOffset="0,1.5" LabelTemplate="{StaticResource LabelWithBorder}" />
+				</yacc:Chart.Components>
+			</yacc:Chart>
+			<yacc:Chart x:Name="chart2" Grid.Row="2" Style="{StaticResource Chart}">
+				<yacc:Chart.DataSources>
+					<yacc:DataSource x:Name="data2" Items="{Binding Data}" ExternalRefresh="{Binding GroupCounter}"/>
+				</yacc:Chart.DataSources>
+				<yacc:Chart.Components>
+					<yacc:CategoryAxis x:Name="xaxis2" Side="Bottom" DataSourceName="data2" LabelPath="Label" 
+						PathStyle="{StaticResource Axes}"
+						LabelStyle="{StaticResource CategoryAxisChart3}" />
+					<yacc:ValueAxis x:Name="yaxis2" Side="Left" PathStyle="{StaticResource Axes}" LimitMinimum="-2.5" LimitMaximum="-1.5"
+						LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="F1" />
+					<yacc:ValueAxisGrid ValueAxisName="yaxis2" PathStyle="{StaticResource Grid}"
+						MinorGridLineCount="3" MinorGridPathStyle="{StaticResource SubGrid}"
+						Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
+					<yacc:MarkerSeries x:Name="v3" DataSourceName="data2" ValuePath="Value3" Title="Value 3 Marker"
+						ValueAxisName="yaxis2" CategoryAxisName="xaxis2" MarkerOffset=".5" MarkerWidth=".5" ClipToDataRegion="False"
+						PathStyle="{StaticResource Marker_v4}" MarkerTemplate="{StaticResource Marker}"/>
+					<yacc:ValueLabels SourceName="v3" LabelFormatString="F2"
+						CategoryAxisOffset=".5" LabelOffset="0,0" LabelStyle="{StaticResource LabelsChart3}" />
+				</yacc:Chart.Components>
+			</yacc:Chart>
+		</Grid>
+		<TextBlock x:Name="title" Style="{StaticResource Title}" Text="Time Series Data with Stacked Charts"
+			RelativePanel.AlignTopWith="grid" RelativePanel.AlignHorizontalCenterWithPanel="True"/>
+		<Image Source="ms-appx:/Assets/Square44x44Logo.scale-100.png" Style="{StaticResource Logo}"
+			RelativePanel.LeftOf="title" RelativePanel.AlignVerticalCenterWith="title" />
+		<Border Style="{StaticResource Legend}"
+			Visibility="{Binding ElementName=cb_legend,Path=IsChecked}"
+			RelativePanel.AlignRightWith="grid" RelativePanel.AlignTopWith="grid">
+			<ItemsControl x:Name="legend" Margin="2" Padding="2"
+				ItemsSource="{x:Bind AllLegendItems,Mode=OneWay}"
+				ItemTemplateSelector="{StaticResource LegendSelector}">
+				<ItemsControl.ItemsPanel>
+					<ItemsPanelTemplate>
+						<ItemsStackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+					</ItemsPanelTemplate>
+				</ItemsControl.ItemsPanel>
+			</ItemsControl>
+		</Border>
+		<TextBlock x:Name="counter" Style="{StaticResource Title}" TextAlignment="Left"
+			RelativePanel.AlignTopWith="grid" RelativePanel.AlignLeftWith="grid">
+			<TextBlock.Inlines>
+				<Run Text="Multiple charts can present the same collection"/>
+				<LineBreak/>
+				<Run Text="in a synchronized fashion."/>
+			</TextBlock.Inlines>
+		</TextBlock>
+	</RelativePanel>
+</core:BasicPage>
