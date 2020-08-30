@@ -1,4 +1,6 @@
-﻿using Windows.UI.Xaml.Controls;
+﻿using eScape.Core;
+using System;
+using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
 using Yacc.Demo.VM;
 
@@ -7,6 +9,8 @@ namespace Yacc.Demo {
 	/// Chart demo page.
 	/// </summary>
 	public sealed partial class MainPage : Page {
+		static LogTools.Flag _trace = LogTools.Add("MainPage", LogTools.Level.Verbose);
+		PageItem current;
 		public MainPage() {
 			this.InitializeComponent();
 		}
@@ -20,11 +24,24 @@ namespace Yacc.Demo {
 			DataContext = vm;
 		}
 		private void NavigationView_ItemInvoked(Microsoft.UI.Xaml.Controls.NavigationView sender, Microsoft.UI.Xaml.Controls.NavigationViewItemInvokedEventArgs args) {
+			// for some reason this is invoked TWO TIMES
 			if (args.InvokedItemContainer.DataContext is PageItem pi) {
-				Notification.Content = pi;
-				Notification.Show();
-				// for now just send in PI
-				MainFrame.Navigate(pi.PageType, pi);
+				if(pi == current) {
+					_trace.Warn($"ItemInvoked double-hit: {pi.Description}");
+					return;
+				}
+				try {
+					Notification.Content = pi;
+					Notification.Show();
+					// for now just send in PI
+					MainFrame.Navigate(pi.PageType, pi);
+				}
+				catch(Exception ex) {
+					_trace.Error($"ItemInvoked.unhandled: {ex}");
+				}
+				finally {
+					current = pi;
+				}
 			}
 		}
 	}
