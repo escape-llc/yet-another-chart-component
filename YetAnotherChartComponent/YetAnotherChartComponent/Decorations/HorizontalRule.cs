@@ -14,7 +14,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// Represents a horizontal "rule" on the chart, for a value not belonging to any data source value, e.g. a value computed "outside" the series itself (Average).
 	/// </summary>
 	public class HorizontalRule : ChartComponent, IProvideValueExtents, IProvideSeriesItemValues, IRequireChartTheme, IRequireEnterLeave, IRequireRender, IRequireTransforms {
-		static LogTools.Flag _trace = LogTools.Add("HorizontalRule", LogTools.Level.Error);
+		static readonly LogTools.Flag _trace = LogTools.Add("HorizontalRule", LogTools.Level.Error);
 		#region properties
 		/// <summary>
 		/// The style to use for Path geometry.

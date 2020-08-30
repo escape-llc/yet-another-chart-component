@@ -9,7 +9,7 @@ namespace Yacc.Demo {
 	/// Chart demo page.
 	/// </summary>
 	public sealed partial class MainPage : Page {
-		static LogTools.Flag _trace = LogTools.Add("MainPage", LogTools.Level.Verbose);
+		static readonly LogTools.Flag _trace = LogTools.Add("MainPage", LogTools.Level.Verbose);
 		PageItem current;
 		public MainPage() {
 			this.InitializeComponent();

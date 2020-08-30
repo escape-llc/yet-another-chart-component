@@ -14,7 +14,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// Represents a horizontal "rule" on the chart, for a value not belonging to any data source value, e.g. a value computed "outside" the series itself (Average).
 	/// </summary>
 	public class HorizontalBand : ChartComponent, IProvideValueExtents, IProvideSeriesItemValues, IRequireChartTheme, IRequireEnterLeave, IRequireRender, IRequireTransforms {
-		static LogTools.Flag _trace = LogTools.Add("HorizontalBand", LogTools.Level.Error);
+		static readonly LogTools.Flag _trace = LogTools.Add("HorizontalBand", LogTools.Level.Error);
 		#region properties
 		/// <summary>
 		/// The style to use for "rules" Path geometry.

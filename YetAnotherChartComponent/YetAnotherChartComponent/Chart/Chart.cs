@@ -58,7 +58,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Cache for render contexts.
 		/// </summary>
-		Dictionary<ChartComponent, DefaultRenderContext> rendercache = new Dictionary<ChartComponent, DefaultRenderContext>();
+		readonly Dictionary<ChartComponent, DefaultRenderContext> rendercache = new Dictionary<ChartComponent, DefaultRenderContext>();
 		#endregion
 		#region public
 		/// <summary>
@@ -140,7 +140,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	[TemplatePart(Name = PART_Canvas, Type = typeof(Canvas))]
 	public class Chart : Control {
-		static LogTools.Flag _trace = LogTools.Add("Chart", LogTools.Level.Error);
+		static readonly LogTools.Flag _trace = LogTools.Add("Chart", LogTools.Level.Error);
 		/// <summary>
 		/// Control template part: canvas.
 		/// </summary>
