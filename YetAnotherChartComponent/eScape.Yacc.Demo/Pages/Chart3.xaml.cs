@@ -23,8 +23,13 @@ namespace Yacc.Demo.Pages {
 			await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => {
 				// the chart has one child, which is a Canvas
 				var child = VisualTreeHelper.GetChild(chart, 0);
-				// everything lives in the canvas on one level
-				CurrentChildCount = VisualTreeHelper.GetChildrenCount(child);
+				if (child == null) {
+					CurrentChildCount = 0;
+				}
+				else {
+					// everything lives in the canvas on one level
+					CurrentChildCount = VisualTreeHelper.GetChildrenCount(child);
+				}
 				// tell x:Bind
 				Bindings.Update();
 			});
