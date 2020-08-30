@@ -283,8 +283,15 @@ namespace eScapeLLC.UWP.Charts {
 				if (CurrentLayout.IsSizeChanged(sz)) {
 					_trace.Verbose($"LayoutUpdated.trigger ({sz.Width}x{sz.Height})");
 					var ls = new LayoutState() { Dimensions = sz, Layout = CurrentLayout.Layout };
-					RenderComponents(ls);
-					CurrentLayout = ls;
+					try {
+						RenderComponents(ls);
+					}
+					catch(Exception ex) {
+						_trace.Error($"{ex}");
+					}
+					finally {
+						CurrentLayout = ls;
+					}
 				}
 			}
 		}
@@ -295,23 +302,28 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="nccea"></param>
 		private void DataSources_CollectionChanged(object sender, NotifyCollectionChangedEventArgs nccea) {
 			_trace.Verbose($"DataSourcesChanged {nccea}");
-			if (nccea.OldItems != null) {
-				foreach (DataSource ds in nccea.OldItems) {
-					_trace.Verbose($"leave '{ds.Name}' {ds}");
-					ds.RefreshRequest -= DataSource_RefreshRequest;
+			try {
+				if (nccea.OldItems != null) {
+					foreach (DataSource ds in nccea.OldItems) {
+						_trace.Verbose($"leave '{ds.Name}' {ds}");
+						ds.RefreshRequest -= DataSource_RefreshRequest;
+					}
+				}
+				if (nccea.NewItems != null) {
+					foreach (DataSource ds in nccea.NewItems) {
+						_trace.Verbose($"enter '{ds.Name}' {ds}");
+						if (ds.Items != null && !ds.IsDirty && ds.Items.GetEnumerator().MoveNext()) {
+							// force this dirty so it refreshes
+							ds.IsDirty = true;
+						}
+						ds.RefreshRequest -= DataSource_RefreshRequest;
+						ds.RefreshRequest += DataSource_RefreshRequest;
+						ds.DataContext = DataContext;
+					}
 				}
 			}
-			if (nccea.NewItems != null) {
-				foreach (DataSource ds in nccea.NewItems) {
-					_trace.Verbose($"enter '{ds.Name}' {ds}");
-					if (ds.Items != null && !ds.IsDirty && ds.Items.GetEnumerator().MoveNext()) {
-						// force this dirty so it refreshes
-						ds.IsDirty = true;
-					}
-					ds.RefreshRequest -= DataSource_RefreshRequest;
-					ds.RefreshRequest += DataSource_RefreshRequest;
-					ds.DataContext = DataContext;
-				}
+			catch(Exception ex) {
+				_trace.Error($"{Name} DataSources_CollectionChanged.unhandled: {ex}");
 			}
 			if (Surface != null) {
 				RenderComponents(CurrentLayout);
@@ -324,26 +336,31 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="nccea"></param>
 		void Components_CollectionChanged(object sender, NotifyCollectionChangedEventArgs nccea) {
 			var celc = new DefaultEnterLeaveContext(Surface, Components, Layers, DataContext);
-			if (nccea.OldItems != null) {
-				foreach (ChartComponent cc in nccea.OldItems) {
-					_trace.Verbose($"leave '{cc.Name}' {cc}");
-					cc.RefreshRequest -= ChartComponent_RefreshRequest;
-					ComponentLeave(celc, cc);
+			try {
+				if (nccea.OldItems != null) {
+					foreach (ChartComponent cc in nccea.OldItems) {
+						_trace.Verbose($"leave '{cc.Name}' {cc}");
+						cc.RefreshRequest -= ChartComponent_RefreshRequest;
+						ComponentLeave(celc, cc);
+					}
+				}
+				if (nccea.NewItems != null) {
+					foreach (ChartComponent cc in nccea.NewItems) {
+						_trace.Verbose($"enter '{cc.Name}' {cc}");
+						cc.RefreshRequest -= ChartComponent_RefreshRequest;
+						cc.RefreshRequest += ChartComponent_RefreshRequest;
+						cc.DataContext = DataContext;
+						if (Surface != null) {
+							ComponentEnter(celc, cc);
+						}
+						else {
+							DeferredEnter.Add(cc);
+						}
+					}
 				}
 			}
-			if (nccea.NewItems != null) {
-				foreach (ChartComponent cc in nccea.NewItems) {
-					_trace.Verbose($"enter '{cc.Name}' {cc}");
-					cc.RefreshRequest -= ChartComponent_RefreshRequest;
-					cc.RefreshRequest += ChartComponent_RefreshRequest;
-					cc.DataContext = DataContext;
-					if(Surface != null)  {
-						ComponentEnter(celc, cc);
-					}
-					else {
-						DeferredEnter.Add(cc);
-					}
-				}
+			catch(Exception ex) {
+				_trace.Error($"{Name} Components_CollectionChanged.unhandled: {ex}");
 			}
 			if(celc.Errors.Count > 0) {
 				Report(celc.Errors.ToArray());
@@ -363,19 +380,24 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"refresh-request-ds '{ds.Name}' {ds}");
 			await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => {
 				if (Surface != null) {
-					switch(nccea.Action) {
-					case NotifyCollectionChangedAction.Add:
-						IncrementalUpdate(NotifyCollectionChangedAction.Add, CurrentLayout, ds, nccea.NewStartingIndex, nccea.NewItems);
-						break;
-					case NotifyCollectionChangedAction.Remove:
-						IncrementalUpdate(NotifyCollectionChangedAction.Remove, CurrentLayout, ds, nccea.OldStartingIndex, nccea.OldItems);
-						break;
-					case NotifyCollectionChangedAction.Move:
-					case NotifyCollectionChangedAction.Replace:
-					case NotifyCollectionChangedAction.Reset:
-					default:
-						RenderComponents(CurrentLayout);
-						break;
+					try {
+						switch (nccea.Action) {
+							case NotifyCollectionChangedAction.Add:
+								IncrementalUpdate(NotifyCollectionChangedAction.Add, CurrentLayout, ds, nccea.NewStartingIndex, nccea.NewItems);
+								break;
+							case NotifyCollectionChangedAction.Remove:
+								IncrementalUpdate(NotifyCollectionChangedAction.Remove, CurrentLayout, ds, nccea.OldStartingIndex, nccea.OldItems);
+								break;
+							case NotifyCollectionChangedAction.Move:
+							case NotifyCollectionChangedAction.Replace:
+							case NotifyCollectionChangedAction.Reset:
+							default:
+								RenderComponents(CurrentLayout);
+								break;
+						}
+					}
+					catch(Exception ex) {
+						_trace.Error($"{Name} DataSource_RefreshRequest.unhandled: {ex}");
 					}
 				}
 			});
@@ -392,27 +414,36 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"refresh-request-cc '{cc.Name}' {cc} r:{rrea.Request} a:{rrea.Axis}");
 			await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => {
 				if (Surface == null) return;
-				if(cc is IProvideDataSourceRenderer ipdsr) {
-					var ds = DataSources.SingleOrDefault(dds => dds.Name == ipdsr.Renderer.DataSourceName);
-					if (ds != null) {
-						ds.IsDirty = true;
+				try {
+					if (cc is IProvideDataSourceRenderer ipdsr) {
+						var ds = DataSources.SingleOrDefault(dds => dds.Name == ipdsr.Renderer.DataSourceName);
+						if (ds != null) {
+							ds.IsDirty = true;
+						}
+						RenderComponents(CurrentLayout);
 					}
-					RenderComponents(CurrentLayout);
-				} else if (cc is IDataSourceRenderer idsr) {
-					var ds = DataSources.SingleOrDefault(dds => dds.Name == idsr.DataSourceName);
-					if (ds != null) {
-						ds.IsDirty = true;
+					else if (cc is IDataSourceRenderer idsr) {
+						var ds = DataSources.SingleOrDefault(dds => dds.Name == idsr.DataSourceName);
+						if (ds != null) {
+							ds.IsDirty = true;
+						}
+						RenderComponents(CurrentLayout);
 					}
-					RenderComponents(CurrentLayout);
-				} else {
-					// dispatch other kinds of refresh requests
-					if (rrea.Request == RefreshRequestType.LayoutDirty && rrea.Component is IRequireLayout) {
-						ComponentRender(CurrentLayout, rrea);
-					} else if (rrea.Request == RefreshRequestType.ValueDirty && rrea.Component is IRequireRender) {
-						ComponentRender(CurrentLayout, rrea);
-					} else if (rrea.Request == RefreshRequestType.TransformsDirty && cc is IRequireTransforms) {
-						ComponentTransforms(CurrentLayout, rrea);
+					else {
+						// dispatch other kinds of refresh requests
+						if (rrea.Request == RefreshRequestType.LayoutDirty && rrea.Component is IRequireLayout) {
+							ComponentRender(CurrentLayout, rrea);
+						}
+						else if (rrea.Request == RefreshRequestType.ValueDirty && rrea.Component is IRequireRender) {
+							ComponentRender(CurrentLayout, rrea);
+						}
+						else if (rrea.Request == RefreshRequestType.TransformsDirty && cc is IRequireTransforms) {
+							ComponentTransforms(CurrentLayout, rrea);
+						}
 					}
+				}
+				catch(Exception ex) {
+					_trace.Verbose($"{Name} ChartComponent_RefreshRequest.unhandled: {ex}");
 				}
 			});
 		}
