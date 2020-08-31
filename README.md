@@ -9,7 +9,7 @@ From *Package Manager Console*:
 ```
    PM> Install-Package eScapeLLC.UWP.Charts
 ```
-[![NuGet version](https://badge.fury.io/nu/escapellc.uwp.charts.svg)](https://badge.fury.io/nu/escapellc.uwp.charts)
+[![NuGet version](https://badge.fury.io/nu/eScapeLLC.UWP.Charts.svg)](https://badge.fury.io/nu/eScapeLLC.UWP.Charts)
 
 [Package page on nuget.org](https://www.nuget.org/packages/eScapeLLC.UWP.Charts/)
 
@@ -35,7 +35,7 @@ Please check out the [Wiki](../../wiki) to learn more about the guts of YACC and
 Please consult the [other](../../issues) [features](../../projects) of this github repository to find out the current state of affairs, [*or to contribute*](../../pulls).
 
 # Nuget Releases
-[![NuGet version](https://badge.fury.io/nu/escapellc.uwp.charts.svg)](https://badge.fury.io/nu/escapellc.uwp.charts)
+[![NuGet version](https://badge.fury.io/nu/eScapeLLC.UWP.Charts.svg)](https://badge.fury.io/nu/eScapeLLC.UWP.Charts)
 
 ## 1.6.0
 More features and fixes.
