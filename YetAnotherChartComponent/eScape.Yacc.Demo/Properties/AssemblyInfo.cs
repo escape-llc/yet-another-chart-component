@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("uap10.0")]
 [assembly: AssemblyCompany("eScape Technology LLC")]
 [assembly: AssemblyProduct("eScapeLLC.UWP.Charts")]
-[assembly: AssemblyCopyright("Copyright ©  2017-18")]
+[assembly: AssemblyCopyright("Copyright ©  2017-20")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -23,6 +23,6 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.6.0.*")]
-[assembly: AssemblyFileVersion("1.6.0")]
+[assembly: AssemblyVersion("1.7.0.*")]
+[assembly: AssemblyFileVersion("1.7.0")]
 [assembly: ComVisible(false)]
