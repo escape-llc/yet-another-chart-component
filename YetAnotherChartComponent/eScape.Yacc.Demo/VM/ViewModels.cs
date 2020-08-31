@@ -44,8 +44,8 @@ namespace Yacc.Demo.VM {
 				new PageItem() { Glyph="\u2462", Title = "Animations", Description = "Incremental updates dovetail beautifully with implicit animations.", PageType = typeof(Chart3) },
 				new PageItem() { Glyph="\u2463", Title = "Stock Chart", Description = "Cached real data, double Y-axis, rotated X-axis labels, conditional X-axis labels.", PageType = typeof(Chart4) },
 				new PageItem() { Glyph="\u2464", Title = "Stacked", Description = "Stacked column chart with labels.", PageType = typeof(Chart5) },
-				new PageItem() { Glyph="\u2465", Title = "Pie", Description = "Pie chart.", PageType = typeof(Chart6) },
-				new PageItem() { Glyph="\u2466", Title = "Sync", Description = "Sync multiple charts to same collection.", PageType = typeof(Chart7) },
+				new PageItem() { Glyph="\u2465", Title = "Sync", Description = "Sync multiple charts to same collection.", PageType = typeof(Chart7) },
+				new PageItem() { Glyph="\u2466", Title = "Pie", Description = "Pie chart.", PageType = typeof(Chart6) },
 			};
 			PageList = pl;
 		}
