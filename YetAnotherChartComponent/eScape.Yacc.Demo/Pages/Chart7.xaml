@@ -124,7 +124,7 @@
 					<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" DataSourceName="data" LabelPath="Label" 
 						PathStyle="{StaticResource Axes}"
 						LabelStyle="{StaticResource CategoryAxisChart3}" />
-					<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}"
+					<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}" LimitMinimum="0" LimitMaximum="5"
 						LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="F1" />
 					<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource Grid}"
 						MinorGridLineCount="3" MinorGridPathStyle="{StaticResource SubGrid}"

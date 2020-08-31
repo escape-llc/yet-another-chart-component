@@ -8,7 +8,7 @@ using Yacc.Demo.VM;
 
 namespace Yacc.Demo.Pages {
 	public sealed partial class Chart7 : BasicPage {
-		public override string PageTitle => "Sync";
+		public override string PageTitle => "Sharing";
 		public int CurrentChildCount { get; set; }
 		public ObservableCollection<LegendBase> AllLegendItems { get; set; }
 		public Chart7() {
