@@ -782,7 +782,7 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		/// <summary>
 		/// Adjust layout and transforms based on size change.
-		/// SETs <see cref="LayoutState.Type"/> to TRUE.
+		/// SETs <see cref="LayoutState.Type"/> to <see cref="RenderType.TransformsOnly"/>.
 		/// </summary>
 		/// <param name="ls">Layout state.</param>
 		protected void TransformsLayout(LayoutState ls) {
@@ -815,7 +815,7 @@ namespace eScapeLLC.UWP.Charts {
 			Phase_AxisLimits((cc2) => !(cc2 is DataSeries) && (cc2 is IProvideValueExtents));
 			// Phase V: axes finalized
 			Phase_AxesFinalized(ls);
-			// Phase VI: render value axes (IRequireRender)
+			// Phase VI: render axes (IRequireRender)
 			Phase_RenderAxes(ls);
 			// Phase VII: configure all transforms
 			Phase_Transforms(ls);
