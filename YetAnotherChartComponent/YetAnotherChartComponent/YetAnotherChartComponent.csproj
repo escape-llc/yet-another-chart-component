@@ -115,7 +115,9 @@
     <Compile Include="Chart\Chart.cs" />
     <Compile Include="Chart\ChartComponent.cs" />
     <Compile Include="Chart\Layer.cs" />
+    <Compile Include="Series\HeatmapSeries.cs" />
     <Compile Include="Series\ImageSourceMarkerSeries.cs" />
+    <Compile Include="Support\Color.cs" />
     <Compile Include="Support\Composition.cs" />
     <Compile Include="Support\Contexts.cs" />
     <Compile Include="Decorations\Background.cs" />
