@@ -433,6 +433,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icrc">The context.</param>
 		void Render(IChartRenderContext icrc);
 	}
+	/// <summary>
+	/// Marker interface for special render stage.
+	/// </summary>
+	public interface IRequireRenderPostAxesFinalized { }
 	#endregion
 	#region IRequireCategoryAxis
 	/// <summary>
@@ -444,6 +448,18 @@ namespace eScapeLLC.UWP.Charts {
 		/// SHOULD be not-empty.
 		/// </summary>
 		String CategoryAxisName { get; }
+	}
+	#endregion
+	#region IRequireCategoryAxis2
+	/// <summary>
+	/// Requirement for double Category-Axis mapping.
+	/// </summary>
+	public interface IRequireCategoryAxis2 : IRequireCategoryAxis {
+		/// <summary>
+		/// Name of the axis.
+		/// SHOULD be not-empty.
+		/// </summary>
+		String CategoryAxis2Name { get; }
 	}
 	#endregion
 	#region IRequireAfterAxesFinalized
@@ -535,6 +551,24 @@ namespace eScapeLLC.UWP.Charts {
 		/// SHOULD be not-empty.
 		/// </summary>
 		String ValueAxisName { get; }
+	}
+	#endregion
+	#region IProvideSeriesValueExtents
+	/// <summary>
+	/// Ability to provide Series value extents.
+	/// Example: 2D data not tied to a specific axis.
+	/// </summary>
+	public interface IProvideSeriesValueExtents {
+		/// <summary>
+		/// The lowest value.
+		/// If unset, MUST be double.NaN.
+		/// </summary>
+		double Minimum { get; }
+		/// <summary>
+		/// The highest value.
+		/// If unset, MUST be double.NaN.
+		/// </summary>
+		double Maximum { get; }
 	}
 	#endregion
 	#region IProvideCustomTransform
@@ -754,7 +788,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <returns>New instance.</returns>
 		public static PathFigure Line(double startx, double starty, double endx, double endy) {
 			var pf = new PathFigure { StartPoint = new Windows.Foundation.Point(startx, starty) };
-			var ls = new LineSegment() { Point = new Windows.Foundation.Point(startx, endy) };
+			var ls = new LineSegment() { Point = new Windows.Foundation.Point(endx, endy) };
 			pf.Segments.Add(ls);
 			return pf;
 		}

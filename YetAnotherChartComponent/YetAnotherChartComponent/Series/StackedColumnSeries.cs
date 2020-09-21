@@ -57,7 +57,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="d"></param>
 		/// <param name="dpcea"></param>
 		protected static void ItemPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs dpcea) {
-			ColumnStackItem csi = d as ColumnStackItem;
+			//ColumnStackItem csi = d as ColumnStackItem;
 			//ds.Refresh(RefreshRequestType.ValueDirty, AxisUpdateState.Unknown);
 		}
 		#endregion
@@ -73,7 +73,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// Plots multiple series values on a stacked arrangement.
 	/// </summary>
 	public class StackedColumnSeries : DataSeriesWithAxes, IProvideSeriesItemValues, IProvideSeriesItemUpdates, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IDataSourceRenderer, IRequireDataSourceUpdates, IRequireTransforms {
-		static LogTools.Flag _trace = LogTools.Add("StackedColumnSeries", LogTools.Level.Error);
+		static readonly LogTools.Flag _trace = LogTools.Add("StackedColumnSeries", LogTools.Level.Error);
 		#region Series and Channel item state
 		/// <summary>
 		/// Item state.

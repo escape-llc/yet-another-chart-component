@@ -34,9 +34,26 @@ namespace eScapeLLC.UWP.Charts {
 		public Brush Stroke { get { return _stroke; } set { _stroke = value; Changed(nameof(Stroke)); } }
 	}
 	#endregion
+	#region LegendValueRange
+	/// <summary>
+	/// Legend item for a value range, e.g. heatmap values.
+	/// </summary>
+	public class LegendValueRange : Legend {
+		double _min;
+		double _max;
+		/// <summary>
+		/// The minimum value.
+		/// </summary>
+		public double Minimum { get { return _min; } set { _min = value; Changed(nameof(Minimum)); } }
+		/// <summary>
+		/// The maximum value.
+		/// </summary>
+		public double Maximum { get { return _max; } set { _max = value; Changed(nameof(Maximum)); } }
+	}
+	#endregion
 	#region LegendWithPath
 	/// <summary>
-	/// Legend VM with a custom Geometry for its visualization.
+	/// Legend VM with a custom <see cref="Geometry"/> for its visualization.
 	/// </summary>
 	public class LegendWithGeometry : Legend {
 		Geometry _data;
@@ -48,7 +65,7 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region LegendWithImageSource
 	/// <summary>
-	/// Legend VM with a custom ImageSource for its visualization.
+	/// Legend VM with a custom <see cref="ImageSource"/> for its visualization.
 	/// </summary>
 	public class LegendWithImageSource : LegendBase {
 		ImageSource _source;
@@ -60,7 +77,7 @@ namespace eScapeLLC.UWP.Charts {
 	#endregion
 	#region LegendWithElement
 	/// <summary>
-	/// Legend VM with a custom Path for its visualization.
+	/// Legend VM with a custom <see cref="FrameworkElement"/> for its visualization.
 	/// </summary>
 	public class LegendWithElement : LegendBase {
 		FrameworkElement _element;

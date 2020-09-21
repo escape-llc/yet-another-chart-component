@@ -29,7 +29,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// <summary>
 	/// Decoration that creates value labels.
 	/// </summary>
-	public class ValueLabels : ChartComponent, IRequireChartTheme, IRequireEnterLeave, IRequireRender, IRequireTransforms {
+	public class ValueLabels : ChartComponent, IRequireChartTheme, IRequireEnterLeave, IRequireRender, IRequireRenderPostAxesFinalized, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("ValueLabels", LogTools.Level.Error);
 		#region SeriesItemState
 		/// <summary>
@@ -263,6 +263,16 @@ namespace eScapeLLC.UWP.Charts {
 					return;
 				}
 			}
+			if (Source is IRequireCategoryAxis irca) {
+				if (CategoryAxis == null && !String.IsNullOrEmpty(irca.CategoryAxisName)) {
+					CategoryAxis = icrc.Find(irca.CategoryAxisName) as IChartAxis;
+				}
+				else {
+					if (icrc is IChartErrorInfo icei) {
+						icei.Report(new ChartValidationResult(Source.NameOrType(), $"Category axis '{irca.CategoryAxisName}' was not found", new[] { nameof(CategoryAxis), nameof(irca.CategoryAxisName) }));
+					}
+				}
+			}
 			if (Source is IProvideValueExtents ipve) {
 				if (ValueAxis == null && !String.IsNullOrEmpty(ipve.ValueAxisName)) {
 					ValueAxis = icrc.Find(ipve.ValueAxisName) as IChartAxis;
@@ -272,12 +282,13 @@ namespace eScapeLLC.UWP.Charts {
 					}
 				}
 			}
-			if (Source is IRequireCategoryAxis ipce) {
-				if (CategoryAxis == null && !String.IsNullOrEmpty(ipce.CategoryAxisName)) {
-					CategoryAxis = icrc.Find(ipce.CategoryAxisName) as IChartAxis;
-				} else {
+			else if(Source is IRequireCategoryAxis2 irca2) {
+				if (ValueAxis == null && !String.IsNullOrEmpty(irca2.CategoryAxis2Name)) {
+					ValueAxis = icrc.Find(irca2.CategoryAxis2Name) as IChartAxis;
+				}
+				else {
 					if (icrc is IChartErrorInfo icei) {
-						icei.Report(new ChartValidationResult(Source.NameOrType(), $"Category axis '{ipce.CategoryAxisName}' was not found", new[] { nameof(CategoryAxis), nameof(ipce.CategoryAxisName) }));
+						icei.Report(new ChartValidationResult(Source.NameOrType(), $"Category 2 axis '{irca2.CategoryAxis2Name}' was not found", new[] { nameof(ValueAxis), nameof(irca2.CategoryAxis2Name) }));
 					}
 				}
 			}
@@ -314,6 +325,11 @@ namespace eScapeLLC.UWP.Charts {
 				return ipct.TransformFor(icrc.Area);
 			}
 			if (ValueAxis == null) return default(Matrix);
+			if(Source is IRequireCategoryAxis2 irca2) {
+				var mat = MatrixSupport.DataArea(CategoryAxis, ValueAxis, icrc.Area, 4);
+				var matmp = MatrixSupport.Multiply(mat.Item1, mat.Item2);
+				return matmp;
+			}
 			var matx = CategoryAxis != null ? MatrixSupport.TransformFor(icrc.Area, CategoryAxis, ValueAxis) : MatrixSupport.TransformFor(icrc.Area, ValueAxis);
 			return matx;
 		}
@@ -389,7 +405,7 @@ namespace eScapeLLC.UWP.Charts {
 			case MidpointPlacement mp:
 				var pt2 = mp.Transform(offset);
 				// convert into XOffset!
-				pt2.X = pt2.X - (isivd as ISeriesItem).XValue;
+				pt2.X -= (isivd as ISeriesItem).XValue;
 				_trace.Verbose($"mp {mp.Midpoint} d:{mp.Direction} hd:{mp.HalfDimension} pt:{pt2}");
 				return new Tuple<Point, Point>(pt2, mp.Direction);
 			default:

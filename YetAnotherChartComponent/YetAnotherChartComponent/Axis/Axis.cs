@@ -43,7 +43,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// The axis orientation.
 		/// </summary>
-		public AxisOrientation Orientation { get; private set; }
+		public AxisOrientation Orientation { get { return Side == Side.Bottom || Side == Side.Top ? AxisOrientation.Horizontal : AxisOrientation.Vertical; } }
 		/// <summary>
 		/// The axis side.
 		/// </summary>
@@ -115,11 +115,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// Ctor.
 		/// </summary>
 		/// <param name="at"></param>
-		/// <param name="ao"></param>
 		/// <param name="sd"></param>
-		protected AxisCommon(AxisType at, AxisOrientation ao, Side sd) {
+		protected AxisCommon(AxisType at, Side sd) {
 			Type = at;
-			Orientation = ao;
 			Side = sd;
 		}
 		#endregion

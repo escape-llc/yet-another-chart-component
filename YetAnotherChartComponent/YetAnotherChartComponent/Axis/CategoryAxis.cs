@@ -59,7 +59,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// The item state for this component.
 		/// </summary>
-		protected class ItemState : ICategoryLabelState {
+		protected abstract class ItemState : ICategoryLabelState {
 			#region data
 			// the index; SHOULD match position in array
 			internal int index;
@@ -70,39 +70,36 @@ namespace eScapeLLC.UWP.Charts {
 			// the display element
 			internal FrameworkElement element;
 			// these are used for JIT re-positioning
-			internal double scalex;
+			internal double scale;
 			internal bool usexau;
-			internal double top;
-			internal double left;
+			internal double yorigin;
+			internal double xorigin;
 			#endregion
 			#region ICategoryLabelState
 			int ICategoryLabelState.Index => index;
 			double ICategoryLabelState.Value => value;
 			object ICategoryLabelState.Label => label;
 			#endregion
+			#region extension points
+			/// <summary>
+			/// Perform any sizing of the element according to orientation.
+			/// </summary>
+			/// <param name="element"></param>
+			internal abstract void SizeElement(FrameworkElement element);
+			/// <summary>
+			/// Calculate position based on <see cref="FrameworkElement.ActualWidth"/> or XAU as appropriate.
+			/// </summary>
+			/// <returns></returns>
+			internal abstract Point GetLocation();
+			#endregion
 			/// <summary>
 			/// Configure <see cref="Canvas"/> attached properties.
 			/// </summary>
 			/// <param name="loc"></param>
 			internal void Locate(Point loc) {
-				if(usexau) {
-					element.Width = scalex;
-				}
+				SizeElement(element);
 				element.SetValue(Canvas.LeftProperty, loc.X);
 				element.SetValue(Canvas.TopProperty, loc.Y);
-			}
-			/// <summary>
-			/// Calculate position based on <see cref="FrameworkElement.ActualWidth"/> or XAU as appropriate.
-			/// </summary>
-			/// <returns></returns>
-			internal Point GetLocation() {
-				if (usexau) {
-					// place it at XAU zero point
-					return new Point(left + value * scalex, top);
-				} else {
-					// place it centered in cell
-					return new Point(left + value * scalex + scalex / 2 - element.ActualWidth / 2, top);
-				}
 			}
 			/// <summary>
 			/// Combine <see cref="GetLocation"/> and <see cref="Locate"/>.
@@ -112,6 +109,46 @@ namespace eScapeLLC.UWP.Charts {
 				var loc = GetLocation();
 				Locate(loc);
 				return loc;
+			}
+		}
+		/// <summary>
+		/// Version for horizontal (Top/Bottom).
+		/// </summary>
+		protected class ItemState_Horizontal : ItemState {
+			internal override void SizeElement(FrameworkElement element) {
+				if (usexau) {
+					element.Width = scale;
+				}
+			}
+			internal override Point GetLocation() {
+				if (usexau) {
+					// place it at XAU zero point
+					return new Point(xorigin + value * scale, yorigin);
+				}
+				else {
+					// place it centered in cell
+					return new Point(xorigin + value * scale + scale / 2 - element.ActualWidth / 2, yorigin);
+				}
+			}
+		}
+		/// <summary>
+		/// Version for vertical (Left/Right).
+		/// </summary>
+		protected class ItemState_Vertical : ItemState {
+			internal override void SizeElement(FrameworkElement element) {
+				if (usexau) {
+					element.Height = scale;
+				}
+			}
+			internal override Point GetLocation() {
+				if (usexau) {
+					// place it at XAU zero point
+					return new Point(xorigin, yorigin + value * scale);
+				}
+				else {
+					// place it centered in cell
+					return new Point(xorigin, yorigin + value * scale + scale / 2 - element.ActualHeight / 2);
+				}
 			}
 		}
 		#endregion
@@ -231,7 +268,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Default ctor.
 		/// </summary>
-		public CategoryAxis() : base(AxisType.Category, AxisOrientation.Horizontal, Side.Bottom) {
+		public CategoryAxis() : base(AxisType.Category, Side.Bottom) {
 			CommonInit();
 		}
 		private void CommonInit() {
@@ -248,7 +285,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		void RebuildAxisGeometry() {
 			AxisGeometry.Figures.Clear();
-			var pf = PathHelper.Rectangle(Minimum, 0, Maximum, AxisLineThickness);
+			var pf = Orientation == AxisOrientation.Horizontal
+				? PathHelper.Rectangle(Minimum, 0, Maximum, AxisLineThickness)
+				: PathHelper.Rectangle(0, Minimum, AxisLineThickness, Maximum);
 			AxisGeometry.Figures.Add(pf);
 		}
 		/// <summary>
@@ -323,6 +362,54 @@ namespace eScapeLLC.UWP.Charts {
 			ist.element = current.Item2;
 			sc.Generated(ist);
 		}
+		Matrix ProjectionFor(Rect area, bool reverse = false) {
+			switch(Side) {
+				case Side.Bottom:
+					return MatrixSupport.ProjectionFor(
+						reverse ? area.Right : area.Left,
+						area.Top + AxisLineThickness + 2 * AxisMargin,
+						reverse ? -1 : 1,
+						1
+					);
+				case Side.Top:
+					return MatrixSupport.ProjectionFor(
+						reverse ? area.Right : area.Left,
+						area.Top + AxisLineThickness + 2 * AxisMargin,
+						reverse ? -1 : 1,
+						-1
+					);
+				case Side.Left:
+					return MatrixSupport.ProjectionFor(
+						area.Right,
+						area.Top,
+						-area.Width - AxisLineThickness - 2*AxisMargin,
+						reverse ? -1 : 1
+					);
+				case Side.Right:
+					return MatrixSupport.ProjectionFor(
+						area.Left + AxisLineThickness + 2 * AxisMargin,
+						area.Top,
+						1,
+						reverse ? -1 : 1
+					);
+				default:
+					throw new NotImplementedException($"Not Implemented: {Side}");
+			}
+		}
+		Matrix ProjectionForAxis(Rect area, double scale) {
+			switch (Side) {
+				case Side.Bottom:
+					return MatrixSupport.ProjectionFor(area.Left, area.Top + AxisMargin, scale, 1);
+				case Side.Top:
+					return MatrixSupport.ProjectionFor(area.Left, area.Bottom - AxisMargin, scale, 1);
+				case Side.Left:
+					return MatrixSupport.ProjectionFor(area.Right - AxisMargin, area.Top, 1, scale);
+				case Side.Right:
+					return MatrixSupport.ProjectionFor(area.Left + AxisMargin, area.Top, 1, scale);
+				default:
+					throw new NotImplementedException($"Not Implemented: {Side}");
+			}
+		}
 		#endregion
 		#region extensions
 		#endregion
@@ -382,7 +469,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="iclc"></param>
 		void IRequireLayout.Layout(IChartLayoutContext iclc) {
-			var space = AxisMargin + AxisLineThickness + MinHeight;
+			var space = AxisMargin + AxisLineThickness + (Orientation == AxisOrientation.Horizontal ? MinHeight : MinWidth);
 			iclc.ClaimSpace(this, Side, space);
 		}
 		#endregion
@@ -394,17 +481,21 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icrc"></param>
 		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
-			var scalex = icrc.Area.Width / Range;
-			var matx = new Matrix(scalex, 0, 0, 1, icrc.Area.Left, icrc.Area.Top + AxisMargin);
+			var scale = Orientation == AxisOrientation.Horizontal ? icrc.Area.Width / Range : icrc.Area.Height / Range;
+			var matx = ProjectionForAxis(icrc.Area, scale);
 			AxisGeometry.Transform = new MatrixTransform() { Matrix = matx };
-			_trace.Verbose($"transforms sx:{scalex:F3} matx:{matx} a:{icrc.Area}");
+			var matxv = ProjectionFor(icrc.Area);
+			_trace.Verbose($"{Name}:{Orientation}:{Side} transforms sx:{scale:F3} matx:{matx} matxv:{matxv} a:{icrc.Area}");
 			foreach (var state in AxisLabels) {
 				if (state.element == null) continue;
-				state.scalex = scalex;
-				state.top = icrc.Area.Top + AxisLineThickness + 2 * AxisMargin;
-				state.left = icrc.Area.Left;
+				var mapt = Orientation == AxisOrientation.Horizontal ? new Point(0, 1) : new Point(1, 0);
+				var ptv = matxv.Transform(mapt);
+				_trace.Verbose($"{Name} mapped mapt:{mapt} ptv:{ptv}");
+				state.scale = scale;
+				state.xorigin = ptv.X;
+				state.yorigin = ptv.Y;
 				var loc = state.UpdateLocation();
-				_trace.Verbose($"tb {state.element.ActualWidth}x{state.element.ActualHeight} v:{state.value} @:({loc.X},{loc.Y})");
+				_trace.Verbose($"{Name} el {state.element.ActualWidth}x{state.element.ActualHeight} v:{state.value} @:({loc.X},{loc.Y})");
 				if (icrc.Type != RenderType.TransformsOnly) {
 					// doing render so (try to) trigger the SizeChanged handler
 					state.element.InvalidateMeasure();
@@ -441,10 +532,28 @@ namespace eScapeLLC.UWP.Charts {
 			if (String.IsNullOrEmpty(LabelPath)) return null;
 			var bl = new BindingEvaluator(LabelPath);
 			if (bl == null) return null;
-			var recycler = new Recycler<FrameworkElement, ItemState>(AxisLabels.Where(tl=>tl.element != null).Select(tl => tl.element), CreateElement);
+			var recycler = new Recycler<FrameworkElement, ItemState>(AxisLabels.Where(tl => tl.element != null).Select(tl => tl.element), CreateElement);
 			ResetLimits();
 			var widx = LabelStyle?.Find(FrameworkElement.WidthProperty);
 			return new State(new List<ItemState>(), recycler, icrc, widx == null, bl);
+		}
+		ItemState makeit(int index, object label, bool xau) {
+			if (Orientation == AxisOrientation.Horizontal) {
+				return new ItemState_Horizontal() {
+					index = index,
+					value = index,
+					label = label,
+					usexau = xau
+				};
+			}
+			else {
+				return new ItemState_Vertical() {
+					index = index,
+					value = index,
+					label = label,
+					usexau = xau
+				};
+			}
 		}
 		/// <summary>
 		/// MUST do "data-only" layout here, we don't know all the values yet.
@@ -456,12 +565,7 @@ namespace eScapeLLC.UWP.Charts {
 			var st = state as State;
 			st.ix = index;
 			var label = st.bl.For(item);
-			var istate = new ItemState() {
-				index = index,
-				value = index,
-				label = label,
-				usexau = st.usexau
-			};
+			var istate = makeit(index, label, st.usexau);
 			st.itemstate.Add(istate);
 		}
 		/// <summary>
@@ -527,12 +631,7 @@ namespace eScapeLLC.UWP.Charts {
 			for (int ix = 0; ix < items.Count; ix++) {
 				// add requested item
 				var label = bl.For(items[ix]);
-				var istate = new ItemState() {
-					index = startAt + ix,
-					value = startAt + ix,
-					label = label,
-					usexau = widx == null
-				};
+				var istate = makeit(startAt + ix, label, widx == null);
 				AxisLabels.Insert(startAt + ix, istate);
 				reproc.Add(istate);
 			}

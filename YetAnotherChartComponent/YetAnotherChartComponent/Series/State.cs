@@ -716,6 +716,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="index">Index value if <see cref="bx"/> is NULL.</param>
 		/// <returns></returns>
 		public double CategoryFor(object ox, int index) {
+		// TODO this is coming back int from model object
 			var valuex = bx != null ? (double)bx.For(ox) : index;
 			return valuex;
 		}

@@ -152,7 +152,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// Default ctor.
 		/// Creates Value/Left/Vertical axis.
 		/// </summary>
-		public ValueAxis() : base(AxisType.Value, AxisOrientation.Vertical, Side.Left) {
+		public ValueAxis() : base(AxisType.Value, Side.Left) {
 			CommonInit();
 		}
 		#endregion

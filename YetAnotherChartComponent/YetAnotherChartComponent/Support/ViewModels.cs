@@ -141,6 +141,19 @@ namespace eScapeLLC.UWP.Charts {
 		public double Offset {  get { return _offset; } set { _offset = value; Changed(nameof(Offset)); } }
 	}
 	#endregion
+	#region GeometryWith2OffsetShim<G>
+	/// <summary>
+	/// Additional property for binding to Canvas.LeftProperty <see cref="GeometryWithOffsetShim{G}.Offset"/> AND Canvas.TopProperty <see cref="Offset2"/>.
+	/// </summary>
+	/// <typeparam name="G"></typeparam>
+	public class GeometryWith2OffsetShim<G> : GeometryWithOffsetShim<G> where G : Geometry {
+		double _offset2;
+		/// <summary>
+		/// Current offset.
+		/// </summary>
+		public double Offset2 { get { return _offset2; } set { _offset2 = value; Changed(nameof(Offset2)); } }
+	}
+	#endregion
 	#region ImageSourceShim
 	/// <summary>
 	/// Additional property for binding an <see cref="ImageSource"/>.

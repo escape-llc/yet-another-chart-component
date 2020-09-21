@@ -18,7 +18,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="property">DP to locate.</param>
 		/// <param name="defv">Default value to return if nothing found OR the style is NULL.</param>
 		/// <returns>The value or DEFV.</returns>
-		public static T Find<T>(this Style style, DependencyProperty property, T defv = default(T)) {
+		public static T Find<T>(this Style style, DependencyProperty property, T defv = default) {
 			if (style == null) return defv;
 			var xx = style.Find(property);
 			return xx == null ? defv : (T)xx.Value;
@@ -32,7 +32,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="property"></param>
 		/// <param name="defv"></param>
 		/// <returns></returns>
-		public static T FindRecursive<T>(this Style style, DependencyProperty property, T defv = default(T)) {
+		public static T FindRecursive<T>(this Style style, DependencyProperty property, T defv = default) {
 			if (style == null) return defv;
 			if (style.BasedOn != null) {
 				var sx = style.BasedOn.Find(property);
@@ -139,8 +139,8 @@ namespace eScapeLLC.UWP.Charts {
 	public sealed class DefaultColorsGenerator : StyleGenerator {
 		#region data
 		int current;
-		Dictionary<Brush, Style> stylemap = new Dictionary<Brush, Style>();
-		static Brush[] _presetBrushes = new Brush[] {
+		readonly Dictionary<Brush, Style> stylemap = new Dictionary<Brush, Style>();
+		static readonly Brush[] _presetBrushes = new Brush[] {
 			new SolidColorBrush(Color.FromArgb(0xFF, 0xFF, 0x66, 0x00)),
 			new SolidColorBrush(Color.FromArgb(0xFF, 0xFC, 0xD2, 0x02)),
 			new SolidColorBrush(Color.FromArgb(0xFF, 0xB0, 0xDE, 0x09)),

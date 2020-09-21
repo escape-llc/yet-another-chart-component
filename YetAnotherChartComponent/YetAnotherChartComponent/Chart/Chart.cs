@@ -134,6 +134,74 @@ namespace eScapeLLC.UWP.Charts {
 		public ChartErrorEventArgs(params ChartValidationResult[] cvr) { Results = cvr; }
 	}
 	#endregion
+	#region Phase<T>
+	/// <summary>
+	/// Base impl.
+	/// </summary>
+	public abstract class PhaseBase {
+		/// <summary>
+		/// Enter list if passing checks.
+		/// </summary>
+		/// <param name="cc">Candidate.</param>
+		public abstract void Enter(ChartComponent cc);
+		/// <summary>
+		/// Remove element.
+		/// </summary>
+		/// <param name="cc">Candidate.</param>
+		public abstract void Leave(ChartComponent cc);
+		/// <summary>
+		/// Reset the list.
+		/// </summary>
+		public abstract void Clear();
+	}
+	/// <summary>
+	/// No checks beyond "is T".
+	/// </summary>
+	/// <typeparam name="T">Element type.</typeparam>
+	public class PhaseOnly<T>: PhaseBase where T : class {
+		/// <summary>
+		/// The list.
+		/// </summary>
+		readonly protected List<T> items = new List<T>();
+		/// <summary>
+		/// Iterate the items.
+		/// </summary>
+		public IEnumerable<T> Items => items;
+		/// <summary>
+		/// Reset the list.
+		/// </summary>
+		public override void Clear() { items.Clear(); }
+		/// <summary>
+		/// Enter list if passing checks.
+		/// </summary>
+		/// <param name="ex">Candidate.</param>
+		public override void Enter(ChartComponent ex) { if (ex is T tx) { items.Add(tx); } }
+		/// <summary>
+		/// Remove element.
+		/// </summary>
+		/// <param name="ex">Candidate.</param>
+		public override void Leave(ChartComponent ex) { items.Remove(ex as T); }
+	}
+	/// <summary>
+	/// Additional entry criteria.
+	/// </summary>
+	/// <typeparam name="T">Element type.</typeparam>
+	public class Phase<T> : PhaseOnly<T> where T : class {
+		readonly Func<ChartComponent, bool> enter;
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="enter">Additional entry criteria.</param>
+		public Phase(Func<ChartComponent, bool> enter) {
+			this.enter = enter ?? throw new ArgumentNullException(nameof(enter));
+		}
+		/// <summary>
+		/// Enter list if passing checks.
+		/// </summary>
+		/// <param name="ex">Candidate.</param>
+		public override void Enter(ChartComponent ex) { if (ex is T tx && enter(ex)) { items.Add(tx); } }
+	}
+	#endregion
 	#region Chart
 	/// <summary>
 	/// The chart.
@@ -177,7 +245,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Components that entered before the Surface was ready (via XAML).
 		/// </summary>
-		protected List<ChartComponent> DeferredEnter{ get; set; }
+		protected List<ChartComponent> DeferredEnter { get; set; }
 		/// <summary>
 		/// Last-computed layout state.
 		/// LayoutUpdated gets called frequently, so it gets debounced.
@@ -199,9 +267,59 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Deendency property for <see cref="Theme"/>.
 		/// </summary>
-		public static readonly DependencyProperty ThemeProperty = DependencyProperty.Register (
+		public static readonly DependencyProperty ThemeProperty = DependencyProperty.Register(
 			nameof(Theme), typeof(ChartTheme), typeof(Chart), new PropertyMetadata(null)
 		);
+		#endregion
+		#region Phases
+		/// <summary>
+		/// Has <see cref="IRequireLayout"/>.
+		/// </summary>
+		protected PhaseOnly<IRequireLayout> Layout_All { get; set; } = new PhaseOnly<IRequireLayout>();
+		/// <summary>
+		/// Has <see cref="IRequireLayoutComplete"/>.
+		/// </summary>
+		protected PhaseOnly<IRequireLayoutComplete> LayoutComplete_All { get; set; } = new PhaseOnly<IRequireLayoutComplete>();
+		/// <summary>
+		/// Has <see cref="IRequireAfterAxesFinalized"/>.
+		/// </summary>
+		protected PhaseOnly<IRequireAfterAxesFinalized> AfterAxesFinalized { get; set; } = new PhaseOnly<IRequireAfterAxesFinalized>();
+		/// <summary>
+		/// Has <see cref="IRequireRender"/> AND is <see cref="IChartAxis"/>.
+		/// </summary>
+		protected Phase<IRequireRender> Render_AllAxes { get; set; } = new Phase<IRequireRender>(cc => cc is IChartAxis);
+		/// <summary>
+		/// Has <see cref="IRequireRender"/> AND is NOT <see cref="IChartAxis"/>.
+		/// </summary>
+		protected Phase<IRequireRender> Render_NotAnAxis { get; set; } = new Phase<IRequireRender>(cc => !(cc is IChartAxis));
+		/// <summary>
+		/// Has <see cref="IRequireRender"/> AND is NOT <see cref="IChartAxis"/> AND is NOT <see cref="IRequireRenderPostAxesFinalized"/>.
+		/// </summary>
+		protected Phase<IRequireRender> Render_Components { get; set; } = new Phase<IRequireRender>(cc => !(cc is IChartAxis) && !(cc is IRequireRenderPostAxesFinalized));
+		/// <summary>
+		/// Has <see cref="IRequireRender"/> AND is NOT <see cref="IChartAxis"/> AND is <see cref="IRequireRenderPostAxesFinalized"/>.
+		/// </summary>
+		protected Phase<IRequireRender> Render_Components_PostAxis { get; set; } = new Phase<IRequireRender>(cc => !(cc is IChartAxis) && (cc is IRequireRenderPostAxesFinalized));
+		/// <summary>
+		/// Has <see cref="IRequireTransforms"/>.
+		/// </summary>
+		protected PhaseOnly<IRequireTransforms> Transforms_All { get; set; } = new PhaseOnly<IRequireTransforms>();
+		/// <summary>
+		/// Has <see cref="IProvideValueExtents"/> AND is <see cref="DataSeries"/>.
+		/// </summary>
+		protected Phase<IProvideValueExtents> ValueExtents_DataSeries { get; set; } = new Phase<IProvideValueExtents>(cc => cc is DataSeries);
+		/// <summary>
+		/// Has <see cref="IProvideValueExtents"/> AND is NOT <see cref="DataSeries"/>.
+		/// </summary>
+		protected Phase<IProvideValueExtents> ValueExtents_NotDataSeries { get; set; } = new Phase<IProvideValueExtents>(cc => !(cc is DataSeries));
+		/// <summary>
+		/// Has <see cref="IRequireDataSourceUpdates"/>.
+		/// </summary>
+		protected PhaseOnly<IRequireDataSourceUpdates> DataSourceUpdates_All { get; set; } = new PhaseOnly<IRequireDataSourceUpdates>();
+		/// <summary>
+		/// All the phases in one list.
+		/// </summary>
+		protected List<PhaseBase> AllPhases { get; set; } = new List<PhaseBase>();
 		#endregion
 		#region ctor
 		/// <summary>
@@ -222,6 +340,17 @@ namespace eScapeLLC.UWP.Charts {
 			DataContextChanged += Chart_DataContextChanged;
 			CurrentLayout = new LayoutState();
 			Layers = new List<IChartLayer>();
+			AllPhases.Add(Layout_All);
+			AllPhases.Add(LayoutComplete_All);
+			AllPhases.Add(AfterAxesFinalized);
+			AllPhases.Add(Render_AllAxes);
+			AllPhases.Add(Render_NotAnAxis);
+			AllPhases.Add(Render_Components);
+			AllPhases.Add(Render_Components_PostAxis);
+			AllPhases.Add(Transforms_All);
+			AllPhases.Add(DataSourceUpdates_All);
+			AllPhases.Add(ValueExtents_DataSeries);
+			AllPhases.Add(ValueExtents_NotDataSeries);
 		}
 		#endregion
 		#region evhs
@@ -496,20 +625,25 @@ namespace eScapeLLC.UWP.Charts {
 			}
 		}
 		/// <summary>
-		/// Update limits for all components except the excluded one.
-		/// Assumed excluded one will update limits itself afterwards.
+		/// Update limits for all elements passing the filter.
 		/// </summary>
 		/// <param name="pred">Component filter.</param>
 		protected void Phase_AxisLimits(Func<ChartComponent,bool> pred) {
-			foreach (var cc in Components.Where(pred)) {
+			Phase_AxisLimits(Components.Where(pred).Cast<IProvideValueExtents>());
+		}
+		/// <summary>
+		/// Update limits of all enumerated elements.
+		/// </summary>
+		/// <param name="items"></param>
+		protected void Phase_AxisLimits(IEnumerable<IProvideValueExtents> items) {
+			foreach (var ipve in items) {
+				var cc = ipve as ChartComponent;
 				_trace.Verbose($"axis-limits '{cc.Name}' {cc}");
-				if(cc is IProvideValueExtents ipve) {
-					var axis = Axes.SingleOrDefault((ax) => ipve.ValueAxisName == (ax as ChartComponent).Name);
-					_trace.Verbose($"axis-limits y-axis:{axis} min:{ipve.Minimum:F3} max:{ipve.Maximum:F3}");
-					if (axis != null) {
-						axis.UpdateLimits(ipve.Maximum);
-						axis.UpdateLimits(ipve.Minimum);
-					}
+				var axis = Axes.SingleOrDefault((ax) => ipve.ValueAxisName == (ax as ChartComponent).Name);
+				_trace.Verbose($"axis-limits y-axis:{axis} min:{ipve.Minimum:F3} max:{ipve.Maximum:F3}");
+				if (axis != null) {
+					axis.UpdateLimits(ipve.Maximum);
+					axis.UpdateLimits(ipve.Minimum);
 				}
 			}
 		}
@@ -519,18 +653,18 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="ls">Layout state.</param>
 		protected void Phase_Layout(LayoutState ls) {
-			foreach (IRequireLayout cc in Components.Where((cc2) => cc2 is IRequireLayout)) {
-				_trace.Verbose($"layout {cc}");
-				cc.Layout(ls.Layout);
+			foreach (IRequireLayout irl in Layout_All.Items /*Components.Where((cc2) => cc2 is IRequireLayout)*/) {
+				_trace.Verbose($"layout {irl}");
+				irl.Layout(ls.Layout);
 			}
 			// what's left is for the data series area
 			_trace.Verbose($"remaining {ls.Layout.RemainingRect}");
 			ls.Layout.FinalizeRects();
-			foreach (IRequireLayoutComplete cc in Components.Where((cc2) => cc2 is IRequireLayoutComplete)) {
-				_trace.Verbose($"layout-complete {cc}");
-				var rect = ls.Layout.For(cc as ChartComponent);
+			foreach (IRequireLayoutComplete irlc in LayoutComplete_All.Items /*Components.Where((cc2) => cc2 is IRequireLayoutComplete)*/) {
+				_trace.Verbose($"layout-complete {irlc}");
+				var rect = ls.Layout.For(irlc as ChartComponent);
 				var ctx = new DefaultLayoutCompleteContext(ls.Layout.Dimensions,rect, ls.Layout.RemainingRect);
-				cc.LayoutComplete(ctx);
+				irlc.LayoutComplete(ctx);
 			}
 		}
 		/// <summary>
@@ -544,17 +678,17 @@ namespace eScapeLLC.UWP.Charts {
 			}
 		}
 		/// <summary>
-		/// Phase: axes have seen all values let them render (IRequireRender)
+		/// Phase: axes have seen all values let them render (IRequireRender).
 		/// </summary>
 		/// <param name="ls">Layout state.</param>
 		protected void Phase_RenderAxes(LayoutState ls) {
-			foreach (var axis in Axes.Where((cc2) => cc2 is IRequireRender)) {
-				var acc = axis as ChartComponent;
-				var ctx = ls.RenderFor(acc, Surface, Components, DataContext);
-				_trace.Verbose($"limits {acc.Name} ({axis.Minimum},{axis.Maximum}) r:{axis.Range} rect:{ctx.Area}");
-				if (axis is IRequireRender irr) {
-					irr.Render(ctx);
-				}
+			foreach (var irr in Render_AllAxes.Items /*Axes.Where((cc2) => cc2 is IRequireRender)*/) {
+				var ctx = ls.RenderFor(irr as ChartComponent, Surface, Components, DataContext);
+				_trace.Verbose(() => {
+					var axis = irr as IChartAxis;
+					return $"limits {(irr as ChartComponent).Name} ({axis.Minimum},{axis.Maximum}) r:{axis.Range} rect:{ctx.Area}";
+				});
+				irr.Render(ctx);
 			}
 		}
 		/// <summary>
@@ -562,12 +696,11 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="ls">Layout state.</param>
 		protected void Phase_AxesFinalized(LayoutState ls) {
-			foreach (var cc in Components.Where((cc2) => cc2 is IRequireAfterAxesFinalized)) {
+			foreach (var iraaf in AfterAxesFinalized.Items) {
+				var cc = iraaf as ChartComponent;
 				var ctx = ls.RenderFor(cc, Surface, Components, DataContext);
 				_trace.Verbose($"axes-finalized {cc.Name} rect:{ctx.Area}");
-				if (cc is IRequireAfterAxesFinalized iraaf) {
-					iraaf.AxesFinalized(ctx);
-				}
+				iraaf.AxesFinalized(ctx);
 			}
 		}
 		/// <summary>
@@ -575,9 +708,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="ls">Layout state.</param>
 		protected void Phase_RenderComponents(LayoutState ls) {
-			foreach (IRequireRender cc in Components.Where((cc2) => !(cc2 is IChartAxis) && (cc2 is IRequireRender))) {
-				var ctx = ls.RenderFor(cc as ChartComponent, Surface, Components, DataContext);
-				cc.Render(ctx);
+			foreach (IRequireRender irr in Render_Components.Items /*Components.Where((cc2) => !(cc2 is IChartAxis) && (cc2 is IRequireRender) && !(cc2 is IRequireRenderPostAxesFinalized))*/) {
+				var ctx = ls.RenderFor(irr as ChartComponent, Surface, Components, DataContext);
+				irr.Render(ctx);
 			}
 		}
 		/// <summary>
@@ -585,10 +718,21 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="ls">Layout state.</param>
 		protected void Phase_Transforms(LayoutState ls) {
-			foreach (IRequireTransforms cc in Components.Where((cc2) => cc2 is IRequireTransforms)) {
-				var ctx = ls.RenderFor(cc as ChartComponent, Surface, Components, DataContext);
-				_trace.Verbose($"transforms {cc} {ctx.Area}");
-				cc.Transforms(ctx);
+			foreach (IRequireTransforms irt in Transforms_All.Items /*Components.Where((cc2) => cc2 is IRequireTransforms)*/) {
+				var ctx = ls.RenderFor(irt as ChartComponent, Surface, Components, DataContext);
+				_trace.Verbose($"transforms {irt} {ctx.Area}");
+				irt.Transforms(ctx);
+			}
+		}
+		/// <summary>
+		/// Phase: render post-axes-finalized.
+		/// </summary>
+		/// <param name="ls">Layout state.</param>
+		protected void Phase_RenderPostAxesFinalized(LayoutState ls) {
+			foreach (IRequireRender irr in Render_Components_PostAxis.Items /*Components.Where((cc2) => !(cc2 is IChartAxis) && (cc2 is IRequireRender) && (cc2 is IRequireRenderPostAxesFinalized))*/) {
+				var ctx = ls.RenderFor(irr as ChartComponent, Surface, Components, DataContext);
+				_trace.Verbose($"render-post-axes-finalized {(irr as ChartComponent).Name} rect:{ctx.Area}");
+				irr.Render(ctx);
 			}
 		}
 		#endregion
@@ -608,9 +752,9 @@ namespace eScapeLLC.UWP.Charts {
 			Phase_ResetAxes();
 			// Phase II: Phase_Layout (skipped)
 			// Phase III: this loop comprises the DSRP
-			foreach (var cc in Components.Where(xx => xx is IRequireDataSourceUpdates irsiu && irsiu.UpdateSourceName == ds.Name)) {
+			foreach (var irdsu in DataSourceUpdates_All.Items.Where(irdsu2 => irdsu2.UpdateSourceName == ds.Name) /* Components.Where(xx => xx is IRequireDataSourceUpdates irdsu2 && irdsu2.UpdateSourceName == ds.Name)*/) {
+				var cc = irdsu as ChartComponent;
 				_trace.Verbose($"incr {ncca} '{cc.Name}' {cc}");
-				IRequireDataSourceUpdates irdsu = cc as IRequireDataSourceUpdates;
 				var ctx = ls.RenderFor(cc, Surface, Components, DataContext);
 				switch (ncca) {
 				case NotifyCollectionChangedAction.Add:
@@ -623,14 +767,14 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			// TODO above stage MAY generate additional update events, e.g. to ISeriesItemValues, that MUST be collected and distributed
 			// TODO do it here and not allow things to directly connect to each other, so render pipeline stays under control
-			Phase_AxisLimits(cc2 => cc2 is IRequireDataSourceUpdates irsiu && irsiu.UpdateSourceName == ds.Name && cc2 is IProvideValueExtents);
+			Phase_AxisLimits(cc2 => cc2 is IRequireDataSourceUpdates irdsu2 && irdsu2.UpdateSourceName == ds.Name && cc2 is IProvideValueExtents);
 			// Phase IV: render non-axis components (IRequireRender)
 			// trigger render on other components since values they track may have changed
-			foreach (IRequireRender cc in Components.Where((cc2) => !(cc2 is IChartAxis) && !(cc2 is IRequireDataSourceUpdates irdsu && irdsu.UpdateSourceName == ds.Name) && (cc2 is IRequireRender))) {
-				var ctx = ls.RenderFor(cc as ChartComponent, Surface, Components, DataContext);
-				cc.Render(ctx);
+			foreach (IRequireRender irr in Render_NotAnAxis.Items.Where(cc2 => !(cc2 is IRequireDataSourceUpdates irdsu2 && irdsu2.UpdateSourceName == ds.Name)) /*Components.Where((cc2) => !(cc2 is IChartAxis) && !(cc2 is IRequireDataSourceUpdates irdsu2 && irdsu2.UpdateSourceName == ds.Name) && (cc2 is IRequireRender))*/) {
+				var ctx = ls.RenderFor(irr as ChartComponent, Surface, Components, DataContext);
+				irr.Render(ctx);
 			}
-			Phase_AxisLimits(cc2 => !(cc2 is IRequireDataSourceUpdates irsiu && irsiu.UpdateSourceName == ds.Name) && cc2 is IProvideValueExtents);
+			Phase_AxisLimits(cc2 => !(cc2 is IRequireDataSourceUpdates irdsu2 && irdsu2.UpdateSourceName == ds.Name) && cc2 is IProvideValueExtents);
 			// Phase V: axis-finalized
 			Phase_AxesFinalized(ls);
 			// Phase VI: render axes
@@ -706,6 +850,7 @@ namespace eScapeLLC.UWP.Charts {
 			} else if (cc is IDataSourceRenderer idsr) {
 				Register(idsr);
 			}
+			foreach (var px in AllPhases) px.Enter(cc);
 		}
 		/// <summary>
 		/// Common logic for leaving the chart.
@@ -714,6 +859,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="icelc">The context.</param>
 		/// <param name="cc">The component leaving chart.</param>
 		protected void ComponentLeave(IChartEnterLeaveContext icelc, ChartComponent cc) {
+			foreach (var px in AllPhases) px.Leave(cc);
 			if (cc is IProvideDataSourceRenderer ipdsr) {
 				Unregister(ipdsr.Renderer);
 			} else if (cc is IDataSourceRenderer idsr) {
@@ -763,14 +909,17 @@ namespace eScapeLLC.UWP.Charts {
 				if (rrea.Axis != AxisUpdateState.None) {
 					// put axis limits into correct state for IRequireRender components
 					Phase_ResetAxes();
-					Phase_AxisLimits((cc2) => cc2 is DataSeries && (cc2 is IProvideValueExtents));
+					//Phase_AxisLimits((cc2) => cc2 is DataSeries && (cc2 is IProvideValueExtents));
+					Phase_AxisLimits(ValueExtents_DataSeries.Items);
 				}
 				var ctx = new DefaultRenderContext(Surface, Components, ls.LayoutDimensions, rect, ls.Layout.RemainingRect, DataContext) { Type = RenderType.Component };
 				irr.Render(ctx);
 				if (rrea.Axis != AxisUpdateState.None) {
 					// axes MUST be re-evaluated because this thing changed.
-					Phase_AxisLimits((cc2) => !(cc2 is DataSeries) && (cc2 is IProvideValueExtents));
+					//Phase_AxisLimits((cc2) => !(cc2 is DataSeries) && (cc2 is IProvideValueExtents));
+					Phase_AxisLimits(ValueExtents_NotDataSeries.Items);
 					Phase_AxesFinalized(ls);
+					Phase_RenderPostAxesFinalized(ls);
 					Phase_RenderAxes(ls);
 					Phase_Transforms(ls);
 				} else {
@@ -809,15 +958,19 @@ namespace eScapeLLC.UWP.Charts {
 			Phase_Layout(ls);
 			// Phase III: data source rendering pipeline (IDataSourceRenderer)
 			Phase_RenderDataSources(ls);
-			Phase_AxisLimits((cc2) => cc2 is DataSeries && (cc2 is IProvideValueExtents));
+			//Phase_AxisLimits((cc2) => cc2 is DataSeries && (cc2 is IProvideValueExtents));
+			Phase_AxisLimits(ValueExtents_DataSeries.Items);
 			// Phase IV: render non-axis components (IRequireRender)
 			Phase_RenderComponents(ls);
-			Phase_AxisLimits((cc2) => !(cc2 is DataSeries) && (cc2 is IProvideValueExtents));
+			//Phase_AxisLimits((cc2) => !(cc2 is DataSeries) && (cc2 is IProvideValueExtents));
+			Phase_AxisLimits(ValueExtents_NotDataSeries.Items);
 			// Phase V: axes finalized
 			Phase_AxesFinalized(ls);
-			// Phase VI: render axes (IRequireRender)
+			// Phase VI: post-axes finalized
+			Phase_RenderPostAxesFinalized(ls);
+			// Phase VII: render axes (IRequireRender)
 			Phase_RenderAxes(ls);
-			// Phase VII: configure all transforms
+			// Phase VIII: configure all transforms
 			Phase_Transforms(ls);
 		}
 		/// <summary>
