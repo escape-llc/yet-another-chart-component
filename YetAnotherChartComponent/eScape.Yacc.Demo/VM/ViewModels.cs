@@ -45,7 +45,8 @@ namespace Yacc.Demo.VM {
 				new PageItem() { Glyph="\u2463", Title = "Stock Chart", Description = "Cached real data, double Y-axis, rotated X-axis labels, conditional X-axis labels.", PageType = typeof(Chart4) },
 				new PageItem() { Glyph="\u2464", Title = "Stacked", Description = "Stacked column chart with labels.", PageType = typeof(Chart5) },
 				new PageItem() { Glyph="\u2465", Title = "Sharing", Description = "Share a single collection among multiple charts.", PageType = typeof(Chart7) },
-				new PageItem() { Glyph="\u2466", Title = "Pie", Description = "Pie chart.", PageType = typeof(Chart6) },
+				new PageItem() { Glyph="\u2466", Title = "Heatmap", Description = "Present color-coded data cells on 2 category axes.", PageType = typeof(Chart8) },
+				new PageItem() { Glyph="\u2467", Title = "Pie", Description = "Pie chart.", PageType = typeof(Chart6) },
 			};
 			PageList = pl;
 		}
@@ -156,6 +157,46 @@ namespace Yacc.Demo.VM {
 		/// Static placeholder value.  Makes a "hole".
 		/// </summary>
 		public static Observation2 PLACEHOLDER = new Observation2("-", double.NaN, double.NaN, double.NaN, double.NaN, 0);
+	}
+	#endregion
+	#region ObservationGrouped
+	public class ObservationGrouped {
+		public string Label1 { get; private set; }
+		public string Label2 { get; private set; }
+		public int Label1Index { get; private set; }
+		public int Label2Index { get; private set; }
+		public double Value { get; private set; }
+		public ObservationGrouped(string l1, string l2, int l1i, int l2i, double vx) { Label1 = l1; Label1Index = l1i; Label2 = l2; Label2Index = l2i; Value = vx; }
+		public double Accumulate(double vx) {
+			Value += vx;
+			return Value;
+		}
+	}
+	public class GroupInfo {
+		public int Index { get; private set; }
+		public string Label { get; private set; }
+		public GroupInfo(int ix, string lx) { Index = ix; Label = lx; }
+	}
+	public class ObservationGroupedVM : CoreViewModel {
+		readonly Random rnd = new Random();
+		bool _band;
+		bool _grid;
+		public int GroupCounter { get; private set; }
+		public ObservableCollection<ObservationGrouped> Data { get; private set; }
+		public ObservableCollection<GroupInfo> Group1 { get; private set; }
+		public ObservableCollection<GroupInfo> Group2 { get; private set; }
+		public bool ShowBand { get { return _band; } set { _band = value; Changed(nameof(ShowBand)); } }
+		public bool ShowGrid { get { return _grid; } set { _grid = value; Changed(nameof(ShowGrid)); } }
+		public ObservationGroupedVM(CoreDispatcher dx, IEnumerable<GroupInfo> g1, IEnumerable<GroupInfo> g2, IEnumerable<ObservationGrouped> initial) : base(dx) {
+			Data = new ObservableCollection<ObservationGrouped>(initial);
+			Group1 = new ObservableCollection<GroupInfo>(g1);
+			Group2 = new ObservableCollection<GroupInfo>(g2);
+			GroupCounter = Data.Count;
+			Recalculate();
+			_band = true;
+			_grid = true;
+		}
+		void Recalculate() { }
 	}
 	#endregion
 	#region DateRangeVM

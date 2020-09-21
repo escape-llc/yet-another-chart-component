@@ -115,6 +115,9 @@
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Pages\Chart8.xaml.cs">
+      <DependentUpon>Chart8.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Pages\Chart7.xaml.cs">
       <DependentUpon>Chart7.xaml</DependentUpon>
     </Compile>
@@ -146,6 +149,9 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Assets\power_symbol.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Assets\yacc_logo.png" />
     <Content Include="Assets\LargeTile.scale-100.png" />
     <Content Include="Assets\LargeTile.scale-125.png" />
@@ -212,6 +218,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="MainPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Pages\Chart8.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

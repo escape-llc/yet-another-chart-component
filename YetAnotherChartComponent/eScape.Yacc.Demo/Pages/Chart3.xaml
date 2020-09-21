@@ -99,7 +99,13 @@
 			<CommandBar.PrimaryCommands>
 				<AppBarToggleButton IsChecked="True" x:Name="cb_legend" Label="Toggle Legend" Content="Legend"/>
 				<AppBarToggleButton IsChecked="True" x:Name="cb_grid" Label="Toggle Grid" Content="Grid"/>
-				<AppBarButton Content="&#x207a;&#x2215;&#x208b;" Label="Start/Stop" Command="{Binding Toggle}" />
+				<AppBarButton Label="Start/Stop" Command="{Binding Toggle}">
+					<Image>
+						<Image.Source>
+							<SvgImageSource UriSource="ms-appx:///Assets/power_symbol.svg"/>
+						</Image.Source>
+					</Image>
+				</AppBarButton>
 			</CommandBar.PrimaryCommands>
 		</CommandBar>
 		<yacc:Chart x:Name="chart" Style="{StaticResource Chart}"

@@ -7,6 +7,7 @@
 		"ColumnSeries": "Error",
 		"DataSeries": "Error",
 		"DataSource": "Error",
+		"HeatmapSeries": "Verbose",
 		"HorizontalBand": "Error",
 		"HorizontalRule": "Error",
 		"ImageSourceMarkerSeries": "Error",

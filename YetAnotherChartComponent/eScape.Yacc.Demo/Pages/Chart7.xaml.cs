@@ -1,8 +1,11 @@
 ﻿using eScape.Core.Page;
 using eScapeLLC.UWP.Charts;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using Yacc.Demo.VM;
 

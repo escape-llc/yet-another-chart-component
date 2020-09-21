@@ -51,6 +51,9 @@
 				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" DataSourceName="data" LabelPath="Label"
 					PathStyle="{StaticResource Axes}"
 					LabelStyle="{StaticResource CategoryAxisLabel}" />
+				<yacc:CategoryAxis x:Name="xaxis2" Side="Top" DataSourceName="data" LabelPath="Label"
+					PathStyle="{StaticResource Axes}"
+					LabelStyle="{StaticResource CategoryAxisLabel}" />
 				<yacc:ValueAxis x:Name="yaxis" Side="Left" PathStyle="{StaticResource Axes}"
 					LabelStyle="{StaticResource ValueAxisLabel}" LabelFormatString="F1" />
 				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource Grid}"
