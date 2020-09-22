@@ -62,6 +62,14 @@
 			</RelativePanel>
 		</DataTemplate>
 		<yacc:HeatmapStyle_Continuous x:Key="ColorMap" BasedOn="{StaticResource Column_v2}" HueStart="120" HueRange="-120" Saturation=".5" />
+		<yacc:HeatmapStyle_Discrete x:Key="ColorMap2" BasedOn="{StaticResource Column_v2}">
+			<!-- NOTE these are half-open intervals [Min,Max) -->
+			<yacc:DiscreteLegendEntry             Maximum="2"  Color="DarkBlue" Title="Very Low"/>
+			<yacc:DiscreteLegendEntry Minimum="2" Maximum="4"  Color="BlueViolet" Title="Low"/>
+			<yacc:DiscreteLegendEntry Minimum="4" Maximum="8"  Color="Gray" Title="Normal"/>
+			<yacc:DiscreteLegendEntry Minimum="8" Maximum="11" Color="Orange" Title="High"/>
+			<yacc:DiscreteLegendEntry Minimum="11"             Color="PaleVioletRed" Title="Critical"/>
+		</yacc:HeatmapStyle_Discrete>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 		<CommandBar x:Name="toolbar"

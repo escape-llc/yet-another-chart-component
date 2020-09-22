@@ -30,7 +30,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// Decoration that creates value labels.
 	/// </summary>
 	public class ValueLabels : ChartComponent, IRequireChartTheme, IRequireEnterLeave, IRequireRender, IRequireRenderPostAxesFinalized, IRequireTransforms {
-		static LogTools.Flag _trace = LogTools.Add("ValueLabels", LogTools.Level.Error);
+		static readonly LogTools.Flag _trace = LogTools.Add("ValueLabels", LogTools.Level.Error);
 		#region SeriesItemState
 		/// <summary>
 		/// The item state.
@@ -324,7 +324,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (Source is IProvideCustomTransform ipct) {
 				return ipct.TransformFor(icrc.Area);
 			}
-			if (ValueAxis == null) return default(Matrix);
+			if (ValueAxis == null) return default;
 			if(Source is IRequireCategoryAxis2 irca2) {
 				var mat = MatrixSupport.DataArea(CategoryAxis, ValueAxis, icrc.Area, 4);
 				var matmp = MatrixSupport.Multiply(mat.Item1, mat.Item2);
@@ -730,7 +730,7 @@ namespace eScapeLLC.UWP.Charts {
 			if (ItemState.Count == 0) return;
 			var matx = ObtainMatrix(icrc);
 			_trace.Verbose($"{Name} transforms a:{icrc.Area} rx:{CategoryAxis?.Range} ry:{ValueAxis?.Range} matx:{matx}  type:{icrc.Type}");
-			if (matx == default(Matrix)) return;
+			if (matx == default) return;
 			foreach (var state in ItemState) {
 				if (state.Element == null) continue;
 				_trace.Verbose($"{Name} el:{state.Element} ds:{state.Element.DesiredSize} as:{state.Element.ActualWidth},{state.Element.ActualHeight}");

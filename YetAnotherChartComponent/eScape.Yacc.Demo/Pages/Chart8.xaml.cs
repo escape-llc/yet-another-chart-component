@@ -50,13 +50,13 @@ namespace Yacc.Demo.Pages {
 				new ObservationGrouped(g1[1].Label, g2[3].Label, 1, 3, 1),
 				new ObservationGrouped(g1[1].Label, g2[4].Label, 1, 4, 5),
 
-				new ObservationGrouped(g1[2].Label, g2[0].Label, 2, 0, 2),
+				new ObservationGrouped(g1[2].Label, g2[0].Label, 2, 0, 4),
 				new ObservationGrouped(g1[2].Label, g2[1].Label, 2, 1, 7),
 				new ObservationGrouped(g1[2].Label, g2[2].Label, 2, 2, 13),
-				new ObservationGrouped(g1[2].Label, g2[3].Label, 2, 3, 1),
+				new ObservationGrouped(g1[2].Label, g2[3].Label, 2, 3, 12),
 				new ObservationGrouped(g1[2].Label, g2[4].Label, 2, 4, 5),
 
-				new ObservationGrouped(g1[3].Label, g2[0].Label, 3, 0, 2),
+				new ObservationGrouped(g1[3].Label, g2[0].Label, 3, 0, 11),
 				new ObservationGrouped(g1[3].Label, g2[1].Label, 3, 1, 7),
 				new ObservationGrouped(g1[3].Label, g2[2].Label, 3, 2, 13),
 				new ObservationGrouped(g1[3].Label, g2[3].Label, 3, 3, 10),
@@ -65,7 +65,7 @@ namespace Yacc.Demo.Pages {
 				new ObservationGrouped(g1[4].Label, g2[0].Label, 4, 0, 0),
 				new ObservationGrouped(g1[4].Label, g2[1].Label, 4, 1, 6),
 				new ObservationGrouped(g1[4].Label, g2[2].Label, 4, 2, 3),
-				new ObservationGrouped(g1[4].Label, g2[3].Label, 4, 3, 1),
+				new ObservationGrouped(g1[4].Label, g2[3].Label, 4, 3, 8),
 				new ObservationGrouped(g1[4].Label, g2[4].Label, 4, 4, 9),
 			};
 			var vm = new ObservationGroupedVM(Dispatcher, g1, g2, list);

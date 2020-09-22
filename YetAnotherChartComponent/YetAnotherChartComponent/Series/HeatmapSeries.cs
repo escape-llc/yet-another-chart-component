@@ -6,6 +6,7 @@ using Windows.Foundation;
 using Windows.UI;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Markup;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
 
@@ -343,6 +344,110 @@ namespace eScapeLLC.UWP.Charts {
 			return new LinearGradientBrush(gsc, 90);
 		}
 		#endregion
+	}
+	#endregion
+	#region HeatmapStyle_Discrete
+	/// <summary>
+	/// Half-open interval [Min,Max) for selecting a color.
+	/// Setting one end to <see cref="double.NaN"/> creates an open-ended range of the corresponding type.
+	/// </summary>
+	public class DiscreteLegendEntry {
+		/// <summary>
+		/// Low end of range (GTE).
+		/// </summary>
+		public double Minimum { get; set; } = double.NaN;
+		/// <summary>
+		/// High end of range (LT).
+		/// </summary>
+		public double Maximum { get; set; } = double.NaN;
+		/// <summary>
+		/// The color for this range.
+		/// </summary>
+		public Brush Color { get; set; }
+		/// <summary>
+		/// The "name" of this discrete range.
+		/// </summary>
+		public string Title { get; set; }
+		/// <summary>
+		/// Calculated description of the range.
+		/// </summary>
+		public string Description {
+			get {
+				if (double.IsNaN(Minimum) && double.IsNaN(Maximum)) return "-";
+				return double.IsNaN(Minimum) ? $"< {Maximum}" : ( double.IsNaN(Maximum) ? $">= {Minimum}" : $"[{Minimum} .. {Maximum})");
+			}
+		}
+		/// <summary>
+		/// Determine whether value is in this range.
+		/// </summary>
+		/// <param name="value">Candidate.</param>
+		/// <returns></returns>
+		public bool Compare(double value) {
+			if (double.IsNaN(Minimum) && double.IsNaN(Maximum)) return false;
+			if(double.IsNaN(Minimum)) {
+				return value < Maximum;
+			}
+			else if(double.IsNaN(Maximum)) {
+				return value >= Minimum;
+			}
+			else {
+				return value >= Minimum && value < Maximum;
+			}
+		}
+	}
+	/// <summary>
+	/// Required for XAML consumption.
+	/// </summary>
+	public class DiscreteLegendEntryCollection : List<DiscreteLegendEntry> { }
+	/// <summary>
+	/// Discrete version of heatmap style generator.
+	/// This consists of a list of ranges that are checked in order.
+	/// </summary>
+	[ContentProperty(Name = nameof(Entries))]
+	public class HeatmapStyle_Discrete : HeatmapStyleGenerator {
+		/// <summary>
+		/// The list of range entries.
+		/// </summary>
+		public DiscreteLegendEntryCollection Entries { get; set; } = new DiscreteLegendEntryCollection();
+		/// <summary>
+		/// Produce a style for the given context.
+		/// </summary>
+		/// <param name="ic2sc">Context.</param>
+		/// <returns>Style or NULL.</returns>
+		public override Style For(ICategory2StyleContext ic2sc) {
+			if (BasedOn == null) return null;
+			var match = Entries.SingleOrDefault(xx => xx.Compare(ic2sc.Values[0]));
+			if (match == null) return null;
+			var style = BasedOn.Override(Path.FillProperty, match.Color);
+			return style;
+		}
+		List<LegendBase> _legend;
+		/// <summary>
+		/// Establish the legend for this style generator.
+		/// </summary>
+		/// <param name="ic2sc">Context.</param>
+		/// <param name="title">Series title.</param>
+		/// <param name="pathstyle">Use for other style properties as required.</param>
+		/// <returns>Cached list enumerator.</returns>
+		public override IEnumerable<LegendBase> LegendFor(ICategory2StyleContext ic2sc, string title, Style pathstyle) {
+			if(_legend == null) {
+				_legend = new List<LegendBase>();
+				foreach(var ex in Entries) {
+					var leg = new LegendValueRange() { Title = ex.Title, Minimum = ex.Minimum, Maximum = ex.Maximum, Fill = ex.Color, Stroke = BasedOn.Find<Brush>(Path.StrokeProperty) };
+					_legend.Add(leg);
+				}
+			}
+			return _legend;
+		}
+		/// <summary>
+		/// Not used.  Once built, the cache is statically valid.
+		/// </summary>
+		public override void Reset() { }
+		/// <summary>
+		/// Nothing to update; NOT dependent on value range.
+		/// </summary>
+		/// <param name="ic2sc"></param>
+		public override void UpdateLegend(ICategory2StyleContext ic2sc) { }
 	}
 	#endregion
 	#endregion
