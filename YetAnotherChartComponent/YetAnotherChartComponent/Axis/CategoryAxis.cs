@@ -363,33 +363,34 @@ namespace eScapeLLC.UWP.Charts {
 			sc.Generated(ist);
 		}
 		Matrix ProjectionFor(Rect area, bool reverse = false) {
-			switch(Side) {
+			var adj = AxisLineThickness + 2 * AxisMargin;
+			switch (Side) {
 				case Side.Bottom:
 					return MatrixSupport.ProjectionFor(
 						reverse ? area.Right : area.Left,
-						area.Top + AxisLineThickness + 2 * AxisMargin,
+						area.Top + adj,
 						reverse ? -1 : 1,
 						1
 					);
 				case Side.Top:
 					return MatrixSupport.ProjectionFor(
 						reverse ? area.Right : area.Left,
-						area.Top + AxisLineThickness + 2 * AxisMargin,
+						area.Top - adj,
 						reverse ? -1 : 1,
-						-1
+						1
 					);
 				case Side.Left:
 					return MatrixSupport.ProjectionFor(
-						area.Right,
+						area.Right - adj,
 						area.Top,
-						-(area.Width - AxisLineThickness - 2*AxisMargin),
+						-(area.Width - adj),
 						reverse ? -1 : 1
 					);
 				case Side.Right:
 					return MatrixSupport.ProjectionFor(
-						area.Left + AxisLineThickness + 2 * AxisMargin,
+						area.Right - adj,
 						area.Top,
-						1,
+						-(area.Width - adj),
 						reverse ? -1 : 1
 					);
 				default:
