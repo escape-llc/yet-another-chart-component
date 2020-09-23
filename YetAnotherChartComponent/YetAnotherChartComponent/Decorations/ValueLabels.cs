@@ -325,7 +325,7 @@ namespace eScapeLLC.UWP.Charts {
 				return ipct.TransformFor(icrc.Area);
 			}
 			if (ValueAxis == null) return default;
-			if(Source is IRequireCategoryAxis2 irca2) {
+			if(Source is IRequireCategoryAxis2 _1) {
 				var mat = MatrixSupport.DataArea(CategoryAxis, ValueAxis, icrc.Area, 4);
 				var matmp = MatrixSupport.Multiply(mat.Item1, mat.Item2);
 				return matmp;

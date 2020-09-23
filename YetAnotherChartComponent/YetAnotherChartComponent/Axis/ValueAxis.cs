@@ -164,10 +164,10 @@ namespace eScapeLLC.UWP.Charts {
 			Axis.Data = AxisGeometry;
 			MinWidth = 32;
 		}
-		void DoBindings(IChartEnterLeaveContext icelc) {
+		void DoBindings(IChartEnterLeaveContext _1) {
 			BindTo(this, nameof(PathStyle), Axis, FrameworkElement.StyleProperty);
 		}
-		FrameworkElement CreateElement(ItemState ist) {
+		FrameworkElement CreateElement(ItemState _1) {
 			var fe = default(FrameworkElement);
 			if (LabelTemplate != null) {
 				fe = LabelTemplate.LoadContent() as FrameworkElement;

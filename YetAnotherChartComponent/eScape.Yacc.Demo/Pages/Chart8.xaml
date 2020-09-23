@@ -41,6 +41,16 @@
 			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
 			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource ShowAxisLabel}"/>
 			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource HideAxisLabel}"/>
+			<Setter Property="FontSize" Value="20"/>
+		</Style>
+		<Style x:Key="CategoryAxis2Chart8" BasedOn="{StaticResource CategoryAxisLabel}" TargetType="TextBlock">
+			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
+			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource ShowAxisLabel}"/>
+			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource HideAxisLabel}"/>
+			<!-- trigger property for vertical auto-centering -->
+			<Setter Property="Height" Value="Auto"/>
+			<Setter Property="Foreground" Value="SeaGreen"/>
+			<Setter Property="FontSize" Value="20"/>
 		</Style>
 		<Style x:Key="BigLabels" BasedOn="{StaticResource Labels}" TargetType="TextBlock">
 			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
@@ -100,8 +110,8 @@
 				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" DataSourceName="group1" LabelPath="Label" 
 					PathStyle="{StaticResource Axes}"
 					LabelStyle="{StaticResource CategoryAxisChart8}" />
-				<yacc:CategoryAxis x:Name="yaxis" Side="Left" DataSourceName="group2" LabelPath="Label" PathStyle="{StaticResource Axes}" MinWidth="64"
-					LabelStyle="{StaticResource ValueAxisLabel}" />
+				<yacc:CategoryAxis x:Name="yaxis" Side="Left" DataSourceName="group2" LabelPath="Label" PathStyle="{StaticResource Axes}" MinWidth="100"
+					LabelStyle="{StaticResource CategoryAxis2Chart8}" />
 				<yacc:HeatmapSeries x:Name="heatmap" DataSourceName="data" ValuePath="Value" CategoryPath="Label1Index" Category2Path="Label2Index" ValueLabelPath="."
 					Title="Value 2 Heatmap" CategoryAxis2Name="yaxis" CategoryAxisName="xaxis" ClipToDataRegion="False" StyleGenerator="{StaticResource ColorMap}"
 					PathStyle="{StaticResource Column_v2}" />

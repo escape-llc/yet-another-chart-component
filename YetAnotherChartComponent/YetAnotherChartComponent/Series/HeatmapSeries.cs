@@ -488,7 +488,7 @@ namespace eScapeLLC.UWP.Charts {
 				if (Element.DataContext is GeometryWith2OffsetShim<RectangleGeometry>) {
 					var p1 = new Point(XValue, YValue);
 					var p2 = new Point(XValue + 1, YValue + 1);
-					_trace.Verbose($"placement p1:{p1} p2:{p2} vx,vy:({XValue},{YValue}) vx:{Value}");
+					_trace.Verbose($"placement p1:{p1} p2:{p2} vx,vy:({XValue},{YValue}) v:{Value}");
 					return new RectangleGeometry() { Rect = new Rect(p1, p2) };
 				}
 				return Element.Data as RectangleGeometry;
@@ -514,7 +514,7 @@ namespace eScapeLLC.UWP.Charts {
 				if (Element.DataContext is GeometryWith2OffsetShim<RectangleGeometry>) {
 					var p1 = new Point(XValue, YValue);
 					var p2 = new Point(XValue + 1, YValue + 1);
-					_trace.Verbose($"placement p1:{p1} p2:{p2} vx,vy:({XValue},{YValue}) vx:{Value}");
+					_trace.Verbose($"placement p1:{p1} p2:{p2} vx,vy:({XValue},{YValue}) v:{Value}");
 					return new RectangleGeometry() { Rect = new Rect(p1, p2) };
 				}
 				return Element.Data as RectangleGeometry;
@@ -701,9 +701,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="iccc"></param>
 		protected void EnsureValuePath(IChartComponentContext iccc) {
 			if (String.IsNullOrEmpty(ValuePath)) {
-				if (iccc is IChartErrorInfo icei) {
-					icei.Report(new ChartValidationResult(NameOrType(), $"{nameof(ValuePath)} was not set, no values will generate", new[] { nameof(ValuePath) }));
-				}
+				(iccc as IChartErrorInfo)?.Report(new ChartValidationResult(NameOrType(), $"{nameof(ValuePath)} was not set, no values will generate", new[] { nameof(ValuePath) }));
 			}
 		}
 		/// <summary>
@@ -802,9 +800,7 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"{Name} enter c2(v):{CategoryAxis2Name} {CategoryAxis2} c1:{CategoryAxisName} {CategoryAxis1} d:{DataSourceName}");
 			if (PathTemplate == null) {
 				if (Theme?.PathTemplate == null) {
-					if (icelc is IChartErrorInfo icei) {
-						icei.Report(new ChartValidationResult(NameOrType(), $"No {nameof(PathTemplate)} and {nameof(Theme.PathTemplate)} was not found", new[] { nameof(PathTemplate), nameof(Theme.PathTemplate) }));
-					}
+					(icelc as IChartErrorInfo)?.Report(new ChartValidationResult(NameOrType(), $"No {nameof(PathTemplate)} and {nameof(Theme.PathTemplate)} was not found", new[] { nameof(PathTemplate), nameof(Theme.PathTemplate) }));
 				}
 			}
 			AssignFromRef(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathColumnSeries),
@@ -813,9 +809,7 @@ namespace eScapeLLC.UWP.Charts {
 			);
 			BindPaths = new Evaluators2(CategoryPath, Category2Path, ValuePath, ValueLabelPath);
 			if (!BindPaths.IsValid) {
-				if (icelc is IChartErrorInfo icei) {
-					icei.Report(new ChartValidationResult(NameOrType(), $"ValuePath: must be specified", new[] { nameof(ValuePath) }));
-				}
+				(icelc as IChartErrorInfo)?.Report(new ChartValidationResult(NameOrType(), $"ValuePath: must be specified", new[] { nameof(ValuePath) }));
 			}
 		}
 		/// <summary>

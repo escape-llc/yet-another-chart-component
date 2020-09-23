@@ -11,7 +11,7 @@ using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Shapes;
 
 namespace eScapeLLC.UWP.Charts {
-	#region CategoryLabelState
+	#region ICategoryLabelState
 	/// <summary>
 	/// Common state for category axis labels.
 	/// </summary>
@@ -382,7 +382,7 @@ namespace eScapeLLC.UWP.Charts {
 					return MatrixSupport.ProjectionFor(
 						area.Right,
 						area.Top,
-						-area.Width - AxisLineThickness - 2*AxisMargin,
+						-(area.Width - AxisLineThickness - 2*AxisMargin),
 						reverse ? -1 : 1
 					);
 				case Side.Right:
@@ -534,10 +534,10 @@ namespace eScapeLLC.UWP.Charts {
 			if (bl == null) return null;
 			var recycler = new Recycler<FrameworkElement, ItemState>(AxisLabels.Where(tl => tl.element != null).Select(tl => tl.element), CreateElement);
 			ResetLimits();
-			var widx = LabelStyle?.Find(FrameworkElement.WidthProperty);
-			return new State(new List<ItemState>(), recycler, icrc, widx == null, bl);
+			var autox = LabelStyle?.Find(Orientation == AxisOrientation.Horizontal ? FrameworkElement.WidthProperty : FrameworkElement.HeightProperty);
+			return new State(new List<ItemState>(), recycler, icrc, autox == null, bl);
 		}
-		ItemState makeit(int index, object label, bool xau) {
+		ItemState MakeIt(int index, object label, bool xau) {
 			if (Orientation == AxisOrientation.Horizontal) {
 				return new ItemState_Horizontal() {
 					index = index,
@@ -565,7 +565,7 @@ namespace eScapeLLC.UWP.Charts {
 			var st = state as State;
 			st.ix = index;
 			var label = st.bl.For(item);
-			var istate = makeit(index, label, st.usexau);
+			var istate = MakeIt(index, label, st.usexau);
 			st.itemstate.Add(istate);
 		}
 		/// <summary>
@@ -631,7 +631,7 @@ namespace eScapeLLC.UWP.Charts {
 			for (int ix = 0; ix < items.Count; ix++) {
 				// add requested item
 				var label = bl.For(items[ix]);
-				var istate = makeit(startAt + ix, label, widx == null);
+				var istate = MakeIt(startAt + ix, label, widx == null);
 				AxisLabels.Insert(startAt + ix, istate);
 				reproc.Add(istate);
 			}
