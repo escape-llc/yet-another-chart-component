@@ -14,6 +14,7 @@ namespace eScapeLLC.UWP.Charts {
 	#region Evaluators2
 	/// <summary>
 	/// The package of <see cref="BindingEvaluator"/> in one place, evaluated once.
+	/// This version is for 2D data.
 	/// </summary>
 	internal class Evaluators2 {
 		#region data
@@ -38,7 +39,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Return whether the <see cref="bc2"/> evaluator got initialized.
 		/// </summary>
-		public bool IsValid { get { return bc1 != null &&  bc2 != null && by != null; } }
+		public bool IsValid { get { return bc1 != null && bc2 != null && by != null; } }
 		#endregion
 		#region ctors
 		/// <summary>
@@ -211,12 +212,90 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 	}
 	#endregion
-	#region HeatmapStyle_Continuous
+	#region HeatmapStyle_Cached
 	/// <summary>
-	/// Create a style that color varies over the given HSV range.
+	/// Base of generators that can cache styles based on the RGB color.
+	/// </summary>
+	public abstract class HeatmapStyle_Cached : HeatmapStyleGenerator {
+		/// <summary>
+		/// Cache styles already in use.
+		/// </summary>
+		protected Dictionary<string, Style> StyleMap { get; set; } = new Dictionary<string, Style>();
+		/// <summary>
+		/// Clear the map.
+		/// </summary>
+		public override void Reset() {
+			StyleMap.Clear();
+		}
+		#region helpers
+		/// <summary>
+		/// Take incoming values and convert to HSV and then to RGB.
+		/// Use for analogous.
+		/// </summary>
+		/// <param name="hstart">HSV Hue start.</param>
+		/// <param name="hrange">Hue range.</param>
+		/// <param name="frac">Normalized value [0..1].</param>
+		/// <param name="sat">HSV Saturation.</param>
+		/// <param name="svalue">HSV Value.</param>
+		/// <param name="red">Output Red.</param>
+		/// <param name="green">Output Green.</param>
+		/// <param name="blue">Output Blue.</param>
+		protected void InfoForHue(double hstart, double hrange, double frac, double sat, double svalue, out int red, out int green, out int blue) {
+			double hue = hstart + (frac * hrange);
+			// function will normalize hue [0..360)
+			ColorSupport.HsvToRgb(hue, sat, svalue, out red, out green, out blue);
+		}
+		/// <summary>
+		/// Take incoming values and convert to HSV and then to RGB.
+		/// Use for monochrome.
+		/// </summary>
+		/// <param name="vstart">HSV Value start.</param>
+		/// <param name="vrange">Value range.</param>
+		/// <param name="frac">Normalized value [0..1].</param>
+		/// <param name="hue">HSV Hue.</param>
+		/// <param name="sat">HSV Saturation.</param>
+		/// <param name="red">Output Red.</param>
+		/// <param name="green">Output Green.</param>
+		/// <param name="blue">Output Blue.</param>
+		protected void InfoForValue(double vstart, double vrange, double frac, double hue, double sat, out int red, out int green, out int blue) {
+			double svalue = vstart + (frac * vrange);
+			// function will normalize hue [0..360)
+			ColorSupport.HsvToRgb(hue, sat, svalue, out red, out green, out blue);
+		}
+		/// <summary>
+		/// Normalize the value.
+		/// </summary>
+		/// <param name="min">Minimum value.</param>
+		/// <param name="max">Maximum value.</param>
+		/// <param name="value">Candidate.</param>
+		/// <returns>[0..1]</returns>
+		protected double Scale(double min, double max, double value) {
+			double vx = double.IsNaN(value) ? min : value;
+			double frac = (vx - min) / (double)(max - min + 1);
+			frac = Math.Max(0.0, frac);
+			frac = Math.Min(1.0, frac);
+			return frac;
+		}
+		/// <summary>
+		/// Create a brush for given RGBA.
+		/// </summary>
+		/// <param name="red"></param>
+		/// <param name="green"></param>
+		/// <param name="blue"></param>
+		/// <param name="alpha"></param>
+		/// <returns>New instance.</returns>
+		protected Brush BrushFor(int red, int green, int blue, int alpha) {
+			return new SolidColorBrush(Color.FromArgb((byte)alpha, (byte)red, (byte)green, (byte)blue));
+		}
+		#endregion
+	}
+	#endregion
+	#region HeatmapStyle_Analogous
+	/// <summary>
+	/// Create a style that color varies HUE over the given HSV range.
 	/// Each color is allocated only once and styles shared.
 	/// </summary>
-	public class HeatmapStyle_Continuous : HeatmapStyleGenerator {
+	public class HeatmapStyle_Analogous : HeatmapStyle_Cached {
 		#region properties
 		/// <summary>
 		/// HSV Hue for starting range. [0..360).
@@ -226,45 +305,24 @@ namespace eScapeLLC.UWP.Charts {
 		/// Hue range.  Make negative to go "backwards".
 		/// Default value is 300.
 		/// </summary>
-		public double HueRange { get; set; }
+		public double HueRange { get; set; } = 300;
 		/// <summary>
 		/// HSV Saturation.
 		/// Default value is 1.
 		/// </summary>
-		public double Saturation { get; set; }
+		public double Saturation { get; set; } = 1;
 		/// <summary>
 		/// HSV Value.
 		/// Default value is 1.
 		/// </summary>
-		public double Value { get; set; }
+		public double Value { get; set; } = 1;
 		/// <summary>
 		/// Alpha value 0..255.
 		/// Default value is 255.
 		/// </summary>
-		public byte Alpha { get; set; }
-		/// <summary>
-		/// Cache styles already in use.
-		/// </summary>
-		protected Dictionary<string, Style> StyleMap { get; set; } = new Dictionary<string, Style>();
-		#endregion
-		#region ctor
-		/// <summary>
-		/// Ctor.
-		/// </summary>
-		public HeatmapStyle_Continuous() {
-			HueRange = 300;
-			Saturation = 1f;
-			Value = 1f;
-			Alpha = 255;
-		}
+		public byte Alpha { get; set; } = 255;
 		#endregion
 		#region extensions
-		/// <summary>
-		/// Clear the map.
-		/// </summary>
-		public override void Reset() {
-			StyleMap.Clear();
-		}
 		/// <summary>
 		/// Create a style or NULL.
 		/// </summary>
@@ -272,12 +330,13 @@ namespace eScapeLLC.UWP.Charts {
 		/// <returns>Style or NULL.</returns>
 		public override Style For(ICategory2StyleContext ic2sc) {
 			if (BasedOn == null) return null;
-			InfoFor(ic2sc.ValueExtents.Minimum, ic2sc.ValueExtents.Maximum, ic2sc.Values[0], out int red, out int green, out int blue);
+			var v1 = Scale(ic2sc.ValueExtents.Minimum, ic2sc.ValueExtents.Maximum, ic2sc.Values[0]);
+			InfoForHue(HueStart, HueRange, v1, Saturation, Value, out int red, out int green, out int blue);
 			string skey = $"r{red}_g{green}_b{blue}";
 			if (StyleMap.TryGetValue(skey, out Style stx)) {
 				return stx;
 			}
-			var brush = BrushFor(red, green, blue);
+			var brush = BrushFor(red, green, blue, Alpha);
 			var style = BasedOn.Override(Path.FillProperty, brush);
 			StyleMap.Add(skey, style);
 			return style;
@@ -304,27 +363,6 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		#endregion
 		#region helpers
-		/// <summary>
-		/// Take incoming values and convert to HSV and then to RGB.
-		/// </summary>
-		/// <param name="min">Range min.</param>
-		/// <param name="max">Range max.</param>
-		/// <param name="value">Source value (SHOULD be between min/max).</param>
-		/// <param name="red">Output Red.</param>
-		/// <param name="green">Output Green.</param>
-		/// <param name="blue">Output Blue.</param>
-		void InfoFor(double min, double max, double value, out int red, out int green, out int blue) {
-			double vx = double.IsNaN(value) ? min : value;
-			double frac = vx / (double)(max - min + 1);
-			frac = Math.Max(0.0, frac);
-			frac = Math.Min(1.0, frac);
-			double hue = HueStart + (frac * HueRange);
-			// function will normalize hue [0..360)
-			ColorSupport.HsvToRgb(hue, Saturation, Value, out red, out green, out blue);
-		}
-		Brush BrushFor(int red, int green, int blue) {
-			return new SolidColorBrush(Color.FromArgb(Alpha, (byte)red, (byte)green, (byte)blue));
-		}
 		private LegendValueRange _legend;
 		Legend EnsureLegend(ICategory2StyleContext ic2sc, string title, Style pathstyle) {
 			var brush = CreateBrush(ic2sc);
@@ -337,9 +375,105 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		Brush CreateBrush(ICategory2StyleContext ic2sc) {
 			var gsc = new GradientStopCollection();
-			InfoFor(ic2sc.ValueExtents.Minimum, ic2sc.ValueExtents.Maximum, ic2sc.ValueExtents.Minimum, out int red, out int green, out int blue);
+			var v1 = Scale(ic2sc.ValueExtents.Minimum, ic2sc.ValueExtents.Maximum, ic2sc.ValueExtents.Minimum);
+			var v2 = Scale(ic2sc.ValueExtents.Minimum, ic2sc.ValueExtents.Maximum, ic2sc.ValueExtents.Maximum);
+			InfoForHue(HueStart, HueRange, v1, Saturation, Value, out int red, out int green, out int blue);
 			gsc.Add(new GradientStop() { Color = Color.FromArgb(Alpha, (byte)red, (byte)green, (byte)blue), Offset = 1 });
-			InfoFor(ic2sc.ValueExtents.Minimum, ic2sc.ValueExtents.Maximum, ic2sc.ValueExtents.Maximum, out red, out green, out blue);
+			InfoForHue(HueStart, HueRange, v2, Saturation, Value, out red, out green, out blue);
+			gsc.Add(new GradientStop() { Color = Color.FromArgb(Alpha, (byte)red, (byte)green, (byte)blue), Offset = 0 });
+			return new LinearGradientBrush(gsc, 90);
+		}
+		#endregion
+	}
+	#endregion
+	#region HeatmapStyle_Monochrome
+	/// <summary>
+	/// Create a style that color varies VALUE over the given HSV range.
+	/// Each color is allocated only once and styles shared.
+	/// </summary>
+	public class HeatmapStyle_Monochrome : HeatmapStyle_Cached {
+		#region properties
+		/// <summary>
+		/// HSV Hue for all colors. [0..360).
+		/// </summary>
+		public double Hue { get; set; }
+		/// <summary>
+		/// HSV Value start. [0..1].
+		/// Default value is .25.
+		/// </summary>
+		public double ValueStart { get; set; } = 0.25;
+		/// <summary>
+		/// HSV Value range.  Make negative to go "backwards".
+		/// Default value is .75.
+		/// </summary>
+		public double ValueRange { get; set; } = 0.75;
+		/// <summary>
+		/// HSV Saturation.
+		/// Default value is 1.
+		/// </summary>
+		public double Saturation { get; set; } = 1;
+		/// <summary>
+		/// Alpha value 0..255.
+		/// Default value is 255.
+		/// </summary>
+		public byte Alpha { get; set; } = 255;
+		#endregion
+		/// <summary>
+		/// Construct a color based on value and range.
+		/// </summary>
+		/// <param name="ic2sc"></param>
+		/// <returns></returns>
+		public override Style For(ICategory2StyleContext ic2sc) {
+			if (BasedOn == null) return null;
+			var v1 = Scale(ic2sc.ValueExtents.Minimum, ic2sc.ValueExtents.Maximum, ic2sc.Values[0]);
+			InfoForValue(ValueStart, ValueRange, v1, Hue, Saturation, out int red, out int green, out int blue);
+			string skey = $"r{red}_g{green}_b{blue}";
+			if (StyleMap.TryGetValue(skey, out Style stx)) {
+				return stx;
+			}
+			var brush = BrushFor(red, green, blue, Alpha);
+			var style = BasedOn.Override(Path.FillProperty, brush);
+			StyleMap.Add(skey, style);
+			return style;
+		}
+		/// <summary>
+		/// Prepare and return the legend items.
+		/// </summary>
+		/// <param name="ic2sc"></param>
+		/// <param name="title"></param>
+		/// <param name="pathstyle"></param>
+		/// <returns></returns>
+		public override IEnumerable<LegendBase> LegendFor(ICategory2StyleContext ic2sc, string title, Style pathstyle) {
+			return new LegendBase[] { EnsureLegend(ic2sc, title, pathstyle) };
+		}
+		/// <summary>
+		/// Update extents in VM.
+		/// </summary>
+		/// <param name="ic2sc"></param>
+		public override void UpdateLegend(ICategory2StyleContext ic2sc) {
+			if (_legend == null) return;
+			_legend.Fill = CreateBrush(ic2sc);
+			_legend.Minimum = ic2sc.ValueExtents.Minimum;
+			_legend.Maximum = ic2sc.ValueExtents.Maximum;
+		}
+		#region helpers
+		private LegendValueRange _legend;
+		Legend EnsureLegend(ICategory2StyleContext ic2sc, string title, Style pathstyle) {
+			var brush = CreateBrush(ic2sc);
+			if (_legend != null) {
+				_legend.Fill = brush;
+				return _legend;
+			}
+			_legend = new LegendValueRange() { Title = title, Minimum = ic2sc.ValueExtents.Minimum, Maximum = ic2sc.ValueExtents.Maximum, Fill = brush, Stroke = pathstyle.Find<Brush>(Path.StrokeProperty) };
+			return _legend;
+		}
+		Brush CreateBrush(ICategory2StyleContext ic2sc) {
+			var gsc = new GradientStopCollection();
+			var v1 = Scale(ic2sc.ValueExtents.Minimum, ic2sc.ValueExtents.Maximum, ic2sc.ValueExtents.Minimum);
+			var v2 = Scale(ic2sc.ValueExtents.Minimum, ic2sc.ValueExtents.Maximum, ic2sc.ValueExtents.Maximum);
+			InfoForValue(ValueStart, ValueRange, v1, Hue, Saturation, out int red, out int green, out int blue);
+			gsc.Add(new GradientStop() { Color = Color.FromArgb(Alpha, (byte)red, (byte)green, (byte)blue), Offset = 1 });
+			InfoForValue(ValueStart, ValueRange, v2, Hue, Saturation, out red, out green, out blue);
 			gsc.Add(new GradientStop() { Color = Color.FromArgb(Alpha, (byte)red, (byte)green, (byte)blue), Offset = 0 });
 			return new LinearGradientBrush(gsc, 90);
 		}
