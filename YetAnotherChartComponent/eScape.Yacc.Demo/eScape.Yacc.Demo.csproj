@@ -11,7 +11,7 @@
     <AssemblyName>eScape.Yacc.Demo</AssemblyName>
     <DefaultLanguage>en-US</DefaultLanguage>
     <TargetPlatformIdentifier>UAP</TargetPlatformIdentifier>
-    <TargetPlatformVersion Condition=" '$(TargetPlatformVersion)' == '' ">10.0.18362.0</TargetPlatformVersion>
+    <TargetPlatformVersion Condition=" '$(TargetPlatformVersion)' == '' ">10.0.19041.0</TargetPlatformVersion>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <MinimumVisualStudioVersion>14</MinimumVisualStudioVersion>
     <FileAlignment>512</FileAlignment>
@@ -253,13 +253,13 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="eScapeLLC.UWP.Core">
-      <Version>1.1.0</Version>
+      <Version>1.4.0</Version>
     </PackageReference>
     <PackageReference Include="eScapeLLC.UWP.LogTools">
-      <Version>1.0.0</Version>
+      <Version>1.1.0</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform">
-      <Version>6.2.10</Version>
+      <Version>6.2.13</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Toolkit.Uwp.UI.Animations">
       <Version>4.0.0</Version>

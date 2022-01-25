@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" IgnorableNamespaces="uap mp">
-  <Identity Name="eScapeTechnologyLLC.YetAnotherChartComponentDemo" Publisher="CN=3D68122A-CFAD-4771-A47D-34317340F18F" Version="1.0.7.0" />
-  <mp:PhoneIdentity PhoneProductId="531ce7e3-58eb-442d-9331-b9e112d50ae5" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
+  <Identity Name="eScapeTechnologyLLC.YetAnotherChartComponentDemo" Publisher="CN=3D68122A-CFAD-4771-A47D-34317340F18F" Version="1.0.8.0" />
+  <mp:PhoneIdentity PhoneProductId="6e81e90d-7d99-43e3-8116-3bba58850c83" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
   <Properties>
     <DisplayName>Yet Another Chart Component Demo</DisplayName>
     <PublisherDisplayName>eScape Technology LLC</PublisherDisplayName>
