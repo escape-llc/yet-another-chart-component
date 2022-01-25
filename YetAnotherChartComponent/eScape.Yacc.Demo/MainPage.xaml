@@ -30,7 +30,8 @@
 			</controls:NavigationViewItem>
 		</DataTemplate>
 	</Page.Resources>
-	<controls:NavigationView Name="nav" MenuItemsSource="{Binding PageList}" MenuItemTemplate="{StaticResource NavItem}" ItemInvoked="NavigationView_ItemInvoked" IsPaneOpen="False" IsBackButtonVisible="Collapsed" IsSettingsVisible="False">
+	<controls:NavigationView Name="nav" MenuItemsSource="{Binding PageList}" MenuItemTemplate="{StaticResource NavItem}" ItemInvoked="NavigationView_ItemInvoked"
+		IsPaneOpen="True" IsBackButtonVisible="Collapsed" IsSettingsVisible="False">
 		<RelativePanel HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 			<Frame x:Name="MainFrame" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" BorderBrush="Gray" BorderThickness="1"
 				RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True" RelativePanel.AlignTopWithPanel="True">
