@@ -32,7 +32,7 @@ namespace Yacc.Demo {
 				}
 				try {
 					Notification.Content = pi;
-					Notification.Show();
+					Notification.Show(5000);
 					// for now just send in PI
 					MainFrame.Navigate(pi.PageType, pi);
 				}

@@ -12,7 +12,6 @@ using Yacc.Demo.VM;
 namespace Yacc.Demo.Pages {
 	public sealed partial class Chart8 : BasicPage {
 		public override string PageTitle => "Heatmap";
-		public int CurrentChildCount { get; set; }
 		public Chart8() {
 			this.InitializeComponent();
 		}

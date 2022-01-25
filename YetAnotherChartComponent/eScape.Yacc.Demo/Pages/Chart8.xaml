@@ -5,7 +5,7 @@
 	xmlns:core="using:eScape.Core.Page"
 	xmlns:yacc="using:eScapeLLC.UWP.Charts"
 	xmlns:animations="using:Microsoft.Toolkit.Uwp.UI.Animations"
-	xmlns:extensions="using:Microsoft.Toolkit.Uwp.UI.Extensions"
+	xmlns:controls="using:Microsoft.UI.Xaml.Controls"
 	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 	mc:Ignorable="d">
@@ -71,8 +71,20 @@
 					RelativePanel.RightOf="swatch" RelativePanel.AlignBottomWith="swatch" />
 			</RelativePanel>
 		</DataTemplate>
+		<DataTemplate x:Key="lvr2">
+			<RelativePanel Padding="2">
+				<Rectangle Name="swatch" Margin="4,0,4,0" Fill="{Binding Fill}" Stroke="{Binding Stroke}" Width="24" Height="24"
+					RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignBottomWithPanel="True" />
+				<TextBlock Margin="4,0,0,0" Foreground="White" FontSize="14" FontWeight="Bold" VerticalAlignment="Center" Text="{Binding Title}"
+					RelativePanel.RightOf="swatch" RelativePanel.AlignVerticalCenterWith="swatch"/>
+			</RelativePanel>
+		</DataTemplate>
+		<!--
 		<yacc:HeatmapStyle_Continuous x:Key="ColorMap" BasedOn="{StaticResource Column_v2}" HueStart="120" HueRange="-120" Saturation=".5" />
-		<yacc:HeatmapStyle_Discrete x:Key="ColorMap2" BasedOn="{StaticResource Column_v2}">
+		-->
+		<yacc:HeatmapStyle_Analogous x:Key="ColorMapAnalogous" BasedOn="{StaticResource Column_v2}" HueStart="120" HueRange="-120" Saturation=".5" />
+		<yacc:HeatmapStyle_Monochrome x:Key="ColorMapMono" BasedOn="{StaticResource Column_v2}" Hue="120" Saturation=".5" />
+		<yacc:HeatmapStyle_Discrete x:Key="ColorMapDiscrete" BasedOn="{StaticResource Column_v2}">
 			<!-- NOTE these are half-open intervals [Min,Max) -->
 			<yacc:DiscreteLegendEntry             Maximum="2"  Color="DarkBlue" Title="Very Low"/>
 			<yacc:DiscreteLegendEntry Minimum="2" Maximum="4"  Color="BlueViolet" Title="Low"/>
@@ -86,48 +98,113 @@
 			RelativePanel.AlignTopWithPanel="True">
 			<CommandBar.PrimaryCommands>
 				<AppBarToggleButton IsChecked="True" x:Name="cb_legend" Label="Toggle Legend" Content="Legend"/>
-				<AppBarToggleButton IsChecked="True" x:Name="cb_grid" Label="Toggle Grid" Content="Grid"/>
-				<!--
-				<AppBarButton Label="Start/Stop" Command="{Binding Toggle}">
-					<Image>
-						<Image.Source>
-							<SvgImageSource UriSource="ms-appx:///Assets/power_symbol.svg"/>
-						</Image.Source>
-					</Image>
-				</AppBarButton>
-				-->
 			</CommandBar.PrimaryCommands>
 		</CommandBar>
-		<yacc:Chart x:Name="chart1" Style="{StaticResource Chart}"
+		<controls:TabView HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
 			RelativePanel.Below="toolbar" RelativePanel.AlignBottomWithPanel="True"
 			RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True">
-			<yacc:Chart.DataSources>
-				<yacc:DataSource x:Name="data" Items="{Binding Data}" />
-				<yacc:DataSource x:Name="group1" Items="{Binding Group1}"/>
-				<yacc:DataSource x:Name="group2" Items="{Binding Group2}"/>
-			</yacc:Chart.DataSources>
-			<yacc:Chart.Components>
-				<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" DataSourceName="group1" LabelPath="Label" 
-					PathStyle="{StaticResource Axes}"
-					LabelStyle="{StaticResource CategoryAxisChart8}" />
-				<yacc:CategoryAxis x:Name="yaxis" Side="Left" DataSourceName="group2" LabelPath="Label" PathStyle="{StaticResource Axes}" MinWidth="100"
-					LabelStyle="{StaticResource CategoryAxis2Chart8}" />
-				<yacc:HeatmapSeries x:Name="heatmap" DataSourceName="data" ValuePath="Value" CategoryPath="Label1Index" Category2Path="Label2Index" ValueLabelPath="."
-					Title="Value 2 Heatmap" CategoryAxis2Name="yaxis" CategoryAxisName="xaxis" ClipToDataRegion="False" StyleGenerator="{StaticResource ColorMap}"
-					PathStyle="{StaticResource Column_v2}" />
-				<!-- CategoryAxisOffset is necessary to center the text -->
-				<yacc:ValueLabels SourceName="heatmap" PlacementOffset="0,0" CategoryAxisOffset=".5" LabelFormatString="F0" LabelStyle="{StaticResource BigLabels}" />
-			</yacc:Chart.Components>
-		</yacc:Chart>
-		<TextBlock x:Name="title" Style="{StaticResource Title}" Text="Heatmap Chart"
-			RelativePanel.AlignTopWith="chart1" RelativePanel.AlignHorizontalCenterWithPanel="True"/>
-		<Image Source="ms-appx:/Assets/Square44x44Logo.scale-100.png" Style="{StaticResource Logo}"
-			RelativePanel.LeftOf="title" RelativePanel.AlignVerticalCenterWith="title" />
-		<Border Style="{StaticResource Legend}"
-			Visibility="{Binding ElementName=cb_legend,Path=IsChecked}"
-			RelativePanel.AlignRightWith="chart1" RelativePanel.AlignTopWith="chart1">
-			<ItemsControl x:Name="legend" Margin="2" Padding="2"
-				ItemsSource="{Binding ElementName=chart1,Path=LegendItems}" ItemTemplate="{StaticResource lvr}" />
-		</Border>
+			<controls:TabViewItem Header="Analogous Scheme" IsClosable="False">
+				<RelativePanel HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+					<yacc:Chart x:Name="chart1" Style="{StaticResource Chart}"
+						RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignBottomWithPanel="True"
+						RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True">
+						<yacc:Chart.DataSources>
+							<yacc:DataSource x:Name="data" Items="{Binding Data}" />
+							<yacc:DataSource x:Name="group1" Items="{Binding Group1}"/>
+							<yacc:DataSource x:Name="group2" Items="{Binding Group2}"/>
+						</yacc:Chart.DataSources>
+						<yacc:Chart.Components>
+							<yacc:CategoryAxis x:Name="xaxis" Side="Bottom" DataSourceName="group1" LabelPath="Label" 
+								PathStyle="{StaticResource Axes}"
+								LabelStyle="{StaticResource CategoryAxisChart8}" />
+							<yacc:CategoryAxis x:Name="yaxis" Side="Left" DataSourceName="group2" LabelPath="Label" PathStyle="{StaticResource Axes}" MinWidth="100"
+								LabelStyle="{StaticResource CategoryAxis2Chart8}" />
+							<yacc:HeatmapSeries x:Name="heatmap" DataSourceName="data" ValuePath="Value" CategoryPath="Label1Index" Category2Path="Label2Index" ValueLabelPath="."
+								Title="Value 2 Heatmap" CategoryAxis2Name="yaxis" CategoryAxisName="xaxis" ClipToDataRegion="False" StyleGenerator="{StaticResource ColorMapAnalogous}"
+								PathStyle="{StaticResource Column_v2}" />
+							<!-- CategoryAxisOffset is necessary to center the text -->
+							<yacc:ValueLabels SourceName="heatmap" PlacementOffset="0,0" CategoryAxisOffset=".5" LabelFormatString="F0" LabelStyle="{StaticResource BigLabels}" />
+						</yacc:Chart.Components>
+					</yacc:Chart>
+					<TextBlock Name="title1" Style="{StaticResource Title}" Text="Heatmap Chart"
+						RelativePanel.AlignTopWith="chart1" RelativePanel.AlignHorizontalCenterWithPanel="True"/>
+					<Image Source="ms-appx:/Assets/Square44x44Logo.scale-100.png" Style="{StaticResource Logo}"
+						RelativePanel.LeftOf="title1" RelativePanel.AlignVerticalCenterWith="title1" />
+					<Border Style="{StaticResource Legend}"
+						Visibility="{Binding ElementName=cb_legend,Path=IsChecked}"
+						RelativePanel.AlignRightWith="chart1" RelativePanel.AlignTopWith="chart1">
+						<ItemsControl Name="legend1" Margin="2" Padding="2" ItemsSource="{Binding ElementName=chart1,Path=LegendItems}" ItemTemplate="{StaticResource lvr}" />
+					</Border>
+				</RelativePanel>
+			</controls:TabViewItem>
+			<controls:TabViewItem Header="Monochrome Scheme" IsClosable="False">
+				<RelativePanel HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+					<yacc:Chart x:Name="chart2" Style="{StaticResource Chart}"
+						RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignBottomWithPanel="True"
+						RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True">
+						<yacc:Chart.DataSources>
+							<yacc:DataSource x:Name="data_2" Items="{Binding Data}" />
+							<yacc:DataSource x:Name="group1_2" Items="{Binding Group1}"/>
+							<yacc:DataSource x:Name="group2_2" Items="{Binding Group2}"/>
+						</yacc:Chart.DataSources>
+						<yacc:Chart.Components>
+							<yacc:CategoryAxis x:Name="xaxis_2" Side="Bottom" DataSourceName="group1_2" LabelPath="Label" 
+								PathStyle="{StaticResource Axes}"
+								LabelStyle="{StaticResource CategoryAxisChart8}" />
+							<yacc:CategoryAxis x:Name="yaxis_2" Side="Left" DataSourceName="group2_2" LabelPath="Label" PathStyle="{StaticResource Axes}" MinWidth="100"
+								LabelStyle="{StaticResource CategoryAxis2Chart8}" />
+							<yacc:HeatmapSeries x:Name="heatmap_2" DataSourceName="data_2" ValuePath="Value" CategoryPath="Label1Index" Category2Path="Label2Index" ValueLabelPath="."
+								Title="Value 2 Heatmap" CategoryAxis2Name="yaxis_2" CategoryAxisName="xaxis_2" ClipToDataRegion="False" StyleGenerator="{StaticResource ColorMapMono}"
+								PathStyle="{StaticResource Column_v2}" />
+							<!-- CategoryAxisOffset is necessary to center the text -->
+							<yacc:ValueLabels SourceName="heatmap_2" PlacementOffset="0,0" CategoryAxisOffset=".5" LabelFormatString="F0" LabelStyle="{StaticResource BigLabels}" />
+						</yacc:Chart.Components>
+					</yacc:Chart>
+					<TextBlock Name="title2" Style="{StaticResource Title}" Text="Heatmap Chart"
+						RelativePanel.AlignTopWith="chart2" RelativePanel.AlignHorizontalCenterWithPanel="True"/>
+					<Image Source="ms-appx:/Assets/Square44x44Logo.scale-100.png" Style="{StaticResource Logo}"
+						RelativePanel.LeftOf="title2" RelativePanel.AlignVerticalCenterWith="title2" />
+					<Border Style="{StaticResource Legend}"
+						Visibility="{Binding ElementName=cb_legend,Path=IsChecked}"
+						RelativePanel.AlignRightWith="chart2" RelativePanel.AlignTopWith="chart2">
+						<ItemsControl Name="legend2" Margin="2" Padding="2" ItemsSource="{Binding ElementName=chart2,Path=LegendItems}" ItemTemplate="{StaticResource lvr}" />
+					</Border>
+				</RelativePanel>
+			</controls:TabViewItem>
+			<controls:TabViewItem Header="Discrete Ranges Scheme" IsClosable="False">
+				<RelativePanel HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+					<yacc:Chart Name="chart3" Style="{StaticResource Chart}"
+						RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignBottomWithPanel="True"
+						RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True">
+						<yacc:Chart.DataSources>
+							<yacc:DataSource x:Name="data_3" Items="{Binding Data}" />
+							<yacc:DataSource x:Name="group1_3" Items="{Binding Group1}"/>
+							<yacc:DataSource x:Name="group2_3" Items="{Binding Group2}"/>
+						</yacc:Chart.DataSources>
+						<yacc:Chart.Components>
+							<yacc:CategoryAxis x:Name="xaxis_3" Side="Bottom" DataSourceName="group1_3" LabelPath="Label" 
+								PathStyle="{StaticResource Axes}"
+								LabelStyle="{StaticResource CategoryAxisChart8}" />
+							<yacc:CategoryAxis x:Name="yaxis_3" Side="Left" DataSourceName="group2_3" LabelPath="Label" PathStyle="{StaticResource Axes}" MinWidth="100"
+								LabelStyle="{StaticResource CategoryAxis2Chart8}" />
+							<yacc:HeatmapSeries x:Name="heatmap_3" DataSourceName="data_3" ValuePath="Value" CategoryPath="Label1Index" Category2Path="Label2Index" ValueLabelPath="."
+								Title="Value 2 Heatmap" CategoryAxis2Name="yaxis_3" CategoryAxisName="xaxis_3" ClipToDataRegion="False" StyleGenerator="{StaticResource ColorMapDiscrete}"
+								PathStyle="{StaticResource Column_v2}" />
+							<!-- CategoryAxisOffset is necessary to center the text -->
+							<yacc:ValueLabels SourceName="heatmap_3" PlacementOffset="0,0" CategoryAxisOffset=".5" LabelFormatString="F0" LabelStyle="{StaticResource BigLabels}" />
+						</yacc:Chart.Components>
+					</yacc:Chart>
+					<TextBlock Name="title3" Style="{StaticResource Title}" Text="Heatmap Chart"
+						RelativePanel.AlignTopWith="chart3" RelativePanel.AlignHorizontalCenterWithPanel="True"/>
+					<Image Source="ms-appx:/Assets/Square44x44Logo.scale-100.png" Style="{StaticResource Logo}"
+						RelativePanel.LeftOf="title3" RelativePanel.AlignVerticalCenterWith="title3" />
+					<Border Style="{StaticResource Legend}"
+						Visibility="{Binding ElementName=cb_legend,Path=IsChecked}"
+						RelativePanel.AlignRightWith="chart3" RelativePanel.AlignTopWith="chart3">
+						<ItemsControl Name="legend3" Margin="2" Padding="2" ItemsSource="{Binding ElementName=chart3,Path=LegendItems}" ItemTemplate="{StaticResource lvr2}" />
+					</Border>
+				</RelativePanel>
+			</controls:TabViewItem>
+		</controls:TabView>
 	</RelativePanel>
 </core:BasicPage>

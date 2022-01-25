@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27130.2010
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.32106.194
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YetAnotherChartComponent", "YetAnotherChartComponent\YetAnotherChartComponent.csproj", "{433FF341-601E-4D0D-BA65-7D5E58B86C0C}"
 EndProject
@@ -78,8 +78,6 @@ Global
 		{F90A4321-89DF-4377-BD80-6E8406D407D5}.Release|ARM.Build.0 = Release|ARM
 		{F90A4321-89DF-4377-BD80-6E8406D407D5}.Release|ARM.Deploy.0 = Release|ARM
 		{F90A4321-89DF-4377-BD80-6E8406D407D5}.Release|x64.ActiveCfg = Release|x64
-		{F90A4321-89DF-4377-BD80-6E8406D407D5}.Release|x64.Build.0 = Release|x64
-		{F90A4321-89DF-4377-BD80-6E8406D407D5}.Release|x64.Deploy.0 = Release|x64
 		{F90A4321-89DF-4377-BD80-6E8406D407D5}.Release|x86.ActiveCfg = Release|x86
 		{F90A4321-89DF-4377-BD80-6E8406D407D5}.Release|x86.Build.0 = Release|x86
 		{F90A4321-89DF-4377-BD80-6E8406D407D5}.Release|x86.Deploy.0 = Release|x86

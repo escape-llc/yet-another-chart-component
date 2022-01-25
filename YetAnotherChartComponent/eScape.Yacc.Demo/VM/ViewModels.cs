@@ -203,7 +203,6 @@ namespace Yacc.Demo.VM {
 	public class DateRangeVM : CoreViewModel, IRequireRefresh {
 		/// <summary>
 		/// The list of data.
-		/// NOTE this does NOT implement <see cref="INotifyCollectionChanged"/>.
 		/// </summary>
 		public List<Observation2> Data { get; private set; }
 		protected List<Observation2> AllTheData { get; set; }

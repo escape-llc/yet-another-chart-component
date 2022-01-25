@@ -201,11 +201,10 @@
 				</ItemsControl.ItemsPanel>
 			</ItemsControl>
 		</Border>
-		<TextBlock x:Name="counter" Style="{StaticResource Title}" TextAlignment="Left"
-			RelativePanel.AlignTopWith="grid" RelativePanel.AlignLeftWith="grid">
+		<TextBlock Style="{StaticResource Title}" TextAlignment="Center"
+			RelativePanel.AlignBottomWith="grid" RelativePanel.AlignHorizontalCenterWithPanel="True">
 			<TextBlock.Inlines>
 				<Run Text="Multiple charts can present the same collection"/>
-				<LineBreak/>
 				<Run Text="in a synchronized fashion."/>
 			</TextBlock.Inlines>
 		</TextBlock>
