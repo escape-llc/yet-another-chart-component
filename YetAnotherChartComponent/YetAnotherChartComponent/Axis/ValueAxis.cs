@@ -255,9 +255,17 @@ namespace eScapeLLC.UWP.Charts {
 			var padding = AxisLineThickness + 2 * AxisMargin;
 			var tbr = new Recycler<FrameworkElement, ItemState>(AxisLabels.Select(tl => tl.element), (ist) => {
 				var fe = CreateElement(ist);
-				fe.Width = icrc.Area.Width - padding;
-				if (fe is TextBlock tbb) {
-					tbb.Padding = Side == Side.Right ? new Thickness(padding, 0, 0, 0) : new Thickness(0, 0, padding, 0);
+				if (Orientation == AxisOrientation.Vertical) {
+					fe.Width = icrc.Area.Width - padding;
+					if (fe is TextBlock tbb) {
+						tbb.Padding = Side == Side.Right ? new Thickness(padding, 0, 0, 0) : new Thickness(0, 0, padding, 0);
+					}
+				}
+				else {
+					fe.Height = icrc.Area.Height - padding;
+					if (fe is TextBlock tbb) {
+						tbb.Padding = Side == Side.Bottom ? new Thickness(0, padding, 0, 0) : new Thickness(0, 0, 0, padding);
+					}
 				}
 				return fe;
 			});
@@ -314,19 +322,27 @@ namespace eScapeLLC.UWP.Charts {
 			AxisLabels = itemstate;
 			Layer.Remove(tbr.Unused);
 			Layer.Add(tbr.Created);
+			// for "horizontal" axis orientation it's important to get the TextBlocks sized
+			// otherwise certain Style settings can resize it beyond the text bounds
+			// use unparented element for text measuring
+			var inf = new Size(Double.PositiveInfinity, Double.PositiveInfinity);
 			foreach (var al in AxisLabels) {
-				// force it to measure; needed for Transforms
-				al.element.Measure(icrc.Dimensions);
+				al.element.Measure(inf);
 			}
 		}
+		/// <summary>
+		/// Calculate the value axis projection.
+		/// NOTE: scale/origin sign is reversed for "vertical" <see cref="Side.Left"/> and <see cref="Side.Right"/> so we get "cartesian" layout not DC.
+		/// </summary>
+		/// <param name="area">Axis rectangle.</param>
+		/// <param name="scale">Value axis px/unit.</param>
+		/// <returns></returns>
 		Matrix ProjectionForAxis(Rect area, double scale) {
 			switch (Side) {
 				case Side.Bottom:
-					//return MatrixSupport.ProjectionFor(area.Left, area.Top + AxisMargin, scale, 1);
-					return new Matrix(scale, 0, 0, 1, area.Top + AxisMargin, area.Left - Minimum * scale);
+					return new Matrix(scale, 0, 0, 1, area.Left - Minimum * scale, area.Top + AxisMargin);
 				case Side.Top:
-					//return MatrixSupport.ProjectionFor(area.Left, area.Bottom - AxisMargin, scale, 1);
-					return new Matrix(scale, 0, 0, 1, area.Bottom - AxisMargin, area.Left - Minimum * scale);
+					return new Matrix(scale, 0, 0, 1, area.Left - Minimum * scale, area.Bottom - AxisMargin);
 				case Side.Left:
 					return new Matrix(1, 0, 0, -scale, area.Right - AxisMargin, area.Bottom + Minimum * scale);
 				case Side.Right:
@@ -352,7 +368,7 @@ namespace eScapeLLC.UWP.Charts {
 			var state = AxisLabels.SingleOrDefault(sis => sis.element == fe);
 			if (state != null) {
 				var loc = state.UpdateLocation();
-				_trace.Verbose($"{Name} sizeChanged[{state.tick.Index}] loc:{loc} yv:{state.tick.Value} ns:{e.NewSize}");
+				_trace.Verbose($"{Name} sizeChanged[{state.tick.Index}] loc:{loc} yv:{state.tick.Value} ns:{e.NewSize} ds:{fe.DesiredSize}");
 			}
 		}
 		#endregion
@@ -450,7 +466,7 @@ namespace eScapeLLC.UWP.Charts {
 					case ItemState_Horizontal ish:
 						ish.dim = icrc.Area.Height - AxisMargin;
 						ish.xorigin = pt.X;
-						ish.yorigin = icrc.Area.Top;
+						ish.yorigin = icrc.Area.Top + AxisMargin;
 						break;
 				}
 				var loc = state.UpdateLocation();
