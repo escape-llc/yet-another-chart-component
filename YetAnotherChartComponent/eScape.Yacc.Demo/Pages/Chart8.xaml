@@ -101,6 +101,7 @@
 			</CommandBar.PrimaryCommands>
 		</CommandBar>
 		<controls:TabView HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+			IsAddTabButtonVisible="False"
 			RelativePanel.Below="toolbar" RelativePanel.AlignBottomWithPanel="True"
 			RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True">
 			<controls:TabViewItem Header="Analogous Scheme" IsClosable="False">
