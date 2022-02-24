@@ -6,23 +6,13 @@ using System.Runtime.InteropServices;
 // associated with an assembly.
 [assembly: AssemblyTitle("Yet Another Chart Component")]
 [assembly: AssemblyDescription("A chart framework for UWP XAML under Apache 2.0 license.")]
-[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyConfiguration("uap10.0")]
 [assembly: AssemblyCompany("eScape Technology LLC")]
 [assembly: AssemblyProduct("Charts for UWP")]
 [assembly: AssemblyCopyright("Copyright © 2017-22")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
-// Version information for an assembly consists of the following four values:
-//
-//      Major Version
-//      Minor Version 
-//      Build Number
-//      Revision
-//
-// You can specify all the values or you can default the Build and Revision Numbers 
-// by using the '*' as shown below:
-// [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.8.0.0")]
-[assembly: AssemblyFileVersion("1.8.0.0")]
+[assembly: AssemblyVersion("2.0.0.0")]
+[assembly: AssemblyFileVersion("2.0.0.0")]
 [assembly: ComVisible(false)]
