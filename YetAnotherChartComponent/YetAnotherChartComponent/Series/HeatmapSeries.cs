@@ -593,7 +593,7 @@ namespace eScapeLLC.UWP.Charts {
 		static readonly LogTools.Flag _trace = LogTools.Add("HeatmapSeries", LogTools.Level.Error);
 		#region item state
 		/// <summary>
-		/// Item offers second dimension (use instead of Value).
+		/// Item offers explicit second dimension (use instead of Value).
 		/// </summary>
 		protected interface IProvideYValue {
 			/// <summary>
@@ -616,16 +616,13 @@ namespace eScapeLLC.UWP.Charts {
 			/// Extract the rectangle geometry and create placement.
 			/// </summary>
 			/// <returns></returns>
-			protected override Placement CreatePlacement() { return new RectanglePlacement(Placement.DOWN_LEFT, DataFor().Rect); }
+			protected override Placement CreatePlacement() { return new RectanglePlacement(Placement.DOWN_RIGHT, DataFor()); }
 			internal SeriesItemState_Custom(int idx, double xv, double xvo, double c2v, double yv, object cs, Path ele) : base(idx, xv, xvo, yv, cs, ele, 0) { YValue = c2v; }
-			RectangleGeometry DataFor() {
-				if (Element.DataContext is GeometryWith2OffsetShim<RectangleGeometry>) {
-					var p1 = new Point(XValue, YValue);
-					var p2 = new Point(XValue + 1, YValue + 1);
-					_trace.Verbose($"placement p1:{p1} p2:{p2} vx,vy:({XValue},{YValue}) v:{Value}");
-					return new RectangleGeometry() { Rect = new Rect(p1, p2) };
-				}
-				return Element.Data as RectangleGeometry;
+			Rect DataFor() {
+				var p1 = new Point(XValue, YValue);
+				var p2 = new Point(XValue + 1, YValue + 1);
+				_trace.Verbose($"placement p1:{p1} p2:{p2} vx,vy:({XValue},{YValue}) v:{Value}");
+				return new Rect(p1, p2);
 			}
 		}
 		/// <summary>
@@ -642,16 +639,13 @@ namespace eScapeLLC.UWP.Charts {
 			/// Extract the rectangle geometry and create placement.
 			/// </summary>
 			/// <returns></returns>
-			protected override Placement CreatePlacement() { return new RectanglePlacement(Placement.DOWN_LEFT, DataFor().Rect); }
+			protected override Placement CreatePlacement() { return new RectanglePlacement(Placement.DOWN_RIGHT, DataFor()); }
 			internal SeriesItemState_Double(int idx, double xv, double xvo, double c2v, double yv, Path ele) : base(idx, xv, xvo, yv, ele, 0) { YValue = c2v; }
-			RectangleGeometry DataFor() {
-				if (Element.DataContext is GeometryWith2OffsetShim<RectangleGeometry>) {
-					var p1 = new Point(XValue, YValue);
-					var p2 = new Point(XValue + 1, YValue + 1);
-					_trace.Verbose($"placement p1:{p1} p2:{p2} vx,vy:({XValue},{YValue}) v:{Value}");
-					return new RectangleGeometry() { Rect = new Rect(p1, p2) };
-				}
-				return Element.Data as RectangleGeometry;
+			Rect DataFor() {
+				var p1 = new Point(XValue, YValue);
+				var p2 = new Point(XValue + 1, YValue + 1);
+				_trace.Verbose($"placement p1:{p1} p2:{p2} vx,vy:({XValue},{YValue}) v:{Value}");
+				return new Rect(p1, p2);
 			}
 		}
 		#endregion
