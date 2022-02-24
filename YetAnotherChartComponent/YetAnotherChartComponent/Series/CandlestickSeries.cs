@@ -18,7 +18,11 @@ namespace eScapeLLC.UWP.Charts {
 		static LogTools.Flag _trace = LogTools.Add("CandlestickSeries", LogTools.Level.Error);
 		#region SeriesItemState
 		internal interface IFigureData {
-			Tuple<double,PathFigure>[] Elements { get; }
+			/// <summary>
+			/// Item1: value; Item2: figure representing this value.
+			/// Element order: [0] Open, [1] Close, [2] High, [3] Low.
+			/// </summary>
+			Tuple<double, PathFigure>[] Elements { get; }
 		}
 		/// <summary>
 		/// Item state.
@@ -176,7 +180,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Binding path to the value axis label.
 		/// MAY be NULL.
-		/// If specified, this value will augmentthe one used for All Channels in <see cref="ISeriesItemValue"/>.
+		/// If specified, this value will augment the one used for All Channels in <see cref="ISeriesItemValue"/>.
 		/// </summary>
 		public String ValueLabelPath { get { return (String)GetValue(ValueLabelPathProperty); } set { SetValue(ValueLabelPathProperty, value); } }
 		/// <summary>
