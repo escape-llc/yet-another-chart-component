@@ -70,7 +70,7 @@ namespace eScapeLLC.UWP.Charts {
 			// the display element
 			internal FrameworkElement element;
 			// these are used for JIT re-positioning
-			internal double scale;
+			internal double dim;
 			internal bool usexau;
 			internal double yorigin;
 			internal double xorigin;
@@ -85,49 +85,54 @@ namespace eScapeLLC.UWP.Charts {
 			/// Perform any sizing of the element according to orientation.
 			/// </summary>
 			/// <param name="element"></param>
-			internal abstract void SizeElement(FrameworkElement element);
+			protected abstract void SizeElement(FrameworkElement element);
 			/// <summary>
 			/// Calculate position based on <see cref="FrameworkElement.ActualWidth"/> or XAU as appropriate.
 			/// </summary>
+			/// <param name="element">The element.</param>
 			/// <returns></returns>
-			internal abstract Point GetLocation();
+			protected abstract Point GetLocation(FrameworkElement element);
 			#endregion
 			/// <summary>
-			/// Configure <see cref="Canvas"/> attached properties.
+			/// Call <see cref="GetLocation"/> and configure <see cref="element"/>.
 			/// </summary>
-			/// <param name="loc"></param>
-			internal void Locate(Point loc) {
-				SizeElement(element);
-				element.SetValue(Canvas.LeftProperty, loc.X);
-				element.SetValue(Canvas.TopProperty, loc.Y);
-			}
-			/// <summary>
-			/// Combine <see cref="GetLocation"/> and <see cref="Locate"/>.
-			/// </summary>
-			/// <returns>The new location.</returns>
-			internal Point UpdateLocation() {
-				var loc = GetLocation();
-				Locate(loc);
-				return loc;
+			/// <returns>The new location OR null.</returns>
+			internal Point? UpdateLocation() {
+				if (element != null) {
+					var loc = GetLocation(element);
+					SizeElement(element);
+					element.SetValue(Canvas.LeftProperty, loc.X);
+					element.SetValue(Canvas.TopProperty, loc.Y);
+					return loc;
+				}
+				return null;
 			}
 		}
 		/// <summary>
 		/// Version for horizontal (Top/Bottom).
 		/// </summary>
 		protected class ItemState_Horizontal : ItemState {
-			internal override void SizeElement(FrameworkElement element) {
+			/// <summary>
+			/// <inheritdoc/>
+			/// </summary>
+			/// <param name="element"></param>
+			protected override void SizeElement(FrameworkElement element) {
 				if (usexau) {
-					element.Width = scale;
+					element.Width = dim;
 				}
 			}
-			internal override Point GetLocation() {
+			/// <summary>
+			/// <inheritdoc/>
+			/// </summary>
+			/// <returns></returns>
+			protected override Point GetLocation(FrameworkElement element) {
 				if (usexau) {
 					// place it at XAU zero point
-					return new Point(xorigin + value * scale, yorigin);
+					return new Point(xorigin + value * dim, yorigin);
 				}
 				else {
 					// place it centered in cell
-					return new Point(xorigin + value * scale + scale / 2 - element.ActualWidth / 2, yorigin);
+					return new Point(xorigin + value * dim + dim / 2 - element.ActualWidth / 2, yorigin);
 				}
 			}
 		}
@@ -135,19 +140,27 @@ namespace eScapeLLC.UWP.Charts {
 		/// Version for vertical (Left/Right).
 		/// </summary>
 		protected class ItemState_Vertical : ItemState {
-			internal override void SizeElement(FrameworkElement element) {
+			/// <summary>
+			/// <inheritdoc/>
+			/// </summary>
+			/// <param name="element"></param>
+			protected override void SizeElement(FrameworkElement element) {
 				if (usexau) {
-					element.Height = scale;
+					element.Height = dim;
 				}
 			}
-			internal override Point GetLocation() {
+			/// <summary>
+			/// <inheritdoc/>
+			/// </summary>
+			/// <returns></returns>
+			protected override Point GetLocation(FrameworkElement element) {
 				if (usexau) {
 					// place it at XAU zero point
-					return new Point(xorigin, yorigin + value * scale);
+					return new Point(xorigin, yorigin + value * dim);
 				}
 				else {
 					// place it centered in cell
-					return new Point(xorigin, yorigin + value * scale + scale / 2 - element.ActualHeight / 2);
+					return new Point(xorigin, yorigin + value * dim + dim / 2 - element.ActualHeight / 2);
 				}
 			}
 		}
@@ -486,17 +499,17 @@ namespace eScapeLLC.UWP.Charts {
 			var matx = ProjectionForAxis(icrc.Area, scale);
 			AxisGeometry.Transform = new MatrixTransform() { Matrix = matx };
 			var matxv = ProjectionFor(icrc.Area);
-			_trace.Verbose($"{Name}:{Orientation}:{Side} transforms sx:{scale:F3} matx:{matx} matxv:{matxv} a:{icrc.Area}");
+			_trace.Verbose($"{Name}:{Orientation}:{Side} transforms s:{scale:F3} matx:{matx} matxv:{matxv} a:{icrc.Area}");
+			var mapt = Orientation == AxisOrientation.Horizontal ? new Point(0, 1) : new Point(1, 0);
+			var ptv = matxv.Transform(mapt);
+			_trace.Verbose($"{Name} mapped mapt:{mapt} ptv:{ptv}");
 			foreach (var state in AxisLabels) {
 				if (state.element == null) continue;
-				var mapt = Orientation == AxisOrientation.Horizontal ? new Point(0, 1) : new Point(1, 0);
-				var ptv = matxv.Transform(mapt);
-				_trace.Verbose($"{Name} mapped mapt:{mapt} ptv:{ptv}");
-				state.scale = scale;
+				state.dim = scale;
 				state.xorigin = ptv.X;
 				state.yorigin = ptv.Y;
 				var loc = state.UpdateLocation();
-				_trace.Verbose($"{Name} el {state.element.ActualWidth}x{state.element.ActualHeight} v:{state.value} @:({loc.X},{loc.Y})");
+				_trace.Verbose($"{Name} el {state.element.ActualWidth}x{state.element.ActualHeight} v:{state.value} @:({loc?.X},{loc?.Y})");
 				if (icrc.Type != RenderType.TransformsOnly) {
 					// doing render so (try to) trigger the SizeChanged handler
 					state.element.InvalidateMeasure();
