@@ -90,12 +90,78 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// The item state for this component.
 		/// </summary>
-		protected class ItemState {
-			internal FrameworkElement tb;
+		protected abstract class ItemState {
+			internal FrameworkElement element;
 			internal TickState tick;
-			internal void SetLocation(double left, double top) {
-				tb.SetValue(Canvas.LeftProperty, left);
-				tb.SetValue(Canvas.TopProperty, top);
+			// these are used for JIT re-positioning
+			internal double dim;
+			internal double yorigin;
+			internal double xorigin;
+			#region extension points
+			/// <summary>
+			/// Size the element according to orientation.
+			/// </summary>
+			/// <param name="element">non-NULL.</param>
+			protected abstract void SizeElement(FrameworkElement element);
+			/// <summary>
+			/// Calculate position in XAML coordinates based on <see cref="FrameworkElement.ActualWidth"/> or <see cref="FrameworkElement.ActualHeight"/> as appropriate.
+			/// </summary>
+			/// <returns></returns>
+			protected abstract Point GetLocation(FrameworkElement element);
+			#endregion
+			/// <summary>
+			/// Call <see cref="GetLocation"/> and configure <see cref="element"/>.
+			/// </summary>
+			/// <returns>The new location OR NULL.</returns>
+			internal Point? UpdateLocation() {
+				if (element != null) {
+					var loc = GetLocation(element);
+					SizeElement(element);
+					element.SetValue(Canvas.LeftProperty, loc.X);
+					element.SetValue(Canvas.TopProperty, loc.Y);
+					return loc;
+				}
+				return null;
+			}
+		}
+		/// <summary>
+		/// Vertical value label layout.
+		/// </summary>
+		protected class ItemState_Vertical : ItemState {
+			internal ItemState_Vertical(FrameworkElement element, TickState ts) { this.element = element; this.tick = ts; }
+			/// <summary>
+			/// <inheritdoc/>
+			/// </summary>
+			/// <returns></returns>
+			protected override Point GetLocation(FrameworkElement element) {
+				return new Point(xorigin, yorigin - element.ActualHeight / 2);
+			}
+			/// <summary>
+			/// <inheritdoc/>
+			/// </summary>
+			/// <param name="element"></param>
+			protected override void SizeElement(FrameworkElement element) {
+				element.Width = dim;
+			}
+		}
+		/// <summary>
+		/// Horizontal value label layout.
+		/// </summary>
+		protected class ItemState_Horizontal : ItemState {
+			internal ItemState_Horizontal(FrameworkElement element, TickState ts) { this.element = element; this.tick = ts; }
+			/// <summary>
+			/// <inheritdoc/>
+			/// </summary>
+			/// <returns></returns>
+			protected override Point GetLocation(FrameworkElement element) {
+				return new Point(xorigin - element.ActualWidth / 2, yorigin);
+			}
+			/// <summary>
+			/// <inheritdoc/>
+			/// </summary>
+			/// <param name="element"></param>
+			protected override void SizeElement(FrameworkElement element) {
+				element.Height = dim;
 			}
 		}
 		#endregion
@@ -133,7 +199,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// List of active TextBlocks for labels.
 		/// </summary>
-		protected List<ItemState> TickLabels { get; set; }
+		protected List<ItemState> AxisLabels { get; set; }
 		/// <summary>
 		/// The layer to manage components.
 		/// </summary>
@@ -158,7 +224,7 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region helpers
 		private void CommonInit() {
-			TickLabels = new List<ItemState>();
+			AxisLabels = new List<ItemState>();
 			Axis = new Path();
 			AxisGeometry = new PathGeometry();
 			Axis.Data = AxisGeometry;
@@ -178,7 +244,7 @@ namespace eScapeLLC.UWP.Charts {
 				}
 			}
 			if (fe != null) {
-//				fe.SizeChanged += Element_SizeChanged;
+				fe.SizeChanged += Element_SizeChanged;
 			}
 			return fe;
 		}
@@ -187,7 +253,7 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"grid range:{tc.Range} tintv:{tc.TickInterval}");
 			// TODO may want to include the LabelStyle's padding if defined
 			var padding = AxisLineThickness + 2 * AxisMargin;
-			var tbr = new Recycler<FrameworkElement, ItemState>(TickLabels.Select(tl => tl.tb), (ist) => {
+			var tbr = new Recycler<FrameworkElement, ItemState>(AxisLabels.Select(tl => tl.element), (ist) => {
 				var fe = CreateElement(ist);
 				fe.Width = icrc.Area.Width - padding;
 				if (fe is TextBlock tbb) {
@@ -197,9 +263,9 @@ namespace eScapeLLC.UWP.Charts {
 			});
 			var itemstate = new List<ItemState>();
 			// materialize the ticks
-			var lx = tc.GetTicks().ToArray();
-			var sc = new ValueAxisSelectorContext(this, icrc.Area, lx, tc.TickInterval);
-			for (int ix = 0; ix < lx.Length; ix++) {
+			var tix = tc.GetTicks().OrderBy(x => x.Index).ToArray();
+			var sc = new ValueAxisSelectorContext(this, icrc.Area, tix, tc.TickInterval);
+			for (int ix = 0; ix < tix.Length; ix++) {
 				//_trace.Verbose($"grid vx:{tick}");
 				sc.SetTick(ix);
 				var createit = true;
@@ -214,7 +280,7 @@ namespace eScapeLLC.UWP.Charts {
 				}
 				if (!createit) continue;
 				var current = tbr.Next(null);
-				var tick = lx[ix];
+				var tick = tix[ix];
 				if (!current.Item1) {
 					// restore binding if we are using a LabelFormatter
 					if (LabelFormatter != null && LabelStyle != null) {
@@ -238,18 +304,55 @@ namespace eScapeLLC.UWP.Charts {
 				var shim = new TextShim() { Text = text };
 				current.Item2.DataContext = shim;
 				BindTo(shim, nameof(Visibility), current.Item2, UIElement.VisibilityProperty);
-				var state = new ItemState() { tb = current.Item2, tick = tick };
-				state.SetLocation(icrc.Area.Left, tick.Value);
+				var state = (Orientation == AxisOrientation.Vertical
+					? new ItemState_Vertical(current.Item2, tick) as ItemState
+					: new ItemState_Horizontal(current.Item2, tick) as ItemState);
 				sc.Generated(tick);
 				itemstate.Add(state);
 			}
 			// VT and internal bookkeeping
-			TickLabels = itemstate;
+			AxisLabels = itemstate;
 			Layer.Remove(tbr.Unused);
 			Layer.Add(tbr.Created);
-			foreach (var xx in TickLabels) {
+			foreach (var al in AxisLabels) {
 				// force it to measure; needed for Transforms
-				xx.tb.Measure(icrc.Dimensions);
+				al.element.Measure(icrc.Dimensions);
+			}
+		}
+		Matrix ProjectionForAxis(Rect area, double scale) {
+			switch (Side) {
+				case Side.Bottom:
+					//return MatrixSupport.ProjectionFor(area.Left, area.Top + AxisMargin, scale, 1);
+					return new Matrix(scale, 0, 0, 1, area.Top + AxisMargin, area.Left - Minimum * scale);
+				case Side.Top:
+					//return MatrixSupport.ProjectionFor(area.Left, area.Bottom - AxisMargin, scale, 1);
+					return new Matrix(scale, 0, 0, 1, area.Bottom - AxisMargin, area.Left - Minimum * scale);
+				case Side.Left:
+					return new Matrix(1, 0, 0, -scale, area.Right - AxisMargin, area.Bottom + Minimum * scale);
+				case Side.Right:
+					return new Matrix(1, 0, 0, -scale, area.Left + AxisMargin, area.Bottom + Minimum * scale);
+				default:
+					throw new NotImplementedException($"Not Implemented: {Side}");
+			}
+		}
+		#endregion
+		#region evhs
+		/// <summary>
+		/// Layout pass size changed.
+		/// Just-in-time re-position of label element at exactly the right spot after it's done with (asynchronous) measure/arrange.
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		void Element_SizeChanged(object sender, SizeChangedEventArgs e) {
+#if false
+			var vm = fe.DataContext as DataTemplateShim;
+			_trace.Verbose($"{Name} sizeChanged ps:{e.PreviousSize} ns:{e.NewSize} text:{vm?.Text}");
+#endif
+			var fe = sender as FrameworkElement;
+			var state = AxisLabels.SingleOrDefault(sis => sis.element == fe);
+			if (state != null) {
+				var loc = state.UpdateLocation();
+				_trace.Verbose($"{Name} sizeChanged[{state.tick.Index}] loc:{loc} yv:{state.tick.Value} ns:{e.NewSize}");
 			}
 		}
 		#endregion
@@ -311,9 +414,11 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			if (!Dirty) return;
 			_trace.Verbose($"{Name} min:{Minimum} max:{Maximum} r:{Range}");
-			// axis and tick marks
+			// axis and tick labels
 			AxisGeometry.Figures.Clear();
-			var pf = PathHelper.Rectangle(Side == Side.Right ? 0 : icrc.Area.Width, Minimum, Side == Side.Right ? AxisLineThickness : icrc.Area.Width - AxisLineThickness, Maximum);
+			var pf = Orientation == AxisOrientation.Horizontal
+				? PathHelper.Rectangle(Minimum, 0, Maximum, AxisLineThickness)
+				: PathHelper.Rectangle(0, Minimum, AxisLineThickness, Maximum);
 			AxisGeometry.Figures.Add(pf);
 			if(!double.IsNaN(Minimum) && !double.IsNaN(Maximum)) {
 				// recycle and layout
@@ -329,14 +434,32 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icrc"></param>
 		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
-			var scaley = icrc.Area.Height / Range;
-			var matx = new Matrix(1, 0, 0, -scaley, icrc.Area.Left + AxisMargin * (Side == Side.Right ? 1 : -1), icrc.Area.Top + Maximum * scaley);
+			var scale = Orientation == AxisOrientation.Horizontal ? icrc.Area.Width / Range : icrc.Area.Height / Range;
+			var matx = ProjectionForAxis(icrc.Area, scale);
 			AxisGeometry.Transform = new MatrixTransform() { Matrix = matx };
-			_trace.Verbose($"transforms sy:{scaley:F3} matx:{matx} a:{icrc.Area} sa:{icrc.SeriesArea}");
-			foreach (var state in TickLabels) {
-				var adj = state.tb.ActualHeight / 2;
-				var top = icrc.Area.Bottom - (state.tick.Value - Minimum) * scaley - adj;
-				state.SetLocation(icrc.Area.Left, top);
+			_trace.Verbose($"transforms s:{scale:F3} matx:{matx} a:{icrc.Area} sa:{icrc.SeriesArea}");
+			foreach (var state in AxisLabels) {
+				if (state.element == null) continue;
+				var pt = matx.Transform(Orientation == AxisOrientation.Horizontal ? new Point(state.tick.Value, 0) : new Point(0, state.tick.Value));
+				switch(state) {
+					case ItemState_Vertical isv:
+						isv.dim = icrc.Area.Width - AxisMargin;
+						isv.xorigin = icrc.Area.Left;
+						isv.yorigin = pt.Y;
+						break;
+					case ItemState_Horizontal ish:
+						ish.dim = icrc.Area.Height - AxisMargin;
+						ish.xorigin = pt.X;
+						ish.yorigin = icrc.Area.Top;
+						break;
+				}
+				var loc = state.UpdateLocation();
+				_trace.Verbose($"{Name} el {state.element.ActualWidth}x{state.element.ActualHeight} v:{state.tick.Value} @:({loc?.X},{loc?.Y})");
+				if (icrc.Type != RenderType.TransformsOnly) {
+					// doing render so (try to) trigger the SizeChanged handler
+					state.element.InvalidateMeasure();
+					state.element.InvalidateArrange();
+				}
 			}
 		}
 		#endregion
