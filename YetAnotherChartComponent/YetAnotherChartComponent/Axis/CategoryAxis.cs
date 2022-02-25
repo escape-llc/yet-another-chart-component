@@ -443,7 +443,7 @@ namespace eScapeLLC.UWP.Charts {
 			var state = AxisLabels.SingleOrDefault((sis) => sis.element == fe);
 			if (state != null) {
 				var loc = state.UpdateLocation();
-				_trace.Verbose($"{Name} sizeChanged[{state.index}] loc:{loc} yv:{state.value} ns:{e.NewSize}");
+				_trace.Verbose($"{Name} sizeChanged[{state.index}] loc:{loc} yv:{state.value} ns:{e.NewSize} ds:{fe.DesiredSize}");
 			}
 		}
 		#endregion
