@@ -43,6 +43,13 @@
 		<Setter Property="VerticalAlignment" Value="Center"/>
 		<Setter Property="HorizontalAlignment" Value="Right"/>
 	</Style>
+	<Style x:Key="ValueAxisLabel_Horz" TargetType="TextBlock">
+		<Setter Property="Foreground" Value="White"/>
+		<Setter Property="FontStyle" Value="Italic"/>
+		<Setter Property="FontSize" Value="12"/>
+		<Setter Property="VerticalAlignment" Value="Center"/>
+		<Setter Property="HorizontalAlignment" Value="Center"/>
+	</Style>
 	<Style x:Key="ValueAxisLabelRight" TargetType="TextBlock">
 		<Setter Property="Foreground" Value="White"/>
 		<Setter Property="FontStyle" Value="Italic"/>
