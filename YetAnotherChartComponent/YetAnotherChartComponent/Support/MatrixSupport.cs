@@ -290,6 +290,23 @@ namespace eScapeLLC.UWP.Charts {
 			return Multiply(ModelFor(xaxis, yaxis), proj);
 		}
 		/// <summary>
+		/// <see cref="GeometryShim{G}"/> Offset version.  Caller must account for the Matrix.OffsetY component there.
+		/// <para/>
+		/// Create a final (MP) matrix for this rectangle and axes.
+		/// </summary>
+		/// <param name="area">Target area. The Top component is eliminated from output matrix.</param>
+		/// <param name="xaxis">The x-axis.</param>
+		/// <param name="yaxis">The y-axis.</param>
+		/// <returns></returns>
+		public static Matrix TransformForOffsetY(Rect area, IChartAxis xaxis, IChartAxis yaxis) {
+			if (xaxis == null) throw new ArgumentNullException(nameof(xaxis));
+			if (yaxis == null) throw new ArgumentNullException(nameof(yaxis));
+			var proj = ProjectForQuadrant(4, area);
+			// remove the y-offset
+			proj.OffsetY = 0;
+			return Multiply(ModelFor(xaxis, yaxis), proj);
+		}
+		/// <summary>
 		/// Translate matrix by given offset.
 		/// </summary>
 		/// <param name="mx">Source matrix.</param>
