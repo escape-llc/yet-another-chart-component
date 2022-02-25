@@ -47,6 +47,7 @@ namespace Yacc.Demo.VM {
 				new PageItem() { Glyph="\u2465", Title = "Sharing", Description = "Share a single collection among multiple charts.", PageType = typeof(Chart7) },
 				new PageItem() { Glyph="\u2466", Title = "Heatmap", Description = "Present color-coded data cells on 2 category axes.", PageType = typeof(Chart8) },
 				new PageItem() { Glyph="\u2467", Title = "Pie", Description = "Pie chart.", PageType = typeof(Chart6) },
+				new PageItem() { Glyph="\u2468", Title = "Horizontal Bar", Description = "Create horizontal charts!", PageType = typeof(Chart9) },
 			};
 			PageList = pl;
 		}
