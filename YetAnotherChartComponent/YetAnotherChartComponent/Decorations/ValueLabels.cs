@@ -39,6 +39,7 @@ namespace eScapeLLC.UWP.Charts {
 			internal Point Direction { get; private set; }
 			internal Point CanvasLocation { get; private set; }
 			internal object CustomValue { get; private set; }
+			internal bool Flip { get; set; }
 			internal SeriesItemState(ISeriesItem isi, ISeriesItemValueDouble isivd, Point loc, Point dir, object cv)
 			: base(isi, isivd, loc.X, loc.Y, null) {
 				Direction = dir;
@@ -51,7 +52,7 @@ namespace eScapeLLC.UWP.Charts {
 			/// <param name="offs">Additional offset from <see cref="CanvasLocation"/> in direction of <see cref="Direction"/>.</param>
 			/// <param name="rt">Render type.  Used to trigger invalidation of the element.</param>
 			internal void Locate(Matrix matx, Point offs, RenderType rt) {
-				CanvasLocation = matx.Transform(new Point(XValueAfterOffset, Value));
+				CanvasLocation = matx.Transform(Flip ? new Point(Value, XValueAfterOffset) : new Point(XValueAfterOffset, Value));
 				Locate(offs);
 				if (rt != RenderType.TransformsOnly) {
 					// doing render so (try to) trigger the SizeChanged handler
@@ -183,6 +184,24 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		protected IChartAxis CategoryAxis { get; set; }
 		/// <summary>
+		/// Always maps to the x-component (horz) axis.
+		/// </summary>
+		protected IChartAxis XAxis =>
+			CategoryAxis != null && CategoryAxis.Orientation == AxisOrientation.Horizontal
+			? CategoryAxis
+			: (ValueAxis != null && ValueAxis.Orientation == AxisOrientation.Horizontal
+				? ValueAxis
+				: null);
+		/// <summary>
+		/// Always maps to the y-component (vert) axis.
+		/// </summary>
+		protected IChartAxis YAxis =>
+			ValueAxis != null && ValueAxis.Orientation == AxisOrientation.Vertical
+			? ValueAxis
+			: (CategoryAxis != null && CategoryAxis.Orientation == AxisOrientation.Vertical
+				? CategoryAxis
+				: null);
+		/// <summary>
 		/// Dereferenced component to interrogate for values.
 		/// </summary>
 		protected ChartComponent Source { get; set; }
@@ -235,62 +254,52 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icrc">The context.</param>
 		protected void EnsureComponents(IChartComponentContext icrc) {
+			var icei = icrc as IChartErrorInfo;
 			if (LabelTemplate == null) {
 				if (Theme?.TextBlockTemplate == null) {
-					if (icrc is IChartErrorInfo icei) {
-						icei.Report(new ChartValidationResult(NameOrType(), $"No {nameof(LabelTemplate)} and {nameof(Theme.TextBlockTemplate)} was not found", new[] { nameof(LabelTemplate), nameof(Theme.TextBlockTemplate) }));
-					}
+					icei?.Report(new ChartValidationResult(NameOrType(), $"No {nameof(LabelTemplate)} and {nameof(Theme.TextBlockTemplate)} was not found", new[] { nameof(LabelTemplate), nameof(Theme.TextBlockTemplate) }));
 				}
 			}
-			if (Source == null && !String.IsNullOrEmpty(SourceName)) {
+			if (Source == null && !string.IsNullOrEmpty(SourceName)) {
 				Source = icrc.Find(SourceName);
 			} else {
-				if (icrc is IChartErrorInfo icei) {
-					icei.Report(new ChartValidationResult(NameOrType(), $"Source '{SourceName}' was not found", new[] { nameof(Source), nameof(SourceName) }));
-				}
+				icei?.Report(new ChartValidationResult(NameOrType(), $"Source '{SourceName}' was not found", new[] { nameof(Source), nameof(SourceName) }));
 			}
 			if (Source == null) {
-				if (icrc is IChartErrorInfo icei) {
-					icei.Report(new ChartValidationResult(NameOrType(), $"Source '{SourceName}' lookup failed; no other components can resolve", new[] { nameof(Source), nameof(SourceName) }));
-				}
+				icei?.Report(new ChartValidationResult(NameOrType(), $"Source '{SourceName}' lookup failed; no other components can resolve", new[] { nameof(Source), nameof(SourceName) }));
 				return;
 			}
 			else {
 				if(!(Source is IProvideSeriesItemValues)) {
-					if (icrc is IChartErrorInfo icei) {
-						icei.Report(new ChartValidationResult(Source.NameOrType(), $"Source '{SourceName}' does not provide values; no labels will generate", new[] { nameof(Source), nameof(SourceName) }));
-					}
+					icei?.Report(new ChartValidationResult(Source.NameOrType(), $"Source '{SourceName}' does not provide values; no labels will generate", new[] { nameof(Source), nameof(SourceName) }));
 					return;
 				}
 			}
 			if (Source is IRequireCategoryAxis irca) {
-				if (CategoryAxis == null && !String.IsNullOrEmpty(irca.CategoryAxisName)) {
+				if (CategoryAxis == null && !string.IsNullOrEmpty(irca.CategoryAxisName)) {
 					CategoryAxis = icrc.Find(irca.CategoryAxisName) as IChartAxis;
 				}
 				else {
-					if (icrc is IChartErrorInfo icei) {
-						icei.Report(new ChartValidationResult(Source.NameOrType(), $"Category axis '{irca.CategoryAxisName}' was not found", new[] { nameof(CategoryAxis), nameof(irca.CategoryAxisName) }));
-					}
+					icei?.Report(new ChartValidationResult(Source.NameOrType(), $"Category axis '{irca.CategoryAxisName}' was not found", new[] { nameof(CategoryAxis), nameof(irca.CategoryAxisName) }));
 				}
 			}
 			if (Source is IProvideValueExtents ipve) {
-				if (ValueAxis == null && !String.IsNullOrEmpty(ipve.ValueAxisName)) {
+				if (ValueAxis == null && !string.IsNullOrEmpty(ipve.ValueAxisName)) {
 					ValueAxis = icrc.Find(ipve.ValueAxisName) as IChartAxis;
 				} else {
-					if (icrc is IChartErrorInfo icei) {
-						icei.Report(new ChartValidationResult(Source.NameOrType(), $"Value axis '{ipve.ValueAxisName}' was not found", new[] { nameof(ValueAxis), nameof(ipve.ValueAxisName) }));
-					}
+					icei?.Report(new ChartValidationResult(Source.NameOrType(), $"Value axis '{ipve.ValueAxisName}' was not found", new[] { nameof(ValueAxis), nameof(ipve.ValueAxisName) }));
 				}
 			}
 			else if(Source is IRequireCategoryAxis2 irca2) {
-				if (ValueAxis == null && !String.IsNullOrEmpty(irca2.CategoryAxis2Name)) {
+				if (ValueAxis == null && !string.IsNullOrEmpty(irca2.CategoryAxis2Name)) {
 					ValueAxis = icrc.Find(irca2.CategoryAxis2Name) as IChartAxis;
 				}
 				else {
-					if (icrc is IChartErrorInfo icei) {
-						icei.Report(new ChartValidationResult(Source.NameOrType(), $"Category 2 axis '{irca2.CategoryAxis2Name}' was not found", new[] { nameof(ValueAxis), nameof(irca2.CategoryAxis2Name) }));
-					}
+					icei?.Report(new ChartValidationResult(Source.NameOrType(), $"Category 2 axis '{irca2.CategoryAxis2Name}' was not found", new[] { nameof(ValueAxis), nameof(irca2.CategoryAxis2Name) }));
 				}
+			}
+			if(ValueAxis != null && CategoryAxis != null && ValueAxis.Orientation == CategoryAxis.Orientation) {
+				icei?.Report(new ChartValidationResult(Source.NameOrType(), $"Category axis '{(CategoryAxis as ChartComponent).Name}' and Value axis '{(ValueAxis as ChartComponent).Name}' MUST have different orientations", new[] { nameof(ValueAxis), nameof(CategoryAxis) }));
 			}
 		}
 		/// <summary>
@@ -317,6 +326,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Get the transform from <see cref="IProvideCustomTransform"/>, or based on axes, whichever hits first.
 		/// If there's no <see cref="ValueAxis"/> return Identity matrix.
+		/// <para/>
+		/// Note: Vertical Category axis uses Q4 projection.
 		/// </summary>
 		/// <param name="icrc">Use for the area.</param>
 		/// <returns>Matrix or DEFAULT.</returns>
@@ -326,12 +337,21 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			if (ValueAxis == null) return default;
 			if(Source is IRequireCategoryAxis2 _1) {
-				var mat = MatrixSupport.DataArea(CategoryAxis, ValueAxis, icrc.Area, 4);
+				var mat = MatrixSupport.DataArea(XAxis, YAxis, icrc.Area, 4);
 				var matmp = MatrixSupport.Multiply(mat.Item1, mat.Item2);
 				return matmp;
 			}
-			var matx = CategoryAxis != null ? MatrixSupport.TransformFor(icrc.Area, CategoryAxis, ValueAxis) : MatrixSupport.TransformFor(icrc.Area, ValueAxis);
-			return matx;
+			// IST be careful changing the order and type of axis checks!
+			if (YAxis == CategoryAxis) {
+				// horizontal orientation (Value,Category)
+				return MatrixSupport.Multiply(MatrixSupport.ModelFor(XAxis, YAxis), MatrixSupport.ProjectForQuadrant(4, icrc.Area));
+			}
+			if (CategoryAxis != null) {
+				// vertical orientation (Category,Value)
+				return MatrixSupport.TransformFor(icrc.Area, XAxis, YAxis);
+			}
+			// (NDC,WC) e.g. HorizontalBand/HorizontalRule
+			return MatrixSupport.TransformFor(icrc.Area, YAxis);
 		}
 		/// <summary>
 		/// Element factory for recycler.
@@ -366,7 +386,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="isiv">Source value.</param>
 		/// <returns>New instance.</returns>
 		DataTemplateShim CreateShim(ISeriesItemValueDouble isiv) {
-			var txt = isiv.Value.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
+			var txt = isiv.Value.ToString(string.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
 			if(isiv is ISeriesItemValueCustom isivc) {
 				return new ObjectShim() { Visibility = Visibility, Text = txt, CustomValue = isivc.CustomValue };
 			}
@@ -400,13 +420,13 @@ namespace eScapeLLC.UWP.Charts {
 			switch (pmt) {
 			case RectanglePlacement rp:
 				var pt = rp.Transform(offset);
-				_trace.Verbose($"rp c:{rp.Center} d:{rp.Direction} hd:{rp.HalfDimensions} pt:{pt}");
+				_trace.Verbose($"rp xo:{xo} c:{rp.Center} d:{rp.Direction} hd:{rp.HalfDimensions} pt:{pt}");
 				return new Tuple<Point,Point>(new Point(xo, pt.Y), rp.Direction);
 			case MidpointPlacement mp:
 				var pt2 = mp.Transform(offset);
 				// convert into XOffset!
 				pt2.X -= (isivd as ISeriesItem).XValue;
-				_trace.Verbose($"mp {mp.Midpoint} d:{mp.Direction} hd:{mp.HalfDimension} pt:{pt2}");
+				_trace.Verbose($"mp xo:{xo} mp:{mp.Midpoint} d:{mp.Direction} hd:{mp.HalfDimension} pt:{pt2}");
 				return new Tuple<Point, Point>(pt2, mp.Direction);
 			default:
 				return new Tuple<Point, Point>(new Point(xo, isivd.Value), Placement.UP_RIGHT);
@@ -420,9 +440,10 @@ namespace eScapeLLC.UWP.Charts {
 		SeriesItemState CreateState(ISeriesItem siv) {
 			ISeriesItemValueDouble target = ValueFor(siv);
 			if (target != null && !double.IsNaN(target.Value)) {
+				var flip = CategoryAxis != null && CategoryAxis.Orientation == AxisOrientation.Vertical;
 				var place = GetPlacement(target, PlacementOffset, CategoryAxisOffset);
 				var cv = target is ISeriesItemValueCustom isivc ? isivc.CustomValue : null;
-				return new SeriesItemState(siv, target, place.Item1, place.Item2, cv);
+				return new SeriesItemState(siv, target, place.Item1, place.Item2, cv) { Flip = flip };
 			}
 			return null;
 		}
@@ -505,7 +526,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="shim"></param>
 		void RecycleElement(ISeriesItemValueDouble target, FrameworkElement fe, TextShim shim) {
 			// recycling; update values
-			var txt = target.Value.ToString(String.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
+			var txt = target.Value.ToString(string.IsNullOrEmpty(LabelFormatString) ? "G" : LabelFormatString);
 			shim.Visibility = Visibility;
 			shim.Text = txt;
 			if (shim is ObjectShim oshim && target is ISeriesItemValueCustom isivc2) {
@@ -615,7 +636,7 @@ namespace eScapeLLC.UWP.Charts {
 			var fe = sender as FrameworkElement;
 			var state = ItemState.SingleOrDefault((sis) => sis.Element == fe);
 			if (state != null) {
-				_trace.Verbose($"{Name} sizeChanged loc:{state.CanvasLocation} yv:{state.Value} ns:{e.NewSize}");
+				_trace.Verbose($"{Name}[{state.Index}] loc:{state.CanvasLocation} xvao:{state.XValueAfterOffset} yv:{state.Value} ns:{e.NewSize} ds:{fe.DesiredSize} offs:{LabelOffset}");
 				state.Locate(LabelOffset);
 			}
 		}
@@ -729,7 +750,7 @@ namespace eScapeLLC.UWP.Charts {
 		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
 			if (ItemState.Count == 0) return;
 			var matx = ObtainMatrix(icrc);
-			_trace.Verbose($"{Name} transforms a:{icrc.Area} rx:{CategoryAxis?.Range} ry:{ValueAxis?.Range} matx:{matx}  type:{icrc.Type}");
+			_trace.Verbose($"{Name} transforms a:{icrc.Area} rx:{XAxis?.Range} ry:{YAxis?.Range} matx:{matx} type:{icrc.Type}");
 			if (matx == default) return;
 			foreach (var state in ItemState) {
 				if (state.Element == null) continue;
@@ -744,7 +765,7 @@ namespace eScapeLLC.UWP.Charts {
 					//state.Element.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
 				}
 #endif
-				_trace.Verbose($"{Name} matx:{matx} pt:({state.XValue},{state.Value}) canvas:{state.CanvasLocation}");
+				_trace.Verbose($"\tpt:({state.XValue}/{state.XValueAfterOffset},{state.Value}) canvas:{state.CanvasLocation}");
 			}
 		}
 		#endregion
