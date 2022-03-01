@@ -158,11 +158,11 @@ namespace eScapeLLC.UWP.Charts {
 	/// No checks beyond "is T".
 	/// </summary>
 	/// <typeparam name="T">Element type.</typeparam>
-	public class PhaseOnly<T>: PhaseBase where T : class {
+	public class PhaseOnly<T> : PhaseBase where T : class {
 		/// <summary>
 		/// The list.
 		/// </summary>
-		readonly protected List<T> items = new List<T>();
+		protected readonly List<T> items = new List<T>();
 		/// <summary>
 		/// Iterate the items.
 		/// </summary>
@@ -909,14 +909,12 @@ namespace eScapeLLC.UWP.Charts {
 				if (rrea.Axis != AxisUpdateState.None) {
 					// put axis limits into correct state for IRequireRender components
 					Phase_ResetAxes();
-					//Phase_AxisLimits((cc2) => cc2 is DataSeries && (cc2 is IProvideValueExtents));
 					Phase_AxisLimits(ValueExtents_DataSeries.Items);
 				}
 				var ctx = new DefaultRenderContext(Surface, Components, ls.LayoutDimensions, rect, ls.Layout.RemainingRect, DataContext) { Type = RenderType.Component };
 				irr.Render(ctx);
 				if (rrea.Axis != AxisUpdateState.None) {
 					// axes MUST be re-evaluated because this thing changed.
-					//Phase_AxisLimits((cc2) => !(cc2 is DataSeries) && (cc2 is IProvideValueExtents));
 					Phase_AxisLimits(ValueExtents_NotDataSeries.Items);
 					Phase_AxesFinalized(ls);
 					Phase_RenderPostAxesFinalized(ls);
@@ -958,11 +956,9 @@ namespace eScapeLLC.UWP.Charts {
 			Phase_Layout(ls);
 			// Phase III: data source rendering pipeline (IDataSourceRenderer)
 			Phase_RenderDataSources(ls);
-			//Phase_AxisLimits((cc2) => cc2 is DataSeries && (cc2 is IProvideValueExtents));
 			Phase_AxisLimits(ValueExtents_DataSeries.Items);
 			// Phase IV: render non-axis components (IRequireRender)
 			Phase_RenderComponents(ls);
-			//Phase_AxisLimits((cc2) => !(cc2 is DataSeries) && (cc2 is IProvideValueExtents));
 			Phase_AxisLimits(ValueExtents_NotDataSeries.Items);
 			// Phase V: axes finalized
 			Phase_AxesFinalized(ls);
