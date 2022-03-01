@@ -25,13 +25,22 @@ namespace eScapeLLC.UWP.Charts {
 		/// This one is used when <see cref="DataSeriesWithValue.ValueLabelPath"/> is set.
 		/// </summary>
 		protected class SeriesItemState_Custom : ItemStateCustomWithPlacement<Path> {
+			internal bool flip;
+			Point getPlacement() {
+				if (flip) return Value >= 0 ? Placement.DOWN_RIGHT : Placement.UP_LEFT;
+				return Value >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT;
+			}
 			/// <summary>
 			/// Extract the rectangle geometry and create placement.
 			/// </summary>
 			/// <returns></returns>
-			protected override Placement CreatePlacement() { return new RectanglePlacement(Value >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, DataFor().Rect); }
+			protected override Placement CreatePlacement() {
+				return new RectanglePlacement(getPlacement(), DataFor().Rect);
+			}
 			internal SeriesItemState_Custom(int idx, double xv, double xvo, double yv, object cs, Path ele) : base(idx, xv, xvo, yv, cs, ele, 0) { }
-			RectangleGeometry DataFor() { if (Element.DataContext is GeometryShim<RectangleGeometry> gs) return gs.PathData; return Element.Data as RectangleGeometry; }
+			RectangleGeometry DataFor() {
+				return Element.DataContext is GeometryShim<RectangleGeometry> gs ? gs.PathData : (Element.Data as RectangleGeometry);
+			}
 		}
 		/// <summary>
 		/// Implementation for item state.
@@ -45,7 +54,9 @@ namespace eScapeLLC.UWP.Charts {
 			/// <returns></returns>
 			protected override Placement CreatePlacement() { return new RectanglePlacement(Value >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, DataFor().Rect); }
 			internal SeriesItemState_Double(int idx, double xv, double xvo, double yv, Path ele) : base(idx, xv, xvo, yv, ele, 0) { }
-			RectangleGeometry DataFor() { if (Element.DataContext is GeometryShim<RectangleGeometry> gs) return gs.PathData; return Element.Data as RectangleGeometry; }
+			RectangleGeometry DataFor() {
+				return Element.DataContext is GeometryShim<RectangleGeometry> gs ? gs.PathData : (Element.Data as RectangleGeometry);
+			}
 		}
 		#endregion
 		#region properties
@@ -121,31 +132,35 @@ namespace eScapeLLC.UWP.Charts {
 		/// The <see cref="RectangleGeometry"/> inside the <see cref="Path"/> is now location-invariant wrt x-axis.
 		/// This means that during incremental updates, no re-calculation is required, only adjusting the <see cref="Canvas.LeftProperty"/>.
 		/// </summary>
-		/// <param name="index"></param>
-		/// <param name="valuex"></param>
-		/// <param name="valuey"></param>
-		/// <param name="item"></param>
+		/// <param name="index">Item index.</param>
+		/// <param name="valuecat">Category axis value.</param>
+		/// <param name="valueval">Value axis value.</param>
+		/// <param name="item">Data item.</param>
 		/// <param name="recycler"></param>
 		/// <param name="byl"></param>
-		/// <returns></returns>
-		ItemState<Path> ElementPipeline(int index, double valuex, double valuey, object item, Recycler<Path, ItemState<Path>> recycler, BindingEvaluator byl) {
-			var y1 = ValueAxis.For(valuey);
+		/// <returns>New instance.</returns>
+		ItemState<Path> ElementPipeline(int index, double valuecat, double valueval, object item, Recycler<Path, ItemState<Path>> recycler, BindingEvaluator byl) {
+			var y1 = ValueAxis.For(valueval);
 			var y2 = ValueAxis.For(0);
 			var topy = Math.Max(y1, y2);
 			var bottomy = Math.Min(y1, y2);
-			var leftx = CategoryAxis.For(valuex);
+			var leftx = CategoryAxis.For(valuecat);
 			var barx = BarOffset;
 			var rightx = barx + BarWidth;
-			_trace.Verbose($"{Name}[{index}] {valuey} ({barx},{topy}) ({rightx},{bottomy})");
+			_trace.Verbose($"{Name}[{index}] v:{valueval} ul:({barx},{topy}) lr:({rightx},{bottomy})");
 			var path = recycler.Next(null);
 			if (path == null) return null;
+			var rrr = CategoryAxis.Orientation == AxisOrientation.Horizontal
+				? new Rect(new Point(barx, topy), new Point(rightx, bottomy))
+				: new Rect(new Point(topy, barx), new Point(bottomy, rightx));
+			_trace.Verbose($"{Name}[{index}] rc:{rrr}");
 			var shim = new GeometryWithOffsetShim<RectangleGeometry>() {
-			 PathData = new RectangleGeometry() { Rect = new Rect(new Point(barx, topy), new Point(rightx, bottomy)) }
+			 PathData = new RectangleGeometry() { Rect = rrr }
 			};
 			path.Item2.DataContext = shim;
 			// connect the shim to template root element's Visibility
 			BindTo(shim, nameof(shim.Visibility), path.Item2, UIElement.VisibilityProperty);
-			BindTo(shim, nameof(shim.Offset), path.Item2, Canvas.LeftProperty);
+			BindTo(shim, nameof(shim.Offset), path.Item2, CategoryAxis.Orientation == AxisOrientation.Horizontal ? Canvas.LeftProperty : Canvas.TopProperty);
 			if (byl == null) {
 				return new SeriesItemState_Double(index, leftx, BarOffset, y1, path.Item2);
 			} else {
@@ -190,11 +205,10 @@ namespace eScapeLLC.UWP.Charts {
 			EnsureValuePath(icelc as IChartComponentContext);
 			Layer = icelc.CreateLayer();
 			_trace.Verbose($"{Name} enter v:{ValueAxisName} {ValueAxis} c:{CategoryAxisName} {CategoryAxis} d:{DataSourceName}");
+			var icei = icelc as IChartErrorInfo;
 			if (PathTemplate == null) {
 				if (Theme?.PathTemplate == null) {
-					if (icelc is IChartErrorInfo icei) {
-						icei.Report(new ChartValidationResult(NameOrType(), $"No {nameof(PathTemplate)} and {nameof(Theme.PathTemplate)} was not found", new[] { nameof(PathTemplate), nameof(Theme.PathTemplate) }));
-					}
+					icei?.Report(new ChartValidationResult(NameOrType(), $"No {nameof(PathTemplate)} and {nameof(Theme.PathTemplate)} was not found", new[] { nameof(PathTemplate), nameof(Theme.PathTemplate) }));
 				}
 			}
 			AssignFromRef(icelc as IChartErrorInfo, NameOrType(), nameof(PathStyle), nameof(Theme.PathColumnSeries),
@@ -203,9 +217,7 @@ namespace eScapeLLC.UWP.Charts {
 			);
 			BindPaths = new Evaluators(CategoryPath, ValuePath, ValueLabelPath);
 			if(!BindPaths.IsValid) {
-				if(icelc is IChartErrorInfo icei) {
-					icei.Report(new ChartValidationResult(NameOrType(), $"ValuePath: must be specified", new[] { nameof(ValuePath) }));
-				}
+				icei?.Report(new ChartValidationResult(NameOrType(), $"ValuePath: must be specified", new[] { nameof(ValuePath) }));
 			}
 		}
 		/// <summary>
@@ -230,14 +242,23 @@ namespace eScapeLLC.UWP.Charts {
 		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			if (ItemState.Count == 0) return;
-			var matx = MatrixSupport.TransformForOffsetX(icrc.Area, CategoryAxis, ValueAxis);
+			var cos = new ChartOrientationSupport(CategoryAxis, ValueAxis);
+			var matx = cos.TransformForOffset(icrc.Area);
 			_trace.Verbose($"{Name} mat:{matx} clip:{icrc.SeriesArea}");
 			var mt = new MatrixTransform() { Matrix = matx };
 			foreach(var state in ItemState) {
 				if (state.Element.DataContext is GeometryWithOffsetShim<RectangleGeometry> gs) {
 					gs.GeometryTransform = mt;
-					var output = matx.Transform(new Point(state.XValue, 0));
-					gs.Offset = icrc.Area.Left + output.X;
+					var output = matx.Transform(cos.For(CategoryAxis, state.XValue, ValueAxis, 0));
+					//var output = matx.Transform(new Point(state.XValue, state.Value));
+					// depends on orientation
+					_trace.Verbose($"{Name}[{state.Index}] v:({state.XValue},{state.Value}) output:{output}");
+					if (cos.Orientation == ChartOrientationSupport.ChartOrientation.Vertical) {
+						gs.Offset = icrc.Area.Left + output.X;
+					}
+					else {
+						gs.Offset = icrc.Area.Top + output.Y;
+					}
 				} else {
 					state.Element.Data.Transform = mt;
 				}
@@ -274,15 +295,15 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		void IDataSourceRenderer.Render(object state, int index, object item) {
 			var st = state as RenderState_ValueAndLabel<ItemState<Path>, Path>;
-			var valuey = st.evs.ValueFor(item);
-			var valuex = st.evs.CategoryFor(item, index);
+			var value_val = st.evs.ValueFor(item);
+			var value_cat = st.evs.CategoryFor(item, index);
 			st.ix = index;
 			// short-circuit if it's NaN
-			if (double.IsNaN(valuey)) {
+			if (double.IsNaN(value_val)) {
 				return;
 			}
-			UpdateLimits(valuex, valuey, 0);
-			var istate = ElementPipeline(index, valuex, valuey, item, st.recycler, st.evs.byl);
+			UpdateLimits(value_cat, value_val, 0);
+			var istate = ElementPipeline(index, value_cat, value_val, item, st.recycler, st.evs.byl);
 			if (istate != null) st.itemstate.Add(istate);
 		}
 		void IDataSourceRenderer.RenderComplete(object state) { }
@@ -299,7 +320,7 @@ namespace eScapeLLC.UWP.Charts {
 		void IRequireDataSourceUpdates.Remove(IChartRenderContext icrc, int startAt, IList items) {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			if (BindPaths == null || !BindPaths.IsValid) return;
-			var reproc = IncrementalRemove<ItemState<Path>>(startAt, items, ItemState, istate => istate.Element != null, (rpc, istate) => {
+			var reproc = IncrementalRemove(startAt, items, ItemState, istate => istate.Element != null, (rpc, istate) => {
 				istate.Shift(-rpc, BindPaths, CategoryAxis, UpdateGeometry);
 			});
 			ReconfigureLimits();
@@ -312,13 +333,13 @@ namespace eScapeLLC.UWP.Charts {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			if (BindPaths == null || !BindPaths.IsValid) return;
 			var recycler = new Recycler<Path, ItemState<Path>>(CreatePath);
-			var reproc = IncrementalAdd<ItemState<Path>>(startAt, items, ItemState, (ix, item) => {
-				var valuey = BindPaths.ValueFor(item);
+			var reproc = IncrementalAdd(startAt, items, ItemState, (ix, item) => {
+				var value_val = BindPaths.ValueFor(item);
 				// short-circuit if it's NaN
-				if (double.IsNaN(valuey)) { return null; }
-				var valuex = BindPaths.CategoryFor(item, ix);
+				if (double.IsNaN(value_val)) { return null; }
+				var value_cat = BindPaths.CategoryFor(item, ix);
 				// add requested item
-				var istate = ElementPipeline(ix, valuex, valuey, item, recycler, BindPaths.byl);
+				var istate = ElementPipeline(ix, value_cat, value_val, item, recycler, BindPaths.byl);
 				return istate;
 			}, (rpc, istate) => {
 				istate.Shift(rpc, BindPaths, CategoryAxis, UpdateGeometry);
