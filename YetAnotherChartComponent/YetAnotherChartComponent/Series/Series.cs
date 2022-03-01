@@ -180,62 +180,61 @@ namespace eScapeLLC.UWP.Charts {
 		protected void EnsureAxes(IChartComponentContext icrc) {
 			IChartErrorInfo icei = icrc as IChartErrorInfo;
 			if (ValueAxis == null) {
-				if (!String.IsNullOrEmpty(ValueAxisName)) {
+				if (!string.IsNullOrEmpty(ValueAxisName)) {
 					ValueAxis = icrc.Find(ValueAxisName) as IChartAxis;
-					if (ValueAxis == null && icei != null) {
-						icei.Report(new ChartValidationResult(NameOrType(), $"Value axis '{ValueAxisName}' was not found", new[] { nameof(ValueAxis), nameof(ValueAxisName) }));
+					if (ValueAxis == null) {
+						icei?.Report(new ChartValidationResult(NameOrType(), $"Value axis '{ValueAxisName}' was not found", new[] { nameof(ValueAxis), nameof(ValueAxisName) }));
 					}
 				} else {
-					if (icei != null) {
-						icei.Report(new ChartValidationResult(NameOrType(), $"Property '{nameof(ValueAxisName)}' was not set", new[] { nameof(ValueAxis), nameof(ValueAxisName) }));
-					}
+					icei?.Report(new ChartValidationResult(NameOrType(), $"Property '{nameof(ValueAxisName)}' was not set", new[] { nameof(ValueAxis), nameof(ValueAxisName) }));
 				}
 			}
 			if (CategoryAxis == null) {
-				if (!String.IsNullOrEmpty(CategoryAxisName)) {
+				if (!string.IsNullOrEmpty(CategoryAxisName)) {
 					CategoryAxis = icrc.Find(CategoryAxisName) as IChartAxis;
-					if (CategoryAxis == null && icei != null) {
-						icei.Report(new ChartValidationResult(NameOrType(), $"Value axis '{CategoryAxisName}' was not found", new[] { nameof(CategoryAxis), nameof(CategoryAxisName) }));
+					if (CategoryAxis == null) {
+						icei?.Report(new ChartValidationResult(NameOrType(), $"Value axis '{CategoryAxisName}' was not found", new[] { nameof(CategoryAxis), nameof(CategoryAxisName) }));
 					}
 				} else {
-					if (icei != null) {
-						icei.Report(new ChartValidationResult(NameOrType(), $"Property '{nameof(CategoryAxisName)}' was not set", new[] { nameof(CategoryAxis), nameof(CategoryAxisName) }));
-					}
+					icei?.Report(new ChartValidationResult(NameOrType(), $"Property '{nameof(CategoryAxisName)}' was not set", new[] { nameof(CategoryAxis), nameof(CategoryAxisName) }));
 				}
+			}
+			if (ValueAxis != null && CategoryAxis != null && ValueAxis.Orientation == CategoryAxis.Orientation) {
+				icei?.Report(new ChartValidationResult(NameOrType(), $"Category axis '{(CategoryAxis as ChartComponent).Name}' and Value axis '{(ValueAxis as ChartComponent).Name}' MUST have different orientations", new[] { nameof(ValueAxis), nameof(CategoryAxis) }));
 			}
 		}
 		/// <summary>
 		/// Update value and category limits.
 		/// If a value is <see cref="double.NaN"/>, it is effectively ignored because NaN is NOT GT/LT ANY number, even itself.
 		/// </summary>
-		/// <param name="vx">Category. MAY be NaN.</param>
-		/// <param name="vy">Value.  MAY be NaN.</param>
-		protected void UpdateLimits(double vx, double vy) {
-			if (double.IsNaN(CategoryMinimum) || vx < CategoryMinimum) { CategoryMinimum = vx; }
-			if (double.IsNaN(CategoryMaximum) || vx > CategoryMaximum) { CategoryMaximum = vx; }
-			if (double.IsNaN(Minimum) || vy < Minimum) { Minimum = vy; }
-			if (double.IsNaN(Maximum) || vy > Maximum) { Maximum = vy; }
+		/// <param name="value_cat">Category. MAY be NaN.</param>
+		/// <param name="value_val">Value.  MAY be NaN.</param>
+		protected void UpdateLimits(double value_cat, double value_val) {
+			if (double.IsNaN(CategoryMinimum) || value_cat < CategoryMinimum) { CategoryMinimum = value_cat; }
+			if (double.IsNaN(CategoryMaximum) || value_cat > CategoryMaximum) { CategoryMaximum = value_cat; }
+			if (double.IsNaN(Minimum) || value_val < Minimum) { Minimum = value_val; }
+			if (double.IsNaN(Maximum) || value_val > Maximum) { Maximum = value_val; }
 		}
 		/// <summary>
 		/// Update value and category limits.
 		/// Syntactic convenience for multiple y-axis values.
 		/// If a value is <see cref="double.NaN"/>, it is effectively ignored because NaN is NOT GT/LT ANY number, even itself.
 		/// </summary>
-		/// <param name="vx">Category. MAY be NaN.</param>
-		/// <param name="vys">Values.  MAY contain NaN.</param>
-		protected void UpdateLimits(double vx, params double[] vys) {
-			UpdateLimits(vx, (IEnumerable<double>)vys);
+		/// <param name="value_cat">Category. MAY be NaN.</param>
+		/// <param name="value_vals">Values.  MAY contain NaN.</param>
+		protected void UpdateLimits(double value_cat, params double[] value_vals) {
+			UpdateLimits(value_cat, (IEnumerable<double>)value_vals);
 		}
 		/// <summary>
 		/// Update value and category limits.
 		/// If a value is <see cref="double.NaN"/>, it is effectively ignored because NaN is NOT GT/LT ANY number, even itself.
 		/// </summary>
-		/// <param name="vx">Category. MAY be NaN.</param>
-		/// <param name="vys">Values.  MAY contain NaN.</param>
-		protected void UpdateLimits(double vx, IEnumerable<double> vys) {
-			if (double.IsNaN(CategoryMinimum) || vx < CategoryMinimum) { CategoryMinimum = vx; }
-			if (double.IsNaN(CategoryMaximum) || vx > CategoryMaximum) { CategoryMaximum = vx; }
-			foreach (var vy in vys) {
+		/// <param name="value_cat">Category. MAY be NaN.</param>
+		/// <param name="value_vals">Values.  MAY contain NaN.</param>
+		protected void UpdateLimits(double value_cat, IEnumerable<double> value_vals) {
+			if (double.IsNaN(CategoryMinimum) || value_cat < CategoryMinimum) { CategoryMinimum = value_cat; }
+			if (double.IsNaN(CategoryMaximum) || value_cat > CategoryMaximum) { CategoryMaximum = value_cat; }
+			foreach (var vy in value_vals) {
 				if (double.IsNaN(Minimum) || vy < Minimum) { Minimum = vy; }
 				if (double.IsNaN(Maximum) || vy > Maximum) { Maximum = vy; }
 			}
@@ -333,10 +332,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="iccc"></param>
 		protected void EnsureValuePath(IChartComponentContext iccc) {
+			var icei = iccc as IChartErrorInfo;
 			if (String.IsNullOrEmpty(ValuePath)) {
-				if (iccc is IChartErrorInfo icei) {
-					icei.Report(new ChartValidationResult(NameOrType(), $"{nameof(ValuePath)} was not set, no values will generate", new[] { nameof(ValuePath) }));
-				}
+				icei?.Report(new ChartValidationResult(NameOrType(), $"{nameof(ValuePath)} was not set, no values will generate", new[] { nameof(ValuePath) }));
 			}
 		}
 		#endregion
