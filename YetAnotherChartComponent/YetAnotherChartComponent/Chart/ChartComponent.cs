@@ -101,14 +101,10 @@ namespace eScapeLLC.UWP.Charts {
 				if (refcheck)
 					applyvalue();
 				else {
-					if (icei != null) {
-						icei.Report(new ChartValidationResult(vsource, $"{localprop} not found and {refprop} not found", new[] { localprop, refprop }));
-					}
+					icei?.Report(new ChartValidationResult(vsource, $"{localprop} not found and {refprop} not found", new[] { localprop, refprop }));
 				}
 			} else {
-				if (icei != null) {
-					icei.Report(new ChartValidationResult(vsource, $"{localprop} not found and no Theme was found", new[] { localprop, refprop }));
-				}
+				icei?.Report(new ChartValidationResult(vsource, $"{localprop} not found and no Theme was found", new[] { localprop, refprop }));
 			}
 		}
 		/// <summary>
