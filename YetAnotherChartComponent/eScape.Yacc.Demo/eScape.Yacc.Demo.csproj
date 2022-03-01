@@ -134,6 +134,9 @@
     <Compile Include="Pages\Chart6.xaml.cs">
       <DependentUpon>Chart6.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Pages\Chart9.xaml.cs">
+      <DependentUpon>Chart9.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="VM\Converters.cs" />
     <Compile Include="VM\ViewModels.cs" />
@@ -243,6 +246,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Pages\Chart6.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Pages\Chart9.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
