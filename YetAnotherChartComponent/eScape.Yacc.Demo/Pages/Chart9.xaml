@@ -1,16 +1,16 @@
 ﻿<core:BasicPage
-  x:Class="Yacc.Demo.Pages.Chart9"
-  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	x:Class="Yacc.Demo.Pages.Chart9"
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 	xmlns:core="using:eScape.Core.Page"
 	xmlns:yacc="using:eScapeLLC.UWP.Charts"
 	xmlns:animations="using:Microsoft.Toolkit.Uwp.UI.Animations"
 	xmlns:controls="using:Microsoft.UI.Xaml.Controls"
-  xmlns:local="using:Yacc.Demo.Pages"
-  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-  mc:Ignorable="d"
-  Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+	xmlns:local="using:Yacc.Demo.Pages"
+	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+	mc:Ignorable="d"
+	Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 	<Page.Resources>
 		<animations:AnimationCollection x:Key="OffsetAndOpacity">
 			<animations:OffsetAnimation Duration="0:0:0.5"/>
@@ -86,7 +86,7 @@
 				<yacc:ColumnSeries x:Name="colv2" DataSourceName="data" ValuePath="Value1"
 					Title="Value 2 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" ClipToDataRegion="False"
 					PathStyle="{StaticResource Column_v2}" BarOffset=".25" BarWidth=".5" />
-				<yacc:ValueLabels SourceName="colv2" PlacementOffset="0,0" LabelFormatString="F2" LabelStyle="{StaticResource BigLabels}" />
+				<yacc:ValueLabels SourceName="colv2" LabelFormatString="F2" LabelStyle="{StaticResource BigLabels}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>
 		<TextBlock Name="title1" Style="{StaticResource Title}" Text="Horizontal Bar Chart"
