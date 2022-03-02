@@ -6,6 +6,114 @@ using Windows.Foundation;
 using Windows.UI.Xaml.Media;
 
 namespace Yacc.Tests {
+	/// <summary>
+	/// The <see cref="WorldRect"/> does not suffer from the Device Coordinate bias and is more suited
+	/// to "regular" geometry in World Coordinates.
+	/// </summary>
+	[TestClass, TestCategory("WorldRect")]
+	public class UnitTest_WorldRect {
+		public TestContext TestContext { get; set; }
+		[TestMethod, TestCategory("WorldRect")]
+		public void WorldRect_PositiveYAxis() {
+			var rect = new WorldRect(new Point(0, 0), new Point(5, 10));
+			TestContext.WriteLine("rect {0}", rect);
+			Assert.AreEqual(10, rect.Height, "height failed");
+			Assert.AreEqual(5, rect.Width, "width failed");
+			Assert.IsFalse (rect.IsInverted, "IsInverted failed");
+			Assert.AreEqual(10, rect.Top, "top failed");
+			Assert.AreEqual(0, rect.Left, "left failed");
+			Assert.AreEqual(0, rect.Bottom, "bottom failed");
+			Assert.AreEqual(5, rect.Right, "right failed");
+		}
+		/// <summary>
+		/// No more DC-flipping as Bottom is always LE Top.
+		/// </summary>
+		[TestMethod, TestCategory("WorldRect")]
+		public void WorldRect_NegativeYAxis() {
+			var rect = new WorldRect(new Point(0, 0), new Point(1, -10));
+			TestContext.WriteLine("rect {0}", rect);
+			Assert.AreEqual(10, rect.Height, "height failed");
+			Assert.AreEqual(1, rect.Width, "width failed");
+			Assert.IsTrue(rect.IsInverted, "IsInverted failed");
+			Assert.AreEqual(0, rect.Top, "top failed");
+			Assert.AreEqual(0, rect.Left, "left failed");
+			Assert.AreEqual(-10, rect.Bottom, "bottom failed");
+			Assert.AreEqual(1, rect.Right, "right failed");
+		}
+		[TestMethod, TestCategory("WorldRect")]
+		public void WorldRect_Zero() {
+			var rect = new WorldRect(new Point(1, 1), new Point(1, 1));
+			TestContext.WriteLine("rect {0}", rect);
+			Assert.AreEqual(0, rect.Height, "height failed");
+			Assert.AreEqual(0, rect.Width, "width failed");
+			Assert.IsFalse(rect.IsInverted, "IsInverted failed");
+			Assert.AreEqual(1, rect.Top, "top failed");
+			Assert.AreEqual(1, rect.Left, "left failed");
+			Assert.AreEqual(1, rect.Bottom, "bottom failed");
+			Assert.AreEqual(1, rect.Right, "right failed");
+		}
+		[TestMethod, TestCategory("WorldRect")]
+		public void WorldRect_AllNegativeYAxis() {
+			var rect = new WorldRect(new Point(0, -20), new Point(0, -10));
+			TestContext.WriteLine("rect {0}", rect);
+			Assert.AreEqual(10, rect.Height, "height failed");
+			Assert.AreEqual(0, rect.Width, "width failed");
+			Assert.IsTrue(rect.IsInverted, "IsInverted failed");
+			Assert.AreEqual(-10, rect.Top, "top failed");
+			Assert.AreEqual(0, rect.Left, "left failed");
+			Assert.AreEqual(-20, rect.Bottom, "bottom failed");
+			Assert.AreEqual(0, rect.Right, "right failed");
+		}
+		[TestMethod, TestCategory("WorldRect")]
+		public void WorldRect_NegativeXAxis() {
+			var rect = new WorldRect(new Point(-10, 0), new Point(0, -10));
+			TestContext.WriteLine("rect {0}", rect);
+			Assert.AreEqual(10, rect.Height, "height failed");
+			Assert.AreEqual(10, rect.Width, "width failed");
+			Assert.IsTrue(rect.IsInverted, "IsInverted failed");
+			Assert.AreEqual(0, rect.Top, "top failed");
+			Assert.AreEqual(-10, rect.Left, "left failed");
+			Assert.AreEqual(-10, rect.Bottom, "bottom failed");
+			Assert.AreEqual(0, rect.Right, "right failed");
+		}
+		[TestMethod, TestCategory("WorldRect")]
+		public void HalfDimension() {
+			var rect = new WorldRect(new Point(-10, 0), new Point(0, -10));
+			var hd = rect.HalfDimension;
+			TestContext.WriteLine("rect {0}  hd {1}", rect, hd);
+			Assert.AreEqual(5, hd.Width, "hd.Width failed");
+			Assert.AreEqual(5, hd.Height, "hd.Height failed");
+		}
+		[TestMethod, TestCategory("WorldRect")]
+		public void CenterPoint() {
+			var rect = new WorldRect(new Point(-10, 0), new Point(0, -10));
+			var rect3 = new WorldRect(new Point(1, 2), new Point(10, 10));
+			var rect2 = new WorldRect(new Point(0, 1), new Point(1, -10));
+			var ctr = rect.Center;
+			var ctr2 = rect2.Center;
+			var ctr3 = rect3.Center;
+			TestContext.WriteLine("rect {0}  ctr {1}", rect, ctr);
+			TestContext.WriteLine("rect2 {0}  ctr2 {1}", rect2, ctr2);
+			TestContext.WriteLine("rect3 {0}  ctr3 {1}", rect3, ctr3);
+			Assert.AreEqual(-5, ctr.X, "ctr.X failed");
+			Assert.AreEqual(-5, ctr.Y, "ctr.Y failed");
+			Assert.AreEqual(0.5, ctr2.X, "ctr2.X failed");
+			Assert.AreEqual(-4.5, ctr2.Y, "ctr2.Y failed");
+			Assert.AreEqual(5.5, ctr3.X, "ctr3.X failed");
+			Assert.AreEqual(6, ctr3.Y, "ctr3.Y failed");
+		}
+		[TestMethod, TestCategory("WorldRect")]
+		public void WorldRect_Equality() {
+			var rect = new WorldRect(new Point(0, 0), new Point(0, -10));
+			var rect2 = new WorldRect(new Point(0, 0), new Point(0, -10));
+			var rect3 = new WorldRect(new Point(0, 0), new Point(0, 10));
+			TestContext.WriteLine("rect {0}  rect2 {1}  rect3 {2}", rect, rect2, rect3);
+			Assert.AreEqual(10, rect.Height, "height failed");
+			Assert.IsTrue(rect == rect2, "== failed");
+			Assert.IsTrue(rect != rect3, "!= failed (rect)");
+			Assert.IsTrue(rect2 != rect3, "!= failed (rect2)");
+		}
+	}
 	[TestClass]
 	public class UnitTest_Platform {
 		public TestContext TestContext { get; set; }

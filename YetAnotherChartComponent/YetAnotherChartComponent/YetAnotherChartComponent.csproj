@@ -146,6 +146,7 @@
     <Compile Include="Chart\Theme.cs" />
     <Compile Include="Axis\ValueAxis.cs" />
     <Compile Include="Support\ViewModels.cs" />
+    <Compile Include="Support\WorldRect.cs" />
     <EmbeddedResource Include="Properties\eScapeLLC.UWP.Charts.rd.xml" />
   </ItemGroup>
   <ItemGroup>
