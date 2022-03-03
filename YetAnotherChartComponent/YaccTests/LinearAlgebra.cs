@@ -85,6 +85,39 @@ namespace Yacc.Tests {
 			Assert.AreEqual(5, hd.Height, "hd.Height failed");
 		}
 		[TestMethod, TestCategory("WorldRect")]
+		public void Flip() {
+			var rect = new WorldRect(new Point(-10, 1), new Point(0, -10));
+			var flip = rect.Flip();
+			var rect2 = new WorldRect(new Point(10, 1), new Point(0, 10));
+			var flip2 = rect2.Flip();
+			var rect3 = new WorldRect(new Point(-9, 1), new Point(1, -11));
+			var flip3 = rect3.Flip();
+			TestContext.WriteLine("rect {0}  flip {1}", rect, flip);
+			TestContext.WriteLine("rect2 {0}  flip2 {1}", rect2, flip2);
+			TestContext.WriteLine("rect3 {0}  flip3 {1}", rect3, flip3);
+			Assert.AreEqual(rect.Height, flip.Width, "flip.Width failed");
+			Assert.AreEqual(rect.Width, flip.Height, "flip.Height failed");
+			// inverted
+			Assert.AreEqual(rect.Right, flip.Top, "flip.Top failed");
+			Assert.AreEqual(rect.Left, flip.Bottom, "flip.Bottom failed");
+			Assert.AreEqual(rect.Bottom, flip.Left, "flip.Left failed");
+			Assert.AreEqual(rect.Top, flip.Right, "flip.Right failed");
+			// not inverted
+			Assert.AreEqual(rect2.Height, flip2.Width, "flip2.Width failed");
+			Assert.AreEqual(rect2.Width, flip2.Height, "flip2.Height failed");
+			Assert.AreEqual(rect2.Right, flip2.Top, "flip2.Top failed");
+			Assert.AreEqual(rect2.Left, flip2.Bottom, "flip2.Bottom failed");
+			Assert.AreEqual(rect2.Bottom, flip2.Left, "flip2.Left failed");
+			Assert.AreEqual(rect2.Top, flip2.Right, "flip2.Right failed");
+			// spans zero
+			Assert.AreEqual(rect3.Height, flip3.Width, "flip3.Width failed");
+			Assert.AreEqual(rect3.Width, flip3.Height, "flip3.Height failed");
+			Assert.AreEqual(rect3.Right, flip3.Top, "flip3.Top failed");
+			Assert.AreEqual(rect3.Left, flip3.Bottom, "flip3.Bottom failed");
+			Assert.AreEqual(rect3.Bottom, flip3.Left, "flip3.Left failed");
+			Assert.AreEqual(rect3.Top, flip3.Right, "flip3.Right failed");
+		}
+		[TestMethod, TestCategory("WorldRect")]
 		public void CenterPoint() {
 			var rect = new WorldRect(new Point(-10, 0), new Point(0, -10));
 			var rect3 = new WorldRect(new Point(1, 2), new Point(10, 10));
