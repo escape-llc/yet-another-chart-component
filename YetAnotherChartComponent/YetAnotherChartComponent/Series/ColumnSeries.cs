@@ -36,7 +36,8 @@ namespace eScapeLLC.UWP.Charts {
 			/// </summary>
 			/// <returns></returns>
 			protected override Placement CreatePlacement() {
-				return new RectanglePlacement(getPlacement(), DataFor());
+				var wc = DataFor();
+				return new RectanglePlacement(getPlacement(), flip ? wc.Flip() : wc);
 			}
 			internal SeriesItemState_Custom(int idx, double xv, double xvo, double yv, object cs, Path ele) : base(idx, xv, xvo, yv, cs, ele, 0) { }
 			WorldRect DataFor() {
@@ -52,12 +53,16 @@ namespace eScapeLLC.UWP.Charts {
 		/// This one is used when <see cref="DataSeriesWithValue.ValueLabelPath"/> is NOT set.
 		/// </summary>
 		protected class SeriesItemState_Double : ItemStateWithPlacement<Path> {
+			internal bool flip;
 			internal double bwidth;
 			/// <summary>
 			/// Extract the rectangle geometry and create placement.
 			/// </summary>
 			/// <returns></returns>
-			protected override Placement CreatePlacement() { return new RectanglePlacement(Value >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, DataFor()); }
+			protected override Placement CreatePlacement() {
+				var wc = DataFor();
+				return new RectanglePlacement(Value >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, flip ? wc.Flip() : wc);
+			}
 			internal SeriesItemState_Double(int idx, double xv, double xvo, double yv, Path ele) : base(idx, xv, xvo, yv, ele, 0) { }
 			WorldRect DataFor() {
 				var ulc = new Point(XValueAfterOffset, Math.Max(0, Value));
@@ -170,10 +175,10 @@ namespace eScapeLLC.UWP.Charts {
 			BindTo(shim, nameof(shim.Visibility), path.Item2, UIElement.VisibilityProperty);
 			BindTo(shim, nameof(shim.Offset), path.Item2, CategoryAxis.Orientation == AxisOrientation.Horizontal ? Canvas.LeftProperty : Canvas.TopProperty);
 			if (byl == null) {
-				return new SeriesItemState_Double(index, leftx, BarOffset, y1, path.Item2) { bwidth = BarWidth };
+				return new SeriesItemState_Double(index, leftx, BarOffset, y1, path.Item2) { bwidth = BarWidth, flip = CategoryAxis.Orientation == AxisOrientation.Vertical };
 			} else {
 				var cs = byl.For(item);
-				return new SeriesItemState_Custom(index, leftx, BarOffset, y1, cs, path.Item2) { bwidth = BarWidth };
+				return new SeriesItemState_Custom(index, leftx, BarOffset, y1, cs, path.Item2) { bwidth = BarWidth, flip = CategoryAxis.Orientation == AxisOrientation.Vertical };
 			}
 		}
 		/// <summary>
