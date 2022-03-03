@@ -4,7 +4,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
-using Windows.Devices.PointOfService;
 using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -18,6 +17,18 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public class MarkerSeries : DataSeriesWithValue, IDataSourceRenderer, IRequireDataSourceUpdates, IProvideSeriesItemUpdates, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireAfterAxesFinalized, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("MarkerSeries", LogTools.Level.Error);
+		#region item state
+		internal class MarkerItemState : ItemState_Matrix<Path>, IProvidePlacement {
+			internal MarkerItemState(int idx, double xv, double xo, double yv, Path ele, int ch = 0) : base(idx, xv, xo, yv, ele, ch) { }
+			Placement IProvidePlacement.Placement => new MarkerPlacement(new Point(XValueAfterOffset, Value), Placement.DOWN_LEFT);
+			void IProvidePlacement.ClearCache() { }
+		}
+		internal class MarkerItemState_Custom : ItemStateCustom_Matrix<Path>, IProvidePlacement {
+			internal MarkerItemState_Custom(int idx, double xv, double xo, double yv, object cs, Path ele, int ch = 0) : base(idx, xv, xo, yv, cs, ele, ch) { }
+			Placement IProvidePlacement.Placement => new MarkerPlacement(new Point(XValueAfterOffset, Value), Placement.DOWN_LEFT);
+			void IProvidePlacement.ClearCache() { }
+		}
+		#endregion
 		#region properties
 		/// <summary>
 		/// Return current state as read-only.
@@ -138,9 +149,9 @@ namespace eScapeLLC.UWP.Charts {
 			BindTo(shim, nameof(shim.Offset), el.Item2, Canvas.LeftProperty);
 			var cs = evs.LabelFor(item);
 			if (cs == null) {
-				return new ItemState_Matrix<Path>(index, mappedx, MarkerOffset, mappedy, el.Item2);
+				return new MarkerItemState(index, mappedx, MarkerOffset, mappedy, el.Item2);
 			} else {
-				return new ItemStateCustom_Matrix<Path>(index, mappedx, MarkerOffset, mappedy, cs, el.Item2);
+				return new MarkerItemState_Custom(index, mappedx, MarkerOffset, mappedy, cs, el.Item2);
 			}
 		}
 		#endregion

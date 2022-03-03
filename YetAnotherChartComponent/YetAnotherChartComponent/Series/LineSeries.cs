@@ -3,7 +3,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Linq;
 using Windows.Foundation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media;
@@ -18,6 +17,18 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public class LineSeries : DataSeriesWithValue, IDataSourceRenderer, IRequireDataSourceUpdates, IProvideSeriesItemUpdates, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("LineSeries", LogTools.Level.Error);
+		#region item state
+		internal class LineItemState : ItemState<Path>, IProvidePlacement {
+			internal LineItemState(int idx, double xv, double xo, double yv, Path ele, int ch = 0) : base(idx, xv, xo, yv, ele, ch) { }
+			Placement IProvidePlacement.Placement => new MarkerPlacement(new Point(XValueAfterOffset, Value), Placement.DOWN_LEFT);
+			void IProvidePlacement.ClearCache() { }
+		}
+		internal class LineItemState_Custom : ItemStateCustom<Path>, IProvidePlacement {
+			internal LineItemState_Custom(int idx, double xv, double xo, double yv, object cs, Path ele, int ch = 0) : base(idx, xv, xo, yv, cs, ele, ch) { }
+			Placement IProvidePlacement.Placement => new MarkerPlacement(new Point(XValueAfterOffset, Value), Placement.DOWN_LEFT);
+			void IProvidePlacement.ClearCache() { }
+		}
+		#endregion
 		#region properties
 		/// <summary>
 		/// Return item state.
@@ -95,9 +106,9 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"{Name}[{index}] v:({valuex},{valuey}) m:({linex},{mappedy})");
 			var cs = evs.LabelFor(item);
 			if (cs == null) {
-				return new ItemState<Path>(index, mappedx, CategoryAxisOffset, mappedy, Segments);
+				return new LineItemState(index, mappedx, CategoryAxisOffset, mappedy, Segments);
 			} else {
-				return new ItemStateCustom<Path>(index, mappedx, CategoryAxisOffset, mappedy, cs, Segments);
+				return new LineItemState_Custom(index, mappedx, CategoryAxisOffset, mappedy, cs, Segments);
 			}
 		}
 		/// <summary>

@@ -15,6 +15,18 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 	public class ImageSourceMarkerSeries : DataSeriesWithValue, IDataSourceRenderer, IRequireDataSourceUpdates, IProvideSeriesItemUpdates, IProvideLegend, IRequireChartTheme, IRequireEnterLeave, IRequireTransforms {
 		static LogTools.Flag _trace = LogTools.Add("ImageSourceMarkerSeries", LogTools.Level.Error);
+		#region item state
+		internal class MarkerItemState : ItemState_Matrix<Image>, IProvidePlacement {
+			internal MarkerItemState(int idx, double xv, double xo, double yv, Image ele, int ch = 0) : base(idx, xv, xo, yv, ele, ch) { }
+			Placement IProvidePlacement.Placement => new MarkerPlacement(new Point(XValueAfterOffset, Value), Placement.DOWN_LEFT);
+			void IProvidePlacement.ClearCache() { }
+		}
+		internal class MarkerItemState_Custom : ItemStateCustom_Matrix<Image>, IProvidePlacement {
+			internal MarkerItemState_Custom(int idx, double xv, double xo, double yv, object cs, Image ele, int ch = 0) : base(idx, xv, xo, yv, cs, ele, ch) { }
+			Placement IProvidePlacement.Placement => new MarkerPlacement(new Point(XValueAfterOffset, Value), Placement.DOWN_LEFT);
+			void IProvidePlacement.ClearCache() { }
+		}
+		#endregion
 		#region properties
 		/// <summary>
 		/// Return current state as read-only.
@@ -128,9 +140,9 @@ namespace eScapeLLC.UWP.Charts {
 			if (el == null) return null;
 			var cs = evs.LabelFor(item);
 			if (cs == null) {
-				return new ItemState_Matrix<Image>(index, mappedx, MarkerOffset, mappedy, el.Item2);
+				return new MarkerItemState /*ItemState_Matrix<Image>*/(index, mappedx, MarkerOffset, mappedy, el.Item2);
 			} else {
-				return new ItemStateCustom_Matrix<Image>(index, mappedx, MarkerOffset, mappedy, cs, el.Item2);
+				return new MarkerItemState_Custom /*ItemStateCustom_Matrix<Image>*/(index, mappedx, MarkerOffset, mappedy, cs, el.Item2);
 			}
 		}
 		#endregion
