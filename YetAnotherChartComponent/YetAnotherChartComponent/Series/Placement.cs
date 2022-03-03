@@ -7,7 +7,7 @@ namespace eScapeLLC.UWP.Charts {
 	/// Abstract base for placement data.
 	/// </summary>
 	public abstract class Placement {
-		#region direction vectors
+		#region WC direction vectors
 		/// <summary>
 		/// Direction vector: up.
 		/// </summary>
@@ -48,9 +48,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// (-1,0) is the "start".
 		/// The directions are "relative" as defined by subclasses.
 		/// </summary>
-		/// <param name="pt">Input point.</param>
+		/// <param name="poffset">Placement offset.</param>
 		/// <returns>Transformed point.</returns>
-		public abstract Point Transform(Point pt);
+		public abstract Point Transform(Point poffset);
 	}
 	#endregion
 	#region RectanglePlacement
@@ -95,14 +95,20 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="direction"></param>
 		/// <param name="rc"></param>
-		public RectanglePlacement(Point direction, Rect rc) : this(direction, new Point(rc.Left + rc.Width / 2, rc.Top + rc.Height / 2), new Size(rc.Width / 2, rc.Height / 2)) { }
+		public RectanglePlacement(Point direction, WorldRect rc) : this(direction, rc.Center, rc.HalfDimension) { }
+		/// <summary>
+		/// For compatibility.
+		/// </summary>
+		/// <param name="direction"></param>
+		/// <param name="rc"></param>
+		public RectanglePlacement(Point direction, Rect rc) : this(direction, new Point(rc.Left + rc.Width/2, rc.Top + rc.Height/2), new Size(rc.Width/2, rc.Height/2)) { }
 		/// <summary>
 		/// Ctor.
 		/// Infers direction from the coordinates of the rectangle.
 		/// IST: the Rect is always DC so its direction vector is (-,1) because the most-negative y-coordinate becomes the TOP.
 		/// </summary>
 		/// <param name="rc">A rectangle.</param>
-		public RectanglePlacement(Rect rc) : this(new Point(Math.Sign(rc.Right - rc.Left), Math.Sign(rc.Bottom - rc.Top)), rc) { }
+		public RectanglePlacement(WorldRect rc) : this(new Point(Math.Sign(rc.Right - rc.Left), Math.Sign(rc.Bottom - rc.Top)), rc) { }
 		#endregion
 		#region extensions
 		/// <summary>
@@ -112,11 +118,13 @@ namespace eScapeLLC.UWP.Charts {
 		/// (-1,0) is the "start".
 		/// The directions are relative to the <see cref="Direction"/> vector.
 		/// </summary>
-		/// <param name="pt"></param>
+		/// <param name="poffset">Placement offset.</param>
 		/// <returns></returns>
-		public override Point Transform(Point pt) { return new Point(Center.X + pt.X * HalfDimensions.Width * Direction.X, Center.Y + pt.Y * HalfDimensions.Height * Direction.Y); }
+		public override Point Transform(Point poffset) { return new Point(Center.X + poffset.X * HalfDimensions.Width * Direction.X, Center.Y + poffset.Y * HalfDimensions.Height * Direction.Y); }
 		#endregion
 	}
+	#endregion
+	#region MidpointPlacement
 	/// <summary>
 	/// Placement for a midpoint segment.
 	/// </summary>
@@ -150,12 +158,48 @@ namespace eScapeLLC.UWP.Charts {
 		/// <summary>
 		/// Project the point along the line segment.
 		/// </summary>
-		/// <param name="pt">Position offset.</param>
+		/// <param name="poffset">Position offset.</param>
 		/// <returns>Transformed point.</returns>
-		public override Point Transform(Point pt) {
-			return new Point(Midpoint.X + pt.X * HalfDimension * Direction.X, Midpoint.Y + pt.Y * HalfDimension * Direction.Y);
+		public override Point Transform(Point poffset) {
+			return new Point(Midpoint.X + poffset.X * HalfDimension * Direction.X, Midpoint.Y + poffset.Y * HalfDimension * Direction.Y);
 		}
 		#endregion
+	}
+	#endregion
+	#region MarkerPlacement
+	/// <summary>
+	/// Placement at specific World Coordinate with no Label Placement scale, i.e. PX.
+	/// </summary>
+	public class MarkerPlacement : Placement {
+		#region properties
+		/// <summary>
+		/// Location of the point.
+		/// </summary>
+		public Point Location { get; private set; }
+		/// <summary>
+		/// Which way segment is "pointing".
+		/// For a wedge SHOULD be actual angle (cos/sin) from center point toward circumference.
+		/// The X,Y are multiplied with the incoming values in <see cref="Transform"/>.
+		/// </summary>
+		public Point Direction { get; private set; }
+		#endregion
+		#region ctor
+		/// <summary>
+		/// Ctor.
+		/// </summary>
+		/// <param name="loc"></param>
+		/// <param name="dir"></param>
+		public MarkerPlacement(Point loc, Point dir) { Location = loc; Direction = dir; }
+		#endregion
+		/// <summary>
+		/// <inheritdoc/>
+		/// Scale is DC in both directions.
+		/// </summary>
+		/// <param name="poffset">Position offset.</param>
+		/// <returns></returns>
+		public override Point Transform(Point poffset) {
+			return new Point(Location.X + poffset.X * Direction.X, Location.Y + poffset.Y * Direction.Y);
+		}
 	}
 	/// <summary>
 	/// Ability to provide placement data for a channel.
@@ -163,8 +207,14 @@ namespace eScapeLLC.UWP.Charts {
 	public interface IProvidePlacement {
 		/// <summary>
 		/// Provide the placement information.
+		/// DO NOT return NULL; instead DO NOT implement this interface!
 		/// </summary>
 		Placement Placement { get; }
+		/// <summary>
+		/// Clear any cached placement.
+		/// This is required during incremental updates.
+		/// </summary>
+		void ClearCache();
 	}
 	#endregion
 }
