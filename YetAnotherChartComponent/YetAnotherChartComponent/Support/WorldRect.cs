@@ -59,6 +59,13 @@ namespace eScapeLLC.UWP.Charts {
 			Bottom = Math.Min(p1.Y, p2.Y);
 		}
 		/// <summary>
+		/// "Flip" the rect by exchanging the X and Y components.
+		/// </summary>
+		/// <returns></returns>
+		public WorldRect Flip() {
+			return new WorldRect(new Point(Top, Left), new Point(Bottom, Right));
+		}
+		/// <summary>
 		/// Override.  Uses equality operator.
 		/// </summary>
 		/// <param name="obj"></param>
