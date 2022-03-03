@@ -26,6 +26,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		protected class SeriesItemState_Custom : ItemStateCustomWithPlacement<Path> {
 			internal bool flip;
+			internal double bwidth;
 			Point getPlacement() {
 				if (flip) return Value >= 0 ? Placement.DOWN_RIGHT : Placement.UP_LEFT;
 				return Value >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT;
@@ -35,11 +36,14 @@ namespace eScapeLLC.UWP.Charts {
 			/// </summary>
 			/// <returns></returns>
 			protected override Placement CreatePlacement() {
-				return new RectanglePlacement(getPlacement(), DataFor().Rect);
+				return new RectanglePlacement(getPlacement(), DataFor());
 			}
 			internal SeriesItemState_Custom(int idx, double xv, double xvo, double yv, object cs, Path ele) : base(idx, xv, xvo, yv, cs, ele, 0) { }
-			RectangleGeometry DataFor() {
-				return Element.DataContext is GeometryShim<RectangleGeometry> gs ? gs.PathData : (Element.Data as RectangleGeometry);
+			WorldRect DataFor() {
+				var ulc = new Point(XValueAfterOffset, Math.Max(0,  Value));
+				var lrc = new Point(XValueAfterOffset + bwidth, Math.Min(0, Value));
+				_trace.Verbose($"\t[{Index}] DataFor ulc:{ulc} lrc:{lrc}");
+				return new WorldRect(ulc, lrc);
 			}
 		}
 		/// <summary>
@@ -48,14 +52,18 @@ namespace eScapeLLC.UWP.Charts {
 		/// This one is used when <see cref="DataSeriesWithValue.ValueLabelPath"/> is NOT set.
 		/// </summary>
 		protected class SeriesItemState_Double : ItemStateWithPlacement<Path> {
+			internal double bwidth;
 			/// <summary>
 			/// Extract the rectangle geometry and create placement.
 			/// </summary>
 			/// <returns></returns>
-			protected override Placement CreatePlacement() { return new RectanglePlacement(Value >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, DataFor().Rect); }
+			protected override Placement CreatePlacement() { return new RectanglePlacement(Value >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, DataFor()); }
 			internal SeriesItemState_Double(int idx, double xv, double xvo, double yv, Path ele) : base(idx, xv, xvo, yv, ele, 0) { }
-			RectangleGeometry DataFor() {
-				return Element.DataContext is GeometryShim<RectangleGeometry> gs ? gs.PathData : (Element.Data as RectangleGeometry);
+			WorldRect DataFor() {
+				var ulc = new Point(XValueAfterOffset, Math.Max(0, Value));
+				var lrc = new Point(XValueAfterOffset + bwidth, Math.Min(0, Value));
+				_trace.Verbose($"\t[{Index}] DataFor ulc:{ulc} lrc:{lrc}");
+				return new WorldRect(ulc, lrc);
 			}
 		}
 		#endregion
@@ -162,10 +170,10 @@ namespace eScapeLLC.UWP.Charts {
 			BindTo(shim, nameof(shim.Visibility), path.Item2, UIElement.VisibilityProperty);
 			BindTo(shim, nameof(shim.Offset), path.Item2, CategoryAxis.Orientation == AxisOrientation.Horizontal ? Canvas.LeftProperty : Canvas.TopProperty);
 			if (byl == null) {
-				return new SeriesItemState_Double(index, leftx, BarOffset, y1, path.Item2);
+				return new SeriesItemState_Double(index, leftx, BarOffset, y1, path.Item2) { bwidth = BarWidth };
 			} else {
 				var cs = byl.For(item);
-				return new SeriesItemState_Custom(index, leftx, BarOffset, y1, cs, path.Item2);
+				return new SeriesItemState_Custom(index, leftx, BarOffset, y1, cs, path.Item2) { bwidth = BarWidth };
 			}
 		}
 		/// <summary>
