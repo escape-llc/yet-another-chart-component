@@ -618,11 +618,11 @@ namespace eScapeLLC.UWP.Charts {
 			/// <returns></returns>
 			protected override Placement CreatePlacement() { return new RectanglePlacement(Placement.DOWN_RIGHT, DataFor()); }
 			internal SeriesItemState_Custom(int idx, double xv, double xvo, double c2v, double yv, object cs, Path ele) : base(idx, xv, xvo, yv, cs, ele, 0) { YValue = c2v; }
-			Rect DataFor() {
+			WorldRect DataFor() {
 				var p1 = new Point(XValue, YValue);
 				var p2 = new Point(XValue + 1, YValue + 1);
 				_trace.Verbose($"placement p1:{p1} p2:{p2} vx,vy:({XValue},{YValue}) v:{Value}");
-				return new Rect(p1, p2);
+				return new WorldRect(p1, p2);
 			}
 		}
 		/// <summary>
@@ -641,11 +641,11 @@ namespace eScapeLLC.UWP.Charts {
 			/// <returns></returns>
 			protected override Placement CreatePlacement() { return new RectanglePlacement(Placement.DOWN_RIGHT, DataFor()); }
 			internal SeriesItemState_Double(int idx, double xv, double xvo, double c2v, double yv, Path ele) : base(idx, xv, xvo, yv, ele, 0) { YValue = c2v; }
-			Rect DataFor() {
+			WorldRect DataFor() {
 				var p1 = new Point(XValue, YValue);
 				var p2 = new Point(XValue + 1, YValue + 1);
 				_trace.Verbose($"placement p1:{p1} p2:{p2} vx,vy:({XValue},{YValue}) v:{Value}");
-				return new Rect(p1, p2);
+				return new WorldRect(p1, p2);
 			}
 		}
 		#endregion
