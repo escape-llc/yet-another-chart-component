@@ -38,10 +38,12 @@ namespace eScapeLLC.UWP.Charts {
 		protected class SeriesItemState : ItemStateDependent<FrameworkElement> {
 			internal Point Direction { get; private set; }
 			internal Point CanvasLocation { get; private set; }
+			internal Point PlacementLocation { get; private set; }
 			internal object CustomValue { get; private set; }
 			internal bool Flip { get; set; }
 			internal SeriesItemState(ISeriesItem isi, ISeriesItemValueDouble isivd, Point loc, Point dir, object cv)
 			: base(isi, isivd, loc.X, loc.Y, null) {
+				PlacementLocation = loc;
 				Direction = dir;
 				CustomValue = cv;
 			}
@@ -52,7 +54,7 @@ namespace eScapeLLC.UWP.Charts {
 			/// <param name="offs">Additional offset from <see cref="CanvasLocation"/> in direction of <see cref="Direction"/>.</param>
 			/// <param name="rt">Render type.  Used to trigger invalidation of the element.</param>
 			internal void Locate(Matrix matx, Point offs, RenderType rt) {
-				CanvasLocation = matx.Transform(Flip ? new Point(Value, XValueAfterOffset) : new Point(XValueAfterOffset, Value));
+				CanvasLocation = matx.Transform(PlacementLocation);
 				Locate(offs);
 				if (rt != RenderType.TransformsOnly) {
 					// doing render so (try to) trigger the SizeChanged handler
@@ -63,13 +65,17 @@ namespace eScapeLLC.UWP.Charts {
 			/// <summary>
 			/// Re-locate based on current <see cref="CanvasLocation"/> and actual size.
 			/// </summary>
-			/// <param name="offs">Additional offset from <see cref="CanvasLocation"/> in direction of <see cref="Direction"/>.</param>
-			internal void Locate(Point offs) {
+			/// <param name="loffset">Label offset from <see cref="CanvasLocation"/> in direction of <see cref="Direction"/>.</param>
+			internal void Locate(Point loffset) {
 				if (Element == null) return;
 				var hw = Element.ActualWidth / 2;
 				var hh = Element.ActualHeight / 2;
-				Element.SetValue(Canvas.LeftProperty, CanvasLocation.X - hw + hw * offs.X * Direction.X);
-				Element.SetValue(Canvas.TopProperty, CanvasLocation.Y - hh + hh * offs.Y * Direction.Y);
+				if (hw == 0 || hh == 0) return;
+				var left = CanvasLocation.X - hw + hw * loffset.X * Direction.X;
+				var top = CanvasLocation.Y - hh + hh * loffset.Y * Direction.Y;
+				_trace.Verbose($"\t[{Index}] ({XValue}/{XValueAfterOffset},{Value}) canvas:({left},{top})  o:{loffset}");
+				Element.SetValue(Canvas.LeftProperty, left);
+				Element.SetValue(Canvas.TopProperty, top);
 			}
 			/// <summary>
 			/// Recalculate placement values and update state.
@@ -77,8 +83,10 @@ namespace eScapeLLC.UWP.Charts {
 			/// <param name="offs">Placement offset.</param>
 			/// <param name="aoffset">Axis unit offset.</param>
 			internal void UpdatePlacement(Point offs, double aoffset) {
+				(ValueSource as IProvidePlacement)?.ClearCache();
 				var pmt = GetPlacement(ValueSource, offs, aoffset);
-				XOffset = pmt.Item1.X;
+				PlacementLocation = pmt.Item1;
+				XOffset = pmt.Item1.X - XValue;
 				Value = pmt.Item1.Y;
 				Direction = pmt.Item2;
 			}
@@ -412,23 +420,26 @@ namespace eScapeLLC.UWP.Charts {
 		/// Extract placement info.
 		/// </summary>
 		/// <param name="isivd">The item.</param>
-		/// <param name="offset">Placement offset.</param>
-		/// <param name="xo">Default x-offset, depending on placement found.</param>
-		/// <returns>Item1=location(.X=XOffset,.Y=Value);Item2=direction.</returns>
-		static Tuple<Point,Point> GetPlacement(ISeriesItemValueDouble isivd, Point offset, double xo) {
+		/// <param name="poffset">Placement offset.</param>
+		/// <param name="xo">X-offset, depending on placement found.</param>
+		/// <returns>Item1=location(.X=XValueAfterOffset,.Y=Value);Item2=direction.</returns>
+		static Tuple<Point,Point> GetPlacement(ISeriesItemValueDouble isivd, Point poffset, double xo) {
 			var pmt = (isivd as IProvidePlacement)?.Placement;
 			switch (pmt) {
 			case RectanglePlacement rp:
-				var pt = rp.Transform(offset);
-				_trace.Verbose($"rp xo:{xo} c:{rp.Center} d:{rp.Direction} hd:{rp.HalfDimensions} pt:{pt}");
-				return new Tuple<Point,Point>(new Point(xo, pt.Y), rp.Direction);
+				var pt = rp.Transform(poffset);
+				_trace.Verbose($"\trp ({(isivd as ISeriesItem).XValue}/{(isivd as ISeriesItem).XValueAfterOffset}, {isivd.Value}) xo:{xo} c:{rp.Center} d:{rp.Direction} hd:{rp.HalfDimensions} pt:{pt}");
+				return new Tuple<Point,Point>(pt, rp.Direction);
 			case MidpointPlacement mp:
-				var pt2 = mp.Transform(offset);
-				// convert into XOffset!
-				pt2.X -= (isivd as ISeriesItem).XValue;
-				_trace.Verbose($"mp xo:{xo} mp:{mp.Midpoint} d:{mp.Direction} hd:{mp.HalfDimension} pt:{pt2}");
+				var pt2 = mp.Transform(poffset);
+				_trace.Verbose($"\tmp xo:{xo} mp:{mp.Midpoint} d:{mp.Direction} hd:{mp.HalfDimension} pt:{pt2}");
 				return new Tuple<Point, Point>(pt2, mp.Direction);
+			case MarkerPlacement mkp:
+				var pt3 = mkp.Transform(poffset);
+				_trace.Verbose($"\tmp xo:{xo} l:{mkp.Location} d:{mkp.Direction} pt:{pt3}");
+				return new Tuple<Point, Point>(pt3, mkp.Direction);
 			default:
+				// (NDC,WC)
 				return new Tuple<Point, Point>(new Point(xo, isivd.Value), Placement.UP_RIGHT);
 			}
 		}
