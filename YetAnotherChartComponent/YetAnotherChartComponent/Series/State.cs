@@ -388,6 +388,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <returns></returns>
 		protected abstract Placement CreatePlacement();
+		/// <summary>
+		/// <inheritdoc/>
+		/// </summary>
+		void IProvidePlacement.ClearCache() { cache = null; }
 	}
 	#endregion
 	#region ItemStateCustomWithPlacement<EL>
@@ -417,6 +421,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <returns></returns>
 		protected abstract Placement CreatePlacement();
+		/// <summary>
+		/// <inheritdoc/>
+		/// </summary>
+		void IProvidePlacement.ClearCache() { cache = null; }
 	}
 	#endregion
 	#region ItemStateMultiChannelCore
