@@ -90,7 +90,7 @@ namespace eScapeLLC.UWP.Charts {
 			/// <summary>
 			/// The list of paths created for the column.
 			/// </summary>
-			public List<Tuple<double, Path>> Elements { get; private set; } = new List<Tuple<double, Path>>();
+			public List<Tuple<double, Path, WorldRect>> Elements { get; private set; } = new List<Tuple<double, Path, WorldRect>>();
 			/// <summary>
 			/// Bookkeeping for Min/Max values.
 			/// </summary>
@@ -129,22 +129,28 @@ namespace eScapeLLC.UWP.Charts {
 		/// Wrapper for the channel items.
 		/// </summary>
 		protected class ChannelItemState : ItemStateWithPlacement<Path> {
+			internal WorldRect wr;
 			/// <summary>
 			/// Extract the rectangle geometry and create placement.
 			/// </summary>
 			/// <returns></returns>
-			protected override Placement CreatePlacement() { return new RectanglePlacement(Value >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, (Element.Data as RectangleGeometry).Rect); }
+			protected override Placement CreatePlacement() {
+				return new RectanglePlacement(!wr.IsInverted ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, wr);
+			}
 			internal ChannelItemState(int idx, double xv, double xo, double yv, Path ele, int ch) : base(idx, xv, xo, yv, ele, ch) { }
 		}
 		/// <summary>
 		/// Wrapper for the channel items.
 		/// </summary>
 		protected class ChannelItemState_Custom : ItemStateCustomWithPlacement<Path> {
+			internal WorldRect wr;
 			/// <summary>
-			/// Extract the rectangle geometry and create placement.
+			/// Create placement.
 			/// </summary>
 			/// <returns></returns>
-			protected override Placement CreatePlacement() { return new RectanglePlacement(Value >= 0 ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, (Element.Data as RectangleGeometry).Rect); }
+			protected override Placement CreatePlacement() {
+				return new RectanglePlacement(!wr.IsInverted ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, wr);
+			}
 			internal ChannelItemState_Custom(int idx, double xv, double xo, double yv, object cs, Path ele, int ch) : base(idx, xv, xo, yv, cs, ele, ch) { }
 		}
 		#endregion
@@ -283,14 +289,14 @@ namespace eScapeLLC.UWP.Charts {
 				if (sis is SeriesItemState_Custom sisc) {
 					var sis2 = new ISeriesItemValue[sis.Elements.Count];
 					for (int idx = 0; idx < sis.Elements.Count; idx++) {
-						sis2[idx] = new ChannelItemState_Custom(sis.Index, sis.XValue, sis.XOffset, sis.Elements[idx].Item1, sisc.CustomValue, sis.Elements[idx].Item2, idx);
+						sis2[idx] = new ChannelItemState_Custom(sis.Index, sis.XValue, sis.XOffset, sis.Elements[idx].Item1, sisc.CustomValue, sis.Elements[idx].Item2, idx) { wr = sis.Elements[idx].Item3 };
 					}
 					var sivc = new ItemStateMultiChannelWrapper(sis, sis2);
 					yield return sivc;
 				} else {
 					var sis2 = new ISeriesItemValue[sis.Elements.Count];
 					for (int idx = 0; idx < sis.Elements.Count; idx++) {
-						sis2[idx] = new ChannelItemState(sis.Index, sis.XValue, sis.XOffset, sis.Elements[idx].Item1, sis.Elements[idx].Item2, idx);
+						sis2[idx] = new ChannelItemState(sis.Index, sis.XValue, sis.XOffset, sis.Elements[idx].Item1, sis.Elements[idx].Item2, idx) { wr = sis.Elements[idx].Item3 };
 					}
 					var sivc = new ItemStateMultiChannelWrapper(sis, sis2);
 					yield return sivc;
@@ -324,7 +330,9 @@ namespace eScapeLLC.UWP.Charts {
 			var leftx = CategoryAxis.For(valuex);
 			var barx = BarOffset;
 			var rightx = barx + BarWidth;
-			var sis = evs.byl == null ? new SeriesItemState(index, leftx, BarOffset) : new SeriesItemState_Custom(index, leftx, BarOffset, evs.byl.For(item));
+			var sis = evs.byl == null
+				? new SeriesItemState(index, leftx, BarOffset)
+				: new SeriesItemState_Custom(index, leftx, BarOffset, evs.byl.For(item));
 			for (int ix = 0; ix < evs.bys.Length; ix++) {
 				var valuey = CoerceValue(item, evs.bys[ix]);
 				if (double.IsNaN(valuey)) {
@@ -337,18 +345,22 @@ namespace eScapeLLC.UWP.Charts {
 				var topy = Math.Max(y1, y2);
 				var bottomy = Math.Min(y1, y2);
 				sis.UpdateLimits(y1);
-				_trace.Verbose($"{Name}[{index},{ix}] {valuey} ({barx},{topy}) ({rightx},{bottomy}) sis ({sis.Min},{sis.Max})");
+				var ul = new Point(barx, topy);
+				var lr = new Point(rightx, bottomy);
+				_trace.Verbose($"{Name}[{index},{ix}] v:{valuey} ul:({ul}) lr:({lr}) limits:({sis.Min},{sis.Max})");
 				var path = recycler.Next(null);
 				if (path == null) return null;
 				var shim = new GeometryWithOffsetShim<RectangleGeometry>() {
-					PathData = new RectangleGeometry() { Rect = new Rect(new Point(barx, topy), new Point(rightx, bottomy)) }
+					PathData = new RectangleGeometry() { Rect = new Rect(ul, lr) }
 				};
 				path.Item2.DataContext = shim;
 				BindTo(ColumnStack[ix], "PathStyle", path.Item2, FrameworkElement.StyleProperty);
 				// bind offset
 				BindTo(shim, nameof(shim.Offset), path.Item2, Canvas.LeftProperty);
 				UpdateLimits(valuex, sis.Min, sis.Max);
-				sis.Elements.Add(new Tuple<double, Path>(valuey, path.Item2));
+				var wul = new Point(ul.X + valuex, ul.Y);
+				var wlr = new Point(lr.X + valuex, lr.Y);
+				sis.Elements.Add(new Tuple<double, Path, WorldRect>(valuey, path.Item2, new WorldRect(wul, wlr)));
 			}
 			return sis;
 		}
