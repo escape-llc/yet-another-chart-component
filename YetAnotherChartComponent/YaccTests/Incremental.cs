@@ -2,6 +2,8 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 
 namespace Yacc.Tests {
 	public class TestItem : ISeriesItem, ISeriesItemValue {
@@ -16,6 +18,7 @@ namespace Yacc.Tests {
 		public double Xvalue { get; set; }
 		public double Yvalue { get; set; }
 	}
+	#region UnitTest_IncrementalUpdate
 	[TestClass]
 	public class UnitTest_IncrementalUpdate {
 		public TestContext TestContext { get; set; }
@@ -270,4 +273,97 @@ namespace Yacc.Tests {
 		}
 		#endregion
 	}
+	#endregion
+	#region UnitTest_ObservableCollection
+	/// <summary>
+	/// Verify the contents of the callbacks for various <see cref="ObservableCollection{T}"/> operations.
+	/// </summary>
+	[TestClass]
+	public class UnitTest_ObservableCollection {
+		public TestContext TestContext { get; set; }
+		#region helpers
+		ObservableCollection<TestItem> CreateSource(int start = 0, int count = 3) {
+			var items = new ObservableCollection<TestItem>();
+			for (int ix = 0; ix < count; ix++) {
+				items.Add(new TestItem() { Index = ix, XValue = start + ix, Value = (start + ix) * 10 + ix });
+			}
+			return items;
+		}
+		TestItem CreateItem(int ix) {
+			return new TestItem() {
+				Index = ix,
+				XValue = ix,
+				Value = ix
+			};
+		}
+		#endregion
+		[TestMethod, TestCategory("Observable")]
+		public void AddToEnd() {
+			var oc = CreateSource();
+			NotifyCollectionChangedAction? ncca = null;
+			int itemct = -1;
+			int nsi = -1;
+			bool oinull = false;
+			oc.CollectionChanged += (object sender, NotifyCollectionChangedEventArgs e) => {
+				ncca = e.Action;
+				itemct = e.NewItems.Count;
+				nsi = e.NewStartingIndex;
+				oinull = e.OldItems == null;
+			};
+			var item = CreateItem(99);
+			oc.Add(item);
+			Assert.IsTrue(ncca.HasValue, "HasValue failed");
+			Assert.IsTrue(oinull, "OldItems null failed");
+			Assert.AreEqual(NotifyCollectionChangedAction.Add, ncca.Value, "Action failed");
+			Assert.AreEqual(1, itemct, "NewItems.Count failed");
+			Assert.AreEqual(3, nsi, "NewStartingIndex failed");
+		}
+		[TestMethod, TestCategory("Observable")]
+		public void ReplaceItem() {
+			var oc = CreateSource();
+			NotifyCollectionChangedAction? ncca = null;
+			int itemct = -1;
+			int oitemct = -1;
+			int nsi = -1;
+			int osi = -1;
+			oc.CollectionChanged += (object sender, NotifyCollectionChangedEventArgs e) => {
+				ncca = e.Action;
+				itemct = e.NewItems.Count;
+				oitemct = e.OldItems.Count;
+				nsi = e.NewStartingIndex;
+				osi = e.OldStartingIndex;
+			};
+			var item = CreateItem(99);
+			var index = oc.Count - 1;
+			oc[index] = item;
+			Assert.IsTrue(ncca.HasValue, "HasValue failed");
+			Assert.AreEqual(NotifyCollectionChangedAction.Replace, ncca.Value, "Action failed");
+			Assert.AreEqual(1, itemct, "NewItems.Count failed");
+			Assert.AreEqual(1, oitemct, "OldItems.Count failed");
+			Assert.AreEqual(index, nsi, "NewStartingIndex failed");
+			Assert.AreEqual(index, osi, "OldStartingIndex failed");
+		}
+		[TestMethod, TestCategory("Observable")]
+		public void RemoveFromEnd() {
+			var oc = CreateSource();
+			NotifyCollectionChangedAction? ncca = null;
+			int itemct = -1;
+			int osi = -1;
+			bool ninull = false;
+			oc.CollectionChanged += (object sender, NotifyCollectionChangedEventArgs e) => {
+				ncca = e.Action;
+				itemct = e.OldItems.Count;
+				osi = e.OldStartingIndex;
+				ninull = e.NewItems == null;
+			};
+			var index = oc.Count - 1;
+			oc.RemoveAt(index);
+			Assert.IsTrue(ncca.HasValue, "HasValue failed");
+			Assert.AreEqual(NotifyCollectionChangedAction.Remove, ncca.Value, "Action failed");
+			Assert.IsTrue(ninull, "NewItems null failed");
+			Assert.AreEqual(1, itemct, "OldItems.Count failed");
+			Assert.AreEqual(index, osi, "OldStartingIndex failed");
+		}
+	}
+	#endregion
 }
