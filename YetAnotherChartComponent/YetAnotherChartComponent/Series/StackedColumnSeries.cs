@@ -135,7 +135,7 @@ namespace eScapeLLC.UWP.Charts {
 			/// </summary>
 			/// <returns></returns>
 			protected override Placement CreatePlacement() {
-				return new RectanglePlacement(!wr.IsInverted ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, wr);
+				return new RectanglePlacement(!wr.IsInverted ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, wr.Translate(XValue, 0));
 			}
 			internal ChannelItemState(int idx, double xv, double xo, double yv, Path ele, int ch) : base(idx, xv, xo, yv, ele, ch) { }
 		}
@@ -149,7 +149,7 @@ namespace eScapeLLC.UWP.Charts {
 			/// </summary>
 			/// <returns></returns>
 			protected override Placement CreatePlacement() {
-				return new RectanglePlacement(!wr.IsInverted ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, wr);
+				return new RectanglePlacement(!wr.IsInverted ? Placement.UP_RIGHT : Placement.DOWN_RIGHT, wr.Translate(XValue, 0));
 			}
 			internal ChannelItemState_Custom(int idx, double xv, double xo, double yv, object cs, Path ele, int ch) : base(idx, xv, xo, yv, cs, ele, ch) { }
 		}
@@ -358,8 +358,9 @@ namespace eScapeLLC.UWP.Charts {
 				// bind offset
 				BindTo(shim, nameof(shim.Offset), path.Item2, Canvas.LeftProperty);
 				UpdateLimits(valuex, sis.Min, sis.Max);
-				var wul = new Point(ul.X + valuex, ul.Y);
-				var wlr = new Point(lr.X + valuex, lr.Y);
+				// this gets translated for placement
+				var wul = new Point(ul.X, ul.Y);
+				var wlr = new Point(lr.X, lr.Y);
 				sis.Elements.Add(new Tuple<double, Path, WorldRect>(valuey, path.Item2, new WorldRect(wul, wlr)));
 			}
 			return sis;
