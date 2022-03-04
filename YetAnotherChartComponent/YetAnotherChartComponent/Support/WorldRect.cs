@@ -10,22 +10,23 @@ namespace eScapeLLC.UWP.Charts {
 	/// </summary>
 #pragma warning restore CS0419 // Ambiguous reference in cref attribute
 	public struct WorldRect : IFormattable {
+		#region properties
 		/// <summary>
 		/// Minimum of x-components.
 		/// </summary>
-		public double Left { get; private set; }
+		public readonly double Left;
 		/// <summary>
 		/// Maximum of x-components.
 		/// </summary>
-		public double Right { get; private set; }
+		public readonly double Right;
 		/// <summary>
 		/// Maximum of y-components.
 		/// </summary>
-		public double Top { get; private set; }
+		public readonly double Top;
 		/// <summary>
 		/// Minimum of y-components.
 		/// </summary>
-		public double Bottom { get; private set; }
+		public readonly double Bottom;
 		/// <summary>
 		/// Width of rectangle.
 		/// </summary>
@@ -46,6 +47,8 @@ namespace eScapeLLC.UWP.Charts {
 		/// Return the center point (for placement).
 		/// </summary>
 		public Point Center => new Point(Left + Width / 2, Top - Height / 2);
+		#endregion
+		#region ctor
 		/// <summary>
 		/// Ctor.
 		/// Accepts any two "diagonally-opposing" corners.
@@ -58,13 +61,26 @@ namespace eScapeLLC.UWP.Charts {
 			Top = Math.Max(p1.Y, p2.Y);
 			Bottom = Math.Min(p1.Y, p2.Y);
 		}
+		#endregion
+		#region public
 		/// <summary>
-		/// "Flip" the rect by exchanging the X and Y components.
+		/// Create a "Flipped" <see cref="WorldRect"/> by exchanging the X and Y components.
 		/// </summary>
-		/// <returns></returns>
+		/// <returns>New instance.</returns>
 		public WorldRect Flip() {
 			return new WorldRect(new Point(Top, Left), new Point(Bottom, Right));
 		}
+		/// <summary>
+		/// Create a <see cref="WorldRect"/> translated by given components.
+		/// </summary>
+		/// <param name="dx">delta x.</param>
+		/// <param name="dy">delta y.</param>
+		/// <returns>New instance.</returns>
+		public WorldRect Translate(double dx, double dy) {
+			return new WorldRect(new Point(Left + dx, Top + dy), new Point(Right + dx, Bottom + dy));
+		}
+		#endregion
+		#region Object infrastructure
 		/// <summary>
 		/// Override.  Uses equality operator.
 		/// </summary>
@@ -89,6 +105,8 @@ namespace eScapeLLC.UWP.Charts {
 				return hash;
 			}
 		}
+		#endregion
+		#region static operators
 		/// <summary>
 		/// Equality operator.
 		/// Performs exact comparison on numerics.
@@ -109,6 +127,8 @@ namespace eScapeLLC.UWP.Charts {
 		public static bool operator !=(WorldRect r1, WorldRect r2) {
 			return r1.Left != r2.Left || r1.Right != r2.Right || r1.Top != r2.Top || r1.Bottom != r2.Bottom;
 		}
+		#endregion
+		#region IFormattable
 		/// <summary>
 		/// Format the value.
 		/// </summary>
@@ -118,6 +138,7 @@ namespace eScapeLLC.UWP.Charts {
 		public string ToString(string format, IFormatProvider formatProvider) {
 			return IsInverted ? $"!({Left},{Top})({Right},{Bottom}) ({Width} x {Height})" : $"({Left},{Top})({Right},{Bottom}) ({Width} x {Height})";
 		}
+		#endregion
 	}
 	#endregion
 }
