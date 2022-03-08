@@ -115,8 +115,8 @@ namespace eScapeLLC.UWP.Charts {
 			/// <returns>The new location OR NULL.</returns>
 			internal Point? UpdateLocation() {
 				if (element != null) {
-					var loc = GetLocation(element);
 					SizeElement(element);
+					var loc = GetLocation(element);
 					element.SetValue(Canvas.LeftProperty, loc.X);
 					element.SetValue(Canvas.TopProperty, loc.Y);
 					return loc;
@@ -365,10 +365,11 @@ namespace eScapeLLC.UWP.Charts {
 			_trace.Verbose($"{Name} sizeChanged ps:{e.PreviousSize} ns:{e.NewSize} text:{vm?.Text}");
 #endif
 			var fe = sender as FrameworkElement;
+			if (fe.ActualWidth == 0 || fe.ActualHeight == 0) return;
 			var state = AxisLabels.SingleOrDefault(sis => sis.element == fe);
 			if (state != null) {
 				var loc = state.UpdateLocation();
-				_trace.Verbose($"{Name} sizeChanged[{state.tick.Index}] loc:{loc} yv:{state.tick.Value} ns:{e.NewSize} ds:{fe.DesiredSize}");
+				_trace.Verbose($"{Name} sizeChanged[{state.tick.Index}] loc:{loc} yv:{state.tick.Value} o:({state.xorigin},{state.yorigin}) ns:{e.NewSize} ds:{fe.DesiredSize}");
 			}
 		}
 		#endregion
