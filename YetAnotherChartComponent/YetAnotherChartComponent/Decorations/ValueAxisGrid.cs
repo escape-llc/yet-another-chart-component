@@ -29,6 +29,12 @@ namespace eScapeLLC.UWP.Charts {
 			}
 		}
 		#endregion
+		#region SubtickState
+		internal class SubtickState : TickState {
+			internal int ParentIndex { get; set; }
+			internal SubtickState(int pidx, int idx, double vx) : base(idx, vx) { ParentIndex = pidx; }
+		}
+		#endregion
 		#region properties
 		/// <summary>
 		/// The style to use for Path geometry.
@@ -65,6 +71,10 @@ namespace eScapeLLC.UWP.Charts {
 		/// The dereferenced value axis.
 		/// </summary>
 		protected IChartAxis ValueAxis { get; set; }
+		/// <summary>
+		/// True if axis lines are vertical (<see cref="ValueAxis"/> !NULL and <see cref="AxisOrientation.Horizontal"/>).
+		/// </summary>
+		protected bool IsVertical => ValueAxis != null && ValueAxis.Orientation == AxisOrientation.Horizontal;
 		/// <summary>
 		/// Paths for the grid lines.
 		/// </summary>
@@ -112,9 +122,8 @@ namespace eScapeLLC.UWP.Charts {
 			if (ValueAxis == null && !String.IsNullOrEmpty(ValueAxisName)) {
 				ValueAxis = iccc.Find(ValueAxisName) as IChartAxis;
 			} else {
-				if (iccc is IChartErrorInfo icei) {
-					icei.Report(new ChartValidationResult(NameOrType(), $"Value axis '{ValueAxisName}' was not found", new[] { nameof(ValueAxis), nameof(ValueAxisName) }));
-				}
+				IChartErrorInfo icei = iccc as IChartErrorInfo;
+				icei?.Report(new ChartValidationResult(NameOrType(), $"Value axis '{ValueAxisName}' was not found", new[] { nameof(ValueAxis), nameof(ValueAxisName) }));
 			}
 		}
 		/// <summary>
@@ -134,12 +143,17 @@ namespace eScapeLLC.UWP.Charts {
 		/// <returns></returns>
 		Path CreateElement(ItemState state) {
 			var path = new Path();
-			var gline = new LineGeometry() { StartPoint=new Point(0, 0), EndPoint=new Point(1, 0) };
+			var gline = CreateGridLine(IsVertical);
 			path.Data = gline;
 			if (PathStyle != null) {
 				BindTo(this, nameof(PathStyle), path, FrameworkElement.StyleProperty);
 			}
 			return path;
+		}
+		LineGeometry CreateGridLine(bool isvert) {
+			return isvert
+				? new LineGeometry() { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) }
+				: new LineGeometry() { StartPoint = new Point(0, 0), EndPoint = new Point(1, 0) };
 		}
 		void TransferFromStyle(Path path, Style style) {
 			var sdap = style.Find(Shape.StrokeDashArrayProperty, default(DoubleCollection));
@@ -157,7 +171,7 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		Path CreateSubElement(ItemState state) {
 			var path = new Path();
-			var gline = new LineGeometry() { StartPoint = new Point(0, 0), EndPoint = new Point(1, 0) };
+			var gline = CreateGridLine(IsVertical);
 			path.Data = gline;
 			if (MinorGridPathStyle != null) {
 				BindTo(this, nameof(MinorGridPathStyle), path, FrameworkElement.StyleProperty);
@@ -168,8 +182,28 @@ namespace eScapeLLC.UWP.Charts {
 			}
 			return path;
 		}
+		ItemState CreateSubtick(IChartRenderContext icrc, Recycler<Path, ItemState> recycler, SubtickState tick) {
+			if (tick.Value <= ValueAxis.Minimum || tick.Value >= ValueAxis.Maximum) return null;
+			var state = new ItemState() { Tick = tick };
+			var current = recycler.Next(state);
+			if (!current.Item1) {
+				// restore binding
+				if (MinorGridPathStyle != null) {
+					BindTo(this, nameof(MinorGridPathStyle), current.Item2, FrameworkElement.StyleProperty);
+					TransferFromStyle(current.Item2, MinorGridPathStyle);
+				}
+				else if (PathStyle != null) {
+					BindTo(this, nameof(PathStyle), current.Item2, FrameworkElement.StyleProperty);
+					TransferFromStyle(current.Item2, PathStyle);
+				}
+			}
+			state.Element = current.Item2;
+			ApplyBinding(this, nameof(Visibility), state.Element, UIElement.VisibilityProperty);
+			state.SetLocation(icrc.Area.Left, tick.Value);
+			return state;
+		}
 		#endregion
-		#region extensions
+		#region IRequireEnterLeave
 		void IRequireEnterLeave.Enter(IChartEnterLeaveContext icelc) {
 			EnsureAxes(icelc as IChartComponentContext);
 			Layer = icelc.CreateLayer();
@@ -180,29 +214,8 @@ namespace eScapeLLC.UWP.Charts {
 			icelc.DeleteLayer(Layer);
 			Layer = null;
 		}
-		internal class SubtickState : TickState {
-			internal int ParentIndex { get; set; }
-			internal SubtickState(int pidx, int idx, double vx) :base(idx, vx) { ParentIndex = pidx; }
-		}
-		ItemState CreateSubtick(IChartRenderContext icrc, Recycler<Path, ItemState> recycler, SubtickState tick) {
-			if (tick.Value <= ValueAxis.Minimum || tick.Value >= ValueAxis.Maximum) return null;
-			var state = new ItemState() { Tick = tick };
-			var current = recycler.Next(state);
-			if (!current.Item1) {
-				// restore binding
-				if (MinorGridPathStyle != null) {
-					BindTo(this, nameof(MinorGridPathStyle), current.Item2, FrameworkElement.StyleProperty);
-					TransferFromStyle(current.Item2, MinorGridPathStyle);
-				} else if (PathStyle != null) {
-					BindTo(this, nameof(PathStyle), current.Item2, FrameworkElement.StyleProperty);
-					TransferFromStyle(current.Item2, PathStyle);
-				}
-			}
-			state.Element = current.Item2;
-			ApplyBinding(this, nameof(Visibility), state.Element, UIElement.VisibilityProperty);
-			state.SetLocation(icrc.Area.Left, tick.Value);
-			return state;
-		}
+		#endregion
+		#region IRequireRender
 		/// <summary>
 		/// Grid coordinates:
 		///		x: "normalized" [0..1] and scaled to the area-width
@@ -289,30 +302,50 @@ namespace eScapeLLC.UWP.Charts {
 			Layer.Add(mrecycler.Created);
 			Dirty = false;
 		}
+		#endregion
+		#region IRequireTransforms
+		MatrixTransform GridTransform(IChartRenderContext icrc) {
+			var scalex = IsVertical ? icrc.SeriesArea.Width / ValueAxis.Range : icrc.SeriesArea.Width;
+			var scaley = IsVertical ? icrc.SeriesArea.Height : icrc.SeriesArea.Height / ValueAxis.Range;
+			var gmatx = new Matrix(scalex, 0, 0, IsVertical ? scaley : -scaley, 0, 0);
+			var gmt = new MatrixTransform() { Matrix = gmatx };
+			_trace.Verbose($"gridtransform sx:{scalex:F3} sy:{scaley:F3} matx:{gmatx} a:{icrc.Area} sa:{icrc.SeriesArea}");
+			return gmt;
+		}
+		void HorizontalGridLine(IChartRenderContext icrc, MatrixTransform gmt, ItemState state, string tag) {
+			var adj = state.Element.ActualHeight / 2;
+			var scaley = icrc.SeriesArea.Height / ValueAxis.Range;
+			var top = icrc.Area.Bottom - (state.Tick.Value - ValueAxis.Minimum) * scaley - adj;
+			_trace.Verbose($"transforms.h {tag}:[{state.Tick.Index}] {state.Tick.Value} adj:{adj} top:{top} sy:{scaley}");
+			state.Element.Data.Transform = gmt;
+			state.SetLocation(icrc.SeriesArea.Left, top);
+		}
+		void VerticalGridLine(IChartRenderContext icrc, MatrixTransform gmt, ItemState state, string tag) {
+			var adj = state.Element.ActualWidth / 2;
+			var scalex = icrc.SeriesArea.Width / ValueAxis.Range;
+			var left = icrc.Area.Left + (state.Tick.Value - ValueAxis.Minimum) * scalex - adj;
+			_trace.Verbose($"transforms.v {tag}:[{state.Tick.Index}] {state.Tick.Value} adj:{adj} left:{left} sx:{scalex}");
+			state.Element.Data.Transform = gmt;
+			state.SetLocation(left, icrc.SeriesArea.Top);
+		}
 		/// <summary>
 		/// Grid-coordinates (x:[0..1], y:axis)
 		/// </summary>
 		/// <param name="icrc"></param>
 		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
 			if (ValueAxis == null) return;
-			var scalex = icrc.SeriesArea.Width;
-			var scaley = icrc.SeriesArea.Height / ValueAxis.Range;
-			var gmatx = new Matrix(scalex, 0, 0, -scaley, 0, 0);
-			var gmt = new MatrixTransform() { Matrix = gmatx };
-			_trace.Verbose($"transforms sx:{scalex:F3} sy:{scaley:F3} matx:{gmatx} a:{icrc.Area} sa:{icrc.SeriesArea}");
+			var gmt = GridTransform(icrc);
 			foreach (var state in GridLines) {
-				var adj = state.Element.ActualHeight / 2;
-				var top = icrc.Area.Bottom - (state.Tick.Value - ValueAxis.Minimum) * scaley - adj;
-				_trace.Verbose($"transforms tick:{state.Tick.Index} adj:{adj} top:{top}");
-				state.Element.Data.Transform = gmt;
-				state.SetLocation(icrc.SeriesArea.Left, top);
+				if (IsVertical)
+					VerticalGridLine(icrc, gmt, state, "tick");
+				else
+					HorizontalGridLine(icrc, gmt, state, "tick");
 			}
-			foreach(var state in MinorGridLines) {
-				var adj = state.Element.ActualHeight / 2;
-				var top = icrc.Area.Bottom - (state.Tick.Value - ValueAxis.Minimum) * scaley - adj;
-				_trace.Verbose($"transforms subtick:{state.Tick.Index} adj:{adj} top:{top}");
-				state.Element.Data.Transform = gmt;
-				state.SetLocation(icrc.SeriesArea.Left, top);
+			foreach (var state in MinorGridLines) {
+				if (IsVertical)
+					VerticalGridLine(icrc, gmt, state, "subtick");
+				else
+					HorizontalGridLine(icrc, gmt, state, "subtick");
 			}
 		}
 		#endregion
