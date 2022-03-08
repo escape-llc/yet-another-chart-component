@@ -102,7 +102,7 @@
 				<AppBarToggleButton IsChecked="True" x:Name="cb_grid2" Label="Toggle" Content="Grid2"/>
 			</CommandBar.PrimaryCommands>
 		</CommandBar>
-		<yacc:Chart x:Name="chart" Style="{StaticResource Chart}"
+		<yacc:Chart x:Name="chart" Style="{StaticResource Chart}" SizeChanged="chart_SizeChanged"
 			RelativePanel.Below="toolbar" RelativePanel.AlignBottomWithPanel="True"
 			RelativePanel.AlignLeftWithPanel="True" RelativePanel.AlignRightWithPanel="True">
 			<yacc:Chart.DataSources>
@@ -140,6 +140,48 @@
 				ItemsSource="{Binding ElementName=chart,Path=LegendItems}"
 				ItemTemplate="{StaticResource LegendItem}"/>
 		</Border>
+		<!-- Bottom label is easiest; so is top -->
+		<TextBlock Text="Date" HorizontalAlignment="Center" HorizontalTextAlignment="Center" Foreground="White" FontSize="20"
+			RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True"/>
+		<!--
+		Left-edge rotated label is still easy.
+		NOTE: transforms are applied bottom-to-top!
+		NOTE: we are using AlignVerticalCenterWithPanel for some help
+		NOTE: RenderTransformOrigin is required to be .5,.5 for proper rotation
+		-->
+		<TextBlock Text="Price (USD)" HorizontalAlignment="Center" HorizontalTextAlignment="Center" Foreground="Wheat" FontSize="12"
+			RelativePanel.AlignVerticalCenterWithPanel="True" RenderTransformOrigin=".5,.5">
+			<TextBlock.RenderTransform>
+				<TransformGroup>
+					<!-- 2. translate "backwards" to get closer to left edge; depends on text size -->
+					<TranslateTransform Y="-20"/>
+					<!-- 1. rotate sideways; we now translate in Y direction -->
+					<RotateTransform Angle="-90"/>
+				</TransformGroup>
+			</TextBlock.RenderTransform>
+		</TextBlock>
+		<!--
+		Right-edge rotated label is hardest and requires x:Bind and even more transform trickery to achieve this goal.
+		See the code-behind for the rest of the recipe.
+		NOTE: transforms are applied bottom-to-top!
+		NOTE: we are using AlignVerticalCenterWithPanel for some help
+		NOTE: RenderTransformOrigin is required to be .5,.5 for proper rotation
+		-->
+		<TextBlock Text="Volume (shares)" HorizontalAlignment="Right" HorizontalTextAlignment="Center" Foreground="Wheat" FontSize="12"
+			RelativePanel.AlignVerticalCenterWithPanel="True" RenderTransformOrigin=".5,.5">
+			<TextBlock.RenderTransform>
+				<TransformGroup>
+					<!-- 4. rotate more so it's facing "inwards" -->
+					<RotateTransform Angle="180"/>
+					<!-- 3. translate "backwards" to get back onto the screen; depends on text size -->
+					<TranslateTransform Y="-60"/>
+					<!-- 2. translate Y (because we are rotated) across the entire width of the panel; this puts us off screen -->
+					<TranslateTransform Y="{x:Bind ActualWidth,Mode=OneWay}"/>
+					<!-- 1. rotate sideways AND so we can translate in + direction -->
+					<RotateTransform Angle="-90"/>
+				</TransformGroup>
+			</TextBlock.RenderTransform>
+		</TextBlock>
 		<RelativePanel Style="{StaticResource Search}" Visibility="{Binding ElementName=cb_picker,Path=IsChecked}"
 			RelativePanel.LeftOf="Legend" RelativePanel.AlignTopWith="Legend">
 			<CalendarDatePicker x:Name="Start" HorizontalAlignment="Stretch" DateChanged="CalendarDatePicker_DateChanged" Date="{Binding Starting,Mode=TwoWay}" MinDate="{Binding MinDate}" MaxDate="{Binding MaxDate}"
