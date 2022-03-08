@@ -23,6 +23,10 @@
 			<animations:ScalarAnimation Target="Opacity" Duration="0:0:1" To="1.0"/>
 			<animations:ScalarAnimation Target="Translation.X" Duration="0:0:1" From="100" To="0"/>
 		</animations:AnimationCollection>
+		<animations:AnimationCollection x:Key="ShowAxisLabel_Horz">
+			<animations:ScalarAnimation Target="Opacity" Duration="0:0:1" To="1.0"/>
+			<animations:ScalarAnimation Target="Translation.Y" Duration="0:0:1" From="100" To="0"/>
+		</animations:AnimationCollection>
 		<animations:AnimationCollection x:Key="Hide">
 			<animations:TranslationAnimation Duration="0:0:1" To="-20,0,0"/>
 			<animations:OpacityAnimation Duration="0:0:1" To="0.0"/>
@@ -30,6 +34,10 @@
 		<animations:AnimationCollection x:Key="HideAxisLabel">
 			<animations:ScalarAnimation Target="Opacity" Duration="0:0:1" To="0.0"/>
 			<animations:ScalarAnimation Target="Translation.X" Duration="0:0:1" From="0" To="-100"/>
+		</animations:AnimationCollection>
+		<animations:AnimationCollection x:Key="HideAxisLabel_Horz">
+			<animations:ScalarAnimation Target="Opacity" Duration="0:0:1" To="0.0"/>
+			<animations:ScalarAnimation Target="Translation.Y" Duration="0:0:1" From="0" To="-100"/>
 		</animations:AnimationCollection>
 		<Style x:Key="Column_v2" TargetType="Path">
 			<Setter Property="Stroke" Value="DarkOrchid"/>
@@ -41,8 +49,8 @@
 		</Style>
 		<Style x:Key="ValueAxisChart9" BasedOn="{StaticResource ValueAxisLabel_Horz}" TargetType="TextBlock">
 			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
-			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource ShowAxisLabel}"/>
-			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource HideAxisLabel}"/>
+			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource ShowAxisLabel_Horz}"/>
+			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource HideAxisLabel_Horz}"/>
 			<Setter Property="Height" Value="Auto"/>
 			<Setter Property="FontSize" Value="20"/>
 			<Setter Property="Foreground" Value="Yellow"/>
@@ -69,6 +77,7 @@
 			RelativePanel.AlignTopWithPanel="True">
 			<CommandBar.PrimaryCommands>
 				<AppBarToggleButton IsChecked="True" x:Name="cb_legend" Label="Toggle Legend" Content="Legend"/>
+				<AppBarToggleButton IsChecked="True" x:Name="cb_grid" Label="Toggle Grid" Content="Grid"/>
 			</CommandBar.PrimaryCommands>
 		</CommandBar>
 		<yacc:Chart x:Name="chart1" Style="{StaticResource Chart}"
@@ -78,11 +87,13 @@
 				<yacc:DataSource x:Name="data" Items="{Binding Data}" />
 			</yacc:Chart.DataSources>
 			<yacc:Chart.Components>
-				<yacc:ValueAxis x:Name="yaxis" Side="Bottom" LimitMaximum="5.2" LimitMinimum="-6.2"
+				<yacc:ValueAxis x:Name="yaxis" Side="Bottom" MinHeight="64"
 					PathStyle="{StaticResource Axes}" LabelFormatString="F1"
 					LabelStyle="{StaticResource ValueAxisChart9}" />
-				<yacc:CategoryAxis x:Name="xaxis" Side="Left" DataSourceName="data" LabelPath="Label" PathStyle="{StaticResource Axes}" MinWidth="100"
-					LabelStyle="{StaticResource CategoryAxis2Chart9}" />
+				<yacc:CategoryAxis x:Name="xaxis" Side="Left" DataSourceName="data" LabelPath="Label" MinWidth="100"
+					PathStyle="{StaticResource Axes}" LabelStyle="{StaticResource CategoryAxis2Chart9}" />
+				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource Grid}"
+						Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
 				<yacc:ColumnSeries x:Name="colv2" DataSourceName="data" ValuePath="Value1"
 					Title="Value 2 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" ClipToDataRegion="False"
 					PathStyle="{StaticResource Column_v2}" BarOffset=".25" BarWidth=".5" />
@@ -98,5 +109,16 @@
 						RelativePanel.AlignRightWith="chart1" RelativePanel.AlignTopWith="chart1">
 			<ItemsControl Name="legend1" Margin="2" Padding="2" ItemsSource="{Binding ElementName=chart1,Path=LegendItems}" ItemTemplate="{StaticResource LegendItem}" />
 		</Border>
+		<TextBlock Text="Value Axis" HorizontalAlignment="Center" HorizontalTextAlignment="Center" Foreground="White" FontSize="16"
+			RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True"/>
+		<TextBlock Text="Category Axis" HorizontalAlignment="Center" HorizontalTextAlignment="Center" Foreground="Wheat" FontSize="16"
+			RelativePanel.AlignVerticalCenterWithPanel="True" RenderTransformOrigin=".5,.5">
+			<TextBlock.RenderTransform>
+				<TransformGroup>
+					<TranslateTransform Y="-36"/>
+					<RotateTransform Angle="-90"/>
+				</TransformGroup>
+			</TextBlock.RenderTransform>
+		</TextBlock>
 	</RelativePanel>
 </core:BasicPage>
