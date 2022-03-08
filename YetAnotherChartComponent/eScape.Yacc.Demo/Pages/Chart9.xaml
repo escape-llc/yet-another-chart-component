@@ -3,6 +3,7 @@
 	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 	xmlns:core="using:eScape.Core.Page"
+	xmlns:vm="using:Yacc.Demo.VM"
 	xmlns:yacc="using:eScapeLLC.UWP.Charts"
 	xmlns:animations="using:Microsoft.Toolkit.Uwp.UI.Animations"
 	xmlns:controls="using:Microsoft.UI.Xaml.Controls"
@@ -48,12 +49,8 @@
 			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource Hide}"/>
 		</Style>
 		<Style x:Key="ValueAxisChart9" BasedOn="{StaticResource ValueAxisLabel_Horz}" TargetType="TextBlock">
-			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
-			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource ShowAxisLabel_Horz}"/>
-			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource HideAxisLabel_Horz}"/>
 			<Setter Property="Height" Value="Auto"/>
 			<Setter Property="FontSize" Value="20"/>
-			<Setter Property="Foreground" Value="Yellow"/>
 		</Style>
 		<Style x:Key="CategoryAxis2Chart9" BasedOn="{StaticResource CategoryAxisLabel}" TargetType="TextBlock">
 			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
@@ -71,6 +68,11 @@
 			<Setter Property="FontSize" Value="30"/>
 			<Setter Property="Foreground" Value="Violet"/>
 		</Style>
+		<vm:ValueAxisGridZeroLine x:Key="ZeroLine" WhenZero="{StaticResource AxisGridZeroLine}"/>
+		<Style x:Key="AxisGridZeroLine" TargetType="Path">
+			<Setter Property="Stroke" Value="Yellow"/>
+			<Setter Property="StrokeThickness" Value="1"/>
+		</Style>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 		<CommandBar x:Name="toolbar"
@@ -87,13 +89,14 @@
 				<yacc:DataSource x:Name="data" Items="{Binding Data}" />
 			</yacc:Chart.DataSources>
 			<yacc:Chart.Components>
-				<yacc:ValueAxis x:Name="yaxis" Side="Bottom" MinHeight="64"
+				<yacc:ValueAxis x:Name="yaxis" Side="Bottom" MinHeight="64" LimitMinimum="-8" LimitMaximum="7"
 					PathStyle="{StaticResource Axes}" LabelFormatString="F1"
 					LabelStyle="{StaticResource ValueAxisChart9}" />
 				<yacc:CategoryAxis x:Name="xaxis" Side="Left" DataSourceName="data" LabelPath="Label" MinWidth="100"
 					PathStyle="{StaticResource Axes}" LabelStyle="{StaticResource CategoryAxis2Chart9}" />
 				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource Grid}"
-						Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
+					PathFormatter="{StaticResource ZeroLine}"
+					Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
 				<yacc:ColumnSeries x:Name="colv2" DataSourceName="data" ValuePath="Value1"
 					Title="Value 2 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" ClipToDataRegion="False"
 					PathStyle="{StaticResource Column_v2}" BarOffset=".25" BarWidth=".5" />
