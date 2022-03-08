@@ -136,6 +136,17 @@
 						RelativePanel.AlignRightWith="chart1" RelativePanel.AlignTopWith="chart1">
 						<ItemsControl Name="legend1" Margin="2" Padding="2" ItemsSource="{Binding ElementName=chart1,Path=LegendItems}" ItemTemplate="{StaticResource lvr}" />
 					</Border>
+					<TextBlock Text="Category 1 Axis" HorizontalAlignment="Center" HorizontalTextAlignment="Center" Foreground="White" FontSize="20"
+						RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True"/>
+					<TextBlock Text="Category 2 Axis" HorizontalAlignment="Center" HorizontalTextAlignment="Center" Foreground="Wheat" FontSize="20"
+						RelativePanel.AlignVerticalCenterWithPanel="True" RenderTransformOrigin=".5,.5">
+						<TextBlock.RenderTransform>
+							<TransformGroup>
+								<TranslateTransform Y="-54"/>
+								<RotateTransform Angle="-90"/>
+							</TransformGroup>
+						</TextBlock.RenderTransform>
+					</TextBlock>
 				</RelativePanel>
 			</controls:TabViewItem>
 			<controls:TabViewItem Header="Monochrome Scheme" IsClosable="False">
@@ -170,6 +181,17 @@
 						RelativePanel.AlignRightWith="chart2" RelativePanel.AlignTopWith="chart2">
 						<ItemsControl Name="legend2" Margin="2" Padding="2" ItemsSource="{Binding ElementName=chart2,Path=LegendItems}" ItemTemplate="{StaticResource lvr}" />
 					</Border>
+					<TextBlock Text="Category 1 Axis" HorizontalAlignment="Center" HorizontalTextAlignment="Center" Foreground="White" FontSize="20"
+						RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True"/>
+					<TextBlock Text="Category 2 Axis" HorizontalAlignment="Center" HorizontalTextAlignment="Center" Foreground="Wheat" FontSize="20"
+						RelativePanel.AlignVerticalCenterWithPanel="True" RenderTransformOrigin=".5,.5">
+						<TextBlock.RenderTransform>
+							<TransformGroup>
+								<TranslateTransform Y="-54"/>
+								<RotateTransform Angle="-90"/>
+							</TransformGroup>
+						</TextBlock.RenderTransform>
+					</TextBlock>
 				</RelativePanel>
 			</controls:TabViewItem>
 			<controls:TabViewItem Header="Discrete Ranges Scheme" IsClosable="False">
@@ -204,6 +226,17 @@
 						RelativePanel.AlignRightWith="chart3" RelativePanel.AlignTopWith="chart3">
 						<ItemsControl Name="legend3" Margin="2" Padding="2" ItemsSource="{Binding ElementName=chart3,Path=LegendItems}" ItemTemplate="{StaticResource lvr2}" />
 					</Border>
+					<TextBlock Text="Category 1 Axis" HorizontalAlignment="Center" HorizontalTextAlignment="Center" Foreground="White" FontSize="20"
+						RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True"/>
+					<TextBlock Text="Category 2 Axis" HorizontalAlignment="Center" HorizontalTextAlignment="Center" Foreground="Wheat" FontSize="20"
+						RelativePanel.AlignVerticalCenterWithPanel="True" RenderTransformOrigin=".5,.5">
+						<TextBlock.RenderTransform>
+							<TransformGroup>
+								<TranslateTransform Y="-54"/>
+								<RotateTransform Angle="-90"/>
+							</TransformGroup>
+						</TextBlock.RenderTransform>
+					</TextBlock>
 				</RelativePanel>
 			</controls:TabViewItem>
 		</controls:TabView>
