@@ -156,6 +156,24 @@ namespace eScapeLLC.UWP.Charts {
 		/// Dereferenced category axis.
 		/// </summary>
 		protected IChartAxis CategoryAxis { get; set; }
+		/// <summary>
+		/// Always maps to the x-component (horz) axis.
+		/// </summary>
+		protected IChartAxis XAxis =>
+			CategoryAxis != null && CategoryAxis.Orientation == AxisOrientation.Horizontal
+			? CategoryAxis
+			: (ValueAxis != null && ValueAxis.Orientation == AxisOrientation.Horizontal
+				? ValueAxis
+				: null);
+		/// <summary>
+		/// Always maps to the y-component (vert) axis.
+		/// </summary>
+		protected IChartAxis YAxis =>
+			ValueAxis != null && ValueAxis.Orientation == AxisOrientation.Vertical
+			? ValueAxis
+			: (CategoryAxis != null && CategoryAxis.Orientation == AxisOrientation.Vertical
+				? CategoryAxis
+				: null);
 		#endregion
 		#region extension points
 		/// <summary>
