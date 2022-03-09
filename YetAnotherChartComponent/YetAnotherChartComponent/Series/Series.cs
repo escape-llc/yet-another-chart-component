@@ -157,7 +157,7 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		protected IChartAxis CategoryAxis { get; set; }
 		/// <summary>
-		/// Always maps to the x-component (horz) axis.
+		/// Always maps to the x-component (horz) axis or NULL.
 		/// </summary>
 		protected IChartAxis XAxis =>
 			CategoryAxis != null && CategoryAxis.Orientation == AxisOrientation.Horizontal
@@ -166,7 +166,7 @@ namespace eScapeLLC.UWP.Charts {
 				? ValueAxis
 				: null);
 		/// <summary>
-		/// Always maps to the y-component (vert) axis.
+		/// Always maps to the y-component (vert) axis or NULL.
 		/// </summary>
 		protected IChartAxis YAxis =>
 			ValueAxis != null && ValueAxis.Orientation == AxisOrientation.Vertical
