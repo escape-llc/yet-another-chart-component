@@ -335,18 +335,49 @@ namespace eScapeLLC.UWP.Charts {
 			return new Point(width, hgt_yaxis);
 		}
 		/// <summary>
-		/// Create a transform for a local coordinate system, e.g. a Marker.
+		/// Same as <see cref="Rescale"/> but for the height dimension.
+		/// Take the given y-axis normalized unit height, and convert to dimensions in each axis.
+		/// Takes the y-axis as a reference, and cross-calculates the scale for the x-axis to make it "square" in DC.
+		/// </summary>
+		/// <param name="mx">Model (M) transform to operate in.</param>
+		/// <param name="height">Height [0..1].  Unit is (M) y-axis basis.  Also return value Point.Y.</param>
+		/// <param name="area">The layout area.  Unit is DC.  Provides DC to size the dimensions.</param>
+		/// <returns>Rescaled dimensions.</returns>
+		public static Point RescaleHeight(Matrix mx, double height, Rect area) {
+			// "walk out" the y-axis dimension through P (to get DC)
+			var hgt_dc = height * area.Height * mx.M22;
+			// now "walk in" the DC to X-axis (M) (to get NDC)
+			var hgt_xaxis = hgt_dc / area.Width / mx.M11;
+			return new Point(hgt_xaxis, height);
+		}
+		/// <summary>
+		/// Create a transform for a local coordinate system, e.g. a Marker based on Width dimension.
 		/// This transform creates a coordinate system of NDC centered at (XX,YY) on whatever point the "outer" transform represents.
 		/// See <see cref="Rescale"/> for more information.
 		/// </summary>
 		/// <param name="mx">Model (M) transform.  SHOULD be translated to the "center" point that aligns with NDC origin.</param>
-		/// <param name="mkwidth">Marker width [0..1].  Unit is (M) x-axis basis. E.g. Range = 10, Basis = .1, mkwidth = .5; answer = .05 x-axis units.</param>
+		/// <param name="mkwidth">Marker width [0..1].  Unit is (M) x-axis basis. E.g. Range = 10, Basis = .1, mkwidth = .5; answer = .05 units.</param>
 		/// <param name="area">The layout area.  Unit is DC.  Provide DC to size the local coordinate system.</param>
 		/// <param name="xx">Translate local x.  Unit is NDC.  Additional offset to align an "origin".</param>
 		/// <param name="yy">Translate local y.  Unit is NDC.  Additional offset to align an "origin".</param>
 		/// <returns>New matrix.</returns>
 		public static Matrix LocalFor(Matrix mx, double mkwidth, Rect area, double xx, double yy) {
 			var axes = Rescale(mx, mkwidth, area);
+			var marker = new Matrix(axes.X, 0, 0, axes.Y, xx * axes.X, yy * axes.Y);
+			return marker;
+		}
+		/// <summary>
+		/// Same as <see cref="LocalFor"/> but for the Height dimension.
+		/// See <see cref="RescaleHeight"/> for more information.
+		/// </summary>
+		/// <param name="mx">Model (M) transform.  SHOULD be translated to the "center" point that aligns with NDC origin.</param>
+		/// <param name="mkheight">Marker height [0..1].  Unit is (M) y-axis basis. E.g. Range = 10, Basis = .1, mkheight = .5; answer = .05 units.</param>
+		/// <param name="area">The layout area.  Unit is DC.  Provide DC to size the local coordinate system.</param>
+		/// <param name="xx">Translate local x.  Unit is NDC.  Additional offset to align an "origin".</param>
+		/// <param name="yy">Translate local y.  Unit is NDC.  Additional offset to align an "origin".</param>
+		/// <returns>New matrix.</returns>
+		public static Matrix LocalForHeight(Matrix mx, double mkheight, Rect area, double xx, double yy) {
+			var axes = RescaleHeight(mx, mkheight, area);
 			var marker = new Matrix(axes.X, 0, 0, axes.Y, xx * axes.X, yy * axes.Y);
 			return marker;
 		}
