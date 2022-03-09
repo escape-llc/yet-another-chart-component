@@ -44,6 +44,7 @@
 			<Setter Property="Stroke" Value="DarkOrchid"/>
 			<Setter Property="StrokeThickness" Value="1"/>
 			<Setter Property="Fill" Value="Green"/>
+			<Setter Property="Opacity" Value=".5"/>
 			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
 			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource Show}"/>
 			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource Hide}"/>
@@ -73,6 +74,27 @@
 			<Setter Property="Stroke" Value="Yellow"/>
 			<Setter Property="StrokeThickness" Value="1"/>
 		</Style>
+		<Style x:Key="Marker_v1" TargetType="Path">
+			<Setter Property="Stroke" Value="Goldenrod"/>
+			<Setter Property="StrokeThickness" Value="1"/>
+			<Setter Property="Fill" Value="Blue"/>
+			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
+			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource Show}"/>
+			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource Hide}"/>
+		</Style>
+		<Style x:Key="Marker_v2" TargetType="Image">
+			<Setter Property="RenderTransformOrigin" Value=".5,.5"/>
+			<Setter Property="animations:Implicit.Animations" Value="{StaticResource OffsetAndOpacity}"/>
+			<Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource Show}"/>
+			<Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource Hide}"/>
+		</Style>
+		<DataTemplate x:Key="Marker">
+			<GeometryGroup>
+				<EllipseGeometry RadiusX=".5" RadiusY=".5" Center=".5,.5" />
+				<LineGeometry StartPoint=".5,.4" EndPoint=".5,.6" />
+				<LineGeometry StartPoint=".4,.5" EndPoint=".6,.5" />
+			</GeometryGroup>
+		</DataTemplate>
 	</Page.Resources>
 	<RelativePanel Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 		<CommandBar x:Name="toolbar"
@@ -89,17 +111,23 @@
 				<yacc:DataSource x:Name="data" Items="{Binding Data}" />
 			</yacc:Chart.DataSources>
 			<yacc:Chart.Components>
-				<yacc:ValueAxis x:Name="yaxis" Side="Bottom" MinHeight="64" LimitMinimum="-8" LimitMaximum="7"
+				<yacc:ValueAxis x:Name="xaxis" Side="Bottom" MinHeight="64" LimitMinimum="-8" LimitMaximum="7"
 					PathStyle="{StaticResource Axes}" LabelFormatString="F1"
 					LabelStyle="{StaticResource ValueAxisChart9}" />
-				<yacc:CategoryAxis x:Name="xaxis" Side="Left" DataSourceName="data" LabelPath="Label" MinWidth="100"
+				<yacc:CategoryAxis x:Name="yaxis" Side="Left" DataSourceName="data" LabelPath="Label" MinWidth="100"
 					PathStyle="{StaticResource Axes}" LabelStyle="{StaticResource CategoryAxis2Chart9}" />
-				<yacc:ValueAxisGrid ValueAxisName="yaxis" PathStyle="{StaticResource Grid}"
+				<yacc:ValueAxisGrid ValueAxisName="xaxis" PathStyle="{StaticResource Grid}"
 					PathFormatter="{StaticResource ZeroLine}"
 					Visibility="{Binding ElementName=cb_grid, Path=IsChecked, Converter={StaticResource b2v}}" />
+				<yacc:MarkerSeries DataSourceName="data" ValuePath="Value1" Title="Value 1 Marker" ClipToDataRegion="False"
+					ValueAxisName="xaxis" CategoryAxisName="yaxis" MarkerOffset=".5" MarkerWidth=".5"
+					PathStyle="{StaticResource Marker_v1}" MarkerTemplate="{StaticResource Marker}"/>
 				<yacc:ColumnSeries x:Name="colv2" DataSourceName="data" ValuePath="Value1"
-					Title="Value 2 Bar" ValueAxisName="yaxis" CategoryAxisName="xaxis" ClipToDataRegion="False"
+					Title="Value 2 Bar" ValueAxisName="xaxis" CategoryAxisName="yaxis" ClipToDataRegion="False"
 					PathStyle="{StaticResource Column_v2}" BarOffset=".25" BarWidth=".5" />
+				<yacc:ImageSourceMarkerSeries DataSourceName="data" ValuePath="Value1" Title="Value 1 Image Marker" ClipToDataRegion="False"
+					ValueAxisName="xaxis" CategoryAxisName="yaxis" MarkerOffset=".5" MarkerWidth=".5"
+					PathStyle="{StaticResource Marker_v2}" Source="{StaticResource bmi}"/>
 				<yacc:ValueLabels SourceName="colv2" LabelFormatString="F2" LabelStyle="{StaticResource BigLabels}" />
 			</yacc:Chart.Components>
 		</yacc:Chart>
@@ -112,7 +140,7 @@
 						RelativePanel.AlignRightWith="chart1" RelativePanel.AlignTopWith="chart1">
 			<ItemsControl Name="legend1" Margin="2" Padding="2" ItemsSource="{Binding ElementName=chart1,Path=LegendItems}" ItemTemplate="{StaticResource LegendItem}" />
 		</Border>
-		<TextBlock Text="Value Axis" HorizontalAlignment="Center" HorizontalTextAlignment="Center" Foreground="White" FontSize="16"
+		<TextBlock Text="Value Axis with 'Hard' Limits" HorizontalAlignment="Center" HorizontalTextAlignment="Center" Foreground="White" FontSize="16"
 			RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True"/>
 		<TextBlock Text="Category Axis" HorizontalAlignment="Center" HorizontalTextAlignment="Center" Foreground="Wheat" FontSize="16"
 			RelativePanel.AlignVerticalCenterWithPanel="True" RenderTransformOrigin=".5,.5">
