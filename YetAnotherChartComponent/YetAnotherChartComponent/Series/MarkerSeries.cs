@@ -19,13 +19,15 @@ namespace eScapeLLC.UWP.Charts {
 		static LogTools.Flag _trace = LogTools.Add("MarkerSeries", LogTools.Level.Error);
 		#region item state
 		internal class MarkerItemState : ItemState_Matrix<Path>, IProvidePlacement {
+			internal bool flip;
 			internal MarkerItemState(int idx, double xv, double xo, double yv, Path ele, int ch = 0) : base(idx, xv, xo, yv, ele, ch) { }
-			Placement IProvidePlacement.Placement => new MarkerPlacement(new Point(XValueAfterOffset, Value), Placement.DOWN_LEFT);
+			Placement IProvidePlacement.Placement => new MarkerPlacement(flip ? new Point(Value, XValueAfterOffset) : new Point(XValueAfterOffset, Value), Placement.DOWN_LEFT);
 			void IProvidePlacement.ClearCache() { }
 		}
 		internal class MarkerItemState_Custom : ItemStateCustom_Matrix<Path>, IProvidePlacement {
+			internal bool flip;
 			internal MarkerItemState_Custom(int idx, double xv, double xo, double yv, object cs, Path ele, int ch = 0) : base(idx, xv, xo, yv, cs, ele, ch) { }
-			Placement IProvidePlacement.Placement => new MarkerPlacement(new Point(XValueAfterOffset, Value), Placement.DOWN_LEFT);
+			Placement IProvidePlacement.Placement => new MarkerPlacement(flip ? new Point(Value, XValueAfterOffset) : new Point(XValueAfterOffset, Value), Placement.DOWN_LEFT);
 			void IProvidePlacement.ClearCache() { }
 		}
 		#endregion
@@ -134,10 +136,9 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="evs"></param>
 		/// <returns></returns>
 		ItemState<Path> ElementPipeline(int index, double valuex, double valuey, object item, Recycler<Path, ItemState<Path>> recycler, Evaluators evs) {
-			var mappedy = ValueAxis.For(valuey);
-			var mappedx = CategoryAxis.For(valuex);
-			var markerx = mappedx + MarkerOffset;
-			_trace.Verbose($"[{index}] {valuey} ({markerx},{mappedy})");
+			var value_val = ValueAxis.For(valuey);
+			var value_cat = CategoryAxis.For(valuex);
+			_trace.Verbose($"[{index}] v:({valuex},{valuey}) mo:{MarkerOffset} vm:({value_cat},{value_val})");
 			var mk = MarkerTemplate.LoadContent() as Geometry;
 			// TODO allow MK to be other things like (Path or Image).
 			// TODO allow a MarkerTemplateSelector and a value Selector/Formatter
@@ -146,12 +147,13 @@ namespace eScapeLLC.UWP.Charts {
 			if (el == null) return null;
 			var shim = new GeometryWithOffsetShim<Geometry>() { PathData = mk };
 			el.Item2.DataContext = shim;
-			BindTo(shim, nameof(shim.Offset), el.Item2, Canvas.LeftProperty);
+			var flip = CategoryAxis.Orientation == AxisOrientation.Vertical;
+			BindTo(shim, nameof(shim.Offset), el.Item2, flip ? Canvas.TopProperty : Canvas.LeftProperty);
 			var cs = evs.LabelFor(item);
 			if (cs == null) {
-				return new MarkerItemState(index, mappedx, MarkerOffset, mappedy, el.Item2);
+				return new MarkerItemState(index, value_cat, MarkerOffset, value_val, el.Item2) { flip = flip };
 			} else {
-				return new MarkerItemState_Custom(index, mappedx, MarkerOffset, mappedy, cs, el.Item2);
+				return new MarkerItemState_Custom(index, value_cat, MarkerOffset, value_val, cs, el.Item2) { flip = flip };
 			}
 		}
 		#endregion
@@ -203,12 +205,18 @@ namespace eScapeLLC.UWP.Charts {
 		#endregion
 		#region IRequireAfterAxesFinalized
 		void IRequireAfterAxesFinalized.AxesFinalized(IChartRenderContext icrc) {
-			if (CategoryAxis == null || ValueAxis == null) return;
+			if (XAxis == null || YAxis == null) return;
 			if (ItemState.Count == 0) return;
-			var world = MatrixSupport.ModelFor(CategoryAxis, ValueAxis);
+			var flip = XAxis == ValueAxis;
+			var world = MatrixSupport.ModelFor(XAxis, YAxis);
 			foreach (var state in ItemState) {
 				if (state is IItemStateMatrix ism) {
-					ism.World = MatrixSupport.Translate(world, state.XOffset, state.Value);
+					if(flip) {
+						ism.World = MatrixSupport.Translate(world, state.Value, state.XOffset);
+					}
+					else {
+						ism.World = MatrixSupport.Translate(world, state.XOffset, state.Value);
+					}
 				}
 			}
 		}
@@ -220,14 +228,22 @@ namespace eScapeLLC.UWP.Charts {
 		/// </summary>
 		/// <param name="icrc"></param>
 		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
-			if (CategoryAxis == null || ValueAxis == null) return;
+			if (XAxis == null || YAxis == null) return;
 			if (ItemState.Count == 0) return;
-			var mp = MatrixSupport.DataArea(CategoryAxis, ValueAxis, icrc.Area, 1);
-			// cancel x-offset
+			var flip = XAxis == ValueAxis;
+			var mp = MatrixSupport.DataArea(XAxis, YAxis, icrc.Area, flip ? 4 : 1);
+			// cancel offset
 			var proj2 = mp.Item2;
-			proj2.OffsetX = 0;
+			if(flip) {
+				proj2.OffsetY = 0;
+			}
+			else {
+				proj2.OffsetX = 0;
+			}
 			// get the local marker matrix
-			var marker = MatrixSupport.LocalFor(mp.Item1, MarkerWidth, icrc.Area, -MarkerOrigin.X, -MarkerOrigin.Y);
+			var marker = flip
+				? MatrixSupport.LocalForHeight(mp.Item1, MarkerWidth, icrc.Area, -MarkerOrigin.X, -MarkerOrigin.Y)
+				: MatrixSupport.LocalFor(mp.Item1, MarkerWidth, icrc.Area, -MarkerOrigin.X, -MarkerOrigin.Y);
 			// get the offset matrix
 			var mato = MatrixSupport.Multiply(mp.Item1, proj2);
 			foreach (var state in ItemState) {
@@ -236,10 +252,17 @@ namespace eScapeLLC.UWP.Charts {
 				var model = MatrixSupport.Multiply(marker, iworld);
 				var matx = MatrixSupport.Multiply(model, proj2);
 				var mt = new MatrixTransform() { Matrix = matx };
+				_trace.Verbose($"[{state.Index}] v:({state.XValue},{state.Value}) w:{iworld} da:{mp.Item1} proj2:{proj2} matx:{matx}");
 				if (state.Element.DataContext is GeometryWithOffsetShim<Geometry> gs) {
 					gs.GeometryTransform = mt;
-					var output = mato.Transform(new Point(state.XValue, 0));
-					gs.Offset = icrc.Area.Left + output.X;
+					if(flip) {
+						var output = mato.Transform(new Point(0, state.XValue));
+						gs.Offset = icrc.Area.Top + output.Y;
+					}
+					else {
+						var output = mato.Transform(new Point(state.XValue, 0));
+						gs.Offset = icrc.Area.Left + output.X;
+					}
 				} else {
 					state.Element.Data.Transform = mt;
 				}
@@ -261,15 +284,15 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		void IDataSourceRenderer.Render(object state, int index, object item) {
 			var st = state as RenderState_ValueAndLabel<ItemState<Path>, Path>;
-			var valuey = st.evs.ValueFor(item);
-			var valuex = st.evs.CategoryFor(item, index);
+			var value_val = st.evs.ValueFor(item);
+			var value_cat = st.evs.CategoryFor(item, index);
 			st.ix = index;
 			// short-circuit if it's NaN
-			if (double.IsNaN(valuey)) {
+			if (double.IsNaN(value_val)) {
 				return;
 			}
-			UpdateLimits(valuex, valuey);
-			var istate = ElementPipeline(index, valuex, valuey, item, st.recycler, st.evs);
+			UpdateLimits(value_cat, value_val);
+			var istate = ElementPipeline(index, value_cat, value_val, item, st.recycler, st.evs);
 			if(istate != null) st.itemstate.Add(istate);
 		}
 		void IDataSourceRenderer.RenderComplete(object state) { }

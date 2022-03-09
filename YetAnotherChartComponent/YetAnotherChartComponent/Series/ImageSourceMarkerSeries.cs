@@ -17,13 +17,15 @@ namespace eScapeLLC.UWP.Charts {
 		static LogTools.Flag _trace = LogTools.Add("ImageSourceMarkerSeries", LogTools.Level.Error);
 		#region item state
 		internal class MarkerItemState : ItemState_Matrix<Image>, IProvidePlacement {
+			internal bool flip;
 			internal MarkerItemState(int idx, double xv, double xo, double yv, Image ele, int ch = 0) : base(idx, xv, xo, yv, ele, ch) { }
-			Placement IProvidePlacement.Placement => new MarkerPlacement(new Point(XValueAfterOffset, Value), Placement.DOWN_LEFT);
+			Placement IProvidePlacement.Placement => new MarkerPlacement(flip ? new Point(Value, XValueAfterOffset) : new Point(XValueAfterOffset, Value), Placement.DOWN_LEFT);
 			void IProvidePlacement.ClearCache() { }
 		}
 		internal class MarkerItemState_Custom : ItemStateCustom_Matrix<Image>, IProvidePlacement {
+			internal bool flip;
 			internal MarkerItemState_Custom(int idx, double xv, double xo, double yv, object cs, Image ele, int ch = 0) : base(idx, xv, xo, yv, cs, ele, ch) { }
-			Placement IProvidePlacement.Placement => new MarkerPlacement(new Point(XValueAfterOffset, Value), Placement.DOWN_LEFT);
+			Placement IProvidePlacement.Placement => new MarkerPlacement(flip ? new Point(Value, XValueAfterOffset) : new Point(XValueAfterOffset, Value), Placement.DOWN_LEFT);
 			void IProvidePlacement.ClearCache() { }
 		}
 		#endregion
@@ -130,19 +132,19 @@ namespace eScapeLLC.UWP.Charts {
 		/// <param name="evs"></param>
 		/// <returns></returns>
 		ItemState<Image> ElementPipeline(int index, double valuex, double valuey, object item, Recycler<Image, ItemState<Image>> recycler, Evaluators evs) {
-			var mappedy = ValueAxis.For(valuey);
-			var mappedx = CategoryAxis.For(valuex);
-			var markerx = mappedx + MarkerOffset;
-			_trace.Verbose($"[{index}] {valuey} ({markerx},{mappedy})");
+			var value_val = ValueAxis.For(valuey);
+			var value_cat = CategoryAxis.For(valuex);
+			_trace.Verbose($"[{index}] v:({valuex},{valuey}) mo:{MarkerOffset} vm:({value_cat},{value_val})");
 			// TODO allow a MarkerTemplateSelector and a value Selector/Formatter
 			// no path yet
 			var el = recycler.Next(null);
 			if (el == null) return null;
 			var cs = evs.LabelFor(item);
+			var flip = CategoryAxis.Orientation == AxisOrientation.Vertical;
 			if (cs == null) {
-				return new MarkerItemState /*ItemState_Matrix<Image>*/(index, mappedx, MarkerOffset, mappedy, el.Item2);
+				return new MarkerItemState(index, value_cat, MarkerOffset, value_val, el.Item2) { flip = flip };
 			} else {
-				return new MarkerItemState_Custom /*ItemStateCustom_Matrix<Image>*/(index, mappedx, MarkerOffset, mappedy, cs, el.Item2);
+				return new MarkerItemState_Custom(index, value_cat, MarkerOffset, value_val, cs, el.Item2) { flip = flip };
 			}
 		}
 		#endregion
@@ -201,23 +203,24 @@ namespace eScapeLLC.UWP.Charts {
 		void IRequireTransforms.Transforms(IChartRenderContext icrc) {
 			if (CategoryAxis == null || ValueAxis == null) return;
 			if (ItemState.Count == 0) return;
-			var mp = MatrixSupport.DataArea(CategoryAxis, ValueAxis, icrc.Area, 1);
+			var flip = XAxis == ValueAxis;
+			var mp = MatrixSupport.DataArea(XAxis, YAxis, icrc.Area, flip ? 4 : 1);
 			// get the offset matrix
 			var mato = MatrixSupport.Multiply(mp.Item1, mp.Item2);
 			// TODO preserve aspect ratio of image; will require ImageOpened evh
-			var dimx = MarkerWidth * mato.M11;
-			_trace.Verbose($"dimx {dimx}");
+			var dimi = MarkerWidth * Math.Abs(flip ? mato.M22 : mato.M11);
+			_trace.Verbose($"transforms dim:{dimi} flip:{flip}");
 			foreach (var state in ItemState) {
 				if (state.Element.DataContext is ImageSourceShim iss) {
-					var output = mato.Transform(new Point(state.XValue + MarkerOffset, state.Value));
+					var output = mato.Transform(flip ? new Point(state.Value, state.XValue + MarkerOffset) : new Point(state.XValue + MarkerOffset, state.Value));
 					_trace.Verbose($"output {output.X:F1},{output.Y:F1}  value {state.XValue},{state.Value}  image {state.Element.ActualWidth:F1}x{state.Element.ActualHeight:F1}");
-					var hw = dimx * MarkerOrigin.X;
-					var hh = dimx * MarkerOrigin.Y;
+					var hw = dimi * MarkerOrigin.X;
+					var hh = dimi * MarkerOrigin.Y;
 					// these have bindings so effect is immediate
 					iss.OffsetX = output.X - hw;
 					iss.OffsetY = output.Y - hh;
-					iss.Width = dimx;
-					iss.Height = dimx;
+					iss.Width = dimi;
+					iss.Height = dimi;
 				}
 				if (ClipToDataRegion) {
 					state.Element.Clip = new RectangleGeometry() { Rect = icrc.SeriesArea };
@@ -237,15 +240,15 @@ namespace eScapeLLC.UWP.Charts {
 		}
 		void IDataSourceRenderer.Render(object state, int index, object item) {
 			var st = state as RenderState_ValueAndLabel<ItemState<Image>, Image>;
-			var valuey = st.evs.ValueFor(item);
-			var valuex = st.evs.CategoryFor(item, index);
+			var value_val = st.evs.ValueFor(item);
+			var value_cat = st.evs.CategoryFor(item, index);
 			st.ix = index;
 			// short-circuit if it's NaN
-			if (double.IsNaN(valuey)) {
+			if (double.IsNaN(value_val)) {
 				return;
 			}
-			UpdateLimits(valuex, valuey);
-			var istate = ElementPipeline(index, valuex, valuey, item, st.recycler, st.evs);
+			UpdateLimits(value_cat, value_val);
+			var istate = ElementPipeline(index, value_cat, value_val, item, st.recycler, st.evs);
 			if (istate != null) st.itemstate.Add(istate);
 		}
 		void IDataSourceRenderer.RenderComplete(object state) { }
@@ -277,12 +280,12 @@ namespace eScapeLLC.UWP.Charts {
 			if (BindPaths == null || !BindPaths.IsValid) return;
 			var recycler = new Recycler<Image, ItemState<Image>>(CreateElement);
 			var reproc = IncrementalAdd<ItemState<Image>>(startAt, items, ItemState, (ix, item) => {
-				var valuey = BindPaths.ValueFor(item);
+				var value_val = BindPaths.ValueFor(item);
 				// short-circuit if it's NaN
-				if (double.IsNaN(valuey)) { return null; }
-				var valuex = BindPaths.CategoryFor(item, ix);
+				if (double.IsNaN(value_val)) { return null; }
+				var value_cat = BindPaths.CategoryFor(item, ix);
 				// add requested item
-				var istate = ElementPipeline(ix, valuex, valuey, item, recycler, BindPaths);
+				var istate = ElementPipeline(ix, value_cat, value_val, item, recycler, BindPaths);
 				return istate;
 			}, (rpc, istate) => {
 				istate.Shift(rpc, BindPaths, CategoryAxis, null);
