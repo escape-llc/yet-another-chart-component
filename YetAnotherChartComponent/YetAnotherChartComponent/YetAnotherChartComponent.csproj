@@ -157,7 +157,7 @@
       <Version>6.2.14</Version>
     </PackageReference>
     <PackageReference Include="NuGet.CommandLine">
-      <Version>6.2.1</Version>
+      <Version>6.2.2</Version>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
