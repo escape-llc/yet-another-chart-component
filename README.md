@@ -1,6 +1,8 @@
 # eScapeLLC.UWP.Charts
 Yet another chart component.  Also a play on the venerable "yacc" parser-generator tool.  Yes, I've used it, and know all about LR(1) parsers!
 
+> YACC is moving to the Composition Layer!  Follow our [new repository](https://github.com/escape-llc/yacc-composition) for progress.
+
 ## Demo It!
 The demo application in the solution is available in [Windows Store](https://www.microsoft.com/store/apps/9P9XC6Z7R3BW) so you don't have to build it from source.
 
